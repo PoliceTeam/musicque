@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    build:
+      context: ./mongodb
+      dockerfile: Dockerfile
+    container_name: music-order-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: music-order-app
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - music-order-network
+
+  # Backend API Service
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: music-order-api
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/music-order-app
+      - JWT_SECRET=your_jwt_secret_key
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - CLIENT_URL=http://localhost
+    ports:
+      - "5001:5000"
+    networks:
+      - music-order-network
+    volumes:
+      - ./api:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # Frontend Client Service
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: music-order-client
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    networks:
+      - music-order-network
+
+networks:
+  music-order-network:
+    driver: bridge
+
+volumes:
+  mongodb_data: 
