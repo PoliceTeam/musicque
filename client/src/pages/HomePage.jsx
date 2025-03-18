@@ -73,7 +73,7 @@ const HomePage = () => {
                   <Text>Hiện tại không có phiên phát nhạc nào đang diễn ra.</Text>
                   <br />
                   <Text type='secondary'>
-                    Phiên phát nhạc chỉ được mở từ 15:00 đến 18:00 hàng ngày.
+                    Phiên phát nhạc chỉ nên được mở từ 15:00 đến 18:00 hàng ngày.
                   </Text>
                 </div>
               )}

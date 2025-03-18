@@ -8,8 +8,8 @@ exports.startSession = async (req, res) => {
     const now = new Date()
     const hours = now.getHours()
 
-    if (hours < 15 || hours >= 18) {
-      return res.status(400).json({ message: 'Chỉ có thể mở phiên phát nhạc từ 15:00 đến 18:00' })
+    if (hours < 0 || hours >= 24) {
+      return res.status(400).json({ message: 'Chỉ nên mở phiên phát nhạc từ 00:00 đến 23:59' })
     }
 
     // Kiểm tra xem có phiên nào đang hoạt động không
