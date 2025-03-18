@@ -35,10 +35,11 @@ const MusicPlayer = () => {
 
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.lang = 'vi-VN'
+        utterance.rate = 1.2
         speechRef.current = utterance
 
         const voices = speechSynthesis.getVoices()
-        const vietnameseVoice = voices.find(voice => voice.lang.includes('vi'))
+        const vietnameseVoice = voices.find((voice) => voice.lang.includes('vi'))
         if (vietnameseVoice) {
           utterance.voice = vietnameseVoice
         }
@@ -67,7 +68,7 @@ const MusicPlayer = () => {
         }
 
         setSpeaking(true)
-        
+
         try {
           speechSynthesis.cancel()
           speechSynthesis.speak(utterance)

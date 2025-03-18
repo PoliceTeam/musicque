@@ -42,7 +42,7 @@ exports.addSong = async (req, res) => {
       title: videoTitle,
       youtubeUrl,
       youtubeId: videoId,
-      message: message || '',
+      message: `${username}, đã order bài hát ${videoTitle} với lời nhắn. ${message}` || '',
       addedBy: user._id,
       sessionId: activeSession._id,
     })
