@@ -33,8 +33,9 @@ services:
       - ADMIN_USERNAME=your_admin_username
       - ADMIN_PASSWORD=your_secure_admin_password
       - CLIENT_URL=https://musicque.politetech.com
+      - SOCKET_URL=https://musicque.politetech.com
     ports:
-      - '5000:5000'
+      - '5800:5000'
     networks:
       - music-order-network
     volumes:
@@ -48,13 +49,13 @@ services:
       dockerfile: Dockerfile
     container_name: music-order-client
     args:
-      - VITE_API_URL=http://localhost:5001
-      - VITE_SOCKET_URL=http://localhost:5001
+      - VITE_API_URL=https://musicque.politetech.com
+      - VITE_SOCKET_URL=https://musicque.politetech.com
     restart: always
     depends_on:
       - api
     ports:
-      - '80:80'
+      - '3800:80'
     networks:
       - music-order-network
 
