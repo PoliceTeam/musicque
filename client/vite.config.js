@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     port: 8080,
     host: true,
+    proxy: {
+      '/socket.io': {
+        target: 'http://localhost:5001',
+        ws: true
+      }
+    }
   },
   resolve: {
     // Thêm cấu hình này để giúp Vite tìm thấy các modules

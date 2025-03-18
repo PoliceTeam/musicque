@@ -22,7 +22,10 @@ export const PlaylistProvider = ({ children }) => {
 
   useEffect(() => {
     // Kết nối socket
-    const newSocket = io(import.meta.env.VITE_SOCKET_URL)
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    })
     setSocket(newSocket)
 
     // Lấy thông tin phiên hiện tại

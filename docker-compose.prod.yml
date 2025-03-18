@@ -11,7 +11,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: music-order-app
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -29,13 +29,12 @@ services:
     environment:
       - PORT=5000
       - MONGODB_URI=mongodb://mongodb:27017/music-order-app
-      - JWT_SECRET=your_jwt_secret_key
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin123
-      - CLIENT_URL=http://localhost:8080
-      - SOCKET_URL=http://localhost:5001
+      - JWT_SECRET=your_secure_jwt_secret_key_for_production
+      - ADMIN_USERNAME=your_admin_username
+      - ADMIN_PASSWORD=your_secure_admin_password
+      - CLIENT_URL=https://musicque.politetech.com
     ports:
-      - "5001:5000"
+      - '5000:5000'
     networks:
       - music-order-network
     volumes:
@@ -48,14 +47,14 @@ services:
       context: ./client
       dockerfile: Dockerfile
     container_name: music-order-client
+    args:
+      - VITE_API_URL=http://localhost:5001
+      - VITE_SOCKET_URL=http://localhost:5001
     restart: always
     depends_on:
       - api
-    environment:
-      - VITE_API_URL=http://localhost:5001
-      - VITE_SOCKET_URL=http://localhost:5001
     ports:
-      - "8080:80"
+      - '80:80'
     networks:
       - music-order-network
 
@@ -64,4 +63,4 @@ networks:
     driver: bridge
 
 volumes:
-  mongodb_data: 
+  mongodb_data:

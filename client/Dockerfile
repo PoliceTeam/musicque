@@ -1,4 +1,4 @@
-FROM node:20-alpine as build
+FROM node:20.11-alpine as build
 
 # Tạo thư mục làm việc
 WORKDIR /usr/src/app
@@ -8,14 +8,17 @@ COPY package*.json ./
 
 # Cài đặt dependencies
 # Thêm --legacy-peer-deps để tránh các vấn đề về phiên bản
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
 
 # Tạo file .env cho build
-RUN echo "VITE_API_URL=http://localhost" > .env
-RUN echo "VITE_SOCKET_URL=http://localhost" >> .env
+ARG VITE_API_URL
+ARG VITE_SOCKET_URL
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_SOCKET_URL=${VITE_SOCKET_URL}
+ENV NODE_ENV=production
 
 # Build ứng dụng
 RUN npm run build
