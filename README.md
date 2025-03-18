@@ -176,6 +176,39 @@ VITE_SOCKET_URL=http://localhost:5000
 - MongoDB
 - Trình duyệt hiện đại (Chrome, Firefox, Edge)
 
+## Production Setup
+
+1. Copy file mẫu để tạo file cấu hình production:
+
+```bash
+cp docker-compose.prod.example.yml docker-compose.prod.yml
+```
+
+2. Cập nhật các biến môi trường trong `docker-compose.prod.yml`:
+
+- JWT_SECRET
+- ADMIN_USERNAME
+- ADMIN_PASSWORD
+- CLIENT_URL
+- SOCKET_URL
+- YOUTUBE_API_KEY
+- VITE_API_URL
+- VITE_SOCKET_URL
+
+3. Chạy ứng dụng:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+```
+
+Như vậy:
+- File production sẽ không còn được theo dõi trong Git
+- Team có file mẫu để tham khảo
+- Thông tin nhạy cảm được bảo vệ
+- Có hướng dẫn rõ ràng cho việc setup
+
 ## Mở rộng trong tương lai
 
 1. Thêm tính năng tìm kiếm bài hát trực tiếp từ YouTube
