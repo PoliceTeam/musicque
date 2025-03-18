@@ -34,6 +34,7 @@ services:
       - ADMIN_PASSWORD=admin123
       - CLIENT_URL=http://localhost:8080
       - SOCKET_URL=http://localhost:5001
+      - YOUTUBE_API_KEY=AIzaSyD500000000000000000000000000000000000000000000000000000000000000
     ports:
       - "5001:5000"
     networks:

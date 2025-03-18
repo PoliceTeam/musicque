@@ -2,10 +2,16 @@ const express = require('express')
 const Song = require('../models/song.model')
 const Session = require('../models/session.model')
 const User = require('../models/user.model')
-const ytdl = require('ytdl-core')
+const { google } = require('googleapis')
 const { authenticateAdmin } = require('../middlewares/auth.middleware')
+const ytdl = require('ytdl-core')
 
 const router = express.Router()
+
+const youtube = google.youtube({
+  version: 'v3',
+  auth: process.env.YOUTUBE_API_KEY, // Thêm API key từ Google Cloud Console
+})
 
 // Thêm bài hát mới
 router.post('/', async (req, res) => {
@@ -31,8 +37,13 @@ router.post('/', async (req, res) => {
     const videoId = ytdl.getVideoID(youtubeUrl)
 
     try {
-      const videoInfo = await ytdl.getInfo(videoId)
-      const videoTitle = videoInfo.videoDetails.title
+      const response = await youtube.videos.list({
+        part: 'snippet',
+        id: videoId,
+      })
+
+      const videoInfo = response.data.items[0].snippet
+      const videoTitle = videoInfo.title
 
       // Tìm hoặc tạo user
       let user = await User.findOne({ username })
@@ -72,9 +83,6 @@ router.post('/', async (req, res) => {
         song: newSong,
       })
     } catch (error) {
-      console.log('====================================')
-      console.log(error)
-      console.log('====================================')
       return res.status(400).json({ message: 'Không thể lấy thông tin video: ' + error.message })
     }
   } catch (error) {
@@ -204,36 +212,36 @@ router.post('/:songId/played', authenticateAdmin, async (req, res) => {
 // Thêm route để xóa bài hát
 router.delete('/:songId', async (req, res) => {
   try {
-    const { songId } = req.params;
-    
+    const { songId } = req.params
+
     // Tìm bài hát
-    const song = await Song.findById(songId);
-    
+    const song = await Song.findById(songId)
+
     if (!song) {
-      return res.status(404).json({ message: 'Không tìm thấy bài hát' });
+      return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
-    
+
     // Xóa bài hát
-    await Song.findByIdAndDelete(songId);
-    
+    await Song.findByIdAndDelete(songId)
+
     // Lấy danh sách bài hát đã sắp xếp
     const updatedPlaylist = await Song.find({ sessionId: song.sessionId })
       .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 });
-    
+      .sort({ voteScore: -1, addedAt: 1 })
+
     // Thông báo qua socket.io
-    const io = req.app.get('io');
+    const io = req.app.get('io')
     if (io) {
-      io.emit('playlist_updated', updatedPlaylist);
+      io.emit('playlist_updated', updatedPlaylist)
     }
-    
+
     res.status(200).json({
       message: 'Đã xóa bài hát khỏi playlist',
-      playlist: updatedPlaylist
-    });
+      playlist: updatedPlaylist,
+    })
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
-});
+})
 
 module.exports = router
