@@ -135,7 +135,7 @@ const MusicPlayer = () => {
       setTimeout(() => {
         handlePlay()
         shouldAutoPlayRef.current = false
-      }, 300)
+      }, 2500)
     }
   }, [playlist, playing, handlePlay])
 
