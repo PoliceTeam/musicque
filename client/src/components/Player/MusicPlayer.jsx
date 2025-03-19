@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react'
 import ReactPlayer from 'react-player'
 import { Card, Button, Typography, Space, message } from 'antd'
-import { PlayCircleOutlined, PauseCircleOutlined, StepForwardOutlined } from '@ant-design/icons'
+import {
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StepForwardOutlined,
+  CloseOutlined,
+} from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { markSongAsPlayed, removeSongFromPlaylist } from '../../services/api'
 
@@ -147,6 +152,16 @@ const MusicPlayer = () => {
     }
   }
 
+  const handleSkipMessage = () => {
+    if (speaking && speechRef.current) {
+      speechSynthesis.cancel()
+      speechRef.current = null
+      setSpeaking(false)
+      setMessageSpoken(true)
+      setPlaying(true)
+    }
+  }
+
   const handleNext = async () => {
     setNextLoading(true)
     wasPlayingRef.current = playing
@@ -196,6 +211,7 @@ const MusicPlayer = () => {
   }
 
   const handleEnded = () => {
+    shouldAutoPlayRef.current = true
     handleNext()
   }
 
@@ -275,6 +291,18 @@ const MusicPlayer = () => {
                 loading={speaking}
               >
                 {speaking ? 'Đang đọc lời nhắn...' : 'Phát'}
+              </Button>
+            )}
+
+            {speaking && (
+              <Button
+                icon={<CloseOutlined />}
+                onClick={handleSkipMessage}
+                size='large'
+                type='default'
+                danger
+              >
+                Skip lời nhắn
               </Button>
             )}
 
