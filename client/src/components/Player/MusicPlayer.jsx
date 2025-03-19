@@ -25,7 +25,6 @@ const MusicPlayer = () => {
   const shouldAutoPlayRef = useRef(false)
   const playlistLengthRef = useRef(0)
   const speechRef = useRef(null)
-  const [isHandlingEnded, setIsHandlingEnded] = useState(false)
 
   const currentSong = playlist[currentSongIndex]
 
@@ -33,18 +32,55 @@ const MusicPlayer = () => {
     (text, title, username) => {
       if (!text || speaking) return Promise.resolve()
 
-      return new Promise((resolve) => {
-        if (speechRef.current) {
-          speechSynthesis.cancel()
-          speechRef.current = null
-        }
+      if (speechRef.current) {
+        speechSynthesis.cancel()
+        speechRef.current = null
+      }
 
+      return new Promise((resolve) => {
         const utterance = new SpeechSynthesisUtterance(
-          `${username}: đã order bài hát ${title} với lời nhắn: ${text}`,
+          // `${username}: đã order bài hát ${title} với lời nhắn: ${text}`,
+          text,
         )
         utterance.lang = 'vi-VN'
         utterance.rate = 1.2
+
         speechRef.current = utterance
+
+        const handleStart = () => {
+          console.log('start')
+          setSpeaking(true)
+          setPlaying(false)
+        }
+
+        const handleEnd = () => {
+          setSpeaking(false)
+          setMessageSpoken(true)
+          setPlaying(true)
+          speechRef.current = null
+          utterance.removeEventListener('start', handleStart)
+          utterance.removeEventListener('end', handleEnd)
+          utterance.removeEventListener('error', handleError)
+          resolve()
+        }
+
+        const handleError = (event) => {
+          if (event.error !== 'interrupted') {
+            console.error('Speech synthesis error:', event)
+          }
+          setSpeaking(false)
+          setMessageSpoken(true)
+          playSong(undefined)
+          speechRef.current = null
+          utterance.removeEventListener('start', handleStart)
+          utterance.removeEventListener('end', handleEnd)
+          utterance.removeEventListener('error', handleError)
+          resolve()
+        }
+
+        utterance.addEventListener('start', handleStart)
+        utterance.addEventListener('end', handleEnd)
+        utterance.addEventListener('error', handleError)
 
         const voices = speechSynthesis.getVoices()
         const vietnameseVoice = voices.find((voice) => voice.lang.includes('vi'))
@@ -52,41 +88,12 @@ const MusicPlayer = () => {
           utterance.voice = vietnameseVoice
         }
 
-        utterance.onstart = () => {
-          setSpeaking(true)
-        }
-
-        utterance.onend = () => {
-          setSpeaking(false)
-          setMessageSpoken(true)
-          speechRef.current = null
-          resolve()
-        }
-
-        utterance.onerror = (event) => {
-          if (speechRef.current === utterance) {
-            if (event.error !== 'interrupted') {
-              console.error('Speech synthesis error:', event)
-            }
-            setSpeaking(false)
-            setMessageSpoken(true)
-            playSong(undefined)
-            speechRef.current = null
-            resolve()
-          }
-        }
-
-        setSpeaking(true)
-
         try {
           speechSynthesis.cancel()
           speechSynthesis.speak(utterance)
         } catch (error) {
           console.error('Error initializing speech:', error)
-          setSpeaking(false)
-          setMessageSpoken(true)
-          speechRef.current = null
-          resolve()
+          handleError(error)
         }
       })
     },
@@ -99,9 +106,12 @@ const MusicPlayer = () => {
       return
     }
 
-    if (currentSong.message && !messageSpoken && !speaking) {
+    if (currentSong.message && !messageSpoken && !speaking && playlistLengthRef.current > 0) {
       try {
         playSong(currentSong._id)
+        console.log('====================================')
+        console.log(currentSong)
+        console.log('====================================')
         await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
       } catch (error) {
         console.error('Error playing speech:', error)
@@ -109,7 +119,7 @@ const MusicPlayer = () => {
     }
 
     setPlaying(true)
-  }, [currentSong, messageSpoken, speaking, playSpeech])
+  }, [currentSong, messageSpoken, speaking, playSpeech, playlist.length])
 
   useEffect(() => {
     const isCurrentlyPlaying = playing
@@ -138,7 +148,7 @@ const MusicPlayer = () => {
         shouldAutoPlayRef.current = false
       }, 300)
     }
-  }, [playlist, playing, handlePlay])
+  }, [playlist, playing])
 
   useEffect(() => {
     setMessageSpoken(false)
@@ -164,27 +174,25 @@ const MusicPlayer = () => {
   }
 
   const handleNext = async () => {
-    if (isHandlingEnded || nextLoading) return
     setNextLoading(true)
-    setIsHandlingEnded(true)
     wasPlayingRef.current = playing
 
-    try {
-      if (speaking && speechRef.current) {
-        speechSynthesis.cancel()
-        speechRef.current = null
-        setSpeaking(false)
-      }
+    if (speaking && speechRef.current) {
+      speechSynthesis.cancel()
+      speechRef.current = null
+      setSpeaking(false)
+    }
 
-      handlePause()
+    handlePause()
 
-      if (playerRef.current) {
-        playerRef.current.seekTo(0)
-      }
+    if (playerRef.current) {
+      playerRef.current.seekTo(0)
+    }
 
-      setMessageSpoken(false)
+    setMessageSpoken(false)
 
-      if (currentSong) {
+    if (currentSong) {
+      try {
         await markSongAsPlayed(currentSong._id)
         await removeSongFromPlaylist(currentSong._id)
         shouldAutoPlayRef.current = true
@@ -194,30 +202,27 @@ const MusicPlayer = () => {
         }
 
         message.success('Đã phát xong và xóa bài hát khỏi playlist')
-      }
-
-      if (playlist.length <= 1) {
-        message.info('Đã hết playlist')
+      } catch (error) {
+        console.error('Error handling song completion:', error)
+        message.error('Có lỗi xảy ra khi xóa bài hát')
         shouldAutoPlayRef.current = false
+      } finally {
+        setNextLoading(false)
       }
-    } catch (error) {
-      console.error('Error handling song completion:', error)
-      message.error('Có lỗi xảy ra khi xóa bài hát')
-      shouldAutoPlayRef.current = false
-    } finally {
+    } else {
       setNextLoading(false)
-      setIsHandlingEnded(false)
+    }
+
+    if (playlist.length <= 1) {
+      message.info('Đã hết playlist')
+      shouldAutoPlayRef.current = false
     }
   }
 
-  const handleEnded = useCallback(() => {
-    console.log('====================================')
-    console.log('asdasd')
-    console.log('====================================')
-    if (!isHandlingEnded) {
-      handleNext()
-    }
-  }, [isHandlingEnded, handleNext])
+  const handleEnded = () => {
+    shouldAutoPlayRef.current = true
+    handleNext()
+  }
 
   useEffect(() => {
     return () => {
@@ -252,10 +257,6 @@ const MusicPlayer = () => {
               width='100%'
               height='240px'
               onEnded={handleEnded}
-              onError={(e) => {
-                console.error('Player error:', e)
-                handleNext()
-              }}
             />
             <div
               style={{
