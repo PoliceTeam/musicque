@@ -25,6 +25,7 @@ const MusicPlayer = () => {
   const shouldAutoPlayRef = useRef(false)
   const playlistLengthRef = useRef(0)
   const speechRef = useRef(null)
+  const [isHandlingEnded, setIsHandlingEnded] = useState(false)
 
   const currentSong = playlist[currentSongIndex]
 
@@ -135,7 +136,7 @@ const MusicPlayer = () => {
       setTimeout(() => {
         handlePlay()
         shouldAutoPlayRef.current = false
-      }, 2500)
+      }, 300)
     }
   }, [playlist, playing, handlePlay])
 
@@ -163,29 +164,29 @@ const MusicPlayer = () => {
   }
 
   const handleNext = async () => {
+    if (isHandlingEnded || nextLoading) return
     setNextLoading(true)
+    setIsHandlingEnded(true)
     wasPlayingRef.current = playing
 
-    if (speaking && speechRef.current) {
-      speechSynthesis.cancel()
-      speechRef.current = null
-      setSpeaking(false)
-    }
+    try {
+      if (speaking && speechRef.current) {
+        speechSynthesis.cancel()
+        speechRef.current = null
+        setSpeaking(false)
+      }
 
-    handlePause()
+      handlePause()
 
-    if (playerRef.current) {
-      playerRef.current.seekTo(0)
-    }
+      if (playerRef.current) {
+        playerRef.current.seekTo(0)
+      }
 
-    setMessageSpoken(false)
+      setMessageSpoken(false)
 
-    if (currentSong) {
-      try {
+      if (currentSong) {
         await markSongAsPlayed(currentSong._id)
-
         await removeSongFromPlaylist(currentSong._id)
-
         shouldAutoPlayRef.current = true
 
         if (refreshPlaylist) {
@@ -193,27 +194,30 @@ const MusicPlayer = () => {
         }
 
         message.success('Đã phát xong và xóa bài hát khỏi playlist')
-      } catch (error) {
-        console.error('Error handling song completion:', error)
-        message.error('Có lỗi xảy ra khi xóa bài hát')
-        shouldAutoPlayRef.current = false
-      } finally {
-        setNextLoading(false)
       }
-    } else {
-      setNextLoading(false)
-    }
 
-    if (playlist.length <= 1) {
-      message.info('Đã hết playlist')
+      if (playlist.length <= 1) {
+        message.info('Đã hết playlist')
+        shouldAutoPlayRef.current = false
+      }
+    } catch (error) {
+      console.error('Error handling song completion:', error)
+      message.error('Có lỗi xảy ra khi xóa bài hát')
       shouldAutoPlayRef.current = false
+    } finally {
+      setNextLoading(false)
+      setIsHandlingEnded(false)
     }
   }
 
-  const handleEnded = () => {
-    shouldAutoPlayRef.current = true
-    handleNext()
-  }
+  const handleEnded = useCallback(() => {
+    console.log('====================================')
+    console.log('asdasd')
+    console.log('====================================')
+    if (!isHandlingEnded) {
+      handleNext()
+    }
+  }, [isHandlingEnded, handleNext])
 
   useEffect(() => {
     return () => {
@@ -248,6 +252,10 @@ const MusicPlayer = () => {
               width='100%'
               height='240px'
               onEnded={handleEnded}
+              onError={(e) => {
+                console.error('Player error:', e)
+                handleNext()
+              }}
             />
             <div
               style={{
