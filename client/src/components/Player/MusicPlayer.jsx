@@ -8,7 +8,7 @@ import { markSongAsPlayed, removeSongFromPlaylist } from '../../services/api'
 const { Title, Text } = Typography
 
 const MusicPlayer = () => {
-  const { playlist, refreshPlaylist } = useContext(PlaylistContext)
+  const { playlist, refreshPlaylist, playSong } = useContext(PlaylistContext)
   const [currentSongIndex, setCurrentSongIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speaking, setSpeaking] = useState(false)
@@ -24,7 +24,7 @@ const MusicPlayer = () => {
   const currentSong = playlist[currentSongIndex]
 
   const playSpeech = useCallback(
-    (text) => {
+    (text, title, username) => {
       if (!text || speaking) return Promise.resolve()
 
       return new Promise((resolve) => {
@@ -33,7 +33,9 @@ const MusicPlayer = () => {
           speechRef.current = null
         }
 
-        const utterance = new SpeechSynthesisUtterance(text)
+        const utterance = new SpeechSynthesisUtterance(
+          `${username}: đã order bài hát ${title} với lời nhắn: ${text}`,
+        )
         utterance.lang = 'vi-VN'
         utterance.rate = 1.2
         speechRef.current = utterance
@@ -62,6 +64,7 @@ const MusicPlayer = () => {
             }
             setSpeaking(false)
             setMessageSpoken(true)
+            playSong(undefined)
             speechRef.current = null
             resolve()
           }
@@ -92,7 +95,8 @@ const MusicPlayer = () => {
 
     if (currentSong.message && !messageSpoken && !speaking) {
       try {
-        await playSpeech(currentSong.message)
+        playSong(currentSong._id)
+        await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
       } catch (error) {
         console.error('Error playing speech:', error)
       }

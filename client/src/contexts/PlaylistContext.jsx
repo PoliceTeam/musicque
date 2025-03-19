@@ -18,6 +18,7 @@ export const PlaylistProvider = ({ children }) => {
   const [currentSession, setCurrentSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [socket, setSocket] = useState(null)
+  const [playing, setPlaying] = useState(false)
   const { username } = useContext(AuthContext)
 
   useEffect(() => {
@@ -107,14 +108,14 @@ export const PlaylistProvider = ({ children }) => {
     }
   }
 
-  const voteSong = async (songId, voteType) => {
+  const voteSong = async (songId, voteType, playingId = undefined) => {
     if (!username || username.trim() === '') {
       message.error('Vui lòng nhập tên của bạn trước khi vote')
       return false
     }
 
     try {
-      await voteSongApi(songId, voteType, username)
+      await voteSongApi(songId, voteType, username, playingId)
       return true
     } catch (error) {
       message.error('Không thể vote: ' + (error.response?.data?.message || error.message))
@@ -144,6 +145,14 @@ export const PlaylistProvider = ({ children }) => {
     }
   }
 
+  const playSong = async (songId) => {
+    try {
+      setPlaying(songId)
+    } catch (error) {
+      console.error('Error playing song:', error)
+    }
+  }
+
   return (
     <PlaylistContext.Provider
       value={{
@@ -156,6 +165,8 @@ export const PlaylistProvider = ({ children }) => {
         endSession,
         refreshPlaylist: () => currentSession && fetchPlaylist(currentSession._id),
         hasActiveSession: !!currentSession,
+        playSong,
+        playing,
       }}
     >
       {children}

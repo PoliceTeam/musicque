@@ -59,7 +59,12 @@ const AdminPage = () => {
         </Row>
       </Content>
 
-      <Footer style={{ textAlign: 'center' }}>Music Order App ©{new Date().getFullYear()}</Footer>
+      <Footer style={{ textAlign: 'center' }}>
+        Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
+        <span style={{ fontSize: '12px', color: '#e0c9c8', fontWeight: 'bold' }}>
+          100% Made with AI
+        </span>
+      </Footer>
     </Layout>
   )
 }
