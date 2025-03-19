@@ -19,6 +19,46 @@ exports.addSong = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập tên người dùng' })
     }
 
+    // Kiểm tra message nếu có
+    if (message && message.trim() !== '') {
+      // Kiểm tra độ dài tối thiểu và tối đa
+      if (message.length < 2 || message.length > 200) {
+        return res.status(400).json({
+          message: 'Lời nhắn phải từ 2 đến 200 ký tự',
+        })
+      }
+
+      // Kiểm tra ký tự lặp lại
+      if (/(.)\1{4,}/.test(message)) {
+        return res.status(400).json({
+          message: 'Lời nhắn không được chứa ký tự lặp lại quá nhiều lần',
+        })
+      }
+
+      // Kiểm tra chuỗi ngẫu nhiên
+      if (/[a-zA-Z]{10,}/.test(message) && !/\s/.test(message)) {
+        return res.status(400).json({
+          message: 'Lời nhắn không hợp lệ',
+        })
+      }
+
+      // Kiểm tra ký tự đặc biệt lặp lại
+      if (/[!@#$%^&*()_+=\-[\]{};:'",.<>/?\\|]{4,}/.test(message)) {
+        return res.status(400).json({
+          message: 'Lời nhắn không được chứa quá nhiều ký tự đặc biệt',
+        })
+      }
+
+      // Kiểm tra tỷ lệ chữ cái/số
+      const letterCount = (message.match(/[a-zA-Z]/g) || []).length
+      const numberCount = (message.match(/[0-9]/g) || []).length
+      if (numberCount > letterCount * 2) {
+        return res.status(400).json({
+          message: 'Lời nhắn không được chứa quá nhiều số',
+        })
+      }
+    }
+
     // Kiểm tra phiên hiện tại
     const activeSession = await Session.findOne({ isActive: true })
 

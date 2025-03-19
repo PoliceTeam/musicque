@@ -196,7 +196,6 @@ const MusicPlayer = () => {
   }
 
   const handleEnded = () => {
-    shouldAutoPlayRef.current = true
     handleNext()
   }
 
