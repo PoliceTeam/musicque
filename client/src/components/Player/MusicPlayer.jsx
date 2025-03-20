@@ -8,7 +8,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { markSongAsPlayed, removeSongFromPlaylist } from '../../services/api'
+import { markSongAsPlayed, removeSongFromPlaylist, markSongAsPlaying } from '../../services/api'
 
 const { Title, Text } = Typography
 
@@ -99,16 +99,23 @@ const MusicPlayer = () => {
       return
     }
 
-    if (currentSong.message && !messageSpoken && !speaking) {
-      try {
-        playSong(currentSong._id)
-        await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
-      } catch (error) {
-        console.error('Error playing speech:', error)
-      }
-    }
+    try {
+      await markSongAsPlaying(currentSong._id)
 
-    setPlaying(true)
+      if (currentSong.message && !messageSpoken && !speaking) {
+        try {
+          playSong(currentSong._id)
+          await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
+        } catch (error) {
+          console.error('Error playing speech:', error)
+        }
+      }
+
+      setPlaying(true)
+    } catch (error) {
+      console.error('Error marking song as playing:', error)
+      message.error('Có lỗi xảy ra khi cập nhật trạng thái bài hát')
+    }
   }, [currentSong, messageSpoken, speaking, playSpeech])
 
   useEffect(() => {
@@ -176,9 +183,10 @@ const MusicPlayer = () => {
 
     if (currentSong) {
       try {
-        await markSongAsPlayed(currentSong._id)
-
-        await removeSongFromPlaylist(currentSong._id)
+        await Promise.all([
+          markSongAsPlayed(currentSong._id),
+          removeSongFromPlaylist(currentSong._id),
+        ])
 
         shouldAutoPlayRef.current = true
         setMessageSpoken(false)

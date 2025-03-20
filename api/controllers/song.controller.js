@@ -82,6 +82,19 @@ exports.addSong = async (req, res) => {
       const videoInfo = response.data.items[0].snippet
       const videoTitle = videoInfo.title
 
+      // Kiểm tra bài hát đã tồn tại trong session hiện tại
+      const existingSong = await Song.findOne({
+        title: videoTitle,
+        sessionId: activeSession._id,
+        played: false, // Chỉ check các bài chưa phát
+      })
+
+      if (existingSong) {
+        return res.status(400).json({
+          message: 'Bài hát này đã có trong playlist, vui lòng chọn bài khác',
+        })
+      }
+
       // Tìm hoặc tạo user
       let user = await User.findOne({ username })
       if (!user) {
@@ -193,15 +206,13 @@ exports.voteSong = async (req, res) => {
       .populate('addedBy', 'username')
       .sort({ voteScore: -1, addedAt: 1 })
 
-    // Nếu đang phát nhạc, giữ nguyên bài đầu tiên
-    if (playingId && updatedPlaylist.length > 1) {
-      const currentPlayingSong = updatedPlaylist.find((s) => s._id.toString() === playingId)
-      if (currentPlayingSong) {
-        // Lọc ra danh sách không bao gồm bài đang phát
-        updatedPlaylist = updatedPlaylist.filter((s) => s._id.toString() !== playingId)
-        // Thêm lại bài đang phát vào đầu
-        updatedPlaylist.unshift(currentPlayingSong)
-      }
+    // Nếu có bài đang phát, giữ nguyên vị trí của nó
+    const playingSong = updatedPlaylist.find((s) => s.playing)
+    if (playingSong && updatedPlaylist.length > 1) {
+      // Lọc ra danh sách không bao gồm bài đang phát
+      updatedPlaylist = updatedPlaylist.filter((s) => !s.playing)
+      // Thêm lại bài đang phát vào đầu
+      updatedPlaylist.unshift(playingSong)
     }
 
     // Thông báo qua socket.io
@@ -226,13 +237,70 @@ exports.markSongAsPlayed = async (req, res) => {
 
     // Tìm bài hát
     const song = await Song.findById(songId)
-
     if (!song) {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
 
+    // Kiểm tra xem bài hát có đang phát không
+    if (!song.playing) {
+      return res.status(400).json({
+        message: 'Không thể đánh dấu đã phát cho bài hát không trong trạng thái đang phát',
+      })
+    }
+
     // Cập nhật trạng thái
     song.played = true
+    song.playing = false // Reset playing khi đánh dấu đã phát
+    await song.save()
+
+    // Tìm bài tiếp theo để đánh dấu playing
+    const nextSong = await Song.findOne({
+      sessionId: song.sessionId,
+      played: false,
+      playing: false,
+    }).sort({ voteScore: -1, addedAt: 1 })
+
+    if (nextSong) {
+      nextSong.playing = true
+      await nextSong.save()
+    }
+
+    // Lấy danh sách bài hát đã sắp xếp
+    const updatedPlaylist = await Song.find({ sessionId: song.sessionId })
+      .populate('addedBy', 'username')
+      .sort({ voteScore: -1, addedAt: 1 })
+
+    // Thông báo qua socket.io
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('playlist_updated', updatedPlaylist)
+    }
+
+    res.status(200).json({
+      message: 'Đã đánh dấu bài hát đã phát',
+      song,
+      nextSong,
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
+  }
+}
+
+// Đánh dấu bài hát đang phát
+exports.markSongAsPlaying = async (req, res) => {
+  try {
+    const { songId } = req.params
+
+    // Reset tất cả bài hát về không playing
+    await Song.updateMany({ sessionId: req.activeSession._id }, { playing: false })
+
+    // Tìm và cập nhật bài hát được chọn
+    const song = await Song.findById(songId)
+    if (!song) {
+      return res.status(404).json({ message: 'Không tìm thấy bài hát' })
+    }
+
+    song.playing = true
     await song.save()
 
     // Lấy danh sách bài hát đã sắp xếp
@@ -242,10 +310,12 @@ exports.markSongAsPlayed = async (req, res) => {
 
     // Thông báo qua socket.io
     const io = req.app.get('io')
-    io.emit('playlist_updated', updatedPlaylist)
+    if (io) {
+      io.emit('playlist_updated', updatedPlaylist)
+    }
 
     res.status(200).json({
-      message: 'Đã đánh dấu bài hát đã phát',
+      message: 'Đã đánh dấu bài hát đang phát',
       song,
     })
   } catch (error) {

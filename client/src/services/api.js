@@ -48,4 +48,6 @@ export const markSongAsPlayed = (songId) => api.post(`/api/songs/${songId}/playe
 
 export const removeSongFromPlaylist = (songId) => api.delete(`/api/songs/${songId}`)
 
+export const markSongAsPlaying = (songId) => api.post(`/api/songs/${songId}/playing`)
+
 export default api

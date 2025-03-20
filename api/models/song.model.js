@@ -52,6 +52,10 @@ const songSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  playing: {
+    type: Boolean,
+    default: false,
+  },
   addedAt: {
     type: Date,
     default: Date.now,

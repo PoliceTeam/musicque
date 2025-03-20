@@ -20,40 +20,7 @@ router.post('/', songController.addSong)
 router.post('/:songId/vote', songController.voteSong)
 
 // Đánh dấu bài hát đã phát (chỉ admin)
-router.post('/:songId/played', authenticateAdmin, async (req, res) => {
-  try {
-    const { songId } = req.params
-
-    // Tìm bài hát
-    const song = await Song.findById(songId)
-
-    if (!song) {
-      return res.status(404).json({ message: 'Không tìm thấy bài hát' })
-    }
-
-    // Cập nhật trạng thái
-    song.played = true
-    await song.save()
-
-    // Lấy danh sách bài hát đã sắp xếp
-    const updatedPlaylist = await Song.find({ sessionId: song.sessionId })
-      .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 })
-
-    // Thông báo qua socket.io
-    const io = req.app.get('io')
-    if (io) {
-      io.emit('playlist_updated', updatedPlaylist)
-    }
-
-    res.status(200).json({
-      message: 'Đã đánh dấu bài hát đã phát',
-      song,
-    })
-  } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
-  }
-})
+router.post('/:songId/played', authenticateAdmin, songController.markSongAsPlayed)
 
 // Thêm route để xóa bài hát
 router.delete('/:songId', async (req, res) => {
@@ -89,5 +56,8 @@ router.delete('/:songId', async (req, res) => {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
 })
+
+// Đánh dấu bài hát đang phát (chỉ admin)
+router.post('/:songId/playing', authenticateAdmin, songController.markSongAsPlaying)
 
 module.exports = router
