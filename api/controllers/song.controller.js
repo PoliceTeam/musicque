@@ -155,16 +155,26 @@ exports.voteSong = async (req, res) => {
 
     // Tìm bài hát
     const song = await Song.findById(songId)
-
     if (!song) {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
 
     // Kiểm tra phiên
     const activeSession = await Session.findOne({ isActive: true, _id: song.sessionId })
-
     if (!activeSession) {
       return res.status(400).json({ message: 'Phiên không còn hoạt động' })
+    }
+
+    // Kiểm tra xem có bài hát nào đã phát trong session không
+    const hasPlayedSong = await Song.exists({ 
+      sessionId: activeSession._id,
+      played: true 
+    })
+    
+    if (hasPlayedSong) {
+      return res.status(400).json({ 
+        message: 'Không thể vote khi đang chuyển bài' 
+      })
     }
 
     // Tìm hoặc tạo user
