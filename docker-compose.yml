@@ -55,6 +55,7 @@ services:
     environment:
       - VITE_API_URL=http://localhost:5001
       - VITE_SOCKET_URL=http://localhost:5001
+      - VITE_RESPONSIVE_VOICE_KEY=abcabc123123
     ports:
       - "8080:80"
     networks:

@@ -63,6 +63,11 @@ const PlaylistView = () => {
                 title={song.title}
                 description={
                   <Space direction='vertical'>
+                    {playlist.indexOf(song) === 0 && (
+                      <Text type='success' strong>
+                        Bài hát đang phát
+                      </Text>
+                    )}
                     <Text type='secondary'>Thêm bởi: {song.addedBy.username}</Text>
                     {song.message && <Text italic>"{song.message}"</Text>}
                     <Text strong>Votes: {song.voteScore}</Text>

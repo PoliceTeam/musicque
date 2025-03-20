@@ -34,60 +34,37 @@ const MusicPlayer = () => {
 
       return new Promise((resolve) => {
         if (speechRef.current) {
-          speechSynthesis.cancel()
+          responsiveVoice.cancel()
           speechRef.current = null
         }
 
-        const utterance = new SpeechSynthesisUtterance(
-          `${username}: đã order bài hát ${title} với lời nhắn: ${text}`,
-          // text,
-        )
-        utterance.lang = 'vi-VN'
-        utterance.rate = 1.2
-        speechRef.current = utterance
+        const message = `${username}: đã order bài hát ${title} với lời nhắn: ${text}`
 
-        const voices = speechSynthesis.getVoices()
-        const vietnameseVoice = voices.find((voice) => voice.lang.includes('vi'))
-        if (vietnameseVoice) {
-          utterance.voice = vietnameseVoice
-        }
+        speechRef.current = true
 
-        utterance.onstart = () => {
-          setSpeaking(true)
-        }
-
-        utterance.onend = () => {
-          setSpeaking(false)
-          setMessageSpoken(true)
-          speechRef.current = null
-          resolve()
-        }
-
-        utterance.onerror = (event) => {
-          if (speechRef.current === utterance) {
-            if (event.error !== 'interrupted') {
-              console.error('Speech synthesis error:', event)
-            }
+        responsiveVoice.speak(message, 'Vietnamese Male', {
+          pitch: 1,
+          rate: 1.3,
+          onstart: () => {
+            setSpeaking(true)
+          },
+          onend: () => {
+            setSpeaking(false)
+            setMessageSpoken(true)
+            speechRef.current = null
+            resolve()
+          },
+          onerror: (error) => {
+            console.error('Speech error:', error)
             setSpeaking(false)
             setMessageSpoken(true)
             playSong(undefined)
             speechRef.current = null
             resolve()
-          }
-        }
+          },
+        })
 
         setSpeaking(true)
-
-        try {
-          speechSynthesis.cancel()
-          speechSynthesis.speak(utterance)
-        } catch (error) {
-          console.error('Error initializing speech:', error)
-          setSpeaking(false)
-          setMessageSpoken(true)
-          speechRef.current = null
-          resolve()
-        }
       })
     },
     [speaking],
@@ -100,8 +77,6 @@ const MusicPlayer = () => {
     }
 
     try {
-      await markSongAsPlaying(currentSong._id)
-
       if (currentSong.message && !messageSpoken && !speaking) {
         try {
           playSong(currentSong._id)
@@ -115,6 +90,7 @@ const MusicPlayer = () => {
     } catch (error) {
       console.error('Error marking song as playing:', error)
       message.error('Có lỗi xảy ra khi cập nhật trạng thái bài hát')
+      setPlaying(true)
     }
   }, [currentSong, messageSpoken, speaking, playSpeech])
 
@@ -151,10 +127,16 @@ const MusicPlayer = () => {
     setMessageSpoken(false)
   }, [currentSongIndex])
 
+  useEffect(() => {
+    if (currentSongIndex >= playlist.length) {
+      setCurrentSongIndex(0)
+    }
+  }, [playlist, currentSongIndex])
+
   const handlePause = () => {
     setPlaying(false)
     if (speaking && speechRef.current) {
-      speechSynthesis.cancel()
+      responsiveVoice.cancel()
       speechRef.current = null
       setSpeaking(false)
     }
@@ -162,7 +144,7 @@ const MusicPlayer = () => {
 
   const handleSkipMessage = () => {
     if (speaking && speechRef.current) {
-      speechSynthesis.cancel()
+      responsiveVoice.cancel()
       speechRef.current = null
       setSpeaking(false)
       setMessageSpoken(true)
@@ -175,7 +157,7 @@ const MusicPlayer = () => {
     wasPlayingRef.current = playing
 
     if (speaking && speechRef.current) {
-      speechSynthesis.cancel()
+      responsiveVoice.cancel()
       speechRef.current = null
       setSpeaking(false)
     }
@@ -220,7 +202,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     return () => {
       if (speechRef.current) {
-        speechSynthesis.cancel()
+        responsiveVoice.cancel()
         speechRef.current = null
       }
     }
@@ -250,6 +232,16 @@ const MusicPlayer = () => {
               width='100%'
               height='240px'
               onEnded={handleEnded}
+              playsinline
+              config={{
+                youtube: {
+                  playerVars: {
+                    playsinline: 1,
+                    background: 1,
+                    disablekb: 1,
+                  },
+                },
+              }}
             />
             <div
               style={{

@@ -142,7 +142,7 @@ exports.addSong = async (req, res) => {
 exports.voteSong = async (req, res) => {
   try {
     const { songId } = req.params
-    const { voteType, username, playingId } = req.body
+    const { voteType, username } = req.body
 
     if (!username || username.trim() === '') {
       return res.status(400).json({ message: 'Vui lòng nhập tên người dùng' })
@@ -202,17 +202,22 @@ exports.voteSong = async (req, res) => {
     await song.save()
 
     // Lấy danh sách bài hát đã sắp xếp
-    let updatedPlaylist = await Song.find({ sessionId: activeSession._id })
+    let allSongs = await Song.find({ sessionId: activeSession._id })
       .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 })
+      .sort({ addedAt: 1 }) // Sắp xếp theo thời gian thêm vào để lấy bài đầu tiên
 
-    // Nếu có bài đang phát, giữ nguyên vị trí của nó
-    const playingSong = updatedPlaylist.find((s) => s.playing)
-    if (playingSong && updatedPlaylist.length > 1) {
-      // Lọc ra danh sách không bao gồm bài đang phát
-      updatedPlaylist = updatedPlaylist.filter((s) => !s.playing)
-      // Thêm lại bài đang phát vào đầu
-      updatedPlaylist.unshift(playingSong)
+    if (allSongs.length > 1) {
+      // Tách bài đầu tiên ra
+      const firstSong = allSongs[0]
+
+      // Lấy và sắp xếp các bài còn lại theo vote
+      const remainingSongs = allSongs.slice(1)
+      remainingSongs.sort((a, b) => b.voteScore - a.voteScore)
+
+      // Ghép lại playlist với bài đầu tiên
+      updatedPlaylist = [firstSong, ...remainingSongs]
+    } else {
+      updatedPlaylist = allSongs
     }
 
     // Thông báo qua socket.io
@@ -241,27 +246,17 @@ exports.markSongAsPlayed = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
 
-    // Kiểm tra xem bài hát có đang phát không
-    if (!song.playing) {
-      return res.status(400).json({
-        message: 'Không thể đánh dấu đã phát cho bài hát không trong trạng thái đang phát',
-      })
-    }
-
     // Cập nhật trạng thái
     song.played = true
-    song.playing = false // Reset playing khi đánh dấu đã phát
     await song.save()
 
     // Tìm bài tiếp theo để đánh dấu playing
     const nextSong = await Song.findOne({
       sessionId: song.sessionId,
       played: false,
-      playing: false,
     }).sort({ voteScore: -1, addedAt: 1 })
 
     if (nextSong) {
-      nextSong.playing = true
       await nextSong.save()
     }
 
@@ -291,15 +286,22 @@ exports.markSongAsPlaying = async (req, res) => {
   try {
     const { songId } = req.params
 
-    // Reset tất cả bài hát về không playing
-    await Song.updateMany({ sessionId: req.activeSession._id }, { playing: false })
-
-    // Tìm và cập nhật bài hát được chọn
+    // Tìm bài hát
     const song = await Song.findById(songId)
     if (!song) {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
 
+    // Tìm active session
+    const activeSession = await Session.findOne({ isActive: true })
+    if (!activeSession) {
+      return res.status(400).json({ message: 'Không có phiên hoạt động nào' })
+    }
+
+    // Reset tất cả bài hát về không playing
+    await Song.updateMany({ sessionId: activeSession._id }, { playing: false })
+
+    // Cập nhật bài hát được chọn
     song.playing = true
     await song.save()
 

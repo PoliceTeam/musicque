@@ -9,5 +9,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script type="module">
+      // Lấy key từ biến môi trường
+      const key = import.meta.env.VITE_RESPONSIVE_VOICE_KEY
+
+      // Tạo và inject script
+      const script = document.createElement('script')
+      script.src = `https://code.responsivevoice.org/responsivevoice.js?key=${key}`
+      document.body.appendChild(script)
+    </script>
   </body>
 </html>
