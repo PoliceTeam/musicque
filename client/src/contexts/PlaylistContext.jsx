@@ -137,7 +137,6 @@ export const PlaylistProvider = ({ children }) => {
   const endSession = async () => {
     try {
       await endSessionApi()
-      message.success('Đã kết thúc phiên phát nhạc')
       return true
     } catch (error) {
       message.error('Không thể kết thúc phiên: ' + (error.response?.data?.message || error.message))

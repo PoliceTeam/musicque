@@ -68,7 +68,7 @@ const ChatBox = () => {
 
   return (
     <Card title='Chat Room'>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '500px' }}>
         <div
           style={{
             flex: 1,

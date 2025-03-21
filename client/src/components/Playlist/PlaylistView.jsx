@@ -1,15 +1,40 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { List, Button, Space, Typography, Card, Empty, Input } from 'antd'
-import { UpOutlined, DownOutlined, YoutubeOutlined } from '@ant-design/icons'
+import { List, Button, Space, Typography, Card, Empty, Input, Tag } from 'antd'
+import {
+  UpOutlined,
+  DownOutlined,
+  YoutubeOutlined,
+  PlayCircleFilled,
+  SoundOutlined,
+} from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { AuthContext } from '../../contexts/AuthContext'
 import { message } from 'antd'
+import { getCurrentSong } from '../../services/api'
+import { useLocation } from 'react-router-dom'
 
-const { Text } = Typography
+const { Text, Title } = Typography
 
 const PlaylistView = () => {
   const { playlist, voteSong, loading, playing } = useContext(PlaylistContext)
   const { username, setUserName } = useContext(AuthContext)
+  const [currentSong, setCurrentSong] = useState(null)
+  const location = useLocation()
+  const isHomePage = location.pathname === '/'
+
+  useEffect(() => {
+    const fetchCurrentSong = async () => {
+      if (!isHomePage) return // Chỉ fetch khi ở trang chủ
+
+      try {
+        const response = await getCurrentSong()
+        setCurrentSong(response.data.currentSong)
+      } catch (error) {
+        console.error('Error fetching current song:', error)
+      }
+    }
+    fetchCurrentSong()
+  }, [playlist, isHomePage])
 
   const handleVote = async (songId, voteType) => {
     if (!username || username.trim() === '') {
@@ -35,6 +60,36 @@ const PlaylistView = () => {
         />
       }
     >
+      {isHomePage && currentSong && (
+        <Card
+          size='small'
+          style={{
+            marginBottom: 16,
+            background: '#f6ffed',
+            borderColor: '#b7eb8f',
+          }}
+        >
+          <Space align='start'>
+            <SoundOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+            <Space direction='vertical' size={0}>
+              <Space>
+                <Text strong>Đang phát:</Text>
+                <Text>{currentSong.title}</Text>
+                <Tag color='success' icon={<PlayCircleFilled />}>
+                  Playing
+                </Tag>
+              </Space>
+              <Text type='secondary'>Thêm bởi: {currentSong.addedBy.username}</Text>
+              {currentSong.message && (
+                <Text italic type='secondary'>
+                  "{currentSong.message}"
+                </Text>
+              )}
+            </Space>
+          </Space>
+        </Card>
+      )}
+
       <List
         loading={loading}
         dataSource={playlist}
@@ -63,11 +118,6 @@ const PlaylistView = () => {
                 title={song.title}
                 description={
                   <Space direction='vertical'>
-                    {playlist.indexOf(song) === 0 && (
-                      <Text type='success' strong>
-                        Bài hát đang phát
-                      </Text>
-                    )}
                     <Text type='secondary'>Thêm bởi: {song.addedBy.username}</Text>
                     {song.message && <Text italic>"{song.message}"</Text>}
                     <Text strong>Votes: {song.voteScore}</Text>

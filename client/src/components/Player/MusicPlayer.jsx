@@ -6,27 +6,51 @@ import {
   PauseCircleOutlined,
   StepForwardOutlined,
   CloseOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { markSongAsPlayed, removeSongFromPlaylist, markSongAsPlaying } from '../../services/api'
+import {
+  markSongAsPlayed,
+  removeSongFromPlaylist,
+  markSongAsPlaying,
+  getCurrentSong,
+} from '../../services/api'
 
 const { Title, Text } = Typography
 
 const MusicPlayer = () => {
-  const { playlist, refreshPlaylist, playSong } = useContext(PlaylistContext)
-  const [currentSongIndex, setCurrentSongIndex] = useState(0)
+  const { playlist, refreshPlaylist, currentSession } = useContext(PlaylistContext)
+  const [currentSong, setCurrentSong] = useState(null)
   const [playing, setPlaying] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [messageSpoken, setMessageSpoken] = useState(false)
   const [nextLoading, setNextLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const playerRef = useRef(null)
-  const prevPlaylistRef = useRef([])
   const wasPlayingRef = useRef(false)
-  const shouldAutoPlayRef = useRef(false)
-  const playlistLengthRef = useRef(0)
   const speechRef = useRef(null)
 
-  const currentSong = playlist[currentSongIndex]
+  // Fetch current song
+  const fetchCurrentSong = async () => {
+    try {
+      const response = await getCurrentSong()
+      setCurrentSong(response.data.currentSong)
+      return response.data.currentSong
+    } catch (error) {
+      console.error('Error fetching current song:', error)
+      return null
+    }
+  }
+
+  useEffect(() => {
+    fetchCurrentSong()
+    return () => {
+      if (speechRef.current) {
+        responsiveVoice.cancel()
+        speechRef.current = null
+      }
+    }
+  }, [])
 
   const playSpeech = useCallback(
     (text, title, username) => {
@@ -58,7 +82,6 @@ const MusicPlayer = () => {
             console.error('Speech error:', error)
             setSpeaking(false)
             setMessageSpoken(true)
-            playSong(undefined)
             speechRef.current = null
             resolve()
           },
@@ -67,7 +90,7 @@ const MusicPlayer = () => {
         setSpeaking(true)
       })
     },
-    [speaking],
+    [speaking, currentSong],
   )
 
   const handlePlay = useCallback(async () => {
@@ -79,7 +102,7 @@ const MusicPlayer = () => {
     try {
       if (currentSong.message && !messageSpoken && !speaking) {
         try {
-          playSong(currentSong._id)
+          await markSongAsPlaying(currentSong._id)
           await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
         } catch (error) {
           console.error('Error playing speech:', error)
@@ -93,45 +116,6 @@ const MusicPlayer = () => {
       setPlaying(true)
     }
   }, [currentSong, messageSpoken, speaking, playSpeech])
-
-  useEffect(() => {
-    const isCurrentlyPlaying = playing
-
-    if (prevPlaylistRef.current.length !== playlist.length) {
-      if (playlist.length > prevPlaylistRef.current.length) {
-        if (isCurrentlyPlaying) {
-          wasPlayingRef.current = true
-        }
-      } else if (playlist.length < prevPlaylistRef.current.length) {
-        if (isCurrentlyPlaying) {
-          wasPlayingRef.current = true
-          shouldAutoPlayRef.current = true
-        }
-        setCurrentSongIndex(0)
-        setMessageSpoken(false)
-      }
-    }
-
-    prevPlaylistRef.current = [...playlist]
-    playlistLengthRef.current = playlist.length
-
-    if (shouldAutoPlayRef.current && playlist.length > 0) {
-      setTimeout(() => {
-        handlePlay()
-        shouldAutoPlayRef.current = false
-      }, 300)
-    }
-  }, [playlist, playing, handlePlay])
-
-  useEffect(() => {
-    setMessageSpoken(false)
-  }, [currentSongIndex])
-
-  useEffect(() => {
-    if (currentSongIndex >= playlist.length) {
-      setCurrentSongIndex(0)
-    }
-  }, [playlist, currentSongIndex])
 
   const handlePause = () => {
     setPlaying(false)
@@ -165,23 +149,30 @@ const MusicPlayer = () => {
 
     if (currentSong) {
       try {
-        await Promise.all([
-          markSongAsPlayed(currentSong._id),
-          removeSongFromPlaylist(currentSong._id),
-        ])
+        await markSongAsPlayed(currentSong._id)
+        await removeSongFromPlaylist(currentSong._id)
 
-        shouldAutoPlayRef.current = true
         setMessageSpoken(false)
+        setCurrentSong(null)
 
         if (refreshPlaylist) {
           await refreshPlaylist()
+        }
+
+        // Fetch next song if available
+        const nextSong = await fetchCurrentSong()
+
+        if (nextSong) {
+          // Tự động phát bài mới
+          setTimeout(() => {
+            handlePlay()
+          }, 500) // Đợi 500ms để đảm bảo state đã được cập nhật
         }
 
         message.success('Đã phát xong và xóa bài hát khỏi playlist')
       } catch (error) {
         console.error('Error handling song completion:', error)
         message.error('Có lỗi xảy ra khi xóa bài hát')
-        shouldAutoPlayRef.current = false
       } finally {
         setNextLoading(false)
       }
@@ -189,9 +180,8 @@ const MusicPlayer = () => {
       setNextLoading(false)
     }
 
-    if (playlist.length <= 1) {
+    if (playlist.length === 0) {
       message.info('Đã hết playlist')
-      shouldAutoPlayRef.current = false
     }
   }
 
@@ -199,19 +189,32 @@ const MusicPlayer = () => {
     handleNext()
   }
 
-  useEffect(() => {
-    return () => {
-      if (speechRef.current) {
-        responsiveVoice.cancel()
-        speechRef.current = null
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true)
+      const nextSong = await fetchCurrentSong()
+      if (nextSong) {
+        message.success('Đã làm mới thông tin bài hát')
+      } else {
+        message.info('Không có bài hát nào trong playlist')
       }
+    } catch (error) {
+      console.error('Error refreshing current song:', error)
+      message.error('Có lỗi xảy ra khi làm mới')
+    } finally {
+      setRefreshing(false)
     }
-  }, [])
+  }
 
-  if (playlist.length === 0) {
+  if (!currentSong) {
     return (
       <Card title='Music Player'>
-        <Text>Không có bài hát nào trong playlist</Text>
+        <Space direction='vertical' align='center' style={{ width: '100%' }}>
+          <Text>Không có bài hát nào đang phát</Text>
+          <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={refreshing}>
+            Làm mới
+          </Button>
+        </Space>
       </Card>
     )
   }
@@ -302,14 +305,16 @@ const MusicPlayer = () => {
             )}
 
             {!speaking && (
-              <Button
-                icon={<StepForwardOutlined />}
-                onClick={handleNext}
-                size='large'
-                loading={nextLoading}
-              >
-                Bài tiếp theo
-              </Button>
+              <>
+                <Button
+                  icon={<StepForwardOutlined />}
+                  onClick={handleNext}
+                  size='large'
+                  loading={nextLoading}
+                >
+                  Bài tiếp theo
+                </Button>
+              </>
             )}
           </Space>
 

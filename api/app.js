@@ -7,21 +7,27 @@ const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// Cấu hình CORS
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'my-custom-header'],
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Health check API
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'API is running' });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/songs', songRoutes);
 
-// Kiểm tra API
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'API is running' });
-});
-
-// Error handling middleware
+// Error handling
 app.use(errorHandler);
 
 module.exports = app; 

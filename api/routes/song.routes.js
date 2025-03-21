@@ -16,11 +16,20 @@ const youtube = google.youtube({
 // Thêm bài hát mới
 router.post('/', songController.addSong)
 
+// Lấy bài hát đang phát
+router.get('/current', songController.getCurrentSong)
+
+// Lấy playlist
+router.get('/playlist', songController.getPlaylist)
+
 // Vote cho bài hát
 router.post('/:songId/vote', songController.voteSong)
 
-// Đánh dấu bài hát đã phát (chỉ admin)
-router.post('/:songId/played', authenticateAdmin, songController.markSongAsPlayed)
+// Đánh dấu bài hát đã phát
+router.post('/:songId/played', songController.markSongAsPlayed)
+
+// Đánh dấu bài hát đang phát
+router.post('/:songId/playing', songController.markSongAsPlaying)
 
 // Thêm route để xóa bài hát
 router.delete('/:songId', async (req, res) => {
@@ -56,8 +65,5 @@ router.delete('/:songId', async (req, res) => {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
 })
-
-// Đánh dấu bài hát đang phát (chỉ admin)
-router.post('/:songId/playing', authenticateAdmin, songController.markSongAsPlaying)
 
 module.exports = router
