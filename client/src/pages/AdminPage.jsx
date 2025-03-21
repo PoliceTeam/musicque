@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import SessionManager from '../components/Admin/SessionManager'
 import MusicPlayer from '../components/Player/MusicPlayer'
 import PlaylistView from '../components/Playlist/PlaylistView'
+import ChatBox from '../components/Chat/ChatBox'
 import { AuthContext } from '../contexts/AuthContext'
 
 const { Header, Content, Footer } = Layout
@@ -45,16 +46,20 @@ const AdminPage = () => {
 
       <Content style={{ padding: '24px' }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <SessionManager />
           </Col>
 
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <MusicPlayer />
           </Col>
 
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <PlaylistView />
+          </Col>
+
+          <Col xs={24} md={6}>
+            <ChatBox />
           </Col>
         </Row>
       </Content>

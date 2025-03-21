@@ -118,9 +118,24 @@ exports.addSong = async (req, res) => {
       await newSong.populate('addedBy', 'username')
 
       // Lấy danh sách bài hát đã sắp xếp
-      const updatedPlaylist = await Song.find({ sessionId: activeSession._id })
+      let allSongs = await Song.find({ sessionId: activeSession._id })
         .populate('addedBy', 'username')
-        .sort({ voteScore: -1, addedAt: 1 })
+        .sort({ addedAt: 1 }) // Sắp xếp theo thời gian thêm vào để lấy bài đầu tiên
+
+      let updatedPlaylist
+      if (allSongs.length > 1) {
+        // Tách bài đầu tiên ra
+        const firstSong = allSongs[0]
+        
+        // Lấy và sắp xếp các bài còn lại theo vote
+        const remainingSongs = allSongs.slice(1)
+        remainingSongs.sort((a, b) => b.voteScore - a.voteScore)
+
+        // Ghép lại playlist với bài đầu tiên
+        updatedPlaylist = [firstSong, ...remainingSongs]
+      } else {
+        updatedPlaylist = allSongs
+      }
 
       // Thông báo qua socket.io
       const io = req.app.get('io')
@@ -216,10 +231,11 @@ exports.voteSong = async (req, res) => {
       .populate('addedBy', 'username')
       .sort({ addedAt: 1 }) // Sắp xếp theo thời gian thêm vào để lấy bài đầu tiên
 
+    let updatedPlaylist
     if (allSongs.length > 1) {
       // Tách bài đầu tiên ra
       const firstSong = allSongs[0]
-
+      
       // Lấy và sắp xếp các bài còn lại theo vote
       const remainingSongs = allSongs.slice(1)
       remainingSongs.sort((a, b) => b.voteScore - a.voteScore)

@@ -1,33 +1,19 @@
-const app = require('./app')
-const http = require('http')
-const socketIo = require('socket.io')
-const mongoose = require('mongoose')
 require('dotenv').config()
+const mongoose = require('mongoose')
+const http = require('http')
+const app = require('./app')
+const { initSocket } = require('./socket')
 
 const PORT = process.env.PORT || 5000
+
+// Tạo HTTP server
 const server = http.createServer(app)
 
-// Kết nối Socket.io
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    credentials: true,
-    transports: ['websocket', 'polling'],
-  },
-})
+// Khởi tạo Socket.io
+const io = initSocket(server)
 
-// Lưu trữ io trong app để sử dụng trong controllers
+// Lưu io vào app để sử dụng trong controllers
 app.set('io', io)
-
-// Xử lý kết nối Socket.io
-io.on('connection', (socket) => {
-  console.log('New client connected')
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected')
-  })
-})
 
 // Kết nối MongoDB
 mongoose

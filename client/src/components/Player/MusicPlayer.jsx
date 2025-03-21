@@ -272,6 +272,7 @@ const MusicPlayer = () => {
                 onClick={handlePause}
                 type='primary'
                 size='large'
+                disabled={speaking}
               >
                 Tạm dừng
               </Button>
