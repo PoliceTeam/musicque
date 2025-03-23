@@ -13,10 +13,10 @@ import { message } from 'antd'
 import { getCurrentSong } from '../../services/api'
 import { useLocation } from 'react-router-dom'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 const PlaylistView = () => {
-  const { playlist, voteSong, loading, playing } = useContext(PlaylistContext)
+  const { playlist, voteSong, loading, playing, currentSession } = useContext(PlaylistContext)
   const { username, setUserName } = useContext(AuthContext)
   const [currentSong, setCurrentSong] = useState(null)
   const location = useLocation()
@@ -34,7 +34,7 @@ const PlaylistView = () => {
       }
     }
     fetchCurrentSong()
-  }, [playlist, isHomePage])
+  }, [isHomePage])
 
   const handleVote = async (songId, voteType) => {
     if (!username || username.trim() === '') {
@@ -60,7 +60,7 @@ const PlaylistView = () => {
         />
       }
     >
-      {isHomePage && currentSong && (
+      {isHomePage && currentSong && currentSession && (
         <Card
           size='small'
           style={{

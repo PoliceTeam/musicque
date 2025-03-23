@@ -9,12 +9,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import {
-  markSongAsPlayed,
-  removeSongFromPlaylist,
-  markSongAsPlaying,
-  getCurrentSong,
-} from '../../services/api'
+import { markSongAsPlayed, removeSongFromPlaylist, getCurrentSong } from '../../services/api'
 
 const { Title, Text } = Typography
 
@@ -23,11 +18,11 @@ const MusicPlayer = () => {
   const [currentSong, setCurrentSong] = useState(null)
   const [playing, setPlaying] = useState(false)
   const [speaking, setSpeaking] = useState(false)
-  const [messageSpoken, setMessageSpoken] = useState(false)
   const [nextLoading, setNextLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const playerRef = useRef(null)
   const wasPlayingRef = useRef(false)
+  const wasMessageSpokenRef = useRef(false)
   const speechRef = useRef(null)
 
   // Fetch current song
@@ -35,6 +30,7 @@ const MusicPlayer = () => {
     try {
       const response = await getCurrentSong()
       setCurrentSong(response.data.currentSong)
+      await refreshPlaylist()
       return response.data.currentSong
     } catch (error) {
       console.error('Error fetching current song:', error)
@@ -62,7 +58,7 @@ const MusicPlayer = () => {
           speechRef.current = null
         }
 
-        const message = `${username}: đã order bài hát ${title} với lời nhắn: ${text}`
+        const message = `Tới từ ${username} với lời nhắn: ${text}`
 
         speechRef.current = true
 
@@ -74,14 +70,14 @@ const MusicPlayer = () => {
           },
           onend: () => {
             setSpeaking(false)
-            setMessageSpoken(true)
+            wasMessageSpokenRef.current = true
             speechRef.current = null
             resolve()
           },
           onerror: (error) => {
             console.error('Speech error:', error)
             setSpeaking(false)
-            setMessageSpoken(true)
+            wasMessageSpokenRef.current = true
             speechRef.current = null
             resolve()
           },
@@ -100,22 +96,32 @@ const MusicPlayer = () => {
     }
 
     try {
-      if (currentSong.message && !messageSpoken && !speaking) {
+      setPlaying(true)
+      setSpeaking(true)
+      if (currentSong.message && !wasMessageSpokenRef.current && !speaking) {
         try {
-          await markSongAsPlaying(currentSong._id)
           await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
+          setSpeaking(false)
         } catch (error) {
           console.error('Error playing speech:', error)
         }
       }
 
-      setPlaying(true)
+      // Đảm bảo player đã sẵn sàng
+      if (playerRef.current) {
+        wasPlayingRef.current = true
+        setSpeaking(false)
+      } else {
+        console.warn('Player not ready')
+        message.warning('Đang tải player, vui lòng thử lại')
+      }
     } catch (error) {
+      setPlaying(false)
+      setSpeaking(false)
       console.error('Error marking song as playing:', error)
       message.error('Có lỗi xảy ra khi cập nhật trạng thái bài hát')
-      setPlaying(true)
     }
-  }, [currentSong, messageSpoken, speaking, playSpeech])
+  }, [currentSong, speaking, playSpeech])
 
   const handlePause = () => {
     setPlaying(false)
@@ -131,7 +137,7 @@ const MusicPlayer = () => {
       responsiveVoice.cancel()
       speechRef.current = null
       setSpeaking(false)
-      setMessageSpoken(true)
+      wasMessageSpokenRef.current = true
       setPlaying(true)
     }
   }
@@ -151,23 +157,12 @@ const MusicPlayer = () => {
       try {
         await markSongAsPlayed(currentSong._id)
         await removeSongFromPlaylist(currentSong._id)
+        wasMessageSpokenRef.current = false
 
-        setMessageSpoken(false)
+        // Chỉ set currentSong = null và fetch bài mới
         setCurrentSong(null)
-
-        if (refreshPlaylist) {
-          await refreshPlaylist()
-        }
-
-        // Fetch next song if available
-        const nextSong = await fetchCurrentSong()
-
-        if (nextSong) {
-          // Tự động phát bài mới
-          setTimeout(() => {
-            handlePlay()
-          }, 500) // Đợi 500ms để đảm bảo state đã được cập nhật
-        }
+        await refreshPlaylist()
+        await fetchCurrentSong() // useEffect sẽ tự động phát khi currentSong thay đổi
 
         message.success('Đã phát xong và xóa bài hát khỏi playlist')
       } catch (error) {
@@ -189,6 +184,14 @@ const MusicPlayer = () => {
     handleNext()
   }
 
+  useEffect(() => {
+    if (currentSong && wasPlayingRef.current) {
+      handlePlay()
+      refreshPlaylist()
+      wasPlayingRef.current = false
+    }
+  }, [currentSong, handlePlay])
+
   const handleRefresh = async () => {
     try {
       setRefreshing(true)
@@ -206,7 +209,7 @@ const MusicPlayer = () => {
     }
   }
 
-  if (!currentSong) {
+  if (!currentSong || !currentSession) {
     return (
       <Card title='Music Player'>
         <Space direction='vertical' align='center' style={{ width: '100%' }}>
@@ -235,6 +238,15 @@ const MusicPlayer = () => {
               width='100%'
               height='240px'
               onEnded={handleEnded}
+              onReady={() => {
+                if (wasPlayingRef.current) {
+                  setPlaying(true)
+                }
+              }}
+              onError={(error) => {
+                console.error('Player error:', error)
+                message.error('Có lỗi khi tải video')
+              }}
               playsinline
               config={{
                 youtube: {
@@ -242,6 +254,10 @@ const MusicPlayer = () => {
                     playsinline: 1,
                     background: 1,
                     disablekb: 1,
+                    autoplay: 0,
+                  },
+                  onUnstarted: () => {
+                    console.log('YouTube player unstarted')
                   },
                 },
               }}
@@ -322,7 +338,7 @@ const MusicPlayer = () => {
             <div style={{ marginTop: 16 }}>
               <Text strong>Lời nhắn:</Text>
               <Text italic> "{currentSong.message}"</Text>
-              {messageSpoken && <Text type='success'> (Đã đọc)</Text>}
+              {wasMessageSpokenRef.current && <Text type='success'> (Đã đọc)</Text>}
             </div>
           )}
         </>

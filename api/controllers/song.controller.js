@@ -286,6 +286,23 @@ exports.getCurrentSong = async (req, res) => {
           io.emit('playlist_updated', updatedPlaylist)
         }
       }
+    } else {
+      currentSong.playing = true
+      await currentSong.save()
+      // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
+      const updatedPlaylist = await Song.find({
+        sessionId: activeSession._id,
+        playing: false,
+        played: false,
+      })
+        .populate('addedBy', 'username')
+        .sort({ voteScore: -1, addedAt: 1 })
+
+      // Thông báo qua socket.io
+      const io = req.app.get('io')
+      if (io) {
+        io.emit('playlist_updated', updatedPlaylist)
+      }
     }
 
     res.status(200).json({ currentSong })

@@ -93,7 +93,7 @@ exports.getSessionPlaylist = async (req, res) => {
     const { sessionId } = req.params
 
     // Tìm tất cả bài hát trong phiên
-    const songs = await Song.find({ sessionId })
+    const songs = await Song.find({ sessionId, playing: false, played: false })
       .populate('addedBy', 'username')
       .sort({ voteScore: -1, addedAt: 1 })
 
