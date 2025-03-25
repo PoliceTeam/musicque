@@ -7,6 +7,7 @@ import {
   voteSong as voteSongApi,
   startSession as startSessionApi,
   endSession as endSessionApi,
+  getCurrentSong,
 } from '../services/api'
 import { AuthContext } from './AuthContext'
 import { message } from 'antd'
@@ -19,7 +20,22 @@ export const PlaylistProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [socket, setSocket] = useState(null)
   const [playing, setPlaying] = useState(false)
+  const [currentSong, setCurrentSong] = useState(null)
   const { username } = useContext(AuthContext)
+
+  const fetchCurrentSong = async () => {
+    try {
+      const response = await getCurrentSong()
+      setPlaylist(response.data.updatedPlaylist)
+      setCurrentSong(response.data.currentSong)
+    } catch (error) {
+      console.error('Error fetching current song:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchCurrentSong()
+  }, [])
 
   useEffect(() => {
     // Kết nối socket
@@ -43,6 +59,7 @@ export const PlaylistProvider = ({ children }) => {
     // Lắng nghe sự kiện cập nhật playlist
     socket.on('playlist_updated', (updatedPlaylist) => {
       setPlaylist(updatedPlaylist)
+      fetchCurrentSong()
     })
 
     // Lắng nghe sự kiện cập nhật phiên
@@ -166,6 +183,7 @@ export const PlaylistProvider = ({ children }) => {
         hasActiveSession: !!currentSession,
         playSong,
         playing,
+        currentSong,
       }}
     >
       {children}

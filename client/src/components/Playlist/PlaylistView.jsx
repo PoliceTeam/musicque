@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext } from 'react'
 import { List, Button, Space, Typography, Card, Empty, Input, Tag } from 'antd'
 import {
   UpOutlined,
@@ -10,31 +10,16 @@ import {
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { AuthContext } from '../../contexts/AuthContext'
 import { message } from 'antd'
-import { getCurrentSong } from '../../services/api'
 import { useLocation } from 'react-router-dom'
 
 const { Text } = Typography
 
 const PlaylistView = () => {
-  const { playlist, voteSong, loading, playing, currentSession } = useContext(PlaylistContext)
+  const { playlist, voteSong, loading, playing, currentSession, currentSong } =
+    useContext(PlaylistContext)
   const { username, setUserName } = useContext(AuthContext)
-  const [currentSong, setCurrentSong] = useState(null)
   const location = useLocation()
   const isHomePage = location.pathname === '/'
-
-  useEffect(() => {
-    const fetchCurrentSong = async () => {
-      if (!isHomePage) return // Chỉ fetch khi ở trang chủ
-
-      try {
-        const response = await getCurrentSong()
-        setCurrentSong(response.data.currentSong)
-      } catch (error) {
-        console.error('Error fetching current song:', error)
-      }
-    }
-    fetchCurrentSong()
-  }, [isHomePage])
 
   const handleVote = async (songId, voteType) => {
     if (!username || username.trim() === '') {

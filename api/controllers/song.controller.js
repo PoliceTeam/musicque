@@ -256,6 +256,7 @@ exports.getCurrentSong = async (req, res) => {
       sessionId: activeSession._id,
       playing: true,
     }).populate('addedBy', 'username')
+    let updatedPlaylist
 
     // Nếu không có bài nào đang phát, lấy bài có điểm vote cao nhất và chưa phát
     if (!currentSong) {
@@ -272,7 +273,7 @@ exports.getCurrentSong = async (req, res) => {
         await currentSong.save()
 
         // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
-        const updatedPlaylist = await Song.find({
+        updatedPlaylist = await Song.find({
           sessionId: activeSession._id,
           playing: false,
           played: false,
@@ -280,17 +281,17 @@ exports.getCurrentSong = async (req, res) => {
           .populate('addedBy', 'username')
           .sort({ voteScore: -1, addedAt: 1 })
 
-        // Thông báo qua socket.io
-        const io = req.app.get('io')
-        if (io) {
-          io.emit('playlist_updated', updatedPlaylist)
-        }
+        // // Thông báo qua socket.io
+        // const io = req.app.get('io')
+        // if (io) {
+        //   io.emit('playlist_updated', updatedPlaylist)
+        // }
       }
     } else {
       currentSong.playing = true
       await currentSong.save()
       // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
-      const updatedPlaylist = await Song.find({
+      updatedPlaylist = await Song.find({
         sessionId: activeSession._id,
         playing: false,
         played: false,
@@ -298,14 +299,14 @@ exports.getCurrentSong = async (req, res) => {
         .populate('addedBy', 'username')
         .sort({ voteScore: -1, addedAt: 1 })
 
-      // Thông báo qua socket.io
-      const io = req.app.get('io')
-      if (io) {
-        io.emit('playlist_updated', updatedPlaylist)
-      }
+      // // Thông báo qua socket.io
+      // const io = req.app.get('io')
+      // if (io) {
+      //   io.emit('playlist_updated', updatedPlaylist)
+      // }
     }
 
-    res.status(200).json({ currentSong })
+    res.status(200).json({ currentSong, updatedPlaylist })
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
