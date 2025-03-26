@@ -62,9 +62,9 @@ const MusicPlayer = () => {
 
         speechRef.current = true
 
-        responsiveVoice.speak(message, 'Vietnamese Male', {
+        responsiveVoice.speak(message, 'Vietnamese Female', {
           pitch: 1,
-          rate: 1.3,
+          rate: 1.15,
           onstart: () => {
             setSpeaking(true)
           },
