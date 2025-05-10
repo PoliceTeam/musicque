@@ -1,10 +1,16 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { Layout, Typography, Row, Col, Card, Button, Input, Space } from 'antd'
-import { UserOutlined, LoginOutlined } from '@ant-design/icons'
+import {
+  UserOutlined,
+  LoginOutlined,
+  DropboxOutlined,
+  CloseCircleOutlined,
+} from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import AddSongForm from '../components/Playlist/AddSongForm'
 import PlaylistView from '../components/Playlist/PlaylistView'
 import ChatBox from '../components/Chat/ChatBox'
+import DiceGame from '../games/dice/DiceGame'
 import { PlaylistContext } from '../contexts/PlaylistContext'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -14,9 +20,17 @@ const { Title, Text } = Typography
 const HomePage = () => {
   const { currentSession } = useContext(PlaylistContext)
   const { isAdmin, username, setUserName, logoutAdmin } = useContext(AuthContext)
+  const [showDiceGame, setShowDiceGame] = useState(false)
+  const [finalValue, setFinalValue] = useState(null)
 
   const handleUsernameChange = (e) => {
     setUserName(e.target.value)
+  }
+
+  const handlePlayDice = () => {
+    const randomValue = Math.floor(Math.random() * 6) + 1
+    setFinalValue(randomValue)
+    setShowDiceGame(true)
   }
 
   return (
@@ -54,11 +68,16 @@ const HomePage = () => {
               </Button>
             </Space>
           ) : (
-            <Link to='/login'>
-              <Button type='primary' icon={<LoginOutlined />}>
-                Admin Login
+            <Space>
+              <Button type='primary' icon={<DropboxOutlined />} onClick={handlePlayDice}>
+                Chơi Xúc Xắc
               </Button>
-            </Link>
+              <Link to='/login'>
+                <Button type='primary' icon={<LoginOutlined />}>
+                  Admin Login
+                </Button>
+              </Link>
+            </Space>
           )}
         </Space>
       </Header>
@@ -97,6 +116,56 @@ const HomePage = () => {
           100% Made with AI
         </span>
       </Footer>
+
+      {/* Dice Game Modal */}
+      {showDiceGame && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '500px',
+              height: '500px',
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <Title level={4} style={{ margin: 0 }}>
+                Cùng xoay nào
+              </Title>
+              <Button
+                type='text'
+                onClick={() => {
+                  setShowDiceGame(false)
+                  setFinalValue(null)
+                }}
+                style={{ fontSize: '20px' }}
+              >
+                ×
+              </Button>
+            </div>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <DiceGame finalValue={finalValue} />
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

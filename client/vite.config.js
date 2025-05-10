@@ -10,9 +10,9 @@ export default defineConfig({
     proxy: {
       '/socket.io': {
         target: 'http://localhost:5001',
-        ws: true
-      }
-    }
+        ws: true,
+      },
+    },
   },
   resolve: {
     // Thêm cấu hình này để giúp Vite tìm thấy các modules
