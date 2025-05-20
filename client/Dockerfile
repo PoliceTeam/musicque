@@ -3,11 +3,10 @@ FROM node:20.11-alpine as build
 # Tạo thư mục làm việc
 WORKDIR /usr/src/app
 
-RUN npm install
-
 # Copy source code
 COPY . .
 
+RUN npm install
 # Tạo file .env cho build
 ARG VITE_API_URL
 ARG VITE_SOCKET_URL
