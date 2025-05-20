@@ -3,12 +3,7 @@ FROM node:20.11-alpine as build
 # Tạo thư mục làm việc
 WORKDIR /usr/src/app
 
-# Copy package.json và package-lock.json
-COPY package*.json ./
-
-# Cài đặt dependencies
-# Thêm --legacy-peer-deps để tránh các vấn đề về phiên bản
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 # Copy source code
 COPY . .
