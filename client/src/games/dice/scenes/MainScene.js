@@ -64,9 +64,20 @@ class MainScene extends Phaser.Scene {
   setFinalValue(value) {
     if (value >= 1 && value <= 6) {
       this.finalValue = value
-      // Tự động roll dice sau khi set giá trị
-      this.time.delayedCall(100, () => {
-        this.rollDice()
+
+      // Đợi lâu hơn và kiểm tra đối tượng đã khởi tạo chưa
+      this.time.delayedCall(300, () => {
+        // Chỉ gọi rollDice nếu các đối tượng cần thiết đã tồn tại
+        if (this.dice && this.resultText) {
+          this.rollDice()
+        } else {
+          // Nếu chưa sẵn sàng, thử lại sau một khoảng thời gian
+          this.time.delayedCall(300, () => {
+            if (this.dice && this.resultText) {
+              this.rollDice()
+            }
+          })
+        }
       })
     }
   }
@@ -75,7 +86,11 @@ class MainScene extends Phaser.Scene {
     if (this.isRolling || !this.finalValue) return
 
     this.isRolling = true
-    this.resultText.setScale(0)
+
+    // Thêm kiểm tra null ở đây
+    if (this.resultText) {
+      this.resultText.setScale(0)
+    }
 
     let rollCount = 0
     const maxRolls = 15
