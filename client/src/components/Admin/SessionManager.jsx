@@ -55,7 +55,12 @@ const SessionManager = () => {
           <Space direction='vertical' style={{ width: '100%' }}>
             <Text>Bắt đầu lúc: {new Date(currentSession.startTime).toLocaleString()}</Text>
 
-            <Countdown title='Thời gian còn lại đến 18:00' value={getEndTime()} format='HH:mm:ss' />
+            <Statistic.Timer
+              title='Thời gian còn lại đến 18:00'
+              value={getEndTime()}
+              format='HH:mm:ss'
+              type='countdown'
+            />
 
             <Button
               type='primary'

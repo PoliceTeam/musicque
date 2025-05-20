@@ -1,15 +1,10 @@
 import React, { useContext, useState } from 'react'
 import { Layout, Typography, Row, Col, Card, Button, Input, Space } from 'antd'
-import {
-  UserOutlined,
-  LoginOutlined,
-  DropboxOutlined,
-  CloseCircleOutlined,
-} from '@ant-design/icons'
+import { UserOutlined, LoginOutlined, DropboxOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import AddSongForm from '../components/Playlist/AddSongForm'
 import PlaylistView from '../components/Playlist/PlaylistView'
-import ChatBox from '../components/Chat/ChatBox'
+// import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame'
 import { PlaylistContext } from '../contexts/PlaylistContext'
 import { AuthContext } from '../contexts/AuthContext'
@@ -70,7 +65,7 @@ const HomePage = () => {
           ) : (
             <Space>
               <Button type='primary' icon={<DropboxOutlined />} onClick={handlePlayDice}>
-                Chơi Xúc Xắc
+                Xúc Xắc (Đang phát triển)
               </Button>
               <Link to='/login'>
                 <Button type='primary' icon={<LoginOutlined />}>
@@ -84,7 +79,7 @@ const HomePage = () => {
 
       <Content style={{ padding: '24px' }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <Card title={currentSession ? 'Thêm bài hát' : 'Thông báo'}>
               {currentSession ? (
                 <AddSongForm />
@@ -100,13 +95,13 @@ const HomePage = () => {
             </Card>
           </Col>
 
-          <Col xs={24} md={8}>
+          <Col xs={24} md={18}>
             <PlaylistView />
           </Col>
 
-          <Col xs={24} md={8}>
+          {/* <Col xs={24} md={8}>
             <ChatBox />
-          </Col>
+          </Col> */}
         </Row>
       </Content>
 

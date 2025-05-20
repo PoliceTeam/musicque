@@ -46,21 +46,21 @@ const AdminPage = () => {
 
       <Content style={{ padding: '24px' }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <SessionManager />
           </Col>
 
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <MusicPlayer />
           </Col>
 
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <PlaylistView />
           </Col>
 
-          <Col xs={24} md={6}>
+          {/* <Col xs={24} md={6}>
             <ChatBox />
-          </Col>
+          </Col> */}
         </Row>
       </Content>
 
