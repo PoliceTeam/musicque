@@ -142,7 +142,8 @@ export const PlaylistProvider = ({ children }) => {
 
   const startSession = async () => {
     try {
-      await startSessionApi()
+      const response = await startSessionApi()
+      setCurrentSession(response.data.session)
       message.success('Đã mở phiên phát nhạc mới')
       return true
     } catch (error) {
@@ -154,6 +155,8 @@ export const PlaylistProvider = ({ children }) => {
   const endSession = async () => {
     try {
       await endSessionApi()
+      setCurrentSession(null)
+      message.success('Đã đóng phiên phát nhạc')
       return true
     } catch (error) {
       message.error('Không thể kết thúc phiên: ' + (error.response?.data?.message || error.message))
