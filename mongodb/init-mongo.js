@@ -5,11 +5,17 @@ db = db.getSiblingDB('music-order-app');
 db.createCollection('users');
 db.createCollection('sessions');
 db.createCollection('songs');
+db.createCollection('gold_prices');
+db.createCollection('oil_prices');
 
 // Tạo index
 db.users.createIndex({ "username": 1 }, { unique: true });
 db.songs.createIndex({ "sessionId": 1 });
 db.songs.createIndex({ "voteScore": -1 });
+db.gold_prices.createIndex({ "date": 1 }, { unique: true });
+db.gold_prices.createIndex({ "createdAt": -1 });
+db.oil_prices.createIndex({ "date": 1 }, { unique: true });
+db.oil_prices.createIndex({ "createdAt": -1 });
 
 // Tạo admin user nếu cần
 // Lưu ý: Trong ứng dụng thực tế, admin được tạo từ biến môi trường
