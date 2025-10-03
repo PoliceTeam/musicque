@@ -35,6 +35,7 @@ services:
       - CLIENT_URL=http://localhost:8080
       - SOCKET_URL=http://localhost:5001
       - YOUTUBE_API_KEY=AIzaSyD500000000000000000000000000000000000000000000000000000000000000
+      - BTC_API_KEY=Uncnssjsdaaskjdasdasdhaskdhasjkdh
     ports:
       - "5001:5000"
     networks:

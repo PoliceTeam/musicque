@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import AddSongForm from "../components/Playlist/AddSongForm";
 import PlaylistView from "../components/Playlist/PlaylistView";
 import GoldPriceView from "../components/GoldPrice/GoldPriceView";
+import BTCPriceView from "../components/BTCPrice/BTCPriceView";
 import OilPriceView from "../components/OilPrice/OilPriceView";
 // import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from "../games/dice/DiceGame";
@@ -162,6 +163,9 @@ const HomePage = () => {
               </Title>
             </div>
             <GoldPriceView />
+            <div style={{ marginTop: "16px" }}>
+              <BTCPriceView />
+            </div>
             <div style={{ marginTop: "16px" }}>
               <OilPriceView />
             </div>

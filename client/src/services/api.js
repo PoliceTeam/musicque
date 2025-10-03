@@ -70,4 +70,10 @@ export const getTodayOilPrice = () => api.get("/api/oil/today");
 export const getOilPriceHistory = (limit = 30, page = 1) =>
   api.get(`/api/oil/history?limit=${limit}&page=${page}`);
 
+// BTC Price API
+export const getTodayBTCPrice = () => api.get("/api/btc/today");
+
+export const getBTCPriceHistory = (limit = 30, page = 1) =>
+  api.get(`/api/btc/history?limit=${limit}&page=${page}`);
+
 export default api;
