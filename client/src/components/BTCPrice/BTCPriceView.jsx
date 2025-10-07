@@ -6,8 +6,6 @@ import {
   CaretUpOutlined,
   CaretDownOutlined,
   MinusOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
 } from "@ant-design/icons";
 import { getTodayBTCPrice } from "../../services/api";
 
@@ -224,22 +222,6 @@ const BTCPriceView = () => {
             </Space>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <Text strong>So với hôm qua:</Text>
-            <Tag
-              color={getStatusColor(btcPrice.priceChange24h)}
-              icon={getStatusIcon(btcPrice.priceChange24h)}
-            >
-              {getStatusText(btcPrice.priceChange24h)}
-            </Tag>
-          </div>
           <div style={{ textAlign: "center" }}>
             <Text type="secondary" style={{ fontSize: "11px" }}>
               Cập nhật từ: {btcPrice.source || "API-Ninjas"}
