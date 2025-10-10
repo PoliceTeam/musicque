@@ -1,243 +1,266 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from 'react'
-import ReactPlayer from 'react-player'
-import { Card, Button, Typography, Space, message } from 'antd'
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useRef,
+  useCallback,
+} from 'react';
+import ReactPlayer from 'react-player';
+import { Card, Button, Typography, Space, message } from 'antd';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   StepForwardOutlined,
   CloseOutlined,
   ReloadOutlined,
-} from '@ant-design/icons'
-import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { markSongAsPlayed, removeSongFromPlaylist, getCurrentSong } from '../../services/api'
+} from '@ant-design/icons';
+import { PlaylistContext } from '../../contexts/PlaylistContext';
+import {
+  markSongAsPlayed,
+  removeSongFromPlaylist,
+  getCurrentSong,
+} from '../../services/api';
 
-const { Title, Text } = Typography
+const { Title, Text } = Typography;
 
 const MusicPlayer = () => {
-  const { playlist, refreshPlaylist, currentSession } = useContext(PlaylistContext)
-  const [currentSong, setCurrentSong] = useState(null)
-  const [playing, setPlaying] = useState(false)
-  const [speaking, setSpeaking] = useState(false)
-  const [nextLoading, setNextLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const playerRef = useRef(null)
-  const wasPlayingRef = useRef(false)
-  const wasMessageSpokenRef = useRef(false)
-  const speechRef = useRef(null)
+  const { playlist, refreshPlaylist, currentSession } =
+    useContext(PlaylistContext);
+  const [currentSong, setCurrentSong] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [nextLoading, setNextLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const playerRef = useRef(null);
+  const wasPlayingRef = useRef(false);
+  const wasMessageSpokenRef = useRef(false);
+  const speechRef = useRef(null);
 
   // Fetch current song
   const fetchCurrentSong = async () => {
     try {
-      const response = await getCurrentSong()
-      setCurrentSong(response.data.currentSong)
-      await refreshPlaylist()
-      return response.data.currentSong
+      const response = await getCurrentSong();
+      setCurrentSong(response.data.currentSong);
+      await refreshPlaylist();
+      return response.data.currentSong;
     } catch (error) {
-      console.error('Error fetching current song:', error)
-      return null
+      console.error('Error fetching current song:', error);
+      return null;
     }
-  }
+  };
 
   useEffect(() => {
-    fetchCurrentSong()
+    fetchCurrentSong();
     return () => {
       if (speechRef.current) {
-        responsiveVoice.cancel()
-        speechRef.current = null
+        responsiveVoice.cancel();
+        speechRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const playSpeech = useCallback(
     (text, title, username) => {
-      if (!text || speaking) return Promise.resolve()
+      if (!text || speaking) return Promise.resolve();
 
       return new Promise((resolve) => {
         if (speechRef.current) {
-          responsiveVoice.cancel()
-          speechRef.current = null
+          responsiveVoice.cancel();
+          speechRef.current = null;
         }
 
-        const message = `Tới từ ${username} với lời nhắn: ${text}`
+        const message = `Tới từ ${username} với lời nhắn: ${text}`;
 
-        speechRef.current = true
+        speechRef.current = true;
 
         responsiveVoice.speak(message, 'Vietnamese Female', {
           pitch: 1,
           rate: 1.15,
           onstart: () => {
-            setSpeaking(true)
+            setSpeaking(true);
           },
           onend: () => {
-            setSpeaking(false)
-            wasMessageSpokenRef.current = true
-            speechRef.current = null
-            resolve()
+            setSpeaking(false);
+            wasMessageSpokenRef.current = true;
+            speechRef.current = null;
+            resolve();
           },
           onerror: (error) => {
-            console.error('Speech error:', error)
-            setSpeaking(false)
-            wasMessageSpokenRef.current = true
-            speechRef.current = null
-            resolve()
+            console.error('Speech error:', error);
+            setSpeaking(false);
+            wasMessageSpokenRef.current = true;
+            speechRef.current = null;
+            resolve();
           },
-        })
+        });
 
-        setSpeaking(true)
-      })
+        setSpeaking(true);
+      });
     },
-    [speaking, currentSong],
-  )
+    [speaking, currentSong]
+  );
 
   const handlePlay = useCallback(async () => {
     if (!currentSong) {
-      message.error('Không có bài hát nào trong playlist')
-      return
+      message.error('Không có bài hát nào trong playlist');
+      return;
     }
 
     try {
       if (currentSong.message && !wasMessageSpokenRef.current && !speaking) {
-        setSpeaking(true)
+        setSpeaking(true);
         try {
-          await playSpeech(currentSong.message, currentSong.title, currentSong.addedBy.username)
-          setSpeaking(false)
+          await playSpeech(
+            currentSong.message,
+            currentSong.title,
+            currentSong.addedBy.username
+          );
+          setSpeaking(false);
         } catch (error) {
-          console.error('Error playing speech:', error)
-          setSpeaking(false)
+          console.error('Error playing speech:', error);
+          setSpeaking(false);
         }
       }
 
       // Đảm bảo player đã sẵn sàng với timeout
       if (playerRef.current) {
-        const internalPlayer = playerRef.current.getInternalPlayer()
-        
+        const internalPlayer = playerRef.current.getInternalPlayer();
+
         // Kiểm tra xem player đã thực sự sẵn sàng chưa
         if (internalPlayer && typeof internalPlayer.playVideo === 'function') {
-          wasPlayingRef.current = true
+          wasPlayingRef.current = true;
           // Thêm timeout nhỏ trước khi phát
-          setTimeout(() => setPlaying(true), 100)
+          setTimeout(() => setPlaying(true), 100);
         } else {
-          console.warn('Player not fully ready, waiting...')
+          console.warn('Player not fully ready, waiting...');
           // Đợi player hoàn toàn sẵn sàng
           setTimeout(() => {
             if (playerRef.current) {
-              wasPlayingRef.current = true
-              setPlaying(true)
+              wasPlayingRef.current = true;
+              setPlaying(true);
             }
-          }, 1000)
+          }, 1000);
         }
       } else {
-        console.warn('Player not ready')
-        message.warning('Đang tải player, vui lòng thử lại')
+        console.warn('Player not ready');
+        message.warning('Đang tải player, vui lòng thử lại');
       }
     } catch (error) {
-      setPlaying(false)
-      console.error('Error playing:', error)
-      message.error('Có lỗi xảy ra khi phát bài hát')
+      setPlaying(false);
+      console.error('Error playing:', error);
+      message.error('Có lỗi xảy ra khi phát bài hát');
     }
-  }, [currentSong, speaking, playSpeech])
+  }, [currentSong, speaking, playSpeech]);
 
   const handlePause = () => {
-    setPlaying(false)
+    setPlaying(false);
     if (speaking && speechRef.current) {
-      responsiveVoice.cancel()
-      speechRef.current = null
-      setSpeaking(false)
+      responsiveVoice.cancel();
+      speechRef.current = null;
+      setSpeaking(false);
     }
-  }
+  };
 
   const handleSkipMessage = () => {
     if (speaking && speechRef.current) {
-      responsiveVoice.cancel()
-      speechRef.current = null
-      setSpeaking(false)
-      wasMessageSpokenRef.current = true
-      setPlaying(true)
+      responsiveVoice.cancel();
+      speechRef.current = null;
+      setSpeaking(false);
+      wasMessageSpokenRef.current = true;
+      setPlaying(true);
     }
-  }
+  };
 
   const handleNext = async () => {
-    setNextLoading(true)
-    const wasPlaying = playing  // Lưu tạm trạng thái playing
-    wasPlayingRef.current = true  // Luôn đặt thành true để đảm bảo bài mới sẽ phát
+    setNextLoading(true);
+    const wasPlaying = playing; // Lưu tạm trạng thái playing
+    wasPlayingRef.current = true; // Luôn đặt thành true để đảm bảo bài mới sẽ phát
 
     if (speaking && speechRef.current) {
-      responsiveVoice.cancel()
-      speechRef.current = null
-      setSpeaking(false)
+      responsiveVoice.cancel();
+      speechRef.current = null;
+      setSpeaking(false);
     }
-    handlePause()
+    handlePause();
 
     if (currentSong) {
       try {
-        await markSongAsPlayed(currentSong._id)
-        await removeSongFromPlaylist(currentSong._id)
-        wasMessageSpokenRef.current = false
+        await markSongAsPlayed(currentSong._id);
+        await removeSongFromPlaylist(currentSong._id);
+        wasMessageSpokenRef.current = false;
 
         // Chỉ set currentSong = null và fetch bài mới
-        setCurrentSong(null)
-        await refreshPlaylist()
-        
+        setCurrentSong(null);
+        await refreshPlaylist();
+
         // Đảm bảo wasPlayingRef.current vẫn là true trước khi fetch bài mới
-        wasPlayingRef.current = true
-        await fetchCurrentSong()
-        
-        message.success('Đã phát xong và xóa bài hát khỏi playlist')
+        wasPlayingRef.current = true;
+        await fetchCurrentSong();
+
+        message.success('Đã phát xong và xóa bài hát khỏi playlist');
       } catch (error) {
-        console.error('Error handling song completion:', error)
-        message.error('Có lỗi xảy ra khi xóa bài hát')
+        console.error('Error handling song completion:', error);
+        message.error('Có lỗi xảy ra khi xóa bài hát');
       } finally {
-        setNextLoading(false)
+        setNextLoading(false);
       }
     } else {
-      setNextLoading(false)
+      setNextLoading(false);
     }
 
     if (playlist.length === 0) {
-      message.info('Đã hết playlist')
+      message.info('Đã hết playlist');
     }
-  }
+  };
 
   const handleEnded = () => {
-    handleNext()
-  }
+    handleNext();
+  };
 
   useEffect(() => {
     if (currentSong && wasPlayingRef.current) {
-      handlePlay()
-      refreshPlaylist()
-      wasPlayingRef.current = false
+      handlePlay();
+      refreshPlaylist();
+      wasPlayingRef.current = false;
     }
-  }, [currentSong, handlePlay])
+  }, [currentSong, handlePlay]);
 
   const handleRefresh = async () => {
     try {
-      setRefreshing(true)
-      const nextSong = await fetchCurrentSong()
+      setRefreshing(true);
+      const nextSong = await fetchCurrentSong();
       if (nextSong) {
-        message.success('Đã làm mới thông tin bài hát')
+        message.success('Đã làm mới thông tin bài hát');
       } else {
-        message.info('Không có bài hát nào trong playlist')
+        message.info('Không có bài hát nào trong playlist');
       }
     } catch (error) {
-      console.error('Error refreshing current song:', error)
-      message.error('Có lỗi xảy ra khi làm mới')
+      console.error('Error refreshing current song:', error);
+      message.error('Có lỗi xảy ra khi làm mới');
     } finally {
-      setRefreshing(false)
+      setRefreshing(false);
     }
-  }
+  };
 
   if (!currentSong || !currentSession) {
     return (
       <Card title='Music Player'>
-        <Space direction='vertical' align='center' style={{ width: '100%' }}>
+        <Space
+          direction='vertical'
+          align='center'
+          style={{ width: '100%' }}
+        >
           <Text>Không có bài hát nào đang phát</Text>
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={refreshing}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={refreshing}
+          >
             Làm mới
           </Button>
         </Space>
       </Card>
-    )
+    );
   }
 
   return (
@@ -247,7 +270,9 @@ const MusicPlayer = () => {
           <Title level={4}>{currentSong.title}</Title>
           <Text type='secondary'>Thêm bởi: {currentSong.addedBy.username}</Text>
 
-          <div style={{ marginTop: 16, marginBottom: 16, position: 'relative' }}>
+          <div
+            style={{ marginTop: 16, marginBottom: 16, position: 'relative' }}
+          >
             <ReactPlayer
               ref={playerRef}
               url={currentSong.youtubeUrl}
@@ -257,18 +282,18 @@ const MusicPlayer = () => {
               height='240px'
               onReady={() => {
                 if (wasPlayingRef.current) {
-                  setPlaying(true)
+                  setPlaying(true);
                 }
-                const internalPlayer = playerRef.current?.getInternalPlayer()
+                const internalPlayer = playerRef.current?.getInternalPlayer();
                 if (internalPlayer && internalPlayer.addEventListener) {
                   internalPlayer.addEventListener('onStateChange', (event) => {
-                    if (event.data === 0) handleEnded()
-                  })
+                    if (event.data === 0) handleEnded();
+                  });
                 }
               }}
               onError={(error) => {
-                console.error('Player error:', error)
-                message.error('Có lỗi khi tải video')
+                console.error('Player error:', error);
+                message.error('Có lỗi khi tải video');
               }}
               playsinline
               config={{
@@ -279,10 +304,15 @@ const MusicPlayer = () => {
                     disablekb: 1,
                     autoplay: 0,
                     origin: window.location.origin, // Thêm origin
-                    enablejsapi: 1, // Bật JS API
+                    enablejsapi: 1, // Bật JS API,
+                    hl: 'vi',
+                    cc_lang_pref: 'vi',
+                    origin: window.location.origin, // Domain của bạn
+                    modestbranding: 1, // Ẩn YouTube branding
+                    rel: 0, // Không show related videos
                   },
                   onUnstarted: () => {
-                    console.log('YouTube player unstarted')
+                    console.log('YouTube player unstarted');
                   },
                 },
               }}
@@ -298,12 +328,12 @@ const MusicPlayer = () => {
                 zIndex: 10,
               }}
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
                 if (!playing) {
-                  handlePlay()
+                  handlePlay();
                 } else {
-                  handlePause()
+                  handlePause();
                 }
               }}
             />
@@ -363,13 +393,15 @@ const MusicPlayer = () => {
             <div style={{ marginTop: 16 }}>
               <Text strong>Lời nhắn:</Text>
               <Text italic> "{currentSong.message}"</Text>
-              {wasMessageSpokenRef.current && <Text type='success'> (Đã đọc)</Text>}
+              {wasMessageSpokenRef.current && (
+                <Text type='success'> (Đã đọc)</Text>
+              )}
             </div>
           )}
         </>
       )}
     </Card>
-  )
-}
+  );
+};
 
-export default MusicPlayer
+export default MusicPlayer;
