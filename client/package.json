@@ -13,6 +13,7 @@
     "@ant-design/icons": "^5.x.x",
     "antd": "^5.x.x",
     "axios": "^1.x.x",
+    "nostalgist": "^0.19.2",
     "phaser": "^3.70.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

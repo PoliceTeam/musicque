@@ -307,7 +307,6 @@ const MusicPlayer = () => {
                     enablejsapi: 1, // Bật JS API,
                     hl: 'vi',
                     cc_lang_pref: 'vi',
-                    origin: window.location.origin, // Domain của bạn
                     modestbranding: 1, // Ẩn YouTube branding
                     rel: 0, // Không show related videos
                   },

@@ -1,20 +1,22 @@
-import React, { useContext, useState } from "react";
-import { Layout, Typography, Row, Col, Card, Button, Input, Space } from "antd";
+import React, { useContext, useState } from 'react';
+import { Layout, Typography, Row, Col, Card, Button, Input, Space } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
   DropboxOutlined,
-} from "@ant-design/icons";
-import { Link } from "react-router-dom";
-import AddSongForm from "../components/Playlist/AddSongForm";
-import PlaylistView from "../components/Playlist/PlaylistView";
-import GoldPriceView from "../components/GoldPrice/GoldPriceView";
-import BTCPriceView from "../components/BTCPrice/BTCPriceView";
-import OilPriceView from "../components/OilPrice/OilPriceView";
+} from '@ant-design/icons';
+import { Link } from 'react-router-dom';
+import AddSongForm from '../components/Playlist/AddSongForm';
+import PlaylistView from '../components/Playlist/PlaylistView';
+import GoldPriceView from '../components/GoldPrice/GoldPriceView';
+import BTCPriceView from '../components/BTCPrice/BTCPriceView';
+import OilPriceView from '../components/OilPrice/OilPriceView';
 // import ChatBox from '../components/Chat/ChatBox'
-import DiceGame from "../games/dice/DiceGame";
-import { PlaylistContext } from "../contexts/PlaylistContext";
-import { AuthContext } from "../contexts/AuthContext";
+import DiceGame from '../games/dice/DiceGame';
+import TetCountdown from '../components/TetCountdown/TetCountdown';
+import NesGame from '../components/NesGame/NesGame';
+import { PlaylistContext } from '../contexts/PlaylistContext';
+import { AuthContext } from '../contexts/AuthContext';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text } = Typography;
@@ -25,6 +27,8 @@ const HomePage = () => {
     useContext(AuthContext);
   const [showDiceGame, setShowDiceGame] = useState(false);
   const [finalValue, setFinalValue] = useState(null);
+  const [showNesGame, setShowNesGame] = useState(false);
+  const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
 
   const handleUsernameChange = (e) => {
     setUserName(e.target.value);
@@ -36,8 +40,18 @@ const HomePage = () => {
     setShowDiceGame(true);
   };
 
+  const handlePlayNesGame = (gameFile, gameName) => {
+    setCurrentGame({ file: gameFile, name: gameName });
+    setShowNesGame(true);
+  };
+
+  const handleCloseNesGame = () => {
+    setShowNesGame(false);
+    setCurrentGame({ file: null, name: '' });
+  };
+
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ minHeight: '100vh' }}>
       <style>
         {`
           @keyframes float {
@@ -48,21 +62,24 @@ const HomePage = () => {
       </style>
       <Header
         style={{
-          background: "#fff",
-          padding: "0 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          background: '#fff',
+          padding: '0 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        <Title level={3} style={{ margin: "16px 0" }}>
+        <Title
+          level={3}
+          style={{ margin: '16px 0' }}
+        >
           Music Order App
         </Title>
         <Space>
           {!isAdmin && (
             <Input
               prefix={<UserOutlined />}
-              placeholder="Tên của bạn"
+              placeholder='Tên của bạn'
               value={username}
               onChange={handleUsernameChange}
               style={{ width: 200 }}
@@ -71,24 +88,35 @@ const HomePage = () => {
 
           {isAdmin ? (
             <Space>
-              <Link to="/admin">
-                <Button type="primary">Admin Dashboard</Button>
+              <Link to='/admin'>
+                <Button type='primary'>Admin Dashboard</Button>
               </Link>
-              <Button onClick={logoutAdmin} icon={<LoginOutlined />}>
+              <Button
+                onClick={logoutAdmin}
+                icon={<LoginOutlined />}
+              >
                 Đăng xuất
               </Button>
             </Space>
           ) : (
             <Space>
               <Button
-                type="primary"
-                icon={<DropboxOutlined />}
-                onClick={handlePlayDice}
+                type='primary'
+                onClick={() => handlePlayNesGame('/nes/contra.nes', 'Contra')}
               >
-                Xúc Xắc (Đang phát triển)
+                Contra
               </Button>
-              <Link to="/login">
-                <Button type="primary" icon={<LoginOutlined />}>
+              <Button
+                type='primary'
+                onClick={() => handlePlayNesGame('/nes/super_mario.nes', 'Super Mario')}
+              >
+                Mario
+              </Button>
+              <Link to='/login'>
+                <Button
+                  type='primary'
+                  icon={<LoginOutlined />}
+                >
                   Admin Login
                 </Button>
               </Link>
@@ -97,10 +125,15 @@ const HomePage = () => {
         </Space>
       </Header>
 
-      <Content style={{ padding: "24px" }}>
+      <TetCountdown />
+
+      <Content style={{ padding: '24px' }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={6}>
-            <Card title={currentSession ? "Thêm bài hát" : "Thông báo"}>
+          <Col
+            xs={24}
+            md={6}
+          >
+            <Card title={currentSession ? 'Thêm bài hát' : 'Thông báo'}>
               {currentSession ? (
                 <AddSongForm />
               ) : (
@@ -109,7 +142,7 @@ const HomePage = () => {
                     Hiện tại không có phiên phát nhạc nào đang diễn ra.
                   </Text>
                   <br />
-                  <Text type="secondary">
+                  <Text type='secondary'>
                     Phiên phát nhạc chỉ nên được mở từ 15:00 đến 18:00 hàng
                     ngày.
                   </Text>
@@ -118,44 +151,50 @@ const HomePage = () => {
             </Card>
           </Col>
 
-          <Col xs={24} md={12}>
+          <Col
+            xs={24}
+            md={12}
+          >
             <PlaylistView />
           </Col>
 
-          <Col xs={24} md={6}>
+          <Col
+            xs={24}
+            md={6}
+          >
             <div
               style={{
-                textAlign: "center",
-                marginBottom: "20px",
-                padding: "16px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                borderRadius: "12px",
-                boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
-                position: "relative",
-                overflow: "hidden",
+                textAlign: 'center',
+                marginBottom: '20px',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
               <div
                 style={{
-                  position: "absolute",
-                  top: "-50%",
-                  left: "-50%",
-                  width: "200%",
-                  height: "200%",
+                  position: 'absolute',
+                  top: '-50%',
+                  left: '-50%',
+                  width: '200%',
+                  height: '200%',
                   background:
-                    "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
-                  animation: "float 6s ease-in-out infinite",
+                    'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                  animation: 'float 6s ease-in-out infinite',
                 }}
               />
               <Title
                 level={3}
                 style={{
                   margin: 0,
-                  color: "#fff",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-                  fontWeight: "bold",
-                  letterSpacing: "1px",
-                  position: "relative",
+                  color: '#fff',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  fontWeight: 'bold',
+                  letterSpacing: '1px',
+                  position: 'relative',
                   zIndex: 1,
                 }}
               >
@@ -163,10 +202,10 @@ const HomePage = () => {
               </Title>
             </div>
             <GoldPriceView />
-            <div style={{ marginTop: "16px" }}>
+            <div style={{ marginTop: '16px' }}>
               <BTCPriceView />
             </div>
-            <div style={{ marginTop: "16px" }}>
+            <div style={{ marginTop: '16px' }}>
               <OilPriceView />
             </div>
           </Col>
@@ -177,10 +216,10 @@ const HomePage = () => {
         </Row>
       </Content>
 
-      <Footer style={{ textAlign: "center" }}>
-        Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{" "}
+      <Footer style={{ textAlign: 'center' }}>
+        Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
         <span
-          style={{ fontSize: "12px", color: "#e0c9c8", fontWeight: "bold" }}
+          style={{ fontSize: '12px', color: '#e0c9c8', fontWeight: 'bold' }}
         >
           100% Made with AI
         </span>
@@ -190,56 +229,68 @@ const HomePage = () => {
       {showDiceGame && (
         <div
           style={{
-            position: "fixed",
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             zIndex: 1000,
           }}
         >
           <div
             style={{
-              position: "relative",
-              width: "500px",
-              height: "500px",
-              backgroundColor: "#fff",
-              borderRadius: "8px",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
+              position: 'relative',
+              width: '500px',
+              height: '500px',
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "20px",
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '20px',
               }}
             >
-              <Title level={4} style={{ margin: 0 }}>
+              <Title
+                level={4}
+                style={{ margin: 0 }}
+              >
                 Cùng xoay nào
               </Title>
               <Button
-                type="text"
+                type='text'
                 onClick={() => {
                   setShowDiceGame(false);
                   setFinalValue(null);
                 }}
-                style={{ fontSize: "20px" }}
+                style={{ fontSize: '20px' }}
               >
                 ×
               </Button>
             </div>
-            <div style={{ flex: 1, position: "relative" }}>
+            <div style={{ flex: 1, position: 'relative' }}>
               <DiceGame finalValue={finalValue} />
             </div>
           </div>
         </div>
+      )}
+
+      {/* NES Game Modal */}
+      {showNesGame && currentGame.file && (
+        <NesGame
+          gameFile={currentGame.file}
+          gameName={currentGame.name}
+          onClose={handleCloseNesGame}
+        />
       )}
     </Layout>
   );
