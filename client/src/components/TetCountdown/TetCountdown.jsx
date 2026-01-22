@@ -90,6 +90,15 @@ const TetCountdown = () => {
             50% { transform: rotate(10deg); }
           }
           
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+          }
+          
+          .lucky-horse {
+            animation: float 3s ease-in-out infinite;
+          }
+          
           @media (max-width: 600px) {
             .tet-countdown-container {
               gap: 10px !important;
@@ -103,6 +112,16 @@ const TetCountdown = () => {
             }
             .tet-title {
               font-size: 2rem !important;
+            }
+            .lucky-horse {
+              width: 160px !important;
+              height: 160px !important;
+            }
+            .lucky-horse:first-of-type {
+              left: 2% !important;
+            }
+            .lucky-horse:last-of-type {
+              right: 2% !important;
             }
           }
         `}
@@ -157,6 +176,38 @@ const TetCountdown = () => {
             border: '2px solid #ffd700',
             animation: 'swing 3s ease-in-out infinite',
             transformOrigin: 'top center',
+          }}
+        />
+        <img
+          src='/assets/lucky_horse.webp'
+          alt='Lucky Horse'
+          className='lucky-horse'
+          style={{
+            position: 'absolute',
+            left: '10%',
+            top: '10%',
+            transform: 'translateY(-50%)',
+            width: '240px',
+            height: '240px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
+            zIndex: 1,
+          }}
+        />
+        <img
+          src='/assets/lucky_horse_2.webp'
+          alt='Lucky Horse 2'
+          className='lucky-horse'
+          style={{
+            position: 'absolute',
+            right: '10%',
+            top: '10%',
+            transform: 'translateY(-50%)',
+            width: '240px',
+            height: '240px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
+            zIndex: 1,
           }}
         />
         <div
