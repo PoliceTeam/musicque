@@ -1,10 +1,21 @@
 const OilPrice = require('../models/oilPrice.model');
 const { getOilPrice, getRON95Price } = require('../services/oilPrice.service');
 
+// Helper function to get date string in consistent format (Asia/Ho_Chi_Minh timezone)
+function getTodayDateString() {
+  const now = new Date();
+  // Convert to Asia/Ho_Chi_Minh timezone (UTC+7)
+  const vietnamTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  const year = vietnamTime.getFullYear();
+  const month = String(vietnamTime.getMonth() + 1).padStart(2, '0');
+  const day = String(vietnamTime.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Lấy giá xăng hôm nay
 exports.getTodayOilPrice = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = getTodayDateString(); // YYYY-MM-DD format in Vietnam timezone
     
     // Tìm giá xăng hôm nay trong database
     let oilPrice = await OilPrice.findOne({ date: today });
@@ -12,6 +23,7 @@ exports.getTodayOilPrice = async (req, res) => {
     // Nếu không có trong database, thử fetch từ PVOIL
     if (!oilPrice) {
       try {
+        console.log(`[OIL] Checking price for date: ${today}, existing: NO`);
         console.log('Oil price not found in database, fetching from PVOIL...');
         const oilData = await getOilPrice();
         const ron95Price = getRON95Price(oilData);
@@ -28,7 +40,11 @@ exports.getTodayOilPrice = async (req, res) => {
               fullData: oilData
             }
           });
-          console.log(`Oil price fetched and saved for ${today}`);
+          console.log(`[OIL] Price CREATED for ${today}: ${ron95Price.price} VND/lít (record ID: ${oilPrice._id})`);
+          
+          // Log total records in database
+          const totalRecords = await OilPrice.countDocuments();
+          console.log(`[OIL] Total records in database: ${totalRecords}`);
         } else {
           return res.status(404).json({
             message: 'Không thể lấy được giá xăng hôm nay',
@@ -37,11 +53,19 @@ exports.getTodayOilPrice = async (req, res) => {
         }
       } catch (fetchError) {
         console.error('Error fetching oil price:', fetchError);
+        
+        // Check if it's a duplicate key error (shouldn't happen with unique constraint)
+        if (fetchError.code === 11000) {
+          console.error(`[OIL] Duplicate key error for date ${today}. This should not happen!`);
+        }
+        
         return res.status(500).json({
           message: 'Lỗi khi lấy giá xăng từ nguồn bên ngoài',
           error: fetchError.message
         });
       }
+    } else {
+      console.log(`[OIL] Using existing oil price for ${today} (created: ${oilPrice.createdAt}, updated: ${oilPrice.updatedAt})`);
     }
     
     // Trả về dữ liệu

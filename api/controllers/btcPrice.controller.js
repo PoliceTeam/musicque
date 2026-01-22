@@ -1,10 +1,21 @@
 const BTCPrice = require('../models/btcPrice.model');
 const { getBTCPrice, shouldUpdate } = require('../services/btcPrice.service');
 
+// Helper function to get date string in consistent format (Asia/Ho_Chi_Minh timezone)
+function getTodayDateString() {
+  const now = new Date();
+  // Convert to Asia/Ho_Chi_Minh timezone (UTC+7)
+  const vietnamTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  const year = vietnamTime.getFullYear();
+  const month = String(vietnamTime.getMonth() + 1).padStart(2, '0');
+  const day = String(vietnamTime.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Lấy giá BTC hôm nay
 exports.getTodayBTCPrice = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = getTodayDateString(); // YYYY-MM-DD format in Vietnam timezone
     
     // Tìm giá BTC hôm nay trong database
     let btcPrice = await BTCPrice.findOne({ date: today });
@@ -14,12 +25,13 @@ exports.getTodayBTCPrice = async (req, res) => {
     
     if (needsUpdate) {
       try {
+        console.log(`[BTC] Checking price for date: ${today}, existing: ${btcPrice ? 'YES' : 'NO'}`);
         console.log('BTC price needs update, fetching from API-Ninjas...');
         const btcData = await getBTCPrice();
         
         if (btcData && btcData.price) {
           if (btcPrice) {
-            // Cập nhật record hiện tại
+            // Cập nhật record hiện tại (cùng ngày)
             Object.assign(btcPrice, {
               price: btcData.price,
               priceChange24h: btcData.priceChange24h,
@@ -31,9 +43,9 @@ exports.getTodayBTCPrice = async (req, res) => {
               rawData: btcData.rawData
             });
             await btcPrice.save();
-            console.log(`BTC price updated for ${today}: $${btcData.price}`);
+            console.log(`[BTC] Price UPDATED for ${today}: $${btcData.price} (record ID: ${btcPrice._id})`);
           } else {
-            // Tạo record mới
+            // Tạo record mới (ngày mới)
             btcPrice = await BTCPrice.create({
               date: today,
               price: btcData.price,
@@ -46,7 +58,11 @@ exports.getTodayBTCPrice = async (req, res) => {
               source: 'API-Ninjas',
               rawData: btcData.rawData
             });
-            console.log(`BTC price created for ${today}: $${btcData.price}`);
+            console.log(`[BTC] Price CREATED for ${today}: $${btcData.price} (record ID: ${btcPrice._id})`);
+            
+            // Log total records in database
+            const totalRecords = await BTCPrice.countDocuments();
+            console.log(`[BTC] Total records in database: ${totalRecords}`);
           }
         } else {
           return res.status(404).json({
@@ -56,13 +72,19 @@ exports.getTodayBTCPrice = async (req, res) => {
         }
       } catch (fetchError) {
         console.error('Error fetching BTC price:', fetchError);
+        
+        // Check if it's a duplicate key error (shouldn't happen with unique constraint)
+        if (fetchError.code === 11000) {
+          console.error(`[BTC] Duplicate key error for date ${today}. This should not happen!`);
+        }
+        
         return res.status(500).json({
           message: 'Lỗi khi lấy giá BTC từ nguồn bên ngoài',
           error: fetchError.message
         });
       }
     } else {
-      console.log(`Using cached BTC price for ${today}`);
+      console.log(`[BTC] Using cached BTC price for ${today} (last updated: ${btcPrice.updatedAt})`);
     }
     
     // Trả về dữ liệu

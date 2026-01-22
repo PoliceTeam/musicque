@@ -13,6 +13,7 @@ import PlaylistView from '../components/Playlist/PlaylistView';
 import GoldPriceView from '../components/GoldPrice/GoldPriceView';
 import BTCPriceView from '../components/BTCPrice/BTCPriceView';
 import OilPriceView from '../components/OilPrice/OilPriceView';
+import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
@@ -186,12 +187,15 @@ const HomePage = () => {
           alignItems: 'center',
         }}
       >
-        <Title
-          level={3}
-          style={{ margin: '16px 0' }}
-        >
-          Music Order App
-        </Title>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Title
+            level={3}
+            style={{ margin: '16px 0' }}
+          >
+            Music Order App
+          </Title>
+          <WeatherHeader />
+        </div>
         <Space>
           {!isAdmin && (
             <Input

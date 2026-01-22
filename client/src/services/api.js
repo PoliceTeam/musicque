@@ -76,4 +76,7 @@ export const getTodayBTCPrice = () => api.get("/api/btc/today");
 export const getBTCPriceHistory = (limit = 30, page = 1) =>
   api.get(`/api/btc/history?limit=${limit}&page=${page}`);
 
+// Weather API
+export const getCurrentWeather = () => api.get("/api/weather");
+
 export default api;
