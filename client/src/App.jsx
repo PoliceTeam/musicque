@@ -7,11 +7,15 @@ import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import { useTheme } from './contexts/ThemeContext'
 
-function App() {
+function AppContent() {
+  const { antdTheme } = useTheme()
+
   return (
-    <ConfigProvider locale={viVN}>
+    <ConfigProvider locale={viVN} theme={antdTheme}>
       <AuthProvider>
         <PlaylistProvider>
           <Router>
@@ -31,6 +35,14 @@ function App() {
         </PlaylistProvider>
       </AuthProvider>
     </ConfigProvider>
+  )
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   )
 }
 

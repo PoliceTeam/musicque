@@ -8,10 +8,12 @@ import {
   MinusOutlined,
 } from "@ant-design/icons";
 import { getTodayGoldPrice } from "../../services/api";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const { Text } = Typography;
 
 const GoldPriceView = () => {
+  const { isDark } = useTheme();
   const [goldPrice, setGoldPrice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -149,7 +151,9 @@ const GoldPriceView = () => {
 
           <div
             style={{
-              background: "linear-gradient(135deg, #f6f9fc 0%, #e9f7fe 100%)",
+              background: isDark
+                ? "linear-gradient(135deg, #1f1f1f 0%, #262626 100%)"
+                : "linear-gradient(135deg, #f6f9fc 0%, #e9f7fe 100%)",
               padding: "16px",
               borderRadius: "8px",
               marginBottom: "16px",

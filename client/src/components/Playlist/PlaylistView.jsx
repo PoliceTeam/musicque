@@ -9,12 +9,14 @@ import {
 } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { AuthContext } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
 import { message } from 'antd'
 import { useLocation } from 'react-router-dom'
 
 const { Text } = Typography
 
 const PlaylistView = () => {
+  const { isDark } = useTheme()
   const { playlist, voteSong, loading, playing, currentSession, currentSong } =
     useContext(PlaylistContext)
   const { username, setUserName } = useContext(AuthContext)
@@ -36,6 +38,9 @@ const PlaylistView = () => {
   return (
     <Card
       title='Playlist hiện tại'
+      style={{
+        background: isDark ? '#1f1f1f' : undefined,
+      }}
       extra={
         <Input
           placeholder='Nhập tên của bạn'
@@ -50,8 +55,8 @@ const PlaylistView = () => {
           size='small'
           style={{
             marginBottom: 16,
-            background: '#f6ffed',
-            borderColor: '#b7eb8f',
+            background: isDark ? '#162312' : '#f6ffed',
+            borderColor: isDark ? '#274916' : '#b7eb8f',
           }}
         >
           <Space align='start'>

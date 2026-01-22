@@ -1,9 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Layout, Typography, Row, Col, Card, Button, Input, Space } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
   DropboxOutlined,
+  MoonOutlined,
+  SunOutlined,
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
@@ -17,6 +19,7 @@ import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NesGame from '../components/NesGame/NesGame';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { AuthContext } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text } = Typography;
@@ -25,10 +28,14 @@ const HomePage = () => {
   const { currentSession } = useContext(PlaylistContext);
   const { isAdmin, username, setUserName, logoutAdmin } =
     useContext(AuthContext);
+  const { isDark, toggleTheme } = useTheme();
   const [showDiceGame, setShowDiceGame] = useState(false);
   const [finalValue, setFinalValue] = useState(null);
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
+  const [showSnowEffect, setShowSnowEffect] = useState(true);
+  const snowCanvasRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   const handleUsernameChange = (e) => {
     setUserName(e.target.value);
@@ -50,19 +57,129 @@ const HomePage = () => {
     setCurrentGame({ file: null, name: '' });
   };
 
+  const toggleSnowEffect = () => {
+    setShowSnowEffect((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (!showSnowEffect || !snowCanvasRef.current) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const canvas = snowCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const googleColors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853', '#FFFFFF'];
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let snowflakes = [];
+
+    class Snowflake {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height - height;
+        this.radius = Math.random() * 2.5 + 1;
+        this.speedY = Math.random() * 1 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.opacity = Math.random() * 0.5 + 0.3;
+        this.color = googleColors[Math.floor(Math.random() * googleColors.length)];
+      }
+
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+
+        if (this.y > height) {
+          this.reset();
+          this.y = -10;
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+
+      snowflakes = [];
+      for (let i = 0; i < 150; i++) {
+        snowflakes.push(new Snowflake());
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      snowflakes.forEach((s) => {
+        s.update();
+        s.draw();
+      });
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+
+    const handleResize = () => {
+      init();
+    };
+
+    window.addEventListener('resize', handleResize);
+    init();
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [showSnowEffect]);
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {showSnowEffect && (
+        <canvas
+          ref={snowCanvasRef}
+          className="easter-egg"
+          id="snowCanvas"
+        />
+      )}
       <style>
         {`
           @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(180deg); }
           }
+          canvas.easter-egg {
+            opacity: 0.7;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+          }
         `}
       </style>
       <Header
         style={{
-          background: '#fff',
+          background: isDark ? '#141414' : '#fff',
           padding: '0 20px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -88,6 +205,19 @@ const HomePage = () => {
 
           {isAdmin ? (
             <Space>
+              <Button
+                onClick={toggleTheme}
+                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                type='default'
+              >
+                {isDark ? 'Sáng' : 'Tối'}
+              </Button>
+              <Button
+                onClick={toggleSnowEffect}
+                type={showSnowEffect ? 'default' : 'primary'}
+              >
+                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
+              </Button>
               <Link to='/admin'>
                 <Button type='primary'>Admin Dashboard</Button>
               </Link>
@@ -100,6 +230,19 @@ const HomePage = () => {
             </Space>
           ) : (
             <Space>
+              <Button
+                onClick={toggleTheme}
+                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                type='default'
+              >
+                {isDark ? 'Sáng' : 'Tối'}
+              </Button>
+              <Button
+                onClick={toggleSnowEffect}
+                type={showSnowEffect ? 'default' : 'primary'}
+              >
+                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
+              </Button>
               <Button
                 type='primary'
                 onClick={() => handlePlayNesGame('/nes/contra.nes', 'Contra')}
@@ -219,7 +362,11 @@ const HomePage = () => {
       <Footer style={{ textAlign: 'center' }}>
         Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
         <span
-          style={{ fontSize: '12px', color: '#e0c9c8', fontWeight: 'bold' }}
+          style={{
+            fontSize: '12px',
+            color: isDark ? '#8c8c8c' : '#e0c9c8',
+            fontWeight: 'bold',
+          }}
         >
           100% Made with AI
         </span>
@@ -246,7 +393,7 @@ const HomePage = () => {
               position: 'relative',
               width: '500px',
               height: '500px',
-              backgroundColor: '#fff',
+              backgroundColor: isDark ? '#1f1f1f' : '#fff',
               borderRadius: '8px',
               padding: '20px',
               display: 'flex',

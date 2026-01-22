@@ -15,6 +15,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { PlaylistContext } from '../../contexts/PlaylistContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   markSongAsPlayed,
   removeSongFromPlaylist,
@@ -24,6 +25,7 @@ import {
 const { Title, Text } = Typography;
 
 const MusicPlayer = () => {
+  const { isDark } = useTheme();
   const { playlist, refreshPlaylist, currentSession } =
     useContext(PlaylistContext);
   const [currentSong, setCurrentSong] = useState(null);
@@ -244,7 +246,12 @@ const MusicPlayer = () => {
 
   if (!currentSong || !currentSession) {
     return (
-      <Card title='Music Player'>
+      <Card
+        title='Music Player'
+        style={{
+          background: isDark ? '#1f1f1f' : undefined,
+        }}
+      >
         <Space
           direction='vertical'
           align='center'
@@ -264,7 +271,12 @@ const MusicPlayer = () => {
   }
 
   return (
-    <Card title='Music Player'>
+    <Card
+      title='Music Player'
+      style={{
+        background: isDark ? '#1f1f1f' : undefined,
+      }}
+    >
       {currentSong && (
         <>
           <Title level={4}>{currentSong.title}</Title>

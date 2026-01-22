@@ -8,10 +8,12 @@ import {
   MinusOutlined,
 } from "@ant-design/icons";
 import { getTodayOilPrice } from "../../services/api";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const { Text } = Typography;
 
 const OilPriceView = () => {
+  const { isDark } = useTheme();
   const [oilPrice, setOilPrice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -118,8 +120,9 @@ const OilPriceView = () => {
               <Col span={24} key={index}>
                 <div
                   style={{
-                    background:
-                      "linear-gradient(135deg, #f6f9fc 0%, #e9f7fe 100%)",
+                    background: isDark
+                      ? "linear-gradient(135deg, #1f1f1f 0%, #262626 100%)"
+                      : "linear-gradient(135deg, #f6f9fc 0%, #e9f7fe 100%)",
                     padding: "12px",
                     borderRadius: "6px",
                     marginBottom: "8px",

@@ -2,11 +2,13 @@ import React, { useContext, useState } from 'react'
 import { Card, Button, Typography, Space, Statistic } from 'antd'
 import { PlayCircleOutlined, StopOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const { Text, Title } = Typography
 const { Countdown } = Statistic
 
 const SessionManager = () => {
+  const { isDark } = useTheme()
   const { currentSession, startSession, endSession } = useContext(PlaylistContext)
   const [loading, setLoading] = useState(false)
 
@@ -48,7 +50,12 @@ const SessionManager = () => {
   }
 
   return (
-    <Card title='Quản lý phiên phát nhạc'>
+    <Card
+      title='Quản lý phiên phát nhạc'
+      style={{
+        background: isDark ? '#1f1f1f' : undefined,
+      }}
+    >
       {currentSession ? (
         <>
           <Title level={4}>Phiên đang diễn ra</Title>

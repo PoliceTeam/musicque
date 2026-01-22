@@ -7,11 +7,13 @@ import MusicPlayer from '../components/Player/MusicPlayer'
 import PlaylistView from '../components/Playlist/PlaylistView'
 import ChatBox from '../components/Chat/ChatBox'
 import { AuthContext } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 const { Header, Content, Footer } = Layout
 const { Title } = Typography
 
 const AdminPage = () => {
+  const { isDark } = useTheme()
   const { logoutAdmin } = useContext(AuthContext)
   const navigate = useNavigate()
 
@@ -24,7 +26,7 @@ const AdminPage = () => {
     <Layout style={{ minHeight: '100vh' }}>
       <Header
         style={{
-          background: '#fff',
+          background: isDark ? '#141414' : '#fff',
           padding: '0 20px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -66,7 +68,13 @@ const AdminPage = () => {
 
       <Footer style={{ textAlign: 'center' }}>
         Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
-        <span style={{ fontSize: '12px', color: '#e0c9c8', fontWeight: 'bold' }}>
+        <span
+          style={{
+            fontSize: '12px',
+            color: isDark ? '#8c8c8c' : '#e0c9c8',
+            fontWeight: 'bold',
+          }}
+        >
           100% Made with AI
         </span>
       </Footer>
