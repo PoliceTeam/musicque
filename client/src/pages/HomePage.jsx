@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Input, Space } from 'antd';
+import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
@@ -7,7 +7,7 @@ import {
   MoonOutlined,
   SunOutlined,
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import GoldPriceView from '../components/GoldPrice/GoldPriceView';
@@ -30,11 +30,13 @@ const HomePage = () => {
   const { isAdmin, username, setUserName, logoutAdmin } =
     useContext(AuthContext);
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [showDiceGame, setShowDiceGame] = useState(false);
   const [finalValue, setFinalValue] = useState(null);
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
   const [showSnowEffect, setShowSnowEffect] = useState(true);
+  const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -60,6 +62,15 @@ const HomePage = () => {
 
   const toggleSnowEffect = () => {
     setShowSnowEffect((prev) => !prev);
+  };
+
+  const handleAppSelect = (app) => {
+    setIsAppSwitcherOpen(false);
+    if (app === 'music') {
+      navigate('/');
+    } else if (app === 'lunch-vote') {
+      navigate('/lunch-vote');
+    }
   };
 
   useEffect(() => {
@@ -190,7 +201,8 @@ const HomePage = () => {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Title
             level={3}
-            style={{ margin: '16px 0' }}
+            style={{ margin: '16px 0', cursor: 'pointer' }}
+            onClick={() => setIsAppSwitcherOpen(true)}
           >
             Music Order App
           </Title>
@@ -362,6 +374,22 @@ const HomePage = () => {
           </Col> */}
         </Row>
       </Content>
+
+      <Modal
+        title="Chọn ứng dụng"
+        open={isAppSwitcherOpen}
+        onCancel={() => setIsAppSwitcherOpen(false)}
+        footer={null}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Button block type="primary" onClick={() => handleAppSelect('music')}>
+            Music Order App
+          </Button>
+          <Button block onClick={() => handleAppSelect('lunch-vote')}>
+            Lunch Vote
+          </Button>
+        </Space>
+      </Modal>
 
       <Footer style={{ textAlign: 'center' }}>
         Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}

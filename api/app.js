@@ -7,6 +7,7 @@ const goldPriceRoutes = require('./routes/goldPrice.routes');
 const oilPriceRoutes = require('./routes/oilPrice.routes');
 const btcPriceRoutes = require('./routes/btcPrice.routes');
 const weatherRoutes = require('./routes/weather.routes');
+const lunchVoteRoutes = require('./routes/lunchVote.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/gold', goldPriceRoutes);
 app.use('/api/oil', oilPriceRoutes);
 app.use('/api/btc', btcPriceRoutes);
 app.use('/api/weather', weatherRoutes);
+app.use('/api/lunch-vote', lunchVoteRoutes);
 
 // Error handling
 app.use(errorHandler);

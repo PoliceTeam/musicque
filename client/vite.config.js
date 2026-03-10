@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import federation from '@originjs/vite-plugin-federation'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    federation({
+      name: 'client-host',
+      remotes: {
+        lunchVote: 'http://localhost:5006/assets/remoteEntry.js',
+      },
+      shared: ['react', 'react-dom', 'antd', 'react-router-dom'],
+    }),
+  ],
   server: {
     port: 8080,
     host: true,
@@ -11,6 +21,10 @@ export default defineConfig({
       '/socket.io': {
         target: 'http://localhost:5001',
         ws: true,
+      },
+      '/api': {
+        target: 'http://localhost:5005',
+        changeOrigin: true,
       },
     },
   },
@@ -26,9 +40,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // Thêm cấu hình này để xử lý các external modules
-    rollupOptions: {
-      external: [],
-    },
+    modulePreload: false,
+    target: 'esnext',
+    minify: false,
+    cssCodeSplit: false,
   },
 })
