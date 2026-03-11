@@ -44,15 +44,32 @@ services:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
 
-  # Frontend Client Service
+  # Lunch Vote Micro Frontend (Module Federation remote)
+  lunch-vote-mf:
+    build:
+      context: ./lunch-vote-mf
+      dockerfile: Dockerfile
+    container_name: music-order-lunch-vote-mf
+    restart: always
+    ports:
+      - "5806:80"
+    networks:
+      - music-order-network
+
+  # Frontend Client Service (host app, loads lunch-vote-mf remote at runtime)
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5001
+        VITE_SOCKET_URL: http://localhost:5001
+        VITE_LUNCH_VOTE_REMOTE_URL: http://localhost:5806/assets/remoteEntry.js
     container_name: music-order-client
     restart: always
     depends_on:
       - api
+      - lunch-vote-mf
     environment:
       - VITE_API_URL=http://localhost:5001
       - VITE_SOCKET_URL=http://localhost:5001

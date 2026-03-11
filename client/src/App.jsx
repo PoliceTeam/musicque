@@ -5,11 +5,17 @@ import viVN from 'antd/lib/locale/vi_VN'
 import HomePage from './pages/HomePage'
 import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
+import LunchVotePage from './pages/LunchVotePage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useTheme } from './contexts/ThemeContext'
+
+// Expose socket URL globally so micro-frontends có thể dùng chung
+if (typeof window !== 'undefined') {
+  window.__SOCKET_URL__ = import.meta.env.VITE_SOCKET_URL
+}
 
 function AppContent() {
   const { antdTheme } = useTheme()
@@ -22,6 +28,7 @@ function AppContent() {
             <Routes>
               <Route path='/' element={<HomePage />} />
               <Route path='/login' element={<LoginPage />} />
+              <Route path='/lunch-vote' element={<LunchVotePage />} />
               <Route
                 path='/admin'
                 element={
