@@ -9,7 +9,7 @@ export default defineConfig({
     federation({
       name: 'client-host',
       remotes: {
-        lunchVote: 'http://localhost:5006/assets/remoteEntry.js',
+        lunchVote: import.meta.env.VITE_LUNCH_VOTE_REMOTE_URL || 'http://localhost:5006/assets/remoteEntry.js',
       },
       shared: ['react', 'react-dom', 'antd', 'react-router-dom'],
     }),
