@@ -1,4 +1,119 @@
 const LunchOption = require('../models/lunchVote.model');
+const LunchTeam = require('../models/lunchTeam.model');
+
+exports.getTeams = async (req, res) => {
+  try {
+    const distinctOptionTeams = await LunchOption.distinct('team');
+    const existingTeams = await LunchTeam.find();
+    
+    // Merge both
+    const teamMap = new Map();
+    // 1. Add teams from LunchTeam collection
+    existingTeams.forEach(t => {
+      teamMap.set(t.name, { name: t.name, createdBy: t.createdBy, isPersisted: true });
+    });
+    // 2. Add implicit teams from options
+    distinctOptionTeams.forEach(tName => {
+      if (tName && !teamMap.has(tName)) {
+        teamMap.set(tName, { name: tName, createdBy: 'System', isPersisted: false });
+      }
+    });
+    
+    const finalTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    
+    res.status(200).json({
+      message: 'OK',
+      data: finalTeams,
+    });
+  } catch (error) {
+    console.error('getTeams error:', error);
+    res.status(500).json({
+      message: 'Lỗi server khi lấy danh sách team',
+      error: error.message,
+    });
+  }
+};
+
+exports.createTeam = async (req, res) => {
+  try {
+    const { name: nameBody, username } = req.body;
+    if (!nameBody || !username) {
+      return res.status(400).json({ message: 'Tên team và người tạo là bắt buộc' });
+    }
+    const name = nameBody.trim();
+    if (!name) {
+      return res.status(400).json({ message: 'Tên team không hợp lệ' });
+    }
+    
+    let team = await LunchTeam.findOne({ name });
+    if (team) {
+      return res.status(400).json({ message: 'Team này đã tồn tại' });
+    }
+    
+    team = await LunchTeam.create({ name, createdBy: username });
+    
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        // Broadcast the new team, but probably the client will just fetch again
+        io.emit('lunch_team_created', { team });
+      }
+    } catch (e) {
+      console.error('createTeam socket emit error:', e);
+    }
+    
+    res.status(201).json({ message: 'Đã tạo team mới', data: { name: team.name, createdBy: team.createdBy, isPersisted: true } });
+  } catch (error) {
+    console.error('createTeam error:', error);
+    res.status(500).json({
+      message: 'Lỗi server khi tạo team',
+      error: error.message,
+    });
+  }
+};
+
+exports.deleteTeam = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { username } = req.query; // pass username via query
+    if (!name || !username) {
+      return res.status(400).json({ message: 'Tên team và username là bắt buộc' });
+    }
+    
+    const team = await LunchTeam.findOne({ name });
+    if (!team) {
+      // If it's an implicit team, just return error
+      return res.status(404).json({ message: 'Không tìm thấy team (hoặc team hệ thống)' });
+    }
+    
+    if (team.createdBy !== username) {
+      return res.status(403).json({ message: 'Bạn không phải là người tạo team này' });
+    }
+    
+    await LunchTeam.deleteOne({ _id: team._id });
+    // Also optional: delete all LunchOptions for this team?
+    // Let's preserve the options, but without the group they just become implicit again...
+    // Actually, if we delete the options, it makes sense.
+    await LunchOption.deleteMany({ team: name });
+    
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('lunch_team_deleted', { name });
+      }
+    } catch (e) {
+      console.error('deleteTeam socket emit error:', e);
+    }
+    
+    res.status(200).json({ message: 'Đã xóa team thành công' });
+  } catch (error) {
+    console.error('deleteTeam error:', error);
+    res.status(500).json({
+      message: 'Lỗi server khi xóa team',
+      error: error.message,
+    });
+  }
+};
 
 function getVietnamNow() {
   const now = new Date();
@@ -33,7 +148,13 @@ function extractPlaceNameFromMapsUrl(mapsUrl) {
 exports.getTodayOptions = async (req, res) => {
   try {
     const dateKey = getTodayDateKey();
-    const options = await LunchOption.find({ dateKey }).sort({
+    const team = (req.query.team || '').trim();
+    if (!team) {
+      return res.status(400).json({
+        message: 'team query is required',
+      });
+    }
+    const options = await LunchOption.find({ dateKey, team }).sort({
       votes: -1,
       createdAt: 1,
     });
@@ -42,6 +163,7 @@ exports.getTodayOptions = async (req, res) => {
       message: 'OK',
       data: {
         dateKey,
+        team,
         options,
       },
     });
@@ -56,18 +178,24 @@ exports.getTodayOptions = async (req, res) => {
 
 exports.addOption = async (req, res) => {
   try {
-    const { mapsUrl, username, placeName: placeNameOverride } = req.body;
+    const { mapsUrl, username, placeName: placeNameOverride, team: teamBody } = req.body;
     if (!mapsUrl || !username) {
       return res.status(400).json({
         message: 'mapsUrl và username là bắt buộc',
       });
     }
+    const team = (teamBody || '').trim();
+    if (!team) {
+      return res.status(400).json({
+        message: 'team là bắt buộc',
+      });
+    }
 
     const dateKey = getTodayDateKey();
-    const existing = await LunchOption.findOne({ dateKey, mapsUrl });
+    const existing = await LunchOption.findOne({ dateKey, team, mapsUrl });
     if (existing) {
       return res.status(200).json({
-        message: 'Option đã tồn tại cho hôm nay',
+        message: 'Option đã tồn tại cho hôm nay trong team này',
         data: existing,
       });
     }
@@ -78,23 +206,20 @@ exports.addOption = async (req, res) => {
 
     const option = await LunchOption.create({
       dateKey,
+      team,
       placeName,
       mapsUrl,
       createdBy: username,
     });
 
-    // Emit realtime update qua socket.io
     try {
       const io = req.app.get('io');
       if (io) {
-        const options = await LunchOption.find({ dateKey }).sort({
+        const options = await LunchOption.find({ dateKey, team }).sort({
           votes: -1,
           createdAt: 1,
         });
-        io.emit('lunch_vote_updated', {
-          dateKey,
-          options,
-        });
+        io.emit('lunch_vote_updated', { dateKey, team, options });
       }
     } catch (e) {
       console.error('addOption socket emit error:', e);
@@ -115,16 +240,21 @@ exports.addOption = async (req, res) => {
 
 exports.voteOption = async (req, res) => {
   try {
-    const { optionId, username } = req.body;
+    const { optionId, username, team: teamBody } = req.body;
     if (!optionId || !username) {
       return res.status(400).json({
         message: 'optionId và username là bắt buộc',
       });
     }
+    const team = (teamBody || '').trim();
+    if (!team) {
+      return res.status(400).json({
+        message: 'team là bắt buộc',
+      });
+    }
 
     const now = getVietnamNow();
     const hour = now.getHours();
-    // Khóa vote trong khung giờ 12h–14h để chỉ cho phép random
     if (hour >= 12 && hour < 14) {
       return res.status(400).json({
         message: 'Trong khung giờ 12h–14h chỉ được random, không thể vote',
@@ -135,32 +265,24 @@ exports.voteOption = async (req, res) => {
 
     const existingVote = await LunchOption.findOne({
       dateKey,
+      team,
       voters: username,
     });
 
-    // Nếu đã vote cùng quán này rồi thì trả về dữ liệu hiện tại (idempotent)
     if (existingVote && String(existingVote._id) === optionId) {
-      const options = await LunchOption.find({ dateKey }).sort({
+      const options = await LunchOption.find({ dateKey, team }).sort({
         votes: -1,
         createdAt: 1,
       });
       return res.status(200).json({
         message: 'Bạn đã vote cho quán này rồi',
-        data: {
-          dateKey,
-          options,
-        },
+        data: { dateKey, team, options },
       });
     }
 
-    // Nếu user đã vote quán khác thì chuyển vote sang quán mới:
-    // trừ 1 vote ở quán cũ, cộng 1 vote ở quán mới
     if (existingVote && String(existingVote._id) !== optionId) {
       await LunchOption.updateOne(
-        {
-          _id: existingVote._id,
-          dateKey,
-        },
+        { _id: existingVote._id, dateKey, team },
         {
           $inc: { votes: -1 },
           $pull: { voters: username },
@@ -170,10 +292,7 @@ exports.voteOption = async (req, res) => {
     }
 
     const updated = await LunchOption.findOneAndUpdate(
-      {
-        _id: optionId,
-        dateKey,
-      },
+      { _id: optionId, dateKey, team },
       {
         $inc: { votes: 1 },
         $addToSet: { voters: username },
@@ -188,19 +307,15 @@ exports.voteOption = async (req, res) => {
       });
     }
 
-    const options = await LunchOption.find({ dateKey }).sort({
+    const options = await LunchOption.find({ dateKey, team }).sort({
       votes: -1,
       createdAt: 1,
     });
 
-    // Emit realtime update qua socket.io
     try {
       const io = req.app.get('io');
       if (io) {
-        io.emit('lunch_vote_updated', {
-          dateKey,
-          options,
-        });
+        io.emit('lunch_vote_updated', { dateKey, team, options });
       }
     } catch (e) {
       console.error('voteOption socket emit error:', e);
@@ -208,10 +323,7 @@ exports.voteOption = async (req, res) => {
 
     res.status(200).json({
       message: 'Đã ghi nhận vote',
-      data: {
-        dateKey,
-        options,
-      },
+      data: { dateKey, team, options },
     });
   } catch (error) {
     console.error('voteOption error:', error);
