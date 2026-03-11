@@ -6,7 +6,7 @@ import federation from '@originjs/vite-plugin-federation'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const lunchVoteRemote =
-    env.VITE_LUNCH_VOTE_REMOTE_URL || 'http://localhost:5806/assets/remoteEntry.js'
+    env.VITE_LUNCH_VOTE_REMOTE_URL || 'http://localhost:5006/assets/remoteEntry.js'
 
   return {
     plugins: [

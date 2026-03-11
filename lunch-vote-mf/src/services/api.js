@@ -9,12 +9,21 @@ const api = axios.create({
   },
 })
 
-export const getTodayLunchOptions = () => api.get('/api/lunch-vote/today')
+export const getLunchTeams = () => api.get('/api/lunch-vote/teams')
 
-export const addLunchOption = (mapsUrl, username, placeName) =>
-  api.post('/api/lunch-vote/options', { mapsUrl, username, placeName })
+export const createLunchTeam = (name, username) => 
+  api.post('/api/lunch-vote/teams', { name, username })
 
-export const voteLunchOption = (optionId, username) =>
-  api.post('/api/lunch-vote/vote', { optionId, username })
+export const deleteLunchTeam = (name, username) => 
+  api.delete(`/api/lunch-vote/teams/${encodeURIComponent(name)}`, { params: { username } })
+
+export const getTodayLunchOptions = (team) =>
+  api.get('/api/lunch-vote/today', { params: { team } })
+
+export const addLunchOption = (mapsUrl, username, placeName, team) =>
+  api.post('/api/lunch-vote/options', { mapsUrl, username, placeName, team })
+
+export const voteLunchOption = (optionId, username, team) =>
+  api.post('/api/lunch-vote/vote', { optionId, username, team })
 
 export default api

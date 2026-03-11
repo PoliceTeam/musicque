@@ -6,6 +6,12 @@ const lunchOptionSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
+  team: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true,
+  },
   placeName: {
     type: String,
     required: true,
