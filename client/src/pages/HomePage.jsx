@@ -70,6 +70,8 @@ const HomePage = () => {
       navigate('/');
     } else if (app === 'lunch-vote') {
       navigate('/lunch-vote');
+    } else if (app === 'poliboard') {
+      navigate('/poliboard');
     }
   };
 
@@ -387,6 +389,9 @@ const HomePage = () => {
           </Button>
           <Button block onClick={() => handleAppSelect('lunch-vote')}>
             Lunch Vote
+          </Button>
+          <Button block onClick={() => handleAppSelect('poliboard')} style={{ backgroundColor: '#10b981', color: 'white', border: 'none' }}>
+            PoliBoard 
           </Button>
         </Space>
       </Modal>

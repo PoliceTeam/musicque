@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const lunchVoteRemote =
     env.VITE_LUNCH_VOTE_REMOTE_URL || 'http://localhost:5006/assets/remoteEntry.js'
+  const poliboardRemote =
+    env.VITE_POLIBOARD_REMOTE_URL || 'http://localhost:5002/assets/remoteEntry.js'
 
   return {
     plugins: [
@@ -15,6 +17,7 @@ export default defineConfig(({ mode }) => {
         name: 'client-host',
         remotes: {
           lunchVote: lunchVoteRemote,
+          poliboard: poliboardRemote,
         },
         shared: ['react', 'react-dom', 'antd', 'react-router-dom'],
       }),
