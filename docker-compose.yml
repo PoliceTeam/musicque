@@ -56,6 +56,18 @@ services:
     networks:
       - music-order-network
 
+  # PoliBoard Micro Frontend (Module Federation remote)
+  poliboard:
+    build:
+      context: ./poliboard
+      dockerfile: Dockerfile
+    container_name: music-order-poliboard
+    restart: always
+    ports:
+      - "5807:80"
+    networks:
+      - music-order-network
+
   # Frontend Client Service (host app, loads lunch-vote-mf remote at runtime)
   client:
     build:
@@ -65,11 +77,13 @@ services:
         VITE_API_URL: http://localhost:5001
         VITE_SOCKET_URL: http://localhost:5001
         VITE_LUNCH_VOTE_REMOTE_URL: http://localhost:5806/assets/remoteEntry.js
+        VITE_POLIBOARD_REMOTE_URL: http://localhost:5807/assets/remoteEntry.js
     container_name: music-order-client
     restart: always
     depends_on:
       - api
       - lunch-vote-mf
+      - poliboard
     environment:
       - VITE_API_URL=http://localhost:5001
       - VITE_SOCKET_URL=http://localhost:5001

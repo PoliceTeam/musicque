@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage'
 import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
 import LunchVotePage from './pages/LunchVotePage'
+import PoliBoardPage from './pages/PoliBoardPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -29,6 +30,7 @@ function AppContent() {
               <Route path='/' element={<HomePage />} />
               <Route path='/login' element={<LoginPage />} />
               <Route path='/lunch-vote' element={<LunchVotePage />} />
+              <Route path='/poliboard' element={<PoliBoardPage />} />
               <Route
                 path='/admin'
                 element={
