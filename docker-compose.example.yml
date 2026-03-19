@@ -36,7 +36,7 @@ services:
     ports:
       - '5806:80'
 
-  poliboard:
+  poliboard-mf:
     build:
       context: ./poliboard
       dockerfile: Dockerfile

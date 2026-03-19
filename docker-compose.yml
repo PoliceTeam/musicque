@@ -1,29 +1,27 @@
 version: '3.8'
 
 services:
-  # MongoDB Service
   mongodb:
     build:
       context: ./mongodb
       dockerfile: Dockerfile
     container_name: music-order-mongodb
-    restart: always
+    restart: unless-stopped
     environment:
       MONGO_INITDB_DATABASE: music-order-app
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongodb_data:/data/db
     networks:
       - music-order-network
 
-  # Backend API Service
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: music-order-api
-    restart: always
+    restart: unless-stopped
     depends_on:
       - mongodb
     environment:
@@ -33,30 +31,30 @@ services:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=admin123
       - CLIENT_URL=http://localhost:8080
-      - SOCKET_URL=http://localhost:5001
-      - YOUTUBE_API_KEY=AIzaSyD500000000000000000000000000000000000000000000000000000000000000
-      - BTC_API_KEY=Uncnssjsdaaskjdasdasdhaskdhasjkdh
+      - SOCKET_URL=http://localhost:5800
+      - YOUTUBE_API_KEY=your_youtube_api_key
+      - BTC_API_KEY=your_btc_api_key
+      - WEATHER_API_KEY=your_weather_api_key
+      - WEATHER_LOCATION=21.0051906,105.7387209
     ports:
-      - "5001:5000"
+      - '5800:5000'
     networks:
       - music-order-network
     volumes:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
 
-  # Lunch Vote Micro Frontend (Module Federation remote)
   lunch-vote-mf:
     build:
       context: ./lunch-vote-mf
       dockerfile: Dockerfile
     container_name: music-order-lunch-vote-mf
-    restart: always
+    restart: unless-stopped
     ports:
-      - "5806:80"
+      - '5806:80'
     networks:
       - music-order-network
 
-  # PoliBoard Micro Frontend (Module Federation remote)
   poliboard:
     build:
       context: ./poliboard
@@ -64,32 +62,31 @@ services:
     container_name: music-order-poliboard
     restart: always
     ports:
-      - "5807:80"
+      - '5807:80'
     networks:
       - music-order-network
 
-  # Frontend Client Service (host app, loads lunch-vote-mf remote at runtime)
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:5001
-        VITE_SOCKET_URL: http://localhost:5001
+        VITE_API_URL: http://localhost:5800
+        VITE_SOCKET_URL: http://localhost:5800
         VITE_LUNCH_VOTE_REMOTE_URL: http://localhost:5806/assets/remoteEntry.js
         VITE_POLIBOARD_REMOTE_URL: http://localhost:5807/assets/remoteEntry.js
     container_name: music-order-client
-    restart: always
+    restart: unless-stopped
     depends_on:
       - api
       - lunch-vote-mf
       - poliboard
     environment:
-      - VITE_API_URL=http://localhost:5001
-      - VITE_SOCKET_URL=http://localhost:5001
-      - VITE_RESPONSIVE_VOICE_KEY=abcabc123123
+      - VITE_API_URL=http://localhost:5800
+      - VITE_SOCKET_URL=http://localhost:5800
+      - VITE_RESPONSIVE_VOICE_KEY=your_responsive_voice_key
     ports:
-      - "8080:80"
+      - '3800:80'
     networks:
       - music-order-network
 
@@ -98,4 +95,4 @@ networks:
     driver: bridge
 
 volumes:
-  mongodb_data: 
+  mongodb_data:
