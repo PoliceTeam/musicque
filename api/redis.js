@@ -39,6 +39,8 @@ try {
   useMemoryStore = true;
 }
 
+const REDIS_PREFIX = 'musicque-';
+
 const getSecondsUntilMidnight = () => {
   const now = new Date();
   const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
@@ -46,7 +48,7 @@ const getSecondsUntilMidnight = () => {
 };
 
 const saveStrokeToRedis = async (roomId, stroke) => {
-  const key = `board:${roomId}`;
+  const key = `${REDIS_PREFIX}board:${roomId}`;
   const strokeJson = JSON.stringify(stroke);
 
   if (useMemoryStore || !redisClient) {
@@ -64,7 +66,7 @@ const saveStrokeToRedis = async (roomId, stroke) => {
 };
 
 const getBoardData = async (roomId) => {
-  const key = `board:${roomId}`;
+  const key = `${REDIS_PREFIX}board:${roomId}`;
   
   if (useMemoryStore || !redisClient) {
     if (!memoryStore.has(key)) return [];
@@ -85,7 +87,7 @@ const getBoardData = async (roomId) => {
 };
 
 const clearBoardInRedis = async (roomId) => {
-  const key = `board:${roomId}`;
+  const key = `${REDIS_PREFIX}board:${roomId}`;
   
   if (useMemoryStore || !redisClient) {
     memoryStore.delete(key);
@@ -101,7 +103,7 @@ const clearBoardInRedis = async (roomId) => {
 
 // Append a single point to an existing stroke (incremental update)
 const appendPointToStroke = async (roomId, strokeId, point) => {
-  const key = `board:${roomId}`;
+  const key = `${REDIS_PREFIX}board:${roomId}`;
 
   if (useMemoryStore || !redisClient) {
     if (memoryStore.has(key) && memoryStore.get(key).has(strokeId)) {
@@ -125,7 +127,7 @@ const appendPointToStroke = async (roomId, strokeId, point) => {
 };
 
 const undoStrokeInRedis = async (roomId, strokeId) => {
-  const key = `board:${roomId}`;
+  const key = `${REDIS_PREFIX}board:${roomId}`;
   
   if (useMemoryStore || !redisClient) {
     if (memoryStore.has(key)) {

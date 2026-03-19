@@ -1,4 +1,32 @@
-## PoliBoard Micro‑Frontend (`poliboard`)
+# 🎨 PoliBoard: Collaborative Real-Time Canvas
+
+## 🌟 Introduction
+PoliBoard is a high-performance, real-time collaborative drawing micro-frontend. It provides an infinite canvas where multiple users can draw, erase, and interact simultaneously. Built with a focus on smoothness and low latency, it brings a Figma-like multiplayer experience to your application.
+
+## 📝 Guideline (How to Use)
+1.  **Identify Yourself**: Enter your name in the username field at the top. This name will appear next to your cursor for other users.
+2.  **Choose Your Tool**:
+    *   **Pen 🖌️**: Click and drag to draw.
+    *   **Eraser 🧽**: Click and drag to remove strokes.
+3.  **Customize**: Use the toolbar to change brush colors and adjust the stroke width.
+4.  **Navigate**: Use your mouse wheel or trackpad to zoom in/out and pan across the infinite canvas.
+5.  **Collaborate**: Every stroke you make is instantly visible to everyone else in the room.
+
+## ⚙️ How It Works
+*   **Micro-Frontend Architecture**: Powered by **Vite Module Federation**, PoliBoard is a standalone "remote" app that can be dynamically injected into any "host" application.
+*   **Infinite Canvas**: Uses a custom coordinate system and HTML5 Canvas transformations to handle panning and zooming without performance degradation.
+*   **Real-Time Sync**: Utilizes **Socket.IO** for event-driven communication. Drawing coordinates are broadcasted in real-time, while full board states are synchronized upon joining.
+*   **Smart Persistence**: 
+    *   Strokes are stored in a **Redis** backend for quick access.
+    *   A **Midnight Auto-Reset** mechanism clears the board every day at 00:00 to keep it fresh.
+*   **Performance Optimization**:
+    *   Uses `requestAnimationFrame` for buttery-smooth rendering.
+    *   Implements stroke simplification to reduce the amount of data sent over the network.
+    *   Efficient canvas clearing and redrawing cycles.
+
+---
+
+## Technical Documentation (`poliboard`)
 
 This package is a **Vite + React + TypeScript micro‑frontend** exposed via **Module Federation** using `@originjs/vite-plugin-federation`.  
 It is intended to be consumed by a host application as `poliboard/Board`.
