@@ -14,7 +14,6 @@ import {
 
 const { Title, Paragraph, Text } = Typography
 import { useNavigate } from 'react-router-dom'
-import { CoffeeOutlined } from '@ant-design/icons'
 
 const PoliBoardApp = React.lazy(() => import('poliboard/Board'))
 
