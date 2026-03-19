@@ -180,14 +180,14 @@ Examples:
 - As a subdomain:
   - `https://mf.your-domain.com/assets/remoteEntry.js`
 - As a sub‑path:
-  - `https://your-domain.com/poliboard/assets/remoteEntry.js`
+  - `https://your-domain.com/poliboard-mf/assets/remoteEntry.js`
 
-If you host under a sub‑path (e.g. `/poliboard/`), set `base` in `vite.config.ts`:
+If you host under a sub‑path (e.g. `/poliboard-mf/`), set `base` in `vite.config.ts`:
 
 ```ts
 // poliboard/vite.config.ts
 export default defineConfig({
-  base: '/poliboard/',
+  base: '/poliboard-mf/',
   // existing config...
 })
 ```
@@ -209,7 +209,7 @@ or, if using a sub‑path:
 
 ```js
 remotes: {
-  poliboard: 'https://your-domain.com/poliboard/assets/remoteEntry.js',
+  poliboard: 'https://your-domain.com/poliboard-mf/assets/remoteEntry.js',
 },
 ```
 
@@ -318,5 +318,6 @@ Then rebuild & redeploy the host container/image.
 
 > **Notes:**
 > - The host cannot use Docker‑internal DNS like `http://poliboard/...` because the browser cannot resolve that.
-> - In a real production setup, put a reverse proxy (Nginx/Traefik) in front and expose under the same domain, e.g. `https://your-domain.com/poliboard/assets/remoteEntry.js`.  
->   If you do that, also set `base: '/poliboard/'` in `vite.config.ts` and rebuild.
+> - In a real production setup, put a reverse proxy (Nginx/Traefik) in front and expose under the same domain, e.g. `https://your-domain.com/poliboard-mf/assets/remoteEntry.js`.  
+>   If you do that, also set `base: '/poliboard-mf/'` in `vite.config.ts` and rebuild.
+> - **CRITICAL:** Do NOT use `/poliboard/` as the proxy path, because it will collide with the React Router page path (`/poliboard`). Use `/poliboard-mf/` (similar to `/lunch-vote-mf/`) to avoid Module Federation chunk loading errors (text/html) when users reload the page!
