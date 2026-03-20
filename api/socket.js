@@ -92,7 +92,10 @@ const initSocket = (server) => {
     });
 
     socket.on('draw:end', (payload) => {
-      if (payload && payload.room && payload.data && payload.data.strokeId) {
+      if (payload && payload.room && payload.data && payload.data.id) {
+        // Save the simplified stroke (overwriting the raw collected points)
+        saveStrokeToRedis(payload.room, payload.data);
+        // Relay to other clients so they can replace their track memory too
         socket.to(payload.room).emit('draw:end', payload);
       }
     });
