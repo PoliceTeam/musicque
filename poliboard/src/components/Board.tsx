@@ -15,10 +15,10 @@ type BoardProps = {
 const Board: React.FC<BoardProps> = ({ roomId = 'default-room', username = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
-  
+
   // Phase 4: Track via Ref, no React state to avoid massive re-renders
   const cursorsRef = useRef<Record<string, CursorState>>({});
-  
+
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -50,7 +50,6 @@ const Board: React.FC<BoardProps> = ({ roomId = 'default-room', username = '' })
     emitStrokeStart,
     emitStrokeMove,
     emitStrokeEnd,
-    emitClear,
     emitUndo,
     emitCursorMove,
     emitCursorLeave
@@ -61,13 +60,13 @@ const Board: React.FC<BoardProps> = ({ roomId = 'default-room', username = '' })
       if (initialStrokes.length > 50) {
         let loaded = 0;
         const chunkSize = 50;
-        
+
         const processChunk = () => {
           const next = initialStrokes.slice(0, loaded + chunkSize);
           setStrokes(next);
           loaded += chunkSize;
           setLoadingProgress(Math.floor(Math.min(100, (loaded / initialStrokes.length) * 100)));
-          
+
           if (loaded < initialStrokes.length) {
             requestAnimationFrame(processChunk);
           } else {
