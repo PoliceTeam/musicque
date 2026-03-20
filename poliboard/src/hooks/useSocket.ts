@@ -7,8 +7,9 @@ type UseSocketParams = {
   onInitBoard: (strokes: Stroke[]) => void;
   onStrokeStart: (stroke: Stroke) => void;
   onStrokeMove: (strokeId: string, point: Point) => void;
-  onStrokeEnd: (strokeId: string) => void;
+  onStrokeEnd: (stroke: Stroke) => void;
   onClearReceived: () => void;
+  onUndoReceived: (strokeId: string) => void;
   onCursorMove: (cursor: any) => void;
   onCursorRemove: (cursorId: string) => void;
 };
@@ -20,6 +21,7 @@ export const useSocket = ({
   onStrokeMove,
   onStrokeEnd,
   onClearReceived,
+  onUndoReceived,
   onCursorMove,
   onCursorRemove
 }: UseSocketParams) => {
@@ -31,6 +33,7 @@ export const useSocket = ({
     onStrokeMove,
     onStrokeEnd,
     onClearReceived,
+    onUndoReceived,
     onCursorMove,
     onCursorRemove
   });
@@ -42,6 +45,7 @@ export const useSocket = ({
     onStrokeMove,
     onStrokeEnd,
     onClearReceived,
+    onUndoReceived,
     onCursorMove,
     onCursorRemove
   };
@@ -60,9 +64,11 @@ export const useSocket = ({
     // Optimized: only receive the new point, not the entire stroke
     const handleMove = (payload: { room: string; data: { strokeId: string; point: Point } }) =>
       callbacksRef.current.onStrokeMove(payload.data.strokeId, payload.data.point);
-    const handleEnd = (payload: { room: string; data: { strokeId: string } }) =>
-      callbacksRef.current.onStrokeEnd(payload.data.strokeId);
+    const handleEnd = (payload: { room: string; data: Stroke }) =>
+      callbacksRef.current.onStrokeEnd(payload.data);
     const handleClear = () => callbacksRef.current.onClearReceived();
+    const handleUndo = (payload: { room: string; data: { strokeId: string } }) =>
+      callbacksRef.current.onUndoReceived(payload.data.strokeId);
     const handleCursorMove = (cursorData: any) => callbacksRef.current.onCursorMove(cursorData);
     const handleCursorRemove = (payload: { id: string }) =>
       callbacksRef.current.onCursorRemove(payload.id);
@@ -72,6 +78,7 @@ export const useSocket = ({
     socketService.on('draw:move', handleMove);
     socketService.on('draw:end', handleEnd);
     socketService.on('clear-board', handleClear);
+    socketService.on('undo-stroke', handleUndo);
     socketService.on('cursor:move', handleCursorMove);
     socketService.on('cursor:remove', handleCursorRemove);
     socketService.on('cursor:leave', handleCursorRemove);
@@ -82,6 +89,7 @@ export const useSocket = ({
       socketService.off('draw:move', handleMove);
       socketService.off('draw:end', handleEnd);
       socketService.off('clear-board', handleClear);
+      socketService.off('undo-stroke', handleUndo);
       socketService.off('cursor:move', handleCursorMove);
       socketService.off('cursor:remove', handleCursorRemove);
       socketService.off('cursor:leave', handleCursorRemove);
@@ -95,12 +103,13 @@ export const useSocket = ({
     []
   );
   const emitStrokeEnd = useCallback(
-    (strokeId: string) => socketService.emit('draw:end', { strokeId }),
+    (stroke: Stroke) => socketService.emit('draw:end', stroke),
     []
   );
   const emitClear = useCallback(() => socketService.emit('clear-board', {}), []);
+  const emitUndo = useCallback((strokeId: string) => socketService.emit('undo-stroke', { strokeId }), []);
   const emitCursorMove = useCallback((data: any) => socketService.emit('cursor:move', data), []);
   const emitCursorLeave = useCallback(() => socketService.emit('cursor:leave', {}), []);
 
-  return { emitStrokeStart, emitStrokeMove, emitStrokeEnd, emitClear, emitCursorMove, emitCursorLeave };
+  return { emitStrokeStart, emitStrokeMove, emitStrokeEnd, emitClear, emitUndo, emitCursorMove, emitCursorLeave };
 };

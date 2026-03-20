@@ -1,20 +1,22 @@
 import { useState, useCallback, useRef } from 'react';
-import { Stroke, Point } from '../types/stroke';
+import { Stroke, Point, StrokeType } from '../types/stroke';
+import { simplifyStroke } from '../utils/rdp';
 
 export const useDraw = () => {
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
   const currentStrokeRef = useRef<Stroke | null>(null);
 
-  // Map for O(1) lookup of remote strokes being drawn by others
-  const remoteStrokesRef = useRef<Map<string, Stroke>>(new Map());
+  // Phase 3: Track remote active strokes without triggering React re-renders
+  const remoteActiveStrokesRef = useRef<Map<string, Stroke>>(new Map());
 
-  const startDrawing = useCallback((point: Point, color: string, width: number) => {
+  const startDrawing = useCallback((point: Point, color: string, width: number, type: StrokeType = 'freehand') => {
     const newStroke: Stroke = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
       points: [point],
       color,
       width,
+      type,
     };
     currentStrokeRef.current = newStroke;
     setCurrentStroke(newStroke);
@@ -23,9 +25,24 @@ export const useDraw = () => {
 
   const draw = useCallback((point: Point) => {
     if (!currentStrokeRef.current) return null;
-    // Mutate in place for performance, then trigger re-render
-    currentStrokeRef.current.points.push(point);
-    const updated = { ...currentStrokeRef.current };
+    
+    const stroke = currentStrokeRef.current;
+    if (stroke.type === 'freehand' || !stroke.type) {
+      // Phase 1: Throttle points (skip if < 1.2px from last point)
+      const lastPoint = stroke.points[stroke.points.length - 1];
+      if (lastPoint) {
+        const dist = Math.hypot(lastPoint.x - point.x, lastPoint.y - point.y);
+        if (dist < 1.2) return null; // Skip redundant updates for performance
+      }
+      
+      // Mutate in place for performance, then trigger re-render
+      stroke.points.push(point);
+    } else {
+      // For shapes, we only need start and end points
+      stroke.points[1] = point;
+    }
+    
+    const updated = { ...stroke };
     setCurrentStroke(updated);
     return updated;
   }, []);
@@ -34,6 +51,12 @@ export const useDraw = () => {
     let finalStroke: Stroke | null = null;
     if (currentStrokeRef.current) {
       finalStroke = currentStrokeRef.current;
+      
+      // Phase 2: Simplification using Ramer-Douglas-Peucker
+      if (finalStroke.type === 'freehand' || !finalStroke.type) {
+        finalStroke.points = simplifyStroke(finalStroke.points, 0.5); // reduced from 1.2 avoiding visual deformation
+      }
+
       setStrokes((prev) => [...prev, finalStroke as Stroke]);
       currentStrokeRef.current = null;
       setCurrentStroke(null);
@@ -43,32 +66,34 @@ export const useDraw = () => {
 
   // Remote: someone else started a stroke
   const addStroke = useCallback((stroke: Stroke) => {
-    remoteStrokesRef.current.set(stroke.id, { ...stroke, points: [...stroke.points] });
-    // Trigger re-render with the new remote stroke tracked
-    setStrokes((prev) => [...prev, remoteStrokesRef.current.get(stroke.id)!]);
+    // Phase 3: Only mutate ref, do NOT trigger React re-render
+    remoteActiveStrokesRef.current.set(stroke.id, { ...stroke, points: [...stroke.points] });
   }, []);
 
   // Remote: someone else added a point to an active stroke (incremental)
   const appendRemotePoint = useCallback((strokeId: string, point: Point) => {
-    const existing = remoteStrokesRef.current.get(strokeId);
+    const existing = remoteActiveStrokesRef.current.get(strokeId);
     if (existing) {
-      // Mutate the stroke for speed, then replace ref in array
+      // Phase 3: Mutate ref only. The Canvas rAF loop will pick it up automatically.
       existing.points.push(point);
-      setStrokes((prev) => {
-        const idx = prev.findIndex((s) => s.id === strokeId);
-        if (idx !== -1) {
-          const newArr = [...prev];
-          newArr[idx] = { ...existing };
-          return newArr;
-        }
-        return prev;
-      });
     }
   }, []);
 
   // Remote: someone else finished a stroke
-  const finalizeRemoteStroke = useCallback((strokeId: string) => {
-    remoteStrokesRef.current.delete(strokeId);
+  const finalizeRemoteStroke = useCallback((simplifiedStroke: Stroke) => {
+    // Delete from in-progress remote strokes map
+    remoteActiveStrokesRef.current.delete(simplifiedStroke.id);
+    
+    // Replace or append the finalized stroke to trigger React and cache invalidation
+    setStrokes((prev) => {
+      const idx = prev.findIndex((s) => s.id === simplifiedStroke.id);
+      if (idx !== -1) {
+        const newArr = [...prev];
+        newArr[idx] = simplifiedStroke;
+        return newArr;
+      }
+      return [...prev, simplifiedStroke];
+    });
   }, []);
 
   // Legacy full-stroke update (for init-board)
@@ -88,18 +113,19 @@ export const useDraw = () => {
     setStrokes([]);
     currentStrokeRef.current = null;
     setCurrentStroke(null);
-    remoteStrokesRef.current.clear();
+    remoteActiveStrokesRef.current.clear();
   }, []);
 
   const undo = useCallback((strokeId: string) => {
     setStrokes((prev) => prev.filter((s) => s.id !== strokeId));
-    remoteStrokesRef.current.delete(strokeId);
+    remoteActiveStrokesRef.current.delete(strokeId);
   }, []);
 
   return {
     strokes,
     setStrokes,
     currentStroke,
+    remoteActiveStrokesRef,
     startDrawing,
     draw,
     stopDrawing,

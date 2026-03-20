@@ -3,11 +3,14 @@ export type Point = {
   y: number;
 };
 
+export type StrokeType = 'freehand' | 'rect' | 'circle' | 'line' | 'caro3' | 'caro5' | 'caro10';
+
 export type Stroke = {
   id: string;
   points: Point[];
   color: string;
   width: number;
+  type?: StrokeType;
 };
 
 export type Viewport = {
@@ -22,4 +25,13 @@ export type CursorData = {
   y: number;
   username: string;
   color: string;
+};
+
+export type CursorState = {
+  data: CursorData;
+  x: number;       // Interpolated display x
+  y: number;       // Interpolated display y
+  targetX: number; // Network target x
+  targetY: number; // Network target y
+  lastUpdate?: number;
 };

@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
+import { StrokeType } from '../types/stroke';
 
 type ToolbarProps = {
   color: string;
   setColor: (color: string) => void;
   width: number;
   setWidth: (width: number) => void;
+  selectedType: StrokeType;
+  setSelectedType: (type: StrokeType) => void;
 };
 
 const COLORS = ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7'];
@@ -19,16 +22,81 @@ const EraserIcon = () => (
   </svg>
 );
 
-export const Toolbar: React.FC<ToolbarProps> = ({ color, setColor, width, setWidth }) => {
+const RectIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+  </svg>
+);
+
+const CircleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+  </svg>
+);
+
+const LineIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="19" x2="19" y2="5" />
+  </svg>
+);
+
+const BrushIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 19 7-7 3 3-7 7-3-3Z"/><path d="m18 13-1.5-7.5L4 2l3.5 12.5L13 16"/>
+  </svg>
+);
+
+const GridIcon = ({ size }: { size: number }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+    <text x="12" y="16" fontSize="8" fill="currentColor" stroke="none" textAnchor="middle" fontWeight="bold">
+      {size}
+    </text>
+  </svg>
+);
+
+export const Toolbar: React.FC<ToolbarProps> = ({ 
+  color, setColor, width, setWidth, selectedType, setSelectedType 
+}) => {
   const isEraser = color === 'eraser';
   const currentSizes = isEraser ? ERASER_SIZES : PEN_SIZES;
 
-  // Auto-adjust width when switching modes if the current width isn't in the new array
   useEffect(() => {
     if (!currentSizes.includes(width)) {
-      setWidth(currentSizes[1]); // Default to second size
+      setWidth(currentSizes[1]);
     }
   }, [isEraser, width, setWidth, currentSizes]);
+
+  const ToolButton = ({ type, icon, title, activeColor = '#3b82f6' }: any) => {
+    const isActive = selectedType === type && !isEraser;
+    return (
+      <button
+        onClick={() => {
+          setSelectedType(type);
+          if (isEraser) setColor('#000000');
+        }}
+        style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '8px',
+          backgroundColor: isActive ? '#f1f5f9' : '#ffffff',
+          border: isActive ? `2px solid ${activeColor}` : '1px solid #cbd5e1',
+          color: isActive ? activeColor : '#64748b',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s ease',
+          boxShadow: isActive ? `0 2px 4px ${activeColor}33` : 'none'
+        }}
+        title={title}
+      >
+        {icon}
+      </button>
+    );
+  };
 
   return (
     <div style={{
@@ -41,33 +109,98 @@ export const Toolbar: React.FC<ToolbarProps> = ({ color, setColor, width, setWid
       borderRadius: '12px',
       boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
       display: 'flex',
-      gap: '24px',
+      gap: '20px',
       alignItems: 'center',
       zIndex: 10,
       backdropFilter: 'blur(8px)',
       border: '1px solid #e5e7eb'
     }}>
-      {/* Colors Section */}
+      {/* Tool Section */}
       <div style={{ display: 'flex', gap: '8px' }}>
+        <ToolButton type="freehand" icon={<BrushIcon />} title="Bút vẽ" />
+        <ToolButton type="line" icon={<LineIcon />} title="Đường thẳng" />
+        <ToolButton type="rect" icon={<RectIcon />} title="Hình vuông" />
+        <ToolButton type="circle" icon={<CircleIcon />} title="Hình tròn" />
+      </div>
+
+      <div style={{ width: '1px', height: '32px', backgroundColor: '#e5e7eb' }} />
+
+      {/* Grid Section */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <ToolButton type="caro3" icon={<GridIcon size={3} />} title="Bàn Caro 3x3" activeColor="#eab308" />
+        <ToolButton type="caro5" icon={<GridIcon size={5} />} title="Bàn Caro 5x5" activeColor="#eab308" />
+        <ToolButton type="caro10" icon={<GridIcon size={10} />} title="Bàn Caro 10x10" activeColor="#eab308" />
+      </div>
+
+      <div style={{ width: '1px', height: '32px', backgroundColor: '#e5e7eb' }} />
+
+      {/* Colors Section */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {COLORS.map(c => (
           <button
             key={c}
-            onClick={() => setColor(c)}
+            onClick={() => {
+              setColor(c);
+            }}
             style={{
-              width: '28px',
-              height: '28px',
+              width: '24px',
+              height: '24px',
               borderRadius: '50%',
               backgroundColor: c,
-              border: c === color ? '3px solid #cbd5e1' : '3px solid transparent',
-              boxShadow: c === color ? '0 0 0 1px #333' : 'none',
+              border: (c === color && !isEraser) ? '3px solid #cbd5e1' : '3px solid transparent',
+              boxShadow: (c === color && !isEraser) ? '0 0 0 1px #333' : 'none',
               cursor: 'pointer',
               padding: 0,
               transition: 'all 0.2s ease'
             }}
+            title={`Màu ${c}`}
             aria-label={`Color ${c}`}
-            title="Bút vẽ"
           />
         ))}
+
+        {/* Custom Color Picker */}
+        <div 
+          style={{ position: 'relative', width: '24px', height: '24px' }}
+          title="Chọn màu tùy chỉnh"
+        >
+          <input
+            type="color"
+            value={!COLORS.includes(color) && !isEraser ? color : '#000000'}
+            onChange={(e) => setColor(e.target.value)}
+            style={{
+              width: '100%',
+              height: '100%',
+              padding: 0,
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              opacity: 0,
+              position: 'absolute',
+              zIndex: 2,
+            }}
+          />
+          <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              borderRadius: '50%',
+              backgroundColor: (!COLORS.includes(color) && !isEraser) ? color : '#f8fafc',
+              border: (!COLORS.includes(color) && !isEraser) ? '3px solid #cbd5e1' : '1px dashed #94a3b8',
+              boxShadow: (!COLORS.includes(color) && !isEraser) ? '0 0 0 1px #333' : 'none',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#64748b',
+              transition: 'all 0.2s ease'
+          }}>
+            {(!COLORS.includes(color) && !isEraser) ? null : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            )}
+          </div>
+        </div>
       </div>
 
       <div style={{ width: '1px', height: '32px', backgroundColor: '#e5e7eb' }} />
@@ -104,8 +237,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ color, setColor, width, setWid
             key={s}
             onClick={() => setWidth(s)}
             style={{
-              width: '32px',
-              height: '32px',
+              width: '30px',
+              height: '30px',
               borderRadius: '6px',
               backgroundColor: s === width ? '#f1f5f9' : 'transparent',
               border: s === width ? '1px solid #cbd5e1' : '1px solid transparent',
@@ -115,11 +248,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ color, setColor, width, setWid
               justifyContent: 'center',
               transition: 'all 0.2s ease'
             }}
-            title={`Kích thước ${s}`}
           >
             <div style={{ 
-              width: `${Math.min(s, 24)}px`, 
-              height: `${Math.min(s, 24)}px`, 
+              width: `${Math.min(s, 20)}px`, 
+              height: `${Math.min(s, 20)}px`, 
               backgroundColor: isEraser ? '#94a3b8' : '#333', 
               borderRadius: '50%',
               border: isEraser ? '1px solid #cbd5e1' : 'none'
