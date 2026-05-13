@@ -24,6 +24,78 @@ import {
 
 const { Title, Text } = Typography;
 
+const SPEECH_LOG_PREFIX = '[MusicPlayer][Speech]';
+const RESPONSIVE_VOICE_READY_TIMEOUT = 5000;
+const RESPONSIVE_VOICE_START_TIMEOUT = 3000;
+const RESPONSIVE_VOICE_MIN_END_TIMEOUT = 7000;
+
+const getResponsiveVoiceDebugSnapshot = () => {
+  const responsiveVoice = window.responsiveVoice;
+  const script = document.querySelector(
+    'script[src*="code.responsivevoice.org/responsivevoice.js"]'
+  );
+
+  let voiceSupport = 'unavailable';
+
+  try {
+    if (typeof responsiveVoice?.voiceSupport === 'function') {
+      voiceSupport = responsiveVoice.voiceSupport();
+    }
+  } catch (error) {
+    voiceSupport = `threw: ${error?.message || error}`;
+  }
+
+  return {
+    timestamp: new Date().toISOString(),
+    href: window.location.href,
+    visibilityState: document.visibilityState,
+    hidden: document.hidden,
+    hasResponsiveVoice: Boolean(responsiveVoice),
+    hasSpeak: typeof responsiveVoice?.speak === 'function',
+    hasCancel: typeof responsiveVoice?.cancel === 'function',
+    voiceSupport,
+    scriptFound: Boolean(script),
+    scriptSrc: script?.src,
+  };
+};
+
+const waitForResponsiveVoiceReady = (
+  timeoutMs = RESPONSIVE_VOICE_READY_TIMEOUT
+) =>
+  new Promise((resolve, reject) => {
+    const startedAt = performance.now();
+
+    const checkReady = () => {
+      const snapshot = getResponsiveVoiceDebugSnapshot();
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      const responsiveVoice = window.responsiveVoice;
+      const hasRequiredApi = typeof responsiveVoice?.speak === 'function';
+      const voiceSupportReady =
+        snapshot.voiceSupport === true ||
+        snapshot.voiceSupport === 'unavailable';
+
+      console.log(`${SPEECH_LOG_PREFIX} wait ready check`, {
+        elapsedMs,
+        ready: hasRequiredApi && voiceSupportReady,
+        responsiveVoice: snapshot,
+      });
+
+      if (hasRequiredApi && voiceSupportReady) {
+        resolve(responsiveVoice);
+        return;
+      }
+
+      if (elapsedMs >= timeoutMs) {
+        reject(new Error('ResponsiveVoice ready timeout'));
+        return;
+      }
+
+      window.setTimeout(checkReady, 250);
+    };
+
+    checkReady();
+  });
+
 const MusicPlayer = () => {
   const { isDark } = useTheme();
   const { playlist, refreshPlaylist, currentSession } =
@@ -54,55 +126,193 @@ const MusicPlayer = () => {
   useEffect(() => {
     fetchCurrentSong();
     return () => {
-      if (speechRef.current) {
-        responsiveVoice.cancel();
-        speechRef.current = null;
-      }
+      speechRef.current?.cancel(false);
     };
   }, []);
 
   const playSpeech = useCallback(
     (text, title, username) => {
-      if (!text || speaking) return Promise.resolve();
+      console.log(`${SPEECH_LOG_PREFIX} playSpeech called`, {
+        hasText: Boolean(text),
+        textLength: text?.length || 0,
+        title,
+        username,
+        speaking,
+        alreadySpeakingRef: Boolean(speechRef.current),
+        responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+      });
 
-      return new Promise((resolve) => {
-        if (speechRef.current) {
-          responsiveVoice.cancel();
-          speechRef.current = null;
-        }
-
-        const message = `Tới từ ${username} với lời nhắn: ${text}`;
-
-        speechRef.current = true;
-
-        responsiveVoice.speak(message, 'Vietnamese Female', {
-          pitch: 1,
-          rate: 1.15,
-          onstart: () => {
-            setSpeaking(true);
-          },
-          onend: () => {
-            setSpeaking(false);
-            wasMessageSpokenRef.current = true;
-            speechRef.current = null;
-            resolve();
-          },
-          onerror: (error) => {
-            console.error('Speech error:', error);
-            setSpeaking(false);
-            wasMessageSpokenRef.current = true;
-            speechRef.current = null;
-            resolve();
-          },
+      if (!text || speaking) {
+        console.warn(`${SPEECH_LOG_PREFIX} playSpeech skipped`, {
+          reason: !text ? 'empty_text' : 'already_speaking',
+          speaking,
         });
+        return Promise.resolve();
+      }
+
+      return new Promise(async (resolve) => {
+        speechRef.current?.cancel(false);
+
+        const speechMessage = `Tới từ ${username} với lời nhắn: ${text}`;
+        const startedAt = performance.now();
+        const speechState = {
+          done: false,
+          startTimeoutId: null,
+          endTimeoutId: null,
+          cancel: null,
+        };
+
+        const finishSpeech = (completed = true, reason = 'completed') => {
+          if (speechState.done) return;
+
+          speechState.done = true;
+          window.clearTimeout(speechState.startTimeoutId);
+          window.clearTimeout(speechState.endTimeoutId);
+          window.responsiveVoice?.cancel?.();
+          setSpeaking(false);
+
+          if (completed) {
+            wasMessageSpokenRef.current = true;
+          }
+
+          if (speechRef.current === speechState) {
+            speechRef.current = null;
+          }
+
+          console.log(`${SPEECH_LOG_PREFIX} finish speech`, {
+            completed,
+            reason,
+            elapsedMs: Math.round(performance.now() - startedAt),
+            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+          });
+
+          resolve();
+        };
+
+        speechState.cancel = (completed = false) => {
+          console.warn(`${SPEECH_LOG_PREFIX} speech cancelled`, {
+            completed,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+          finishSpeech(completed, 'cancelled');
+        };
+
+        speechRef.current = speechState;
 
         setSpeaking(true);
+
+        try {
+          const responsiveVoice = await waitForResponsiveVoiceReady();
+
+          if (speechState.done) return;
+
+          console.log(`${SPEECH_LOG_PREFIX} responsiveVoice ready`, {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+          });
+
+          console.log(`${SPEECH_LOG_PREFIX} calling responsiveVoice.speak`, {
+            message: speechMessage,
+            messageLength: speechMessage.length,
+            voice: 'Vietnamese Female',
+            options: {
+              pitch: 1,
+              rate: 1.15,
+            },
+            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+          });
+
+          let didStart = false;
+          const endTimeoutMs = Math.max(
+            RESPONSIVE_VOICE_MIN_END_TIMEOUT,
+            speechMessage.length * 180
+          );
+
+          speechState.startTimeoutId = window.setTimeout(() => {
+            if (didStart || speechState.done) return;
+
+            console.warn(`${SPEECH_LOG_PREFIX} responsiveVoice start timeout`, {
+              timeoutMs: RESPONSIVE_VOICE_START_TIMEOUT,
+              elapsedMs: Math.round(performance.now() - startedAt),
+              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+            });
+            finishSpeech(true, 'start_timeout');
+          }, RESPONSIVE_VOICE_START_TIMEOUT);
+
+          speechState.endTimeoutId = window.setTimeout(() => {
+            if (speechState.done) return;
+
+            console.warn(`${SPEECH_LOG_PREFIX} responsiveVoice end timeout`, {
+              timeoutMs: endTimeoutMs,
+              elapsedMs: Math.round(performance.now() - startedAt),
+              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+            });
+            finishSpeech(true, 'end_timeout');
+          }, endTimeoutMs);
+
+          responsiveVoice.speak(speechMessage, 'Vietnamese Female', {
+            pitch: 1,
+            rate: 1.15,
+            onstart: () => {
+              didStart = true;
+              window.clearTimeout(speechState.startTimeoutId);
+              console.log(`${SPEECH_LOG_PREFIX} responsiveVoice onstart`, {
+                elapsedMs: Math.round(performance.now() - startedAt),
+                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+              });
+              setSpeaking(true);
+            },
+            onend: () => {
+              console.log(`${SPEECH_LOG_PREFIX} responsiveVoice onend`, {
+                elapsedMs: Math.round(performance.now() - startedAt),
+                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+              });
+              finishSpeech(true, 'onend');
+            },
+            onerror: (error) => {
+              console.error(`${SPEECH_LOG_PREFIX} responsiveVoice onerror`, {
+                error,
+                elapsedMs: Math.round(performance.now() - startedAt),
+                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+              });
+              finishSpeech(true, 'onerror');
+            },
+          });
+
+          console.log(`${SPEECH_LOG_PREFIX} responsiveVoice.speak returned`, {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+          });
+        } catch (error) {
+          console.warn(
+            `${SPEECH_LOG_PREFIX} wait ready failed, continuing to music`,
+            {
+              error,
+              elapsedMs: Math.round(performance.now() - startedAt),
+              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+            }
+          );
+          finishSpeech(true, 'ready_timeout');
+        }
       });
     },
-    [speaking, currentSong]
+    [speaking]
   );
 
   const handlePlay = useCallback(async () => {
+    console.log(`${SPEECH_LOG_PREFIX} handlePlay called`, {
+      hasCurrentSong: Boolean(currentSong),
+      songId: currentSong?._id,
+      title: currentSong?.title,
+      hasMessage: Boolean(currentSong?.message),
+      messageLength: currentSong?.message?.length || 0,
+      addedBy: currentSong?.addedBy?.username,
+      speaking,
+      wasMessageSpoken: wasMessageSpokenRef.current,
+      playing,
+      responsiveVoice: getResponsiveVoiceDebugSnapshot(),
+    });
+
     if (!currentSong) {
       message.error('Không có bài hát nào trong playlist');
       return;
@@ -110,6 +320,7 @@ const MusicPlayer = () => {
 
     try {
       if (currentSong.message && !wasMessageSpokenRef.current && !speaking) {
+        console.log(`${SPEECH_LOG_PREFIX} message should be spoken before play`);
         setSpeaking(true);
         try {
           await playSpeech(
@@ -117,28 +328,44 @@ const MusicPlayer = () => {
             currentSong.title,
             currentSong.addedBy.username
           );
+          console.log(`${SPEECH_LOG_PREFIX} playSpeech resolved`);
           setSpeaking(false);
         } catch (error) {
-          console.error('Error playing speech:', error);
+          console.error(`${SPEECH_LOG_PREFIX} playSpeech threw`, error);
           setSpeaking(false);
         }
+      } else {
+        console.log(`${SPEECH_LOG_PREFIX} message speech not required`, {
+          hasMessage: Boolean(currentSong.message),
+          wasMessageSpoken: wasMessageSpokenRef.current,
+          speaking,
+        });
       }
 
       // Đảm bảo player đã sẵn sàng với timeout
       if (playerRef.current) {
         const internalPlayer = playerRef.current.getInternalPlayer();
 
+        console.log(`${SPEECH_LOG_PREFIX} checking player readiness`, {
+          hasInternalPlayer: Boolean(internalPlayer),
+          hasPlayVideo: typeof internalPlayer?.playVideo === 'function',
+        });
+
         // Kiểm tra xem player đã thực sự sẵn sàng chưa
         if (internalPlayer && typeof internalPlayer.playVideo === 'function') {
           wasPlayingRef.current = true;
           // Thêm timeout nhỏ trước khi phát
-          setTimeout(() => setPlaying(true), 100);
+          setTimeout(() => {
+            console.log(`${SPEECH_LOG_PREFIX} setPlaying(true) after speech`);
+            setPlaying(true);
+          }, 100);
         } else {
           console.warn('Player not fully ready, waiting...');
           // Đợi player hoàn toàn sẵn sàng
           setTimeout(() => {
             if (playerRef.current) {
               wasPlayingRef.current = true;
+              console.log(`${SPEECH_LOG_PREFIX} setPlaying(true) after player wait`);
               setPlaying(true);
             }
           }, 1000);
@@ -156,19 +383,12 @@ const MusicPlayer = () => {
 
   const handlePause = () => {
     setPlaying(false);
-    if (speaking && speechRef.current) {
-      responsiveVoice.cancel();
-      speechRef.current = null;
-      setSpeaking(false);
-    }
+    speechRef.current?.cancel(false);
   };
 
   const handleSkipMessage = () => {
-    if (speaking && speechRef.current) {
-      responsiveVoice.cancel();
-      speechRef.current = null;
-      setSpeaking(false);
-      wasMessageSpokenRef.current = true;
+    if (speaking) {
+      speechRef.current?.cancel(true);
       setPlaying(true);
     }
   };
@@ -178,11 +398,7 @@ const MusicPlayer = () => {
     const wasPlaying = playing; // Lưu tạm trạng thái playing
     wasPlayingRef.current = true; // Luôn đặt thành true để đảm bảo bài mới sẽ phát
 
-    if (speaking && speechRef.current) {
-      responsiveVoice.cancel();
-      speechRef.current = null;
-      setSpeaking(false);
-    }
+    speechRef.current?.cancel(false);
     handlePause();
 
     if (currentSong) {

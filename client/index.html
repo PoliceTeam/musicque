@@ -16,7 +16,26 @@
       // Tạo và inject script
       const script = document.createElement('script')
       script.src = `https://code.responsivevoice.org/responsivevoice.js?key=${key}`
+      script.onload = () => {
+        console.log('[MusicPlayer][Speech] responsiveVoice script loaded', {
+          src: script.src,
+          hasResponsiveVoice: Boolean(window.responsiveVoice),
+          hasSpeak: typeof window.responsiveVoice?.speak === 'function',
+          timestamp: new Date().toISOString(),
+        })
+      }
+      script.onerror = (error) => {
+        console.error('[MusicPlayer][Speech] responsiveVoice script failed', {
+          src: script.src,
+          error,
+          timestamp: new Date().toISOString(),
+        })
+      }
       document.body.appendChild(script)
+      console.log('[MusicPlayer][Speech] responsiveVoice script appended', {
+        src: script.src,
+        timestamp: new Date().toISOString(),
+      })
     </script>
   </body>
 </html>
