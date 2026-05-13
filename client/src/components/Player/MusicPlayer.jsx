@@ -24,76 +24,42 @@ import {
 
 const { Title, Text } = Typography;
 
-const SPEECH_LOG_PREFIX = '[MusicPlayer][Speech]';
-const RESPONSIVE_VOICE_READY_TIMEOUT = 5000;
-const RESPONSIVE_VOICE_START_TIMEOUT = 3000;
-const RESPONSIVE_VOICE_MIN_END_TIMEOUT = 7000;
+const TTS_LOG_PREFIX = '[MusicPlayer][WebSpeech]';
+const WEB_SPEECH_LANG = 'vi-VN';
+const WEB_SPEECH_RATE = 1.1;
+const WEB_SPEECH_PITCH = 1;
+const WEB_SPEECH_MIN_TIMEOUT = 7000;
+const WEB_SPEECH_VOICE_WAIT_TIMEOUT = 1500;
 
-const getResponsiveVoiceDebugSnapshot = () => {
-  const responsiveVoice = window.responsiveVoice;
-  const script = document.querySelector(
-    'script[src*="code.responsivevoice.org/responsivevoice.js"]'
+const getVietnameseVoice = () => {
+  const voices = window.speechSynthesis?.getVoices?.() || [];
+
+  return (
+    voices.find((voice) => voice.lang === WEB_SPEECH_LANG) ||
+    voices.find((voice) => voice.lang?.toLowerCase().startsWith('vi')) ||
+    null
   );
-
-  let voiceSupport = 'unavailable';
-
-  try {
-    if (typeof responsiveVoice?.voiceSupport === 'function') {
-      voiceSupport = responsiveVoice.voiceSupport();
-    }
-  } catch (error) {
-    voiceSupport = `threw: ${error?.message || error}`;
-  }
-
-  return {
-    timestamp: new Date().toISOString(),
-    href: window.location.href,
-    visibilityState: document.visibilityState,
-    hidden: document.hidden,
-    hasResponsiveVoice: Boolean(responsiveVoice),
-    hasSpeak: typeof responsiveVoice?.speak === 'function',
-    hasCancel: typeof responsiveVoice?.cancel === 'function',
-    voiceSupport,
-    scriptFound: Boolean(script),
-    scriptSrc: script?.src,
-  };
 };
 
-const waitForResponsiveVoiceReady = (
-  timeoutMs = RESPONSIVE_VOICE_READY_TIMEOUT
-) =>
-  new Promise((resolve, reject) => {
-    const startedAt = performance.now();
+const waitForVietnameseVoice = () =>
+  new Promise((resolve) => {
+    const voice = getVietnameseVoice();
 
-    const checkReady = () => {
-      const snapshot = getResponsiveVoiceDebugSnapshot();
-      const elapsedMs = Math.round(performance.now() - startedAt);
-      const responsiveVoice = window.responsiveVoice;
-      const hasRequiredApi = typeof responsiveVoice?.speak === 'function';
-      const voiceSupportReady =
-        snapshot.voiceSupport === true ||
-        snapshot.voiceSupport === 'unavailable';
+    if (voice || !window.speechSynthesis) {
+      resolve(voice);
+      return;
+    }
 
-      console.log(`${SPEECH_LOG_PREFIX} wait ready check`, {
-        elapsedMs,
-        ready: hasRequiredApi && voiceSupportReady,
-        responsiveVoice: snapshot,
-      });
+    const timeoutId = window.setTimeout(() => {
+      window.speechSynthesis.onvoiceschanged = null;
+      resolve(getVietnameseVoice());
+    }, WEB_SPEECH_VOICE_WAIT_TIMEOUT);
 
-      if (hasRequiredApi && voiceSupportReady) {
-        resolve(responsiveVoice);
-        return;
-      }
-
-      if (elapsedMs >= timeoutMs) {
-        reject(new Error('ResponsiveVoice ready timeout'));
-        return;
-      }
-
-      window.setTimeout(checkReady, 250);
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.clearTimeout(timeoutId);
+      window.speechSynthesis.onvoiceschanged = null;
+      resolve(getVietnameseVoice());
     };
-
-    checkReady();
   });
 
 const MusicPlayer = () => {
@@ -132,18 +98,17 @@ const MusicPlayer = () => {
 
   const playSpeech = useCallback(
     (text, title, username) => {
-      console.log(`${SPEECH_LOG_PREFIX} playSpeech called`, {
+      console.log(`${TTS_LOG_PREFIX} playSpeech called`, {
         hasText: Boolean(text),
         textLength: text?.length || 0,
         title,
         username,
         speaking,
         alreadySpeakingRef: Boolean(speechRef.current),
-        responsiveVoice: getResponsiveVoiceDebugSnapshot(),
       });
 
       if (!text || speaking) {
-        console.warn(`${SPEECH_LOG_PREFIX} playSpeech skipped`, {
+        console.warn(`${TTS_LOG_PREFIX} playSpeech skipped`, {
           reason: !text ? 'empty_text' : 'already_speaking',
           speaking,
         });
@@ -157,8 +122,8 @@ const MusicPlayer = () => {
         const startedAt = performance.now();
         const speechState = {
           done: false,
-          startTimeoutId: null,
-          endTimeoutId: null,
+          timeoutId: null,
+          utterance: null,
           cancel: null,
         };
 
@@ -166,9 +131,9 @@ const MusicPlayer = () => {
           if (speechState.done) return;
 
           speechState.done = true;
-          window.clearTimeout(speechState.startTimeoutId);
-          window.clearTimeout(speechState.endTimeoutId);
-          window.responsiveVoice?.cancel?.();
+          window.clearTimeout(speechState.timeoutId);
+          window.speechSynthesis?.cancel?.();
+
           setSpeaking(false);
 
           if (completed) {
@@ -179,18 +144,17 @@ const MusicPlayer = () => {
             speechRef.current = null;
           }
 
-          console.log(`${SPEECH_LOG_PREFIX} finish speech`, {
+          console.log(`${TTS_LOG_PREFIX} finish speech`, {
             completed,
             reason,
             elapsedMs: Math.round(performance.now() - startedAt),
-            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
           });
 
           resolve();
         };
 
         speechState.cancel = (completed = false) => {
-          console.warn(`${SPEECH_LOG_PREFIX} speech cancelled`, {
+          console.warn(`${TTS_LOG_PREFIX} speech cancelled`, {
             completed,
             elapsedMs: Math.round(performance.now() - startedAt),
           });
@@ -202,97 +166,77 @@ const MusicPlayer = () => {
         setSpeaking(true);
 
         try {
-          const responsiveVoice = await waitForResponsiveVoiceReady();
+          if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+            console.warn(`${TTS_LOG_PREFIX} unsupported, continuing to music`);
+            finishSpeech(true, 'unsupported');
+            return;
+          }
+
+          window.speechSynthesis.cancel();
+
+          const utterance = new SpeechSynthesisUtterance(speechMessage);
+          const voice = await waitForVietnameseVoice();
 
           if (speechState.done) return;
 
-          console.log(`${SPEECH_LOG_PREFIX} responsiveVoice ready`, {
-            elapsedMs: Math.round(performance.now() - startedAt),
-            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-          });
-
-          console.log(`${SPEECH_LOG_PREFIX} calling responsiveVoice.speak`, {
-            message: speechMessage,
-            messageLength: speechMessage.length,
-            voice: 'Vietnamese Female',
-            options: {
-              pitch: 1,
-              rate: 1.15,
-            },
-            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-          });
-
-          let didStart = false;
-          const endTimeoutMs = Math.max(
-            RESPONSIVE_VOICE_MIN_END_TIMEOUT,
+          const timeoutMs = Math.max(
+            WEB_SPEECH_MIN_TIMEOUT,
             speechMessage.length * 180
           );
 
-          speechState.startTimeoutId = window.setTimeout(() => {
-            if (didStart || speechState.done) return;
+          utterance.lang = WEB_SPEECH_LANG;
+          utterance.rate = WEB_SPEECH_RATE;
+          utterance.pitch = WEB_SPEECH_PITCH;
 
-            console.warn(`${SPEECH_LOG_PREFIX} responsiveVoice start timeout`, {
-              timeoutMs: RESPONSIVE_VOICE_START_TIMEOUT,
-              elapsedMs: Math.round(performance.now() - startedAt),
-              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-            });
-            finishSpeech(true, 'start_timeout');
-          }, RESPONSIVE_VOICE_START_TIMEOUT);
+          if (voice) {
+            utterance.voice = voice;
+          }
 
-          speechState.endTimeoutId = window.setTimeout(() => {
+          speechState.utterance = utterance;
+
+          console.log(`${TTS_LOG_PREFIX} speak`, {
+            messageLength: speechMessage.length,
+            language: utterance.lang,
+            voiceName: voice?.name,
+            voiceLang: voice?.lang,
+            rate: utterance.rate,
+            pitch: utterance.pitch,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+
+          speechState.timeoutId = window.setTimeout(() => {
             if (speechState.done) return;
 
-            console.warn(`${SPEECH_LOG_PREFIX} responsiveVoice end timeout`, {
-              timeoutMs: endTimeoutMs,
+            console.warn(`${TTS_LOG_PREFIX} timeout, continuing to music`, {
+              timeoutMs,
               elapsedMs: Math.round(performance.now() - startedAt),
-              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
             });
-            finishSpeech(true, 'end_timeout');
-          }, endTimeoutMs);
+            finishSpeech(true, 'timeout');
+          }, timeoutMs);
 
-          responsiveVoice.speak(speechMessage, 'Vietnamese Female', {
-            pitch: 1,
-            rate: 1.15,
-            onstart: () => {
-              didStart = true;
-              window.clearTimeout(speechState.startTimeoutId);
-              console.log(`${SPEECH_LOG_PREFIX} responsiveVoice onstart`, {
-                elapsedMs: Math.round(performance.now() - startedAt),
-                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-              });
-              setSpeaking(true);
-            },
-            onend: () => {
-              console.log(`${SPEECH_LOG_PREFIX} responsiveVoice onend`, {
-                elapsedMs: Math.round(performance.now() - startedAt),
-                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-              });
-              finishSpeech(true, 'onend');
-            },
-            onerror: (error) => {
-              console.error(`${SPEECH_LOG_PREFIX} responsiveVoice onerror`, {
-                error,
-                elapsedMs: Math.round(performance.now() - startedAt),
-                responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-              });
-              finishSpeech(true, 'onerror');
-            },
-          });
+          utterance.onstart = () => {
+            console.log(`${TTS_LOG_PREFIX} onstart`, {
+              elapsedMs: Math.round(performance.now() - startedAt),
+            });
+          };
 
-          console.log(`${SPEECH_LOG_PREFIX} responsiveVoice.speak returned`, {
-            elapsedMs: Math.round(performance.now() - startedAt),
-            responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-          });
-        } catch (error) {
-          console.warn(
-            `${SPEECH_LOG_PREFIX} wait ready failed, continuing to music`,
-            {
+          utterance.onend = () => finishSpeech(true, 'onend');
+
+          utterance.onerror = (error) => {
+            console.error(`${TTS_LOG_PREFIX} onerror`, {
               error,
               elapsedMs: Math.round(performance.now() - startedAt),
-              responsiveVoice: getResponsiveVoiceDebugSnapshot(),
-            }
-          );
-          finishSpeech(true, 'ready_timeout');
+            });
+            finishSpeech(true, 'onerror');
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (error) {
+          console.warn(`${TTS_LOG_PREFIX} speak failed, continuing to music`, {
+            error,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+          finishSpeech(true, 'speak_failed');
         }
       });
     },
@@ -300,7 +244,7 @@ const MusicPlayer = () => {
   );
 
   const handlePlay = useCallback(async () => {
-    console.log(`${SPEECH_LOG_PREFIX} handlePlay called`, {
+    console.log(`${TTS_LOG_PREFIX} handlePlay called`, {
       hasCurrentSong: Boolean(currentSong),
       songId: currentSong?._id,
       title: currentSong?.title,
@@ -310,7 +254,6 @@ const MusicPlayer = () => {
       speaking,
       wasMessageSpoken: wasMessageSpokenRef.current,
       playing,
-      responsiveVoice: getResponsiveVoiceDebugSnapshot(),
     });
 
     if (!currentSong) {
@@ -320,7 +263,7 @@ const MusicPlayer = () => {
 
     try {
       if (currentSong.message && !wasMessageSpokenRef.current && !speaking) {
-        console.log(`${SPEECH_LOG_PREFIX} message should be spoken before play`);
+        console.log(`${TTS_LOG_PREFIX} message should be spoken before play`);
         setSpeaking(true);
         try {
           await playSpeech(
@@ -328,14 +271,14 @@ const MusicPlayer = () => {
             currentSong.title,
             currentSong.addedBy.username
           );
-          console.log(`${SPEECH_LOG_PREFIX} playSpeech resolved`);
+          console.log(`${TTS_LOG_PREFIX} playSpeech resolved`);
           setSpeaking(false);
         } catch (error) {
-          console.error(`${SPEECH_LOG_PREFIX} playSpeech threw`, error);
+          console.error(`${TTS_LOG_PREFIX} playSpeech threw`, error);
           setSpeaking(false);
         }
       } else {
-        console.log(`${SPEECH_LOG_PREFIX} message speech not required`, {
+        console.log(`${TTS_LOG_PREFIX} message speech not required`, {
           hasMessage: Boolean(currentSong.message),
           wasMessageSpoken: wasMessageSpokenRef.current,
           speaking,
@@ -346,7 +289,7 @@ const MusicPlayer = () => {
       if (playerRef.current) {
         const internalPlayer = playerRef.current.getInternalPlayer();
 
-        console.log(`${SPEECH_LOG_PREFIX} checking player readiness`, {
+        console.log(`${TTS_LOG_PREFIX} checking player readiness`, {
           hasInternalPlayer: Boolean(internalPlayer),
           hasPlayVideo: typeof internalPlayer?.playVideo === 'function',
         });
@@ -356,7 +299,7 @@ const MusicPlayer = () => {
           wasPlayingRef.current = true;
           // Thêm timeout nhỏ trước khi phát
           setTimeout(() => {
-            console.log(`${SPEECH_LOG_PREFIX} setPlaying(true) after speech`);
+            console.log(`${TTS_LOG_PREFIX} setPlaying(true) after speech`);
             setPlaying(true);
           }, 100);
         } else {
@@ -365,7 +308,7 @@ const MusicPlayer = () => {
           setTimeout(() => {
             if (playerRef.current) {
               wasPlayingRef.current = true;
-              console.log(`${SPEECH_LOG_PREFIX} setPlaying(true) after player wait`);
+              console.log(`${TTS_LOG_PREFIX} setPlaying(true) after player wait`);
               setPlaying(true);
             }
           }, 1000);
