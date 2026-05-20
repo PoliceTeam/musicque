@@ -70,6 +70,10 @@ export const getTodayOilPrice = () => api.get("/api/oil/today");
 export const getOilPriceHistory = (limit = 30, page = 1) =>
   api.get(`/api/oil/history?limit=${limit}&page=${page}`);
 
+// World Cup API
+export const getWorldCupMatches = (limit = 8) =>
+  api.get(`/api/world-cup/matches?limit=${limit}`);
+
 // BTC Price API
 export const getTodayBTCPrice = () => api.get("/api/btc/today");
 

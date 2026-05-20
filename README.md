@@ -161,6 +161,7 @@ JWT_SECRET=your_jwt_secret_key
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 CLIENT_URL=http://localhost:3000
+WC2026_API_KEY=your_wc2026_api_key
 ```
 
 Tạo file `.env` trong thư mục `/client` với nội dung:
