@@ -12,7 +12,8 @@ import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import GoldPriceView from '../components/GoldPrice/GoldPriceView';
 import BTCPriceView from '../components/BTCPrice/BTCPriceView';
-import OilPriceView from '../components/OilPrice/OilPriceView';
+// import OilPriceView from '../components/OilPrice/OilPriceView';
+import WorldCupScheduleView from '../components/WorldCup/WorldCupScheduleView';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame';
@@ -367,8 +368,11 @@ const HomePage = () => {
               <BTCPriceView />
             </div>
             <div style={{ marginTop: '16px' }}>
-              <OilPriceView />
+              <WorldCupScheduleView />
             </div>
+            {/* <div style={{ marginTop: '16px' }}>
+              <OilPriceView />
+            </div> */}
           </Col>
 
           {/* <Col xs={24} md={8}>

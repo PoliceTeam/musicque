@@ -36,6 +36,7 @@ services:
       - SOCKET_URL=http://localhost:5001
       - YOUTUBE_API_KEY=AIzaSyD500000000000000000000000000000000000000000000000000000000000000
       - BTC_API_KEY=Uncnssjsdaaskjdasdasdhaskdhasjkdh
+      - WC2026_API_KEY=your_wc2026_api_key
     ports:
       - "5001:5000"
     networks:

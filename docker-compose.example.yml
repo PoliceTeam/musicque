@@ -24,6 +24,7 @@ services:
       - SOCKET_URL=your_socket_url
       - YOUTUBE_API_KEY=your_youtube_api_key
       - BTC_API_KEY=your_btc_api_key
+      - WC2026_API_KEY=your_wc2026_api_key
       - WEATHER_API_KEY=
       - WEATHER_LOCATION=
     ports:
