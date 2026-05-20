@@ -184,6 +184,7 @@ export const PlaylistProvider = ({ children }) => {
         playSong,
         playing,
         currentSong,
+        socket,
       }}
     >
       {children}

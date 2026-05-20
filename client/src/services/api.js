@@ -74,6 +74,10 @@ export const getOilPriceHistory = (limit = 30, page = 1) =>
 export const getWorldCupMatches = (limit = 8) =>
   api.get(`/api/world-cup/matches?limit=${limit}`);
 
+export const getWorldCupStandings = () => api.get("/api/world-cup/standings");
+
+export const getWorldCupBracket = () => api.get("/api/world-cup/bracket");
+
 // BTC Price API
 export const getTodayBTCPrice = () => api.get("/api/btc/today");
 
