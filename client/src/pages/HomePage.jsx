@@ -11,9 +11,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
-import GoldPriceView from '../components/GoldPrice/GoldPriceView';
-import BTCPriceView from '../components/BTCPrice/BTCPriceView';
-// import OilPriceView from '../components/OilPrice/OilPriceView';
+import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
 import WorldCupRail from '../components/WorldCup/WorldCupRail';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
@@ -350,50 +348,64 @@ const HomePage = () => {
           >
             <div
               style={{
-                textAlign: 'center',
-                marginBottom: '20px',
-                padding: '16px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-                position: 'relative',
-                overflow: 'hidden',
+                position: 'sticky',
+                top: 24,
+                maxHeight: 'calc(100vh - 48px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
               }}
             >
               <div
                 style={{
-                  position: 'absolute',
-                  top: '-50%',
-                  left: '-50%',
-                  width: '200%',
-                  height: '200%',
-                  background:
-                    'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                  animation: 'float 6s ease-in-out infinite',
-                }}
-              />
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  color: '#fff',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  fontWeight: 'bold',
-                  letterSpacing: '1px',
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
                   position: 'relative',
-                  zIndex: 1,
+                  overflow: 'hidden',
+                  flexShrink: 0,
                 }}
               >
-                🌍 Thế giới có gì mới?
-              </Title>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background:
+                      'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                    animation: 'float 6s ease-in-out infinite',
+                  }}
+                />
+                <Title
+                  level={3}
+                  style={{
+                    margin: 0,
+                    color: '#fff',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    fontWeight: 'bold',
+                    letterSpacing: '1px',
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  🌍 Thế giới có gì mới?
+                </Title>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  paddingRight: 4,
+                }}
+              >
+                <VnExpressNewsView />
+              </div>
             </div>
-            <GoldPriceView />
-            <div style={{ marginTop: '16px' }}>
-              <BTCPriceView />
-            </div>
-            {/* <div style={{ marginTop: '16px' }}>
-              <OilPriceView />
-            </div> */}
           </Col>
 
           {/* <Col xs={24} md={8}>

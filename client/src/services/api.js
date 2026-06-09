@@ -87,4 +87,7 @@ export const getBTCPriceHistory = (limit = 30, page = 1) =>
 // Weather API
 export const getCurrentWeather = () => api.get("/api/weather");
 
+// News API
+export const getVnExpressNews = () => api.get("/api/news/vnexpress");
+
 export default api;

@@ -9,6 +9,7 @@ const btcPriceRoutes = require('./routes/btcPrice.routes');
 const weatherRoutes = require('./routes/weather.routes');
 const lunchVoteRoutes = require('./routes/lunchVote.routes');
 const worldCupRoutes = require('./routes/worldCup.routes');
+const newsRoutes = require('./routes/news.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/btc', btcPriceRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/lunch-vote', lunchVoteRoutes);
 app.use('/api/world-cup', worldCupRoutes);
+app.use('/api/news', newsRoutes);
 
 // Error handling
 app.use(errorHandler);
