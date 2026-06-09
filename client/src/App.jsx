@@ -13,6 +13,7 @@ import { PlaylistProvider } from './contexts/PlaylistContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useTheme } from './contexts/ThemeContext'
+import TornadoKissEvent from './components/TornadoKissEvent'
 
 // Expose socket URL globally so micro-frontends có thể dùng chung
 if (typeof window !== 'undefined') {
@@ -53,6 +54,7 @@ function App() {
   return (
     <ThemeProvider>
       <AppContent />
+      <TornadoKissEvent />
     </ThemeProvider>
   )
 }
