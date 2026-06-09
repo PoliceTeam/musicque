@@ -51,5 +51,11 @@ export default defineConfig(({ mode }) => {
       minify: false,
       cssCodeSplit: false,
     },
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: './src/test/setup.js',
+      css: true,
+    },
   }
 })

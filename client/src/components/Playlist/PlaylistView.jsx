@@ -1,34 +1,33 @@
 import React, { useContext } from 'react'
-import { List, Button, Space, Typography, Card, Empty, Input, Tag } from 'antd'
-import {
-  UpOutlined,
-  DownOutlined,
-  YoutubeOutlined,
-  PlayCircleFilled,
-  SoundOutlined,
-} from '@ant-design/icons'
+import { List, Space, Typography, Card, Empty, Input } from 'antd'
+import { YoutubeOutlined } from '@ant-design/icons'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { AuthContext } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { message } from 'antd'
-import { useLocation } from 'react-router-dom'
+import QuickReactionButtons from '../Home/QuickReactionButtons'
 
 const { Text } = Typography
 
 const PlaylistView = () => {
   const { isDark } = useTheme()
-  const { playlist, voteSong, loading, playing, currentSession, currentSong } =
+  const { playlist, voteSong, loading, getUserVoteForSong, getLastReactionForSong } =
     useContext(PlaylistContext)
   const { username, setUserName } = useContext(AuthContext)
-  const location = useLocation()
-  const isHomePage = location.pathname === '/'
 
-  const handleVote = async (songId, voteType) => {
+  const handleVote = async (songId, voteType, reactionEmoji) => {
     if (!username || username.trim() === '') {
       message.error('Vui lòng nhập tên của bạn trước khi vote')
-      return
+      return false
     }
-    await voteSong(songId, voteType, playing)
+
+    if (voteType === 'neutral') {
+      const currentVote = getUserVoteForSong(songId)
+      if (!currentVote) return false
+      return voteSong(songId, currentVote, reactionEmoji)
+    }
+
+    return voteSong(songId, voteType, reactionEmoji)
   }
 
   const handleUsernameChange = (e) => {
@@ -50,56 +49,22 @@ const PlaylistView = () => {
         />
       }
     >
-      {isHomePage && currentSong && currentSession && (
-        <Card
-          size='small'
-          style={{
-            marginBottom: 16,
-            background: isDark ? '#162312' : '#f6ffed',
-            borderColor: isDark ? '#274916' : '#b7eb8f',
-          }}
-        >
-          <Space align='start'>
-            <SoundOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-            <Space direction='vertical' size={0}>
-              <Space>
-                <Text strong>Đang phát:</Text>
-                <Text>{currentSong.title}</Text>
-                <Tag color='success' icon={<PlayCircleFilled />}>
-                  Playing
-                </Tag>
-              </Space>
-              <Text type='secondary'>Thêm bởi: {currentSong.addedBy.username}</Text>
-              {currentSong.message && (
-                <Text italic type='secondary'>
-                  "{currentSong.message}"
-                </Text>
-              )}
-            </Space>
-          </Space>
-        </Card>
-      )}
-
       <List
         loading={loading}
         dataSource={playlist}
         renderItem={(song) => {
-          const userVote = song.votes.find(
-            (vote) => vote.userId && vote.userId.username === username,
-          )?.type
+          const userVote = getUserVoteForSong(song._id)
+          const lastReactionEmoji = getLastReactionForSong(song._id)
 
           return (
             <List.Item
               actions={[
-                <Button
-                  type={userVote === 'up' ? 'primary' : 'default'}
-                  icon={<UpOutlined />}
-                  onClick={() => handleVote(song._id, 'up')}
-                />,
-                <Button
-                  type={userVote === 'down' ? 'primary' : 'default'}
-                  icon={<DownOutlined />}
-                  onClick={() => handleVote(song._id, 'down')}
+                <QuickReactionButtons
+                  key={song._id}
+                  songId={song._id}
+                  onVote={handleVote}
+                  userVote={userVote}
+                  lastReactionEmoji={lastReactionEmoji}
                 />,
               ]}
             >

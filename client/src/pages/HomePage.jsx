@@ -12,6 +12,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
+import NowPlayingBar from '../components/Home/NowPlayingBar';
+import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WorldCupRail from '../components/WorldCup/WorldCupRail';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
@@ -307,6 +309,8 @@ const HomePage = () => {
         </Space>
       </Header>
 
+      <NowPlayingBar />
+
       <WorldCupRail />
 
       <TetCountdown />
@@ -333,6 +337,9 @@ const HomePage = () => {
                 </div>
               )}
             </Card>
+            <div style={{ marginTop: 16 }}>
+              <LiveActivityFeed />
+            </div>
           </Col>
 
           <Col

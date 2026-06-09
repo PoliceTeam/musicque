@@ -3,6 +3,10 @@ const Session = require('../models/session.model')
 const User = require('../models/user.model')
 const ytdl = require('ytdl-core')
 const { google } = require('googleapis')
+const { emitActivity } = require('../utils/activityEmitter')
+
+const populatePlaylistQuery = (query) =>
+  query.populate('addedBy', 'username').populate('votes.userId', 'username')
 
 // Khởi tạo YouTube API client
 const youtube = google.youtube({
@@ -118,17 +122,22 @@ exports.addSong = async (req, res) => {
       await newSong.populate('addedBy', 'username')
 
       // Lấy danh sách bài hát đã sắp xếp
-      const updatedPlaylist = await Song.find({
-        sessionId: activeSession._id,
-        playing: false,
-        played: false,
-      })
-        .populate('addedBy', 'username')
-        .sort({ voteScore: -1, addedAt: 1 })
+      const updatedPlaylist = await populatePlaylistQuery(
+        Song.find({
+          sessionId: activeSession._id,
+          playing: false,
+          played: false,
+        }),
+      ).sort({ voteScore: -1, addedAt: 1 })
 
-      // Thông báo qua socket.io
       const io = req.app.get('io')
       io.emit('playlist_updated', updatedPlaylist)
+      emitActivity(io, {
+        type: 'song_added',
+        username,
+        songTitle: videoTitle,
+        songId: newSong._id.toString(),
+      })
 
       res.status(201).json({
         message: 'Đã thêm bài hát',
@@ -179,10 +188,13 @@ exports.voteSong = async (req, res) => {
       (vote) => vote.userId.toString() === user._id.toString(),
     )
 
+    let voteAction = 'added'
     if (existingVoteIndex !== -1) {
       if (song.votes[existingVoteIndex].type === voteType) {
+        voteAction = 'removed'
         song.votes.splice(existingVoteIndex, 1)
       } else {
+        voteAction = 'changed'
         song.votes[existingVoteIndex].type = voteType
       }
     } else {
@@ -197,23 +209,38 @@ exports.voteSong = async (req, res) => {
     await song.save()
 
     // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
-    const updatedPlaylist = await Song.find({
-      sessionId: activeSession._id,
-      playing: false,
-      played: false,
-    })
-      .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 })
+    const updatedPlaylist = await populatePlaylistQuery(
+      Song.find({
+        sessionId: activeSession._id,
+        playing: false,
+        played: false,
+      }),
+    ).sort({ voteScore: -1, addedAt: 1 })
 
-    // Thông báo qua socket.io
     const io = req.app.get('io')
     if (io) {
       io.emit('playlist_updated', updatedPlaylist)
+      emitActivity(io, {
+        type: 'vote_cast',
+        username,
+        voteType,
+        voteAction,
+        songTitle: song.title,
+        songId: song._id.toString(),
+        voteScore: song.voteScore,
+      })
     }
+
+    await song.populate('votes.userId', 'username')
+
+    const currentUserVote = voteAction === 'removed' ? null : voteType
 
     res.status(200).json({
       message: 'Đã cập nhật vote',
       song,
+      voteAction,
+      currentUserVote,
+      voterUserId: user._id.toString(),
     })
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
@@ -359,18 +386,23 @@ exports.markSongAsPlaying = async (req, res) => {
     await song.populate('addedBy', 'username')
 
     // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
-    const updatedPlaylist = await Song.find({
-      sessionId: activeSession._id,
-      playing: false,
-      played: false,
-    })
-      .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 })
+    const updatedPlaylist = await populatePlaylistQuery(
+      Song.find({
+        sessionId: activeSession._id,
+        playing: false,
+        played: false,
+      }),
+    ).sort({ voteScore: -1, addedAt: 1 })
 
-    // Thông báo qua socket.io
     const io = req.app.get('io')
     if (io) {
       io.emit('playlist_updated', updatedPlaylist)
+      emitActivity(io, {
+        type: 'now_playing',
+        songTitle: song.title,
+        songId: song._id.toString(),
+        username: song.addedBy?.username,
+      })
     }
 
     res.status(200).json({

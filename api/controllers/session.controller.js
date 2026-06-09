@@ -1,4 +1,5 @@
 const Session = require("../models/session.model");
+const { emitActivity } = require("../utils/activityEmitter");
 const Song = require("../models/song.model");
 const GoldPrice = require("../models/goldPrice.model");
 const OilPrice = require("../models/oilPrice.model");
@@ -124,6 +125,10 @@ exports.startSession = async (req, res) => {
     const io = req.app.get("io");
     if (io) {
       io.emit("session_updated", newSession);
+      emitActivity(io, {
+        type: "session_started",
+        username: req.admin?.username || req.user?.username || "Admin",
+      });
     }
 
     res.status(201).json({
@@ -156,6 +161,10 @@ exports.endSession = async (req, res) => {
     // Thông báo qua socket.io
     const io = req.app.get("io");
     io.emit("session_updated", null);
+    emitActivity(io, {
+      type: "session_ended",
+      username: req.admin?.username || req.user?.username || "Admin",
+    });
 
     res.status(200).json({
       message: "Đã kết thúc phiên",
@@ -187,6 +196,7 @@ exports.getSessionPlaylist = async (req, res) => {
     // Tìm tất cả bài hát trong phiên
     const songs = await Song.find({ sessionId, playing: false, played: false })
       .populate("addedBy", "username")
+      .populate("votes.userId", "username")
       .sort({ voteScore: -1, addedAt: 1 });
 
     res.status(200).json({

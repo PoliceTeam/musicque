@@ -1,0 +1,23 @@
+.quick-reaction-buttons {
+  position: relative;
+  display: inline-flex;
+}
+
+.reaction-burst {
+  position: absolute;
+  pointer-events: none;
+  font-size: 20px;
+  animation: reaction-burst-float 0.9s ease-out forwards;
+  z-index: 2;
+}
+
+@keyframes reaction-burst-float {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(1.4);
+  }
+}
