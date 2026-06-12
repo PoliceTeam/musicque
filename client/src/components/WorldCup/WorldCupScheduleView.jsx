@@ -485,6 +485,7 @@ const WorldCupScheduleView = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [standings, setStandings] = useState(null);
   const [bracket, setBracket] = useState(null);
+  const [hasScrolledToCurrent, setHasScrolledToCurrent] = useState(false);
 
   const fetchTournamentDetails = async () => {
     const [standingsResult, bracketResult] = await Promise.allSettled([
@@ -546,6 +547,17 @@ const WorldCupScheduleView = () => {
   }, [socket]);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchSchedule({ silent: true });
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  useEffect(() => {
     if (!schedule?.refreshAfterMs) return undefined;
 
     const timer = window.setTimeout(() => {
@@ -605,6 +617,10 @@ const WorldCupScheduleView = () => {
   const stageGroups = groupMatchesByGroup(matches);
   const standingsGroups = standings?.groups || [];
   const bracketRounds = bracket?.rounds || [];
+
+  const currentOrNextDateLabel = Object.entries(dateGroups).find(([label, dayMatches]) =>
+    dayMatches.some(m => !["finished", "completed"].includes(String(m.status).toLowerCase()))
+  )?.[0];
 
   const renderHorizontalRail = (items) => {
     if (!items.length) {
@@ -669,6 +685,7 @@ const WorldCupScheduleView = () => {
       {Object.entries(dateGroups).map(([dateLabel, dayMatches]) => (
         <div
           key={dateLabel}
+          id={dateLabel === currentOrNextDateLabel ? "wc-current-day" : undefined}
           className="wc-day-section"
         >
           <div className="wc-date-head" style={{ marginBottom: 10 }}>
