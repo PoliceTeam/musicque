@@ -25,7 +25,10 @@ services:
     container_name: music-order-api
     restart: always
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
+      vieneu-tts:
+        condition: service_healthy
     environment:
       - PORT=5000
       - MONGODB_URI=mongodb://mongodb:27017/music-order-app
@@ -37,6 +40,17 @@ services:
       - YOUTUBE_API_KEY=AIzaSyD500000000000000000000000000000000000000000000000000000000000000
       - BTC_API_KEY=Uncnssjsdaaskjdasdasdhaskdhasjkdh
       - WC2026_API_KEY=your_wc2026_api_key
+      - VIENEU_TTS_URL=http://vieneu-tts:8100
+      - VIENEU_TTS_VOICE=Ngọc Lan
+      - VIENEU_TTS_CACHE_VERSION=vieneu-preset-v1
+      - VIENEU_TTS_ENABLED=true
+      - VIENEU_TTS_TIMEOUT=30000
+      - VIENEU_TTS_HEALTH_TIMEOUT=5000
+      - VIENEU_TTS_CACHE_MAX_FILES=200
+      - VIENEU_TTS_CACHE_MAX_AGE_DAYS=7
+      - VIENEU_TTS_WARM_QUEUE_CONCURRENCY=1
+      - VIENEU_TTS_RATE_MAX_REQUESTS=20
+      - VIENEU_TTS_RATE_WINDOW_MS=60000
     ports:
       - "5001:5000"
     networks:
@@ -44,6 +58,35 @@ services:
     volumes:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
+
+  # VieNeu-TTS v3 Turbo Service (AI Text-to-Speech)
+  vieneu-tts:
+    build:
+      context: ./tts-service
+      dockerfile: Dockerfile
+    container_name: music-order-vieneu-tts
+    restart: always
+    environment:
+      - VIENEU_HOST=0.0.0.0
+      - VIENEU_PORT=8100
+      - VIENEU_APPLY_WATERMARK=false
+      - VIENEU_INFER_MAX_CHARS=220
+      - VIENEU_INFER_TEMPERATURE=0.75
+      - VIENEU_INFER_TOP_K=20
+      - VIENEU_INFER_TOP_P=0.92
+      - VIENEU_INFER_REPETITION_PENALTY=1.15
+    ports:
+      - "8100:8100"
+    volumes:
+      - tts_models:/root/.cache/huggingface
+    networks:
+      - music-order-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
 
   # Lunch Vote Micro Frontend (Module Federation remote)
   lunch-vote-mf:
@@ -98,4 +141,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongodb_data: 
+  mongodb_data:
+  tts_models:
