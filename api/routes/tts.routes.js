@@ -5,7 +5,7 @@ const ttsController = require('../controllers/tts.controller')
 const router = express.Router()
 
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.VIENEU_TTS_RATE_WINDOW_MS, 10) || 60 * 1000
-const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.VIENEU_TTS_RATE_MAX_REQUESTS, 10) || 20
+const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.VIENEU_TTS_RATE_MAX_REQUESTS, 10) || 120
 const ttsRateBuckets = new Map()
 
 function rateLimitTTS(req, res, next) {
@@ -40,6 +40,9 @@ function rateLimitTTS(req, res, next) {
 
 // POST /api/tts/generate/:songId - Generate TTS audio for a song's message
 router.post('/generate/:songId', rateLimitTTS, ttsController.generateForSong)
+
+// POST /api/tts/warmup - Warm up VieNeu-TTS model/voice in the background
+router.post('/warmup', rateLimitTTS, ttsController.warmup)
 
 // GET /api/tts/voices - Get available TTS voices
 router.get('/voices', ttsController.getVoices)

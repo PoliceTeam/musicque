@@ -7,8 +7,15 @@ const TetCountdown = () => {
     minutes: 0,
     seconds: 0,
   });
-  const [isExpired, setIsExpired] = useState(false);
-  const [shouldHide, setShouldHide] = useState(false);
+  const [isExpired, setIsExpired] = useState(() => {
+    const tetDate = new Date('Feb 17, 2026 00:00:00').getTime();
+    return new Date().getTime() > tetDate;
+  });
+  const [shouldHide, setShouldHide] = useState(() => {
+    const endDate = new Date('Feb 17, 2026 00:00:00');
+    endDate.setDate(endDate.getDate() + 15);
+    return new Date().getTime() > endDate.getTime();
+  });
 
   useEffect(() => {
     const tetDate = new Date('Feb 17, 2026 00:00:00').getTime();

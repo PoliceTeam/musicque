@@ -5,20 +5,28 @@ const crypto = require('crypto')
 
 const VIENEU_TTS_URL = process.env.VIENEU_TTS_URL || 'http://localhost:8100'
 const VIENEU_TTS_VOICE = process.env.VIENEU_TTS_VOICE || 'Trúc Ly'
-const VIENEU_TTS_CACHE_VERSION = process.env.VIENEU_TTS_CACHE_VERSION || 'vieneu-preset-v1'
+const VIENEU_TTS_CACHE_VERSION = process.env.VIENEU_TTS_CACHE_VERSION || 'vieneu-preset-fast-v1'
 const VIENEU_TTS_ENABLED = process.env.VIENEU_TTS_ENABLED || 'true'
-const VIENEU_TTS_TIMEOUT = parseInt(process.env.VIENEU_TTS_TIMEOUT, 10) || 30000
+const VIENEU_TTS_TIMEOUT = parseInt(process.env.VIENEU_TTS_TIMEOUT, 10) || 90000
 const VIENEU_TTS_HEALTH_TIMEOUT = parseInt(process.env.VIENEU_TTS_HEALTH_TIMEOUT, 10) || 5000
 const VIENEU_TTS_CACHE_MAX_FILES = parseInt(process.env.VIENEU_TTS_CACHE_MAX_FILES, 10) || 200
 const VIENEU_TTS_CACHE_MAX_AGE_DAYS = parseInt(process.env.VIENEU_TTS_CACHE_MAX_AGE_DAYS, 10) || 7
-const VIENEU_TTS_WARM_QUEUE_CONCURRENCY = parseInt(process.env.VIENEU_TTS_WARM_QUEUE_CONCURRENCY, 10) || 1
+const VIENEU_TTS_INCLUDE_SENDER = process.env.VIENEU_TTS_INCLUDE_SENDER === 'true'
+const VIENEU_TTS_WARMUP_TEXT = process.env.VIENEU_TTS_WARMUP_TEXT || 'Xin chào'
+const VIENEU_TTS_QUEUE_MAX_SIZE = parseInt(process.env.VIENEU_TTS_QUEUE_MAX_SIZE, 10) || 50
+const VIENEU_TTS_CLEANUP_INTERVAL_MS = parseInt(process.env.VIENEU_TTS_CLEANUP_INTERVAL_MS, 10) || 60 * 1000
 const VIENEU_TTS_CACHE_MAX_AGE_MS = VIENEU_TTS_CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+const GENERATION_PRIORITY = {
+  PLAYBACK: 0,
+  WARM: 1,
+}
 
 // Cache directory for generated TTS audio files
 const CACHE_DIR = path.join(__dirname, '..', 'tts-cache')
 const inFlightGenerations = new Map()
-const warmQueue = []
-let activeWarmJobs = 0
+const generationQueue = []
+let activeGeneration = false
+let lastCacheCleanupAt = 0
 
 // Create cache directory if it does not exist
 if (!fs.existsSync(CACHE_DIR)) {
@@ -26,9 +34,14 @@ if (!fs.existsSync(CACHE_DIR)) {
   console.log('[TTS] Created cache directory:', CACHE_DIR)
 }
 
-function cleanupCache() {
+function cleanupCache(force = false) {
   try {
     const now = Date.now()
+    if (!force && now - lastCacheCleanupAt < VIENEU_TTS_CLEANUP_INTERVAL_MS) {
+      return
+    }
+    lastCacheCleanupAt = now
+
     const files = fs.readdirSync(CACHE_DIR)
       .filter((filename) => filename.endsWith('.wav'))
       .map((filename) => {
@@ -52,7 +65,7 @@ function cleanupCache() {
   }
 }
 
-cleanupCache()
+cleanupCache(true)
 
 /**
  * Check if VieNeu-TTS is enabled via environment config
@@ -62,7 +75,12 @@ function isEnabled() {
 }
 
 function buildSpeechText(message, username = 'bạn') {
-  return `Tới từ ${username} với lời nhắn: ${message.trim()}`
+  const normalizedMessage = message.trim()
+  if (!VIENEU_TTS_INCLUDE_SENDER) {
+    return normalizedMessage
+  }
+
+  return `Tới từ ${username} với lời nhắn: ${normalizedMessage}`
 }
 
 /**
@@ -99,49 +117,144 @@ function getCachedFilename(text, voice) {
  * Call VieNeu-TTS microservice to generate audio from text
  * Saves result to cache and returns the filename
  */
-async function generateTTS(text, voice) {
-  try {
-    const selectedVoice = voice || VIENEU_TTS_VOICE
-    const cacheKey = getCacheKey(text, selectedVoice)
-    const cachedFilename = getCachedFilename(text, selectedVoice)
+async function synthesizeAudio(text, voice) {
+  const { data } = await axios.get(`${VIENEU_TTS_URL}/synthesize`, {
+    params: {
+      text,
+      voice,
+    },
+    responseType: 'arraybuffer',
+    timeout: VIENEU_TTS_TIMEOUT,
+  })
 
-    if (cachedFilename) {
-      return cachedFilename
+  return data
+}
+
+async function synthesizeAndCache(text, voice, cacheKey) {
+  const startedAt = Date.now()
+  const data = await synthesizeAudio(text, voice)
+  const filename = `${cacheKey}.wav`
+  const filepath = path.join(CACHE_DIR, filename)
+  fs.writeFileSync(filepath, Buffer.from(data))
+  console.log('[TTS] Generated and cached audio:', filename, `durationMs=${Date.now() - startedAt}`)
+  cleanupCache()
+
+  return filename
+}
+
+async function touchTTS(text, voice) {
+  const startedAt = Date.now()
+  await synthesizeAudio(text, voice)
+  console.log('[TTS] Warmed VieNeu voice:', `durationMs=${Date.now() - startedAt}`)
+  return true
+}
+
+function dropQueuedWarmJob() {
+  for (let index = generationQueue.length - 1; index >= 0; index -= 1) {
+    const job = generationQueue[index]
+    if (job.priority > GENERATION_PRIORITY.PLAYBACK) {
+      generationQueue.splice(index, 1)
+      if (job.cacheKey) {
+        inFlightGenerations.delete(job.cacheKey)
+      }
+      job.resolve(null)
+      console.warn('[TTS] Dropped queued warm job to keep playback responsive')
+      return true
+    }
+  }
+
+  return false
+}
+
+function enqueueGenerationJob(job) {
+  if (generationQueue.length >= VIENEU_TTS_QUEUE_MAX_SIZE) {
+    if (job.priority > GENERATION_PRIORITY.PLAYBACK) {
+      console.warn('[TTS] Dropping warm job because generation queue is full')
+      return Promise.resolve(null)
     }
 
-    if (inFlightGenerations.has(cacheKey)) {
-      return await inFlightGenerations.get(cacheKey)
+    if (!dropQueuedWarmJob()) {
+      console.warn('[TTS] Dropping playback job because generation queue is full')
+      return Promise.resolve(null)
+    }
+  }
+
+  const generation = new Promise((resolve) => {
+    generationQueue.push({ ...job, resolve })
+    processGenerationQueue()
+  })
+
+  if (job.cacheKey) {
+    inFlightGenerations.set(job.cacheKey, generation)
+  }
+
+  return generation
+}
+
+function processGenerationQueue() {
+  if (activeGeneration || generationQueue.length === 0) {
+    return
+  }
+
+  generationQueue.sort((a, b) => a.priority - b.priority || a.createdAt - b.createdAt)
+  const job = generationQueue.shift()
+  activeGeneration = true
+
+  job.run()
+    .then(job.resolve)
+    .catch((error) => {
+      console.error('[TTS] Error generating TTS:', error.message)
+      job.resolve(null)
+    })
+    .finally(() => {
+      inFlightGenerations.delete(job.cacheKey)
+      activeGeneration = false
+      processGenerationQueue()
+    })
+}
+
+function queueTTSGeneration(text, voice, priority) {
+  const selectedVoice = voice || VIENEU_TTS_VOICE
+  const cacheKey = getCacheKey(text, selectedVoice)
+  const cachedFilename = getCachedFilename(text, selectedVoice)
+
+  if (cachedFilename) {
+    return Promise.resolve(cachedFilename)
+  }
+
+  if (inFlightGenerations.has(cacheKey)) {
+    const queuedJob = generationQueue.find((job) => job.cacheKey === cacheKey)
+    if (queuedJob && priority < queuedJob.priority) {
+      queuedJob.priority = priority
     }
 
-    const generation = (async () => {
-      const { data } = await axios.get(`${VIENEU_TTS_URL}/synthesize`, {
-        params: {
-          text,
-          voice: selectedVoice,
-        },
-        responseType: 'arraybuffer',
-        timeout: VIENEU_TTS_TIMEOUT,
-      })
+    return inFlightGenerations.get(cacheKey)
+  }
 
-      const filename = `${cacheKey}.wav`
-      const filepath = path.join(CACHE_DIR, filename)
-      fs.writeFileSync(filepath, Buffer.from(data))
-      console.log('[TTS] Generated and cached audio:', filename)
-      cleanupCache()
+  return enqueueGenerationJob({
+    cacheKey,
+    priority,
+    createdAt: Date.now(),
+    run: () => synthesizeAndCache(text, selectedVoice, cacheKey),
+  })
+}
 
-      return filename
-    })()
+function generateTTS(text, voice) {
+  return queueTTSGeneration(text, voice, GENERATION_PRIORITY.PLAYBACK)
+}
 
-    inFlightGenerations.set(cacheKey, generation)
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
-    try {
-      return await generation
-    } finally {
-      inFlightGenerations.delete(cacheKey)
-    }
-  } catch (error) {
-    console.error('[TTS] Error generating TTS:', error.message)
-    return null
+async function waitForTTSGeneration(text, voice, timeoutMs) {
+  const generation = generateTTS(text, voice)
+  const timeout = sleep(timeoutMs).then(() => null)
+  const filename = await Promise.race([generation, timeout])
+
+  return {
+    filename,
+    pending: !filename && inFlightGenerations.has(getCacheKey(text, voice || VIENEU_TTS_VOICE)),
   }
 }
 
@@ -155,33 +268,26 @@ async function warmTTSCache(text, voice) {
     return cachedFilename
   }
 
-  return generateTTS(text, voice)
-}
-
-function processWarmQueue() {
-  if (activeWarmJobs >= VIENEU_TTS_WARM_QUEUE_CONCURRENCY || warmQueue.length === 0) {
-    return
-  }
-
-  const { text, voice, resolve } = warmQueue.shift()
-  activeWarmJobs += 1
-
-  warmTTSCache(text, voice)
-    .then(resolve)
-    .catch((error) => {
-      console.error('[TTS] Warm queue failed:', error.message)
-      resolve(null)
-    })
-    .finally(() => {
-      activeWarmJobs -= 1
-      processWarmQueue()
-    })
+  return queueTTSGeneration(text, voice, GENERATION_PRIORITY.WARM)
 }
 
 function enqueueWarmTTSCache(text, voice) {
-  return new Promise((resolve) => {
-    warmQueue.push({ text, voice, resolve })
-    processWarmQueue()
+  return warmTTSCache(text, voice)
+}
+
+function warmupTTS() {
+  const selectedVoice = VIENEU_TTS_VOICE
+  const cacheKey = `warmup:${getCacheKey(VIENEU_TTS_WARMUP_TEXT, selectedVoice)}`
+
+  if (inFlightGenerations.has(cacheKey)) {
+    return inFlightGenerations.get(cacheKey)
+  }
+
+  return enqueueGenerationJob({
+    cacheKey,
+    priority: GENERATION_PRIORITY.WARM,
+    createdAt: Date.now(),
+    run: () => touchTTS(VIENEU_TTS_WARMUP_TEXT, selectedVoice),
   })
 }
 
@@ -221,9 +327,11 @@ module.exports = {
   getCacheKey,
   getCachedAudio,
   generateTTS,
+  waitForTTSGeneration,
   getVoices,
   checkHealth,
   buildSpeechText,
   warmTTSCache,
   enqueueWarmTTSCache,
+  warmupTTS,
 }

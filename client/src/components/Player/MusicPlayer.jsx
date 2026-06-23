@@ -26,6 +26,36 @@ import {
 const { Title, Text } = Typography;
 
 const TTS_LOG_PREFIX = '[MusicPlayer][TTS]';
+const TTS_WAIT_TIMEOUT_MS = Number(import.meta.env.VITE_TTS_WAIT_TIMEOUT_MS || 90000);
+const TTS_DEFAULT_RETRY_MS = 500;
+
+const waitForTTSRetry = (ms, signal) =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
+    const cleanup = () => {
+      signal?.removeEventListener('abort', abort);
+    };
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
+    const abort = () => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+
+    signal?.addEventListener('abort', abort, { once: true });
+  });
+
+const isCanceledError = (error) =>
+  error?.name === 'AbortError' ||
+  error?.name === 'CanceledError' ||
+  error?.code === 'ERR_CANCELED';
 
 const MusicPlayer = () => {
   const { isDark } = useTheme();
@@ -56,16 +86,38 @@ const MusicPlayer = () => {
       const cachedAudioUrl = ttsAudioUrlCacheRef.current.get(songId);
       if (cachedAudioUrl) return cachedAudioUrl;
 
-      const response = await generateTTS(songId, { signal });
-      const { audioUrl, fallback, fallbackReason } = response.data;
+      const startedAt = Date.now();
 
-      if (fallback || !audioUrl) {
-        throw new Error(fallbackReason || 'VieNeu-TTS unavailable');
+      while (Date.now() - startedAt < TTS_WAIT_TIMEOUT_MS) {
+        const response = await generateTTS(songId, { signal });
+        const { audioUrl, pending, retryAfterMs, fallback, fallbackReason } = response.data;
+
+        if (audioUrl) {
+          const fullAudioUrl = getFullAudioUrl(audioUrl);
+          ttsAudioUrlCacheRef.current.set(songId, fullAudioUrl);
+          return fullAudioUrl;
+        }
+
+        if (pending) {
+          const retryMs = Math.min(
+            Math.max(Number(retryAfterMs) || TTS_DEFAULT_RETRY_MS, 500),
+            5000
+          );
+          console.log(`${TTS_LOG_PREFIX} TTS pending, retrying`, {
+            songId,
+            retryMs,
+            elapsedMs: Date.now() - startedAt,
+          });
+          await waitForTTSRetry(retryMs, signal);
+          continue;
+        }
+
+        if (fallback || !audioUrl) {
+          throw new Error(fallbackReason || 'VieNeu-TTS unavailable');
+        }
       }
 
-      const fullAudioUrl = getFullAudioUrl(audioUrl);
-      ttsAudioUrlCacheRef.current.set(songId, fullAudioUrl);
-      return fullAudioUrl;
+      throw new Error('VieNeu-TTS generation timed out');
     },
     [getFullAudioUrl]
   );
@@ -174,7 +226,7 @@ const MusicPlayer = () => {
           });
         } catch (error) {
           if (ttsState.done) return;
-          if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+          if (isCanceledError(error)) {
             finishTTS(false, 'cancelled');
             return;
           }
@@ -213,7 +265,7 @@ const MusicPlayer = () => {
         setTtsPreparing(false);
       })
       .catch((error) => {
-        if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+        if (isCanceledError(error)) return;
         console.warn(`${TTS_LOG_PREFIX} preload failed`, error.message);
         setTtsPreparing(false);
       });
@@ -241,7 +293,7 @@ const MusicPlayer = () => {
           audio.load();
         })
         .catch((error) => {
-          if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+          if (isCanceledError(error)) return;
           console.warn(`${TTS_LOG_PREFIX} next song preload failed`, error.message);
         });
     }
@@ -272,15 +324,17 @@ const MusicPlayer = () => {
           console.log(`${TTS_LOG_PREFIX} VieNeu-TTS succeeded`);
           return completed;
         } catch (err) {
-          console.warn(`${TTS_LOG_PREFIX} VieNeu-TTS failed, blocking music start:`, err.message);
+          console.warn(`${TTS_LOG_PREFIX} VieNeu-TTS failed, skipping speech and continuing music:`, err.message);
           setSpeaking(false);
-          message.warning('Chưa phát được lời nhắn AI, vui lòng thử lại');
-          return false;
+          wasMessageSpokenRef.current = true;
+          message.warning('Chưa phát được lời nhắn AI, sẽ phát nhạc luôn');
+          return true;
         }
       }
 
-      console.warn(`${TTS_LOG_PREFIX} missing song id, cannot generate VieNeu-TTS`);
-      return false;
+      console.warn(`${TTS_LOG_PREFIX} missing song id, skipping speech and continuing music`);
+      wasMessageSpokenRef.current = true;
+      return true;
     },
     [playVieneuTTS]
   );
