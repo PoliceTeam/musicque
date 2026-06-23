@@ -20,47 +20,12 @@ import {
   markSongAsPlayed,
   removeSongFromPlaylist,
   getCurrentSong,
+  generateTTS,
 } from '../../services/api';
 
 const { Title, Text } = Typography;
 
-const TTS_LOG_PREFIX = '[MusicPlayer][WebSpeech]';
-const WEB_SPEECH_LANG = 'vi-VN';
-const WEB_SPEECH_RATE = 1.1;
-const WEB_SPEECH_PITCH = 1;
-const WEB_SPEECH_MIN_TIMEOUT = 7000;
-const WEB_SPEECH_VOICE_WAIT_TIMEOUT = 1500;
-
-const getVietnameseVoice = () => {
-  const voices = window.speechSynthesis?.getVoices?.() || [];
-
-  return (
-    voices.find((voice) => voice.lang === WEB_SPEECH_LANG) ||
-    voices.find((voice) => voice.lang?.toLowerCase().startsWith('vi')) ||
-    null
-  );
-};
-
-const waitForVietnameseVoice = () =>
-  new Promise((resolve) => {
-    const voice = getVietnameseVoice();
-
-    if (voice || !window.speechSynthesis) {
-      resolve(voice);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      window.speechSynthesis.onvoiceschanged = null;
-      resolve(getVietnameseVoice());
-    }, WEB_SPEECH_VOICE_WAIT_TIMEOUT);
-
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.clearTimeout(timeoutId);
-      window.speechSynthesis.onvoiceschanged = null;
-      resolve(getVietnameseVoice());
-    };
-  });
+const TTS_LOG_PREFIX = '[MusicPlayer][TTS]';
 
 const MusicPlayer = () => {
   const { isDark } = useTheme();
@@ -69,12 +34,41 @@ const MusicPlayer = () => {
   const [currentSong, setCurrentSong] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [ttsPreparing, setTtsPreparing] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const playerRef = useRef(null);
   const wasPlayingRef = useRef(false);
   const wasMessageSpokenRef = useRef(false);
-  const speechRef = useRef(null);
+  const ttsRef = useRef(null);
+  const ttsAudioUrlCacheRef = useRef(new Map());
+
+  const getFullAudioUrl = useCallback((audioUrl) => {
+    if (!audioUrl) return null;
+    if (/^https?:\/\//i.test(audioUrl)) return audioUrl;
+
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    return `${apiUrl}${audioUrl}`;
+  }, []);
+
+  const getVieneuAudioUrl = useCallback(
+    async (songId, signal) => {
+      const cachedAudioUrl = ttsAudioUrlCacheRef.current.get(songId);
+      if (cachedAudioUrl) return cachedAudioUrl;
+
+      const response = await generateTTS(songId, { signal });
+      const { audioUrl, fallback, fallbackReason } = response.data;
+
+      if (fallback || !audioUrl) {
+        throw new Error(fallbackReason || 'VieNeu-TTS unavailable');
+      }
+
+      const fullAudioUrl = getFullAudioUrl(audioUrl);
+      ttsAudioUrlCacheRef.current.set(songId, fullAudioUrl);
+      return fullAudioUrl;
+    },
+    [getFullAudioUrl]
+  );
 
   // Fetch current song
   const fetchCurrentSong = async () => {
@@ -92,155 +86,203 @@ const MusicPlayer = () => {
   useEffect(() => {
     fetchCurrentSong();
     return () => {
-      speechRef.current?.cancel(false);
+      ttsRef.current?.cancel(false);
     };
   }, []);
 
-  const playSpeech = useCallback(
-    (text, title, username) => {
-      console.log(`${TTS_LOG_PREFIX} playSpeech called`, {
-        hasText: Boolean(text),
-        textLength: text?.length || 0,
-        title,
-        username,
-        speaking,
-        alreadySpeakingRef: Boolean(speechRef.current),
-      });
-
-      if (!text || speaking) {
-        console.warn(`${TTS_LOG_PREFIX} playSpeech skipped`, {
-          reason: !text ? 'empty_text' : 'already_speaking',
-          speaking,
-        });
-        return Promise.resolve();
-      }
-
-      return new Promise(async (resolve) => {
-        speechRef.current?.cancel(false);
-
-        const speechMessage = `Tới từ ${username} với lời nhắn: ${text}`;
+  // ======== VieNeu-TTS (AI voice) ========
+  const playVieneuTTS = useCallback(
+    (songId) => {
+      return new Promise(async (resolve, reject) => {
         const startedAt = performance.now();
-        const speechState = {
+        const controller = new AbortController();
+        const ttsState = {
+          audio: null,
+          controller,
           done: false,
-          timeoutId: null,
-          utterance: null,
           cancel: null,
         };
 
-        const finishSpeech = (completed = true, reason = 'completed') => {
-          if (speechState.done) return;
+        const finishTTS = (completed = true, reason = 'completed') => {
+          if (ttsState.done) return;
 
-          speechState.done = true;
-          window.clearTimeout(speechState.timeoutId);
-          window.speechSynthesis?.cancel?.();
+          ttsState.done = true;
+          ttsState.controller.abort();
+
+          if (ttsState.audio) {
+            ttsState.audio.pause();
+            ttsState.audio.src = '';
+            ttsState.audio.load();
+          }
+
+          if (ttsRef.current === ttsState) {
+            ttsRef.current = null;
+          }
 
           setSpeaking(false);
 
-          if (completed) {
-            wasMessageSpokenRef.current = true;
-          }
-
-          if (speechRef.current === speechState) {
-            speechRef.current = null;
-          }
-
-          console.log(`${TTS_LOG_PREFIX} finish speech`, {
+          console.log(`${TTS_LOG_PREFIX} finish AI speech`, {
             completed,
             reason,
             elapsedMs: Math.round(performance.now() - startedAt),
           });
 
-          resolve();
+          resolve(completed);
         };
 
-        speechState.cancel = (completed = false) => {
-          console.warn(`${TTS_LOG_PREFIX} speech cancelled`, {
+        ttsState.cancel = (completed = false) => {
+          console.warn(`${TTS_LOG_PREFIX} AI speech cancelled`, {
             completed,
             elapsedMs: Math.round(performance.now() - startedAt),
           });
-          finishSpeech(completed, 'cancelled');
+          finishTTS(completed, 'cancelled');
         };
 
-        speechRef.current = speechState;
-
-        setSpeaking(true);
+        ttsRef.current?.cancel(false);
+        ttsRef.current = ttsState;
 
         try {
-          if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
-            console.warn(`${TTS_LOG_PREFIX} unsupported, continuing to music`);
-            finishSpeech(true, 'unsupported');
+          console.log(`${TTS_LOG_PREFIX} Requesting VieNeu-TTS for song:`, songId);
+          const fullAudioUrl = await getVieneuAudioUrl(songId, controller.signal);
+          if (ttsState.done) return;
+          console.log(`${TTS_LOG_PREFIX} Playing AI audio:`, fullAudioUrl);
+
+          const audio = new Audio(fullAudioUrl);
+          ttsState.audio = audio;
+
+          audio.onended = () => {
+            console.log(`${TTS_LOG_PREFIX} AI audio playback finished`);
+            finishTTS(true, 'onended');
+          };
+
+          audio.onerror = (err) => {
+            if (ttsState.done) return;
+            console.error(`${TTS_LOG_PREFIX} AI audio playback error:`, err);
+            if (ttsRef.current === ttsState) {
+              ttsRef.current = null;
+            }
+            reject(new Error('Audio playback failed'));
+          };
+
+          audio.play().catch((err) => {
+            if (ttsState.done) return;
+            console.error(`${TTS_LOG_PREFIX} AI audio play() rejected:`, err);
+            if (ttsRef.current === ttsState) {
+              ttsRef.current = null;
+            }
+            reject(err);
+          });
+        } catch (error) {
+          if (ttsState.done) return;
+          if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+            finishTTS(false, 'cancelled');
             return;
           }
-
-          window.speechSynthesis.cancel();
-
-          const utterance = new SpeechSynthesisUtterance(speechMessage);
-          const voice = await waitForVietnameseVoice();
-
-          if (speechState.done) return;
-
-          const timeoutMs = Math.max(
-            WEB_SPEECH_MIN_TIMEOUT,
-            speechMessage.length * 180
-          );
-
-          utterance.lang = WEB_SPEECH_LANG;
-          utterance.rate = WEB_SPEECH_RATE;
-          utterance.pitch = WEB_SPEECH_PITCH;
-
-          if (voice) {
-            utterance.voice = voice;
+          console.error(`${TTS_LOG_PREFIX} VieNeu-TTS API error:`, error);
+          if (ttsRef.current === ttsState) {
+            ttsRef.current = null;
           }
-
-          speechState.utterance = utterance;
-
-          console.log(`${TTS_LOG_PREFIX} speak`, {
-            messageLength: speechMessage.length,
-            language: utterance.lang,
-            voiceName: voice?.name,
-            voiceLang: voice?.lang,
-            rate: utterance.rate,
-            pitch: utterance.pitch,
-            elapsedMs: Math.round(performance.now() - startedAt),
-          });
-
-          speechState.timeoutId = window.setTimeout(() => {
-            if (speechState.done) return;
-
-            console.warn(`${TTS_LOG_PREFIX} timeout, continuing to music`, {
-              timeoutMs,
-              elapsedMs: Math.round(performance.now() - startedAt),
-            });
-            finishSpeech(true, 'timeout');
-          }, timeoutMs);
-
-          utterance.onstart = () => {
-            console.log(`${TTS_LOG_PREFIX} onstart`, {
-              elapsedMs: Math.round(performance.now() - startedAt),
-            });
-          };
-
-          utterance.onend = () => finishSpeech(true, 'onend');
-
-          utterance.onerror = (error) => {
-            console.error(`${TTS_LOG_PREFIX} onerror`, {
-              error,
-              elapsedMs: Math.round(performance.now() - startedAt),
-            });
-            finishSpeech(true, 'onerror');
-          };
-
-          window.speechSynthesis.speak(utterance);
-        } catch (error) {
-          console.warn(`${TTS_LOG_PREFIX} speak failed, continuing to music`, {
-            error,
-            elapsedMs: Math.round(performance.now() - startedAt),
-          });
-          finishSpeech(true, 'speak_failed');
+          reject(error);
         }
       });
     },
-    [speaking]
+    [getVieneuAudioUrl]
+  );
+
+  useEffect(() => {
+    if (!currentSong?._id || !currentSong.message || wasMessageSpokenRef.current) {
+      setTtsPreparing(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const cachedAudioUrl = ttsAudioUrlCacheRef.current.get(currentSong._id);
+
+    if (cachedAudioUrl) {
+      setTtsPreparing(false);
+      return;
+    }
+
+    setTtsPreparing(true);
+
+    getVieneuAudioUrl(currentSong._id, controller.signal)
+      .then((audioUrl) => {
+        const audio = new Audio(audioUrl);
+        audio.preload = 'auto';
+        audio.load();
+        setTtsPreparing(false);
+      })
+      .catch((error) => {
+        if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+        console.warn(`${TTS_LOG_PREFIX} preload failed`, error.message);
+        setTtsPreparing(false);
+      });
+
+    return () => {
+      controller.abort();
+      setTtsPreparing(false);
+    };
+  }, [currentSong?._id, currentSong?.message, getVieneuAudioUrl]);
+
+  // Preload NEXT song in the background for 0ms latency
+  useEffect(() => {
+    const nextSong = playlist?.[0];
+    if (!nextSong?._id || !nextSong.message) return;
+
+    const controller = new AbortController();
+    const cachedAudioUrl = ttsAudioUrlCacheRef.current.get(nextSong._id);
+
+    if (!cachedAudioUrl) {
+      console.log(`${TTS_LOG_PREFIX} Preloading NEXT song TTS background:`, nextSong._id);
+      getVieneuAudioUrl(nextSong._id, controller.signal)
+        .then((audioUrl) => {
+          const audio = new Audio(audioUrl);
+          audio.preload = 'auto';
+          audio.load();
+        })
+        .catch((error) => {
+          if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+          console.warn(`${TTS_LOG_PREFIX} next song preload failed`, error.message);
+        });
+    }
+
+    return () => controller.abort();
+  }, [playlist, getVieneuAudioUrl]);
+
+  // ======== Main playSpeech: VieNeu-TTS only for playlist songs ========
+  const playSpeech = useCallback(
+    async (text, title, username, songId) => {
+      console.log(`${TTS_LOG_PREFIX} playSpeech called`, {
+        songId,
+        hasText: Boolean(text),
+        textLength: text?.length || 0,
+      });
+
+      if (!text) return true;
+
+      // Try VieNeu-TTS (AI voice) first
+      if (songId) {
+        try {
+          setSpeaking(true);
+          const completed = await playVieneuTTS(songId);
+          if (completed) {
+            wasMessageSpokenRef.current = true;
+          }
+          setSpeaking(false);
+          console.log(`${TTS_LOG_PREFIX} VieNeu-TTS succeeded`);
+          return completed;
+        } catch (err) {
+          console.warn(`${TTS_LOG_PREFIX} VieNeu-TTS failed, blocking music start:`, err.message);
+          setSpeaking(false);
+          message.warning('Chưa phát được lời nhắn AI, vui lòng thử lại');
+          return false;
+        }
+      }
+
+      console.warn(`${TTS_LOG_PREFIX} missing song id, cannot generate VieNeu-TTS`);
+      return false;
+    },
+    [playVieneuTTS]
   );
 
   const handlePlay = useCallback(async () => {
@@ -261,21 +303,33 @@ const MusicPlayer = () => {
       return;
     }
 
+    if (currentSong.message && !wasMessageSpokenRef.current && ttsPreparing) {
+      message.info('Đang chuẩn bị giọng AI, vui lòng đợi một chút');
+      return;
+    }
+
     try {
       if (currentSong.message && !wasMessageSpokenRef.current && !speaking) {
         console.log(`${TTS_LOG_PREFIX} message should be spoken before play`);
         setSpeaking(true);
         try {
-          await playSpeech(
+          const speechCompleted = await playSpeech(
             currentSong.message,
             currentSong.title,
-            currentSong.addedBy.username
+            currentSong.addedBy.username,
+            currentSong._id
           );
           console.log(`${TTS_LOG_PREFIX} playSpeech resolved`);
           setSpeaking(false);
+
+          if (!speechCompleted) {
+            console.log(`${TTS_LOG_PREFIX} play cancelled before music start`);
+            return;
+          }
         } catch (error) {
           console.error(`${TTS_LOG_PREFIX} playSpeech threw`, error);
           setSpeaking(false);
+          return;
         }
       } else {
         console.log(`${TTS_LOG_PREFIX} message speech not required`, {
@@ -322,16 +376,18 @@ const MusicPlayer = () => {
       console.error('Error playing:', error);
       message.error('Có lỗi xảy ra khi phát bài hát');
     }
-  }, [currentSong, speaking, playSpeech]);
+  }, [currentSong, speaking, ttsPreparing, playSpeech]);
 
   const handlePause = () => {
     setPlaying(false);
-    speechRef.current?.cancel(false);
+    ttsRef.current?.cancel(false);
   };
 
   const handleSkipMessage = () => {
     if (speaking) {
-      speechRef.current?.cancel(true);
+      ttsRef.current?.cancel(true);
+      setSpeaking(false);
+      wasMessageSpokenRef.current = true;
       setPlaying(true);
     }
   };
@@ -341,7 +397,6 @@ const MusicPlayer = () => {
     const wasPlaying = playing; // Lưu tạm trạng thái playing
     wasPlayingRef.current = true; // Luôn đặt thành true để đảm bảo bài mới sẽ phát
 
-    speechRef.current?.cancel(false);
     handlePause();
 
     if (currentSong) {
@@ -452,9 +507,6 @@ const MusicPlayer = () => {
               width='100%'
               height='240px'
               onReady={() => {
-                if (wasPlayingRef.current) {
-                  setPlaying(true);
-                }
                 const internalPlayer = playerRef.current?.getInternalPlayer();
                 if (internalPlayer && internalPlayer.addEventListener) {
                   internalPlayer.addEventListener('onStateChange', (event) => {
@@ -500,6 +552,7 @@ const MusicPlayer = () => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (ttsPreparing) return;
                 if (!playing) {
                   handlePlay();
                 } else {
@@ -526,10 +579,11 @@ const MusicPlayer = () => {
                 onClick={handlePlay}
                 type='primary'
                 size='large'
-                style={{ width: 120 }}
-                loading={speaking}
+                style={{ minWidth: 168 }}
+                loading={speaking || ttsPreparing}
+                disabled={ttsPreparing}
               >
-                {speaking ? 'Đang đọc lời nhắn...' : 'Phát'}
+                {ttsPreparing ? 'Chuẩn bị giọng AI...' : speaking ? 'Đang đọc lời nhắn...' : 'Phát'}
               </Button>
             )}
 

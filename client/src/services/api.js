@@ -90,4 +90,10 @@ export const getCurrentWeather = () => api.get("/api/weather");
 // News API
 export const getVnExpressNews = () => api.get("/api/news/vnexpress");
 
+// TTS API (VieNeu-TTS)
+export const generateTTS = (songId, config = {}) =>
+  api.post(`/api/tts/generate/${songId}`, {}, config);
+export const getTTSVoices = () => api.get("/api/tts/voices");
+export const getTTSHealth = () => api.get("/api/tts/health");
+
 export default api;

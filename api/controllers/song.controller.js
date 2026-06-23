@@ -4,6 +4,7 @@ const User = require('../models/user.model')
 const ytdl = require('ytdl-core')
 const { google } = require('googleapis')
 const { emitActivity } = require('../utils/activityEmitter')
+const ttsService = require('../services/tts.service')
 
 const populatePlaylistQuery = (query) =>
   query.populate('addedBy', 'username').populate('votes.userId', 'username')
@@ -138,6 +139,15 @@ exports.addSong = async (req, res) => {
         songTitle: videoTitle,
         songId: newSong._id.toString(),
       })
+
+      if (newSong.message && newSong.message.trim() !== '') {
+        const speechText = ttsService.buildSpeechText(newSong.message, newSong.addedBy.username)
+        setImmediate(() => {
+          ttsService.enqueueWarmTTSCache(speechText).catch((error) => {
+            console.error('[TTS] Warm cache failed:', error.message)
+          })
+        })
+      }
 
       res.status(201).json({
         message: 'Đã thêm bài hát',
