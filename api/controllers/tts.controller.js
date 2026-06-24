@@ -1,6 +1,33 @@
 const Song = require('../models/song.model')
 const ttsService = require('../services/tts.service')
 
+const VIENEU_TTS_SYNC_WAIT_MS = parseInt(process.env.VIENEU_TTS_SYNC_WAIT_MS, 10) || 2500
+const VIENEU_TTS_RETRY_AFTER_MS = parseInt(process.env.VIENEU_TTS_RETRY_AFTER_MS, 10) || 500
+
+// Warm up VieNeu-TTS model/voice in the background.
+exports.warmup = async (req, res) => {
+  if (!ttsService.isEnabled()) {
+    return res.status(200).json({
+      warmed: false,
+      fallback: true,
+      fallbackReason: 'disabled',
+      message: 'VieNeu-TTS unavailable',
+    })
+  }
+
+  setImmediate(() => {
+    ttsService.warmupTTS().catch((error) => {
+      console.error('[TTS] Warmup failed:', error.message)
+    })
+  })
+
+  return res.status(202).json({
+    warmed: false,
+    pending: true,
+    message: 'VieNeu-TTS warmup started',
+  })
+}
+
 // Generate TTS audio for a song's message
 exports.generateForSong = async (req, res) => {
   try {
@@ -40,8 +67,22 @@ exports.generateForSong = async (req, res) => {
       })
     }
 
-    // Cache miss — generate new audio
-    const filename = await ttsService.generateTTS(speechText)
+    // Cache miss — start/reuse generation, but do not keep browser requests open for a long synthesize.
+    const { filename, pending } = await ttsService.waitForTTSGeneration(
+      speechText,
+      undefined,
+      VIENEU_TTS_SYNC_WAIT_MS,
+    )
+
+    if (pending) {
+      return res.status(202).json({
+        audioUrl: null,
+        pending: true,
+        retryAfterMs: VIENEU_TTS_RETRY_AFTER_MS,
+        message: 'VieNeu-TTS is still generating',
+      })
+    }
+
     if (!filename) {
       return res.status(200).json({
         audioUrl: null,

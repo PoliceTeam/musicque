@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal } from 'antd';
+import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal, Tabs } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
+import TechNewsWidget from '../components/TechNews/TechNewsWidget';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WorldCupRail from '../components/WorldCup/WorldCupRail';
@@ -23,6 +24,7 @@ import NesGame from '../components/NesGame/NesGame';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { AuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { warmupTTS } from '../services/api';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text } = Typography;
@@ -65,6 +67,38 @@ const HomePage = () => {
   const toggleSnowEffect = () => {
     setShowSnowEffect((prev) => !prev);
   };
+
+  useEffect(() => {
+    if (sessionStorage.getItem('vieneuTTSWarmupStarted') === 'true') {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    let retryTimeoutId;
+
+    const requestWarmup = (attempt = 0) => {
+      warmupTTS({ signal: controller.signal })
+        .then(() => {
+          sessionStorage.setItem('vieneuTTSWarmupStarted', 'true');
+        })
+        .catch((error) => {
+          if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+          if (attempt < 1) {
+            retryTimeoutId = window.setTimeout(() => requestWarmup(attempt + 1), 5000);
+            return;
+          }
+          console.warn('[TTS] warmup request failed:', error.message);
+        });
+    };
+
+    const timeoutId = window.setTimeout(() => requestWarmup(), 800);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearTimeout(retryTimeoutId);
+      controller.abort();
+    };
+  }, []);
 
   const handleAppSelect = (app) => {
     setIsAppSwitcherOpen(false);
@@ -406,11 +440,29 @@ const HomePage = () => {
                 style={{
                   flex: 1,
                   minHeight: 0,
-                  overflowY: 'auto',
-                  paddingRight: 4,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: isDark ? '#1f1f1f' : '#fff',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  padding: '0 8px'
                 }}
               >
-                <VnExpressNewsView />
+                <Tabs
+                  defaultActiveKey="1"
+                  items={[
+                    {
+                      label: 'Tech News',
+                      key: '1',
+                      children: <TechNewsWidget />,
+                    },
+                    {
+                      label: 'VnExpress',
+                      key: '2',
+                      children: <VnExpressNewsView />,
+                    },
+                  ]}
+                />
               </div>
             </div>
           </Col>

@@ -73,7 +73,8 @@ const VnExpressNewsView = () => {
         borderColor: isDark ? '#434343' : '#f0f0f0',
       }}
     >
-      {loading && articles.length === 0 ? (
+      <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
+        {loading && articles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 16px' }}>
           <Spin />
         </div>
@@ -149,6 +150,7 @@ const VnExpressNewsView = () => {
           ))}
         </div>
       )}
+      </div>
     </Card>
   );
 };
