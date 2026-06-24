@@ -8,7 +8,6 @@ WORKDIR /app
 
 ENV VIENEU_HOST=0.0.0.0
 ENV VIENEU_PORT=8100
-ENV OMP_NUM_THREADS=4
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

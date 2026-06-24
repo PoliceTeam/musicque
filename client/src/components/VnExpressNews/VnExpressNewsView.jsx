@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Spin, Alert, Button, Empty } from 'antd';
+import { Card, Typography, Spin, Alert, Button, Empty, Skeleton } from 'antd';
 import { ReloadOutlined, ReadOutlined } from '@ant-design/icons';
 import { getVnExpressNews } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -75,8 +75,14 @@ const VnExpressNewsView = () => {
     >
       <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
         {loading && articles.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-          <Spin />
+        <div style={{ padding: '16px' }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ marginBottom: 24, paddingBottom: 12, borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}` }}>
+              <Skeleton.Button active block style={{ height: 120, borderRadius: 8, marginBottom: 8 }} />
+              <Skeleton active title={{ width: '90%' }} paragraph={{ rows: 3, width: ['100%', '100%', '70%'] }} />
+              <Skeleton.Button active size="small" style={{ width: 100, height: 14, marginTop: 8 }} />
+            </div>
+          ))}
         </div>
       ) : error ? (
         <Alert

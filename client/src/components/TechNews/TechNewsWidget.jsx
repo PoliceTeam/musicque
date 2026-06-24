@@ -102,8 +102,19 @@ const TechNewsWidget = () => {
         <div style={{ padding: '16px' }}>
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} style={{ marginBottom: 24 }}>
-              <Skeleton.Image style={{ width: '100%', height: 140, marginBottom: 12 }} active />
-              <Skeleton active paragraph={{ rows: 2 }} />
+              <Skeleton.Button active block style={{ height: 140, borderRadius: 8, marginBottom: 12 }} />
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <Skeleton.Button active size="small" style={{ width: 80, borderRadius: 4, height: 22 }} />
+                <Skeleton.Button active size="small" style={{ width: 60, borderRadius: 4, height: 22 }} />
+              </div>
+              <Skeleton active title={{ width: '85%' }} paragraph={{ rows: 2, width: ['100%', '65%'] }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Skeleton.Avatar active size="small" />
+                  <Skeleton.Button active size="small" style={{ width: 100, height: 16 }} />
+                </div>
+                <Skeleton.Button active size="small" style={{ width: 80, height: 16 }} />
+              </div>
             </div>
           ))}
         </div>

@@ -1,4 +1,5 @@
 const Song = require('../models/song.model')
+const path = require('path')
 const ttsService = require('../services/tts.service')
 
 const VIENEU_TTS_SYNC_WAIT_MS = parseInt(process.env.VIENEU_TTS_SYNC_WAIT_MS, 10) || 2500
@@ -55,12 +56,16 @@ exports.generateForSong = async (req, res) => {
     }
 
     const speechText = ttsService.buildSpeechText(song.message, song.addedBy?.username)
+    if (!speechText) {
+      return res.status(400).json({ message: 'Lời nhắn không có nội dung phù hợp để đọc' })
+    }
+
     const cacheKey = ttsService.getCacheKey(speechText)
 
     // Check cache first
     const cachedPath = ttsService.getCachedAudio(cacheKey)
     if (cachedPath) {
-      const filename = `${cacheKey}.wav`
+      const filename = path.basename(cachedPath)
       console.log('[TTS] Cache hit for song:', songId)
       return res.status(200).json({
         audioUrl: `/api/tts/audio/${filename}`,
@@ -124,9 +129,11 @@ exports.getVoices = async (req, res) => {
 // Check TTS service health
 exports.checkHealth = async (req, res) => {
   try {
-    const isHealthy = await ttsService.checkHealth()
+    const health = await ttsService.checkProviderHealth()
     res.status(200).json({
-      available: isHealthy,
+      available: health.available,
+      primary: health.primary,
+      fallback: health.fallback,
     })
   } catch (error) {
     console.error('[TTS] Error in checkHealth:', error.message)

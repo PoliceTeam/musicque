@@ -142,6 +142,13 @@ exports.addSong = async (req, res) => {
 
       if (newSong.message && newSong.message.trim() !== '') {
         const speechText = ttsService.buildSpeechText(newSong.message, newSong.addedBy.username)
+        if (!speechText) {
+          return res.status(201).json({
+            message: 'Đã thêm bài hát',
+            song: newSong,
+          })
+        }
+
         setImmediate(() => {
           ttsService.enqueueWarmTTSCache(speechText).catch((error) => {
             console.error('[TTS] Warm cache failed:', error.message)
