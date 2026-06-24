@@ -8,6 +8,7 @@ const VIENEU_TTS_VOICE = process.env.VIENEU_TTS_VOICE || 'Trúc Ly'
 const VIENEU_TTS_CACHE_VERSION = process.env.VIENEU_TTS_CACHE_VERSION || 'vieneu-preset-fast-v1'
 const VIENEU_TTS_ENABLED = process.env.VIENEU_TTS_ENABLED || 'true'
 const VIENEU_TTS_TIMEOUT = parseInt(process.env.VIENEU_TTS_TIMEOUT, 10) || 90000
+const VIENEU_TTS_PRIMARY_TIMEOUT = parseInt(process.env.VIENEU_TTS_PRIMARY_TIMEOUT, 10) || VIENEU_TTS_TIMEOUT
 const VIENEU_TTS_HEALTH_TIMEOUT = parseInt(process.env.VIENEU_TTS_HEALTH_TIMEOUT, 10) || 5000
 const VIENEU_TTS_CACHE_MAX_FILES = parseInt(process.env.VIENEU_TTS_CACHE_MAX_FILES, 10) || 200
 const VIENEU_TTS_CACHE_MAX_AGE_DAYS = parseInt(process.env.VIENEU_TTS_CACHE_MAX_AGE_DAYS, 10) || 7
@@ -15,7 +16,15 @@ const VIENEU_TTS_INCLUDE_SENDER = process.env.VIENEU_TTS_INCLUDE_SENDER === 'tru
 const VIENEU_TTS_WARMUP_TEXT = process.env.VIENEU_TTS_WARMUP_TEXT || 'Xin chào'
 const VIENEU_TTS_QUEUE_MAX_SIZE = parseInt(process.env.VIENEU_TTS_QUEUE_MAX_SIZE, 10) || 50
 const VIENEU_TTS_CLEANUP_INTERVAL_MS = parseInt(process.env.VIENEU_TTS_CLEANUP_INTERVAL_MS, 10) || 60 * 1000
+const VIENEU_TTS_SPEECH_MAX_CHARS = parseInt(process.env.VIENEU_TTS_SPEECH_MAX_CHARS, 10) || 200
 const VIENEU_TTS_CACHE_MAX_AGE_MS = VIENEU_TTS_CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+const EDGE_TTS_ENABLED = process.env.EDGE_TTS_ENABLED !== 'false'
+const EDGE_TTS_VOICE = process.env.EDGE_TTS_VOICE || 'vi-VN-NamMinhNeural'
+const EDGE_TTS_RATE = process.env.EDGE_TTS_RATE || '+0%'
+const EDGE_TTS_VOLUME = process.env.EDGE_TTS_VOLUME || '+0%'
+const EDGE_TTS_PITCH = process.env.EDGE_TTS_PITCH || '+0Hz'
+const EDGE_TTS_TIMEOUT = parseInt(process.env.EDGE_TTS_TIMEOUT, 10) || 15000
+const CACHE_EXTENSIONS = ['.wav', '.mp3']
 const GENERATION_PRIORITY = {
   PLAYBACK: 0,
   WARM: 1,
@@ -43,7 +52,7 @@ function cleanupCache(force = false) {
     lastCacheCleanupAt = now
 
     const files = fs.readdirSync(CACHE_DIR)
-      .filter((filename) => filename.endsWith('.wav'))
+      .filter((filename) => CACHE_EXTENSIONS.some((extension) => filename.endsWith(extension)))
       .map((filename) => {
         const filepath = path.join(CACHE_DIR, filename)
         return { filename, filepath, stat: fs.statSync(filepath) }
@@ -74,13 +83,72 @@ function isEnabled() {
   return VIENEU_TTS_ENABLED !== 'false'
 }
 
+function isEdgeTTSEnabled() {
+  return EDGE_TTS_ENABLED
+}
+
+function trimToMaxChars(text, maxChars) {
+  const chars = Array.from(text)
+  if (chars.length <= maxChars) {
+    return text
+  }
+
+  const hardTrimmed = chars.slice(0, maxChars).join('').trim()
+  const sentenceBoundary = Math.max(
+    hardTrimmed.lastIndexOf('.'),
+    hardTrimmed.lastIndexOf('!'),
+    hardTrimmed.lastIndexOf('?'),
+    hardTrimmed.lastIndexOf(','),
+    hardTrimmed.lastIndexOf(';'),
+  )
+
+  if (sentenceBoundary >= Math.floor(maxChars * 0.65)) {
+    return hardTrimmed.slice(0, sentenceBoundary + 1).trim()
+  }
+
+  const wordBoundary = hardTrimmed.lastIndexOf(' ')
+  if (wordBoundary >= Math.floor(maxChars * 0.65)) {
+    return hardTrimmed.slice(0, wordBoundary).trim()
+  }
+
+  return hardTrimmed
+}
+
+function normalizeSpeechText(text, maxChars = VIENEU_TTS_SPEECH_MAX_CHARS) {
+  if (!text) {
+    return ''
+  }
+
+  const cleaned = text
+    .normalize('NFC')
+    .replace(/https?:\/\/\S+|www\.\S+/gi, ' ')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\p{Extended_Pictographic}/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}\s.,!?;:'"()/-]/gu, ' ')
+    .replace(/([!?.,;:]){2,}/g, '$1')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.!?;:])/g, '$1')
+    .trim()
+
+  if (!cleaned || maxChars <= 0) {
+    return cleaned
+  }
+
+  return trimToMaxChars(cleaned, maxChars)
+}
+
 function buildSpeechText(message, username = 'bạn') {
-  const normalizedMessage = message.trim()
+  const normalizedMessage = normalizeSpeechText(message)
+  if (!normalizedMessage) {
+    return ''
+  }
+
   if (!VIENEU_TTS_INCLUDE_SENDER) {
     return normalizedMessage
   }
 
-  return `Tới từ ${username} với lời nhắn: ${normalizedMessage}`
+  const normalizedUsername = normalizeSpeechText(username, 40) || 'bạn'
+  return normalizeSpeechText(`Tới từ ${normalizedUsername} với lời nhắn: ${normalizedMessage}`)
 }
 
 /**
@@ -97,9 +165,11 @@ function getCacheKey(text, voice) {
  */
 function getCachedAudio(cacheKey) {
   try {
-    const filepath = path.join(CACHE_DIR, `${cacheKey}.wav`)
-    if (fs.existsSync(filepath)) {
-      return filepath
+    for (const extension of CACHE_EXTENSIONS) {
+      const filepath = path.join(CACHE_DIR, `${cacheKey}${extension}`)
+      if (fs.existsSync(filepath)) {
+        return filepath
+      }
     }
     return null
   } catch (error) {
@@ -110,33 +180,134 @@ function getCachedAudio(cacheKey) {
 
 function getCachedFilename(text, voice) {
   const cacheKey = getCacheKey(text, voice)
-  return getCachedAudio(cacheKey) ? `${cacheKey}.wav` : null
+  const cachedPath = getCachedAudio(cacheKey)
+  return cachedPath ? path.basename(cachedPath) : null
 }
 
-/**
- * Call VieNeu-TTS microservice to generate audio from text
- * Saves result to cache and returns the filename
- */
-async function synthesizeAudio(text, voice) {
+async function synthesizeVieneuAudio(text, voice) {
+  console.log(
+    '[TTS] VieNeu synthesize request:',
+    `textLen=${Array.from(text || '').length}`,
+    `voice=${voice}`,
+    `timeoutMs=${VIENEU_TTS_PRIMARY_TIMEOUT}`,
+  )
   const { data } = await axios.get(`${VIENEU_TTS_URL}/synthesize`, {
     params: {
       text,
       voice,
     },
     responseType: 'arraybuffer',
-    timeout: VIENEU_TTS_TIMEOUT,
+    timeout: VIENEU_TTS_PRIMARY_TIMEOUT,
   })
 
   return data
 }
 
+async function synthesizeEdgeAudio(text) {
+  console.log(
+    '[TTS] Edge synthesize request:',
+    `textLen=${Array.from(text || '').length}`,
+    `voice=${EDGE_TTS_VOICE}`,
+    `timeoutMs=${EDGE_TTS_TIMEOUT}`,
+  )
+
+  const { data } = await axios.get(`${VIENEU_TTS_URL}/edge-synthesize`, {
+    params: {
+      text,
+      voice: EDGE_TTS_VOICE,
+      rate: EDGE_TTS_RATE,
+      volume: EDGE_TTS_VOLUME,
+      pitch: EDGE_TTS_PITCH,
+    },
+    responseType: 'arraybuffer',
+    timeout: EDGE_TTS_TIMEOUT,
+  })
+
+  return data
+}
+
+/**
+ * Call the primary VieNeu-TTS service, then Edge online TTS as a best-effort fallback.
+ */
+async function synthesizeAudio(text, voice) {
+  const startedAt = Date.now()
+
+  try {
+    return {
+      data: await synthesizeVieneuAudio(text, voice),
+      provider: 'vieneu',
+    }
+  } catch (primaryError) {
+    const status = primaryError.response?.status
+    const detail = primaryError.response?.data?.detail || primaryError.code || primaryError.message
+    console.error(
+      '[TTS] VieNeu synthesize failed:',
+      `textLen=${Array.from(text || '').length}`,
+      `voice=${voice}`,
+      `durationMs=${Date.now() - startedAt}`,
+      status ? `status=${status}` : '',
+      `reason=${detail}`,
+    )
+
+    if (!isEdgeTTSEnabled()) {
+      throw primaryError
+    }
+
+    const fallbackStartedAt = Date.now()
+    try {
+      return {
+        data: await synthesizeEdgeAudio(text),
+        provider: 'edge',
+      }
+    } catch (fallbackError) {
+      const fallbackStatus = fallbackError.response?.status
+      const fallbackDetail = fallbackError.response?.data?.detail
+        || fallbackError.code
+        || fallbackError.message
+      console.error(
+        '[TTS] Edge fallback failed:',
+        `durationMs=${Date.now() - fallbackStartedAt}`,
+        fallbackStatus ? `status=${fallbackStatus}` : '',
+        `reason=${fallbackDetail}`,
+      )
+      throw fallbackError
+    }
+  }
+}
+
 async function synthesizeAndCache(text, voice, cacheKey) {
   const startedAt = Date.now()
-  const data = await synthesizeAudio(text, voice)
-  const filename = `${cacheKey}.wav`
+  let data
+  let provider
+  try {
+    const synthesized = await synthesizeAudio(text, voice)
+    data = synthesized.data
+    provider = synthesized.provider
+  } catch (error) {
+    const status = error.response?.status
+    const detail = error.response?.data?.detail || error.code || error.message
+    console.error(
+      '[TTS] Synthesize failed:',
+      `cacheKey=${cacheKey}`,
+      `textLen=${Array.from(text || '').length}`,
+      `voice=${voice}`,
+      `durationMs=${Date.now() - startedAt}`,
+      status ? `status=${status}` : '',
+      `reason=${detail}`,
+    )
+    throw error
+  }
+
+  const extension = provider === 'edge' ? '.mp3' : '.wav'
+  const filename = `${cacheKey}${extension}`
   const filepath = path.join(CACHE_DIR, filename)
   fs.writeFileSync(filepath, Buffer.from(data))
-  console.log('[TTS] Generated and cached audio:', filename, `durationMs=${Date.now() - startedAt}`)
+  console.log(
+    '[TTS] Generated and cached audio:',
+    filename,
+    `provider=${provider}`,
+    `durationMs=${Date.now() - startedAt}`,
+  )
   cleanupCache()
 
   return filename
@@ -144,7 +315,7 @@ async function synthesizeAndCache(text, voice, cacheKey) {
 
 async function touchTTS(text, voice) {
   const startedAt = Date.now()
-  await synthesizeAudio(text, voice)
+  await synthesizeVieneuAudio(text, voice)
   console.log('[TTS] Warmed VieNeu voice:', `durationMs=${Date.now() - startedAt}`)
   return true
 }
@@ -181,6 +352,12 @@ function enqueueGenerationJob(job) {
 
   const generation = new Promise((resolve) => {
     generationQueue.push({ ...job, resolve })
+    console.log(
+      '[TTS] Queued generation job:',
+      `cacheKey=${job.cacheKey}`,
+      `priority=${job.priority}`,
+      `queueSize=${generationQueue.length}`,
+    )
     processGenerationQueue()
   })
 
@@ -199,11 +376,24 @@ function processGenerationQueue() {
   generationQueue.sort((a, b) => a.priority - b.priority || a.createdAt - b.createdAt)
   const job = generationQueue.shift()
   activeGeneration = true
+  const startedAt = Date.now()
+
+  console.log(
+    '[TTS] Processing generation job:',
+    `cacheKey=${job.cacheKey}`,
+    `priority=${job.priority}`,
+    `queueSize=${generationQueue.length}`,
+  )
 
   job.run()
     .then(job.resolve)
     .catch((error) => {
-      console.error('[TTS] Error generating TTS:', error.message)
+      console.error(
+        '[TTS] Error generating TTS:',
+        error.message,
+        `cacheKey=${job.cacheKey}`,
+        `durationMs=${Date.now() - startedAt}`,
+      )
       job.resolve(null)
     })
     .finally(() => {
@@ -251,10 +441,16 @@ async function waitForTTSGeneration(text, voice, timeoutMs) {
   const generation = generateTTS(text, voice)
   const timeout = sleep(timeoutMs).then(() => null)
   const filename = await Promise.race([generation, timeout])
+  const cacheKey = getCacheKey(text, voice || VIENEU_TTS_VOICE)
+  const pending = !filename && inFlightGenerations.has(cacheKey)
+
+  if (pending) {
+    console.log('[TTS] Generation pending:', `cacheKey=${cacheKey}`, `waitMs=${timeoutMs}`)
+  }
 
   return {
     filename,
-    pending: !filename && inFlightGenerations.has(getCacheKey(text, voice || VIENEU_TTS_VOICE)),
+    pending,
   }
 }
 
@@ -311,26 +507,50 @@ async function getVoices() {
  * Returns true if service is healthy, false otherwise
  */
 async function checkHealth() {
+  const providerHealth = await checkProviderHealth()
+  return providerHealth.available
+}
+
+async function checkProviderHealth() {
+  let vieneuAvailable = false
+
   try {
     const { data } = await axios.get(`${VIENEU_TTS_URL}/health`, {
       timeout: VIENEU_TTS_HEALTH_TIMEOUT,
     })
-    return data && data.status === 'ok'
+    vieneuAvailable = data && data.status === 'ok'
   } catch (error) {
     console.error('[TTS] Health check failed:', error.message)
-    return false
+  }
+
+  const edgeAvailable = isEdgeTTSEnabled() && vieneuAvailable
+
+  return {
+    available: vieneuAvailable || edgeAvailable,
+    primary: {
+      provider: 'vieneu',
+      available: vieneuAvailable,
+    },
+    fallback: {
+      provider: 'edge',
+      available: edgeAvailable,
+      voice: edgeAvailable ? EDGE_TTS_VOICE : null,
+    },
   }
 }
 
 module.exports = {
   isEnabled,
+  isEdgeTTSEnabled,
   getCacheKey,
   getCachedAudio,
   generateTTS,
   waitForTTSGeneration,
   getVoices,
   checkHealth,
+  checkProviderHealth,
   buildSpeechText,
+  normalizeSpeechText,
   warmTTSCache,
   enqueueWarmTTSCache,
   warmupTTS,

@@ -7,6 +7,7 @@ import threading
 import time
 import wave
 
+import edge_tts
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
@@ -29,6 +30,10 @@ INFER_REPETITION_PENALTY = float(os.getenv("VIENEU_INFER_REPETITION_PENALTY", "1
 INFER_MAX_NEW_FRAMES = int(os.getenv("VIENEU_INFER_MAX_NEW_FRAMES", "300"))
 WARMUP_ENABLED = os.getenv("VIENEU_WARMUP_ENABLED", "true").lower() == "true"
 WARMUP_TEXT = os.getenv("VIENEU_WARMUP_TEXT", "Xin chào")
+EDGE_TTS_VOICE = os.getenv("EDGE_TTS_VOICE", "vi-VN-NamMinhNeural")
+EDGE_TTS_RATE = os.getenv("EDGE_TTS_RATE", "+0%")
+EDGE_TTS_VOLUME = os.getenv("EDGE_TTS_VOLUME", "+0%")
+EDGE_TTS_PITCH = os.getenv("EDGE_TTS_PITCH", "+0Hz")
 
 app = FastAPI(title="VieNeu-TTS Service", version="1.0.0")
 app.add_middleware(
@@ -175,6 +180,44 @@ async def synthesize(
         wf.writeframes(pcm16.tobytes())
 
     return Response(content=buf.getvalue(), media_type="audio/wav")
+
+
+@app.get("/edge-synthesize")
+async def edge_synthesize(
+    text: str = Query(..., min_length=1, description="Text to synthesise"),
+    voice: str | None = Query(default=None, description="Microsoft Edge TTS voice"),
+    rate: str = Query(default=EDGE_TTS_RATE, description="Speech rate adjustment"),
+    volume: str = Query(default=EDGE_TTS_VOLUME, description="Speech volume adjustment"),
+    pitch: str = Query(default=EDGE_TTS_PITCH, description="Speech pitch adjustment"),
+):
+    selected_voice = voice or EDGE_TTS_VOICE
+    started_at = time.perf_counter()
+
+    try:
+        communicate = edge_tts.Communicate(
+            text=text,
+            voice=selected_voice,
+            rate=rate,
+            volume=volume,
+            pitch=pitch,
+        )
+        audio_chunks = []
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_chunks.append(chunk["data"])
+    except Exception as exc:
+        logger.exception("Edge TTS fallback failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    audio = b"".join(audio_chunks)
+    logger.info(
+        "Edge synthesized text_len=%d voice=%s duration_ms=%d audio_bytes=%d",
+        len(text),
+        selected_voice,
+        int((time.perf_counter() - started_at) * 1000),
+        len(audio),
+    )
+    return Response(content=audio, media_type="audio/mpeg")
 
 
 if __name__ == "__main__":

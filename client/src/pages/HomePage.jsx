@@ -452,14 +452,14 @@ const HomePage = () => {
                   defaultActiveKey="1"
                   items={[
                     {
-                      label: 'Tech News',
+                      label: 'VnExpress',
                       key: '1',
-                      children: <TechNewsWidget />,
+                      children: <VnExpressNewsView />,
                     },
                     {
-                      label: 'VnExpress',
+                      label: 'Tech News',
                       key: '2',
-                      children: <VnExpressNewsView />,
+                      children: <TechNewsWidget />,
                     },
                   ]}
                 />
