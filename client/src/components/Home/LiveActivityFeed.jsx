@@ -42,8 +42,9 @@ const LiveActivityFeed = () => {
         ) : null
       }
       style={{
-        background: isDark ? '#1f1f1f' : '#fff',
-        borderColor: isDark ? '#434343' : '#f0f0f0',
+        background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+        border: 'none',
+        boxShadow: 'none',
       }}
       styles={{
         body: {

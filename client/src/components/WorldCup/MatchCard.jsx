@@ -1,16 +1,6 @@
 import React from "react";
-import { Tag } from "antd";
 import { ClockCircleOutlined, EnvironmentOutlined } from "@ant-design/icons";
-
-const getTeamAbbreviation = (name = "") => {
-  if (!name || name === "TBD") return "TBD";
-  const cleanName = name.replace(/[^a-zA-Z\s]/g, "").trim();
-  const words = cleanName.split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return cleanName.substring(0, 3).toUpperCase();
-};
+import { getTeamAbbreviation } from "../../utils/worldCupUtils";
 
 const MatchCard = ({
   match,
@@ -22,89 +12,85 @@ const MatchCard = ({
   getGroupLabel,
   formatKickoff,
   onSelect,
-  compact = false,
-  noHover = false,
+  variant = "default", // 'compact' | 'default' | 'featured'
 }) => {
   const homeFlagUrl = getTeamFlagUrl?.(match.homeTeam);
   const awayFlagUrl = getTeamFlagUrl?.(match.awayTeam);
-  const isFinished = match.status === "finished";
+  const isFinished = match.status === "finished" || match.status === "completed";
 
   const renderFlag = (teamName, flagUrl) => {
     if (flagUrl) {
-      return <img src={flagUrl} alt={`${teamName} flag`} />;
+      return <img className="wc-team__flag" src={flagUrl} alt={`${teamName} flag`} />;
     }
     const emoji = getTeamFlag(teamName);
-    if (emoji) return emoji;
-    return <span className="wc-flag-txt">{getTeamAbbreviation(teamName)}</span>;
+    if (emoji) return <span className="wc-team__flag wc-team__flag--emoji">{emoji}</span>;
+    return <span className="wc-team__flag wc-team__flag--text" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700}}>{getTeamAbbreviation(teamName)}</span>;
+  };
+
+  const getVariantClass = () => {
+    switch (variant) {
+      case "compact": return "wc-match-card--compact";
+      case "featured": return "wc-match-card--featured";
+      default: return "";
+    }
   };
 
   return (
     <button
       type="button"
-      className={`wc-match-card ${isLive ? "is-live" : ""} ${isFinished ? "is-finished" : ""} ${compact ? "is-compact" : ""} ${noHover ? "no-hover" : ""}`}
-      onClick={() => onSelect(match)}
-      style={noHover ? { cursor: "pointer" } : undefined}
+      className={`wc-match-card ${getVariantClass()} ${isLive ? "wc-match-card--live" : ""} ${isFinished ? "wc-match-card--finished" : ""}`}
+      onClick={() => onSelect && onSelect(match)}
     >
-      {/* Top accent bar */}
-      <div className="wc-card-accent" />
-
-      {/* Header: Group + Status */}
-      <div className="wc-match-meta">
-        <span className="wc-group-pill">{getGroupLabel(match)}</span>
-        <Tag color={status.color} className="wc-status" style={{ margin: 0 }}>
-          {isLive && <span className="wc-live-dot" />}
-          {status.label}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 12, fontWeight: 600 }}>
+        <span style={{ color: 'var(--wc-text-secondary)' }}>{getGroupLabel(match)}</span>
+        
+        <span className={`wc-status-badge ${isLive ? "wc-status-badge--live" : ""}`}>
+          {isLive && <span className="wc-pulse-dot" />}
+          {status?.label || match.status}
           {isLive && match.elapsed && (
-            <span className="wc-elapsed">{match.elapsed}'</span>
+            <span style={{ marginLeft: 4 }}>{match.elapsed}'</span>
           )}
-        </Tag>
+        </span>
       </div>
 
-      {/* Teams & Score */}
-      <div className="wc-match-teams">
+      <div className="wc-match-card__content">
         <div className="wc-team">
-          <span className="wc-flag">{renderFlag(match.homeTeam, homeFlagUrl)}</span>
-          <span className="wc-team-name" title={match.homeTeam}>
+          {renderFlag(match.homeTeam, homeFlagUrl)}
+          <span className="wc-team__name" title={match.homeTeam}>
             {match.homeTeam || "TBD"}
           </span>
         </div>
 
-        <div className="wc-score-center">
+        <div className="wc-score-center" style={{ textAlign: 'center' }}>
           {hasScore ? (
-            <div className="wc-score-split">
-              <span className="wc-score-num">{match.homeScore}</span>
-              <span className="wc-score-sep">:</span>
-              <span className="wc-score-num">{match.awayScore}</span>
+            <div className={`wc-score ${isLive ? "wc-score--live" : ""}`}>
+              {match.homeScore} - {match.awayScore}
             </div>
           ) : (
-            <span className="wc-vs-label">VS</span>
+            <div className="wc-score" style={{ fontSize: 20, color: 'var(--wc-border-hover)' }}>VS</div>
           )}
         </div>
 
-        <div className="wc-team is-right">
-          <span className="wc-flag">{renderFlag(match.awayTeam, awayFlagUrl)}</span>
-          <span className="wc-team-name" title={match.awayTeam}>
+        <div className="wc-team">
+          {renderFlag(match.awayTeam, awayFlagUrl)}
+          <span className="wc-team__name" title={match.awayTeam}>
             {match.awayTeam || "TBD"}
           </span>
         </div>
       </div>
 
-      {/* Footer: Time + Venue */}
-      <div className="wc-match-footer">
-        <span className="wc-time-line">
-          <ClockCircleOutlined />
-          <span>{match.kickoffVietnam || formatKickoff(match.kickoffUtc)}</span>
-        </span>
-        {(match.stadium || match.city) && (
-          <span
-            className="wc-venue-line"
-            title={[match.stadium, match.city].filter(Boolean).join(", ")}
-          >
-            <EnvironmentOutlined />
-            <span>{[match.stadium, match.city].filter(Boolean).join(", ")}</span>
+      {variant !== "compact" && (
+        <div className="wc-match-card__meta">
+          <span style={{ marginRight: 16 }}>
+            <ClockCircleOutlined /> {match.kickoffVietnam || formatKickoff(match.kickoffUtc)}
           </span>
-        )}
-      </div>
+          {(match.stadium || match.city) && (
+            <span title={[match.stadium, match.city].filter(Boolean).join(", ")}>
+              <EnvironmentOutlined /> {[match.stadium, match.city].filter(Boolean).join(", ")}
+            </span>
+          )}
+        </div>
+      )}
     </button>
   );
 };

@@ -36,18 +36,16 @@ const PlaylistView = () => {
 
   return (
     <Card
-      title='Playlist hiện tại'
-      style={{
-        background: isDark ? '#1f1f1f' : undefined,
-      }}
-      extra={
-        <Input
-          placeholder='Nhập tên của bạn'
-          value={username}
-          onChange={handleUsernameChange}
-          style={{ width: 150 }}
-        />
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+          <span style={{ fontSize: 24 }}>🎵</span>
+          <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Playlist hiện tại</span>
+        </div>
       }
+      bordered={false}
+      style={{ background: 'var(--bg-card)', borderRadius: 24 }}
+      bodyStyle={{ padding: '0 24px 24px 24px' }}
+      headStyle={{ padding: '12px 24px', borderBottom: '1px solid var(--border)' }}
     >
       <List
         loading={loading}
@@ -58,6 +56,7 @@ const PlaylistView = () => {
 
           return (
             <List.Item
+              style={{ padding: '24px 0', borderBottom: '1px solid var(--border)' }}
               actions={[
                 <QuickReactionButtons
                   key={song._id}
@@ -69,13 +68,17 @@ const PlaylistView = () => {
               ]}
             >
               <List.Item.Meta
-                avatar={<YoutubeOutlined style={{ fontSize: 24, color: 'red' }} />}
-                title={song.title}
+                avatar={
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(255,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <YoutubeOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />
+                  </div>
+                }
+                title={<span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{song.title}</span>}
                 description={
-                  <Space direction='vertical'>
-                    <Text type='secondary'>Thêm bởi: {song.addedBy.username}</Text>
-                    {song.message && <Text italic>"{song.message}"</Text>}
-                    <Text strong>Votes: {song.voteScore}</Text>
+                  <Space direction='vertical' size={2} style={{ marginTop: 4 }}>
+                    <Text type='secondary' style={{ fontSize: 13 }}>Thêm bởi: <span style={{ fontWeight: 600 }}>{song.addedBy.username}</span></Text>
+                    {song.message && <Text italic style={{ color: 'var(--text-secondary)' }}>"{song.message}"</Text>}
+                    <Text style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 700, marginTop: 4 }}>🔥 {song.voteScore} Votes</Text>
                   </Space>
                 }
               />

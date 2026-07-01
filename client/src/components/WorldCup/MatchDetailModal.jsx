@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, Space, Tag, Typography } from "antd";
 import { ClockCircleOutlined, EnvironmentOutlined } from "@ant-design/icons";
+import { getTeamAbbreviation } from "../../utils/worldCupUtils";
 
 const { Text } = Typography;
 
@@ -10,57 +11,49 @@ const normalizePlayers = (match, side) => {
 };
 
 const PlayerList = ({ title, players }) => (
-  <div className="wc-squad-panel">
-    <Text strong>{title}</Text>
-    <div style={{ marginTop: 8 }}>
+  <div>
+    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--wc-text-primary)' }}>{title}</span>
+    <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
       {players.length ? (
         players.map((player, index) => (
-          <div className="wc-player-row" key={player.id || player.name || index}>
-            <Text type="secondary">#{player.number || player.shirtNumber || "-"}</Text>
-            <div>
-              <Text strong>{player.name || player.player_name || "TBD"}</Text>
-              <Text type="secondary" style={{ display: "block", fontSize: 11 }}>
-                {player.position || player.role || "Position TBD"}
-              </Text>
+          <div key={player.id || player.name || index} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--wc-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: 'var(--wc-text-secondary)' }}>
+              {player.number || player.shirtNumber || "-"}
             </div>
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              {player.club || player.team || ""}
-            </Text>
+            <div>
+              <span style={{ display: "block", lineHeight: 1.2, fontWeight: 700, fontSize: 15, color: 'var(--wc-text-primary)' }}>{player.name || player.player_name || "TBD"}</span>
+              <span style={{ fontSize: 13, color: 'var(--wc-text-secondary)', fontWeight: 500 }}>
+                {player.position || player.role || "Position TBD"}
+                {player.club || player.team ? ` • ${player.club || player.team}` : ""}
+              </span>
+            </div>
           </div>
         ))
-      ) : null}
+      ) : (
+        <span style={{ color: 'var(--wc-text-secondary)' }}>Đội hình sẽ được cập nhật trước giờ bóng lăn.</span>
+      )}
     </div>
   </div>
 );
-
-const getTeamAbbreviation = (name = "") => {
-  if (!name || name === "TBD") return "TBD";
-  const cleanName = name.replace(/[^a-zA-Z\s]/g, "").trim();
-  const words = cleanName.split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return cleanName.substring(0, 3).toUpperCase();
-};
 
 const TeamHero = ({ name, align, getTeamFlag, getTeamFlagUrl }) => {
   const flagUrl = getTeamFlagUrl?.(name);
   const emoji = getTeamFlag?.(name);
 
   return (
-    <div className={`wc-team-hero ${align === "right" ? "is-right" : ""}`}>
-      <span className="wc-hero-flag">
+    <div style={{ display: 'flex', flex: 1, flexDirection: align === 'right' ? 'row-reverse' : 'row', alignItems: 'center', gap: 20, textAlign: align, minWidth: 0 }}>
+      <div className="wc-team__flag" style={{ width: 80, height: 80, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--wc-border)' }}>
         {flagUrl ? (
-          <img src={flagUrl} alt={`${name} flag`} />
+          <img src={flagUrl} alt={`${name} flag`} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
         ) : emoji ? (
-          emoji
+          <span style={{ fontSize: 56, lineHeight: 1 }}>{emoji}</span>
         ) : (
-          <span className="wc-flag-fallback" style={{ fontSize: "20px" }}>{getTeamAbbreviation(name)}</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--wc-text-secondary)' }}>{getTeamAbbreviation(name)}</span>
         )}
-      </span>
-      <Text strong style={{ fontSize: 20, lineHeight: 1.2 }}>
+      </div>
+      <span style={{ fontSize: 24, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--wc-text-primary)', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {name || "TBD"}
-      </Text>
+      </span>
     </div>
   );
 };
@@ -86,68 +79,54 @@ const MatchDetailModal = ({
       footer={null}
       centered
       width={760}
-      className="wc-modal"
+      className="wc-detail-modal"
     >
       {match && (
-        <div className="wc-modal-shell">
-          <Space direction="vertical" size={18} style={{ width: "100%" }}>
-            <div className="wc-section-head" style={{ paddingRight: 34 }}>
-              <Space size={8} wrap>
-                <Tag color="blue" style={{ margin: 0 }}>
-                  {getGroupLabel(match)}
-                </Tag>
-                <Tag color={status.color} style={{ margin: 0 }}>
-                  {status.label}
-                </Tag>
-              </Space>
-              <Text type="secondary">Match preview</Text>
-            </div>
+        <div>
+          <div style={{ padding: '24px 32px 0' }}>
+            <Space size={8} wrap style={{ marginBottom: 16 }}>
+              <Tag color="blue" style={{ margin: 0, borderRadius: 999 }}>
+                {getGroupLabel(match)}
+              </Tag>
+              <Tag color={status.color} style={{ margin: 0, borderRadius: 999 }}>
+                {status.label}
+              </Tag>
+            </Space>
+          </div>
 
-            <div
-              className="wc-modal-scoreboard"
-              transition={{ duration: 0.24 }}
-            >
-              <TeamHero name={match.homeTeam} getTeamFlag={getTeamFlag} getTeamFlagUrl={getTeamFlagUrl} />
-              <div>
-                <Text type="secondary" style={{ display: "block", textAlign: "center", fontSize: 11 }}>
-                  SCORE
-                </Text>
-                <div className="wc-big-score">
-                  {match.homeScore !== null && match.awayScore !== null
-                    ? `${match.homeScore}-${match.awayScore}`
-                    : "VS"}
-                </div>
-              </div>
-              <TeamHero name={match.awayTeam} align="right" getTeamFlag={getTeamFlag} getTeamFlagUrl={getTeamFlagUrl} />
-            </div>
-
-            <div className="wc-info-grid">
-              <div className="wc-info-tile">
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  THỜI GIAN (GIỜ VN) {' '}
-                </Text>
-                <div className="wc-time-value">
-                  <ClockCircleOutlined /> <Text strong>{formatKickoff(match.kickoffUtc)}</Text>
-                </div>
-              </div>
-              <div className="wc-info-tile">
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  SÂN / THÀNH PHỐ
-                </Text>
-                <div style={{ marginTop: 6 }}>
-                  <EnvironmentOutlined />{" "}
-                  <Text strong>{[match.stadium, match.city].filter(Boolean).join(", ") || "Chưa cập nhật"}</Text>
-                </div>
+          <div className="wc-detail-scoreboard" style={{ gap: 24 }}>
+            <TeamHero name={match.homeTeam} getTeamFlag={getTeamFlag} getTeamFlagUrl={getTeamFlagUrl} />
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div className="wc-score" style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-0.04em', whiteSpace: 'nowrap' }}>
+                {match.homeScore !== null && match.awayScore !== null
+                  ? `${match.homeScore} - ${match.awayScore}`
+                  : <span style={{ color: 'var(--wc-border-hover)' }}>VS</span>}
               </div>
             </div>
+            <TeamHero name={match.awayTeam} align="right" getTeamFlag={getTeamFlag} getTeamFlagUrl={getTeamFlagUrl} />
+          </div>
 
-            {(homePlayers.length > 0 || awayPlayers.length > 0) && (
-              <div className="wc-squad-grid">
-                <PlayerList title={match.homeTeam || "Đội nhà"} players={homePlayers} />
-                <PlayerList title={match.awayTeam || "Đội khách"} players={awayPlayers} />
+          <div className="wc-detail-info-grid">
+            <div className="wc-detail-info-tile">
+              <span className="wc-detail-info-tile-label">THỜI GIAN (GIỜ VN)</span>
+              <div className="wc-detail-info-tile-value">
+                <ClockCircleOutlined style={{ marginRight: 8, color: 'var(--wc-accent)' }} />
+                <span>{formatKickoff(match.kickoffUtc)}</span>
               </div>
-            )}
-          </Space>
+            </div>
+            <div className="wc-detail-info-tile">
+              <span className="wc-detail-info-tile-label">SÂN / THÀNH PHỐ</span>
+              <div className="wc-detail-info-tile-value">
+                <EnvironmentOutlined style={{ marginRight: 8, color: 'var(--wc-accent)' }} />
+                <span>{[match.stadium, match.city].filter(Boolean).join(", ") || "Chưa cập nhật"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="wc-squad-grid">
+            <PlayerList title={match.homeTeam || "Đội nhà"} players={homePlayers} />
+            <PlayerList title={match.awayTeam || "Đội khách"} players={awayPlayers} />
+          </div>
         </div>
       )}
     </Modal>

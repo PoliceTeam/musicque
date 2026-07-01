@@ -37,17 +37,32 @@ export const ThemeProvider = ({ children }) => {
 
   const antdTheme = {
     algorithm: isDark ? darkAlgorithm : defaultAlgorithm,
-    token: isDark
-      ? {
-          colorBgBase: '#141414',
-          colorBgContainer: '#1f1f1f',
-          colorBgElevated: '#262626',
-          colorText: 'rgba(255, 255, 255, 0.85)',
-          colorTextSecondary: 'rgba(255, 255, 255, 0.65)',
-          colorBorder: '#434343',
-          colorBorderSecondary: '#303030',
-        }
-      : {},
+    token: {
+      fontFamily: `'BeVietnamPro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif`,
+      borderRadius: 16,
+      colorBgBase: isDark ? '#141414' : '#ffffff',
+      colorBgContainer: isDark ? '#1c1c1c' : '#ffffff',
+      colorBgElevated: isDark ? '#262626' : '#ffffff',
+      colorText: isDark ? 'rgba(255, 255, 255, 0.85)' : '#213547',
+      colorTextSecondary: isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.45)',
+      colorBorder: isDark ? '#303030' : '#f0f0f0',
+      colorBorderSecondary: isDark ? '#262626' : '#f5f5f5',
+      boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.04)',
+      boxShadowSecondary: isDark ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.02)',
+    },
+    components: {
+      Card: {
+        paddingLG: 24,
+      },
+      Button: {
+        borderRadius: 12,
+        controlHeight: 40,
+      },
+      Input: {
+        borderRadius: 12,
+        controlHeight: 40,
+      }
+    }
   };
 
   return (
