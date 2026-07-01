@@ -75,26 +75,26 @@ const TechNewsWidget = () => {
 
   return (
     <Card
-      size="small"
+      bordered={false}
       title={
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: isDark ? '#10b981' : '#059669', fontWeight: 'bold' }}>
-          <CodeOutlined />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+          <CodeOutlined style={{ color: 'var(--accent)' }}/>
           Tech News
         </span>
       }
       extra={
         <Button
           type="text"
-          size="small"
           icon={<ReloadOutlined spin={loading || loadingMore} />}
           onClick={handleRefresh}
           disabled={loading || loadingMore}
         />
       }
       styles={{ body: { padding: 0 } }}
+      headStyle={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}
       style={{
-        background: isDark ? '#1f1f1f' : '#fff',
-        borderColor: isDark ? '#434343' : '#f0f0f0',
+        background: 'transparent',
+        borderRadius: 24,
       }}
     >
       <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -140,20 +140,20 @@ const TechNewsWidget = () => {
           }}
           overscan={200}
           itemContent={(index, article) => (
-            <a
+              <a
               href={article.link}
               target="_blank"
               rel="noopener noreferrer"
               className="tech-news-item"
               style={{
                 display: 'block',
-                padding: '16px',
-                borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
+                padding: '24px',
+                borderBottom: '1px solid var(--border)',
                 color: 'inherit',
                 textDecoration: 'none',
                 transition: 'background-color 0.3s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#262626' : '#fafafa'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               {article.imageUrl && (
@@ -191,7 +191,7 @@ const TechNewsWidget = () => {
                   display: 'block',
                   marginBottom: 8,
                   fontSize: '15px',
-                  color: isDark ? '#fff' : '#141414',
+                  color: 'var(--text-primary)',
                   lineHeight: 1.4,
                 }}
               >

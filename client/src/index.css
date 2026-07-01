@@ -165,39 +165,57 @@ body {
 /* Light theme (default) */
 :root {
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --border: rgba(0, 0, 0, 0.06);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+
+  color: var(--text-primary);
+  background-color: var(--bg-page);
 }
 
 /* Dark theme */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.85);
-  background-color: #141414;
+  --bg-page: #0a0a0a;
+  --bg-card: #161616;
+  --border: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --glass-bg: rgba(24, 24, 27, 0.75);
+
+  color: var(--text-primary);
+  background-color: var(--bg-page);
 }
 
-/* Tùy chỉnh cho Ant Design */
 .ant-layout {
+  background-color: var(--bg-page) !important;
   transition: background-color 0.3s ease;
 }
 
 .ant-layout-header {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-:root[data-theme='dark'] .ant-layout-header {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border) !important;
+  z-index: 50;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .ant-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03) !important;
+  border-radius: 24px !important;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
 }
 
 :root[data-theme='dark'] .ant-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
 }
 
 .ant-list-item {
@@ -209,5 +227,309 @@ body {
 }
 
 :root[data-theme='dark'] .ant-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-} 
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Bento Grid Utilities */
+.bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: 8fr 4fr;
+    align-items: start;
+    gap: 32px;
+  }
+}
+
+.bento-col-main {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1200px) {
+  .bento-col-main {
+    grid-template-columns: 4fr 6fr;
+    align-items: start;
+  }
+}
+
+.bento-col-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-left: 24px;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 1023px) {
+  .bento-col-sidebar {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+}
+
+.bento-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Floating Dock (Now Playing) */
+.floating-dock {
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+  margin: 0 24px 24px 24px;
+  padding: 12px 24px;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+}
+
+:root[data-theme='dark'] .floating-dock {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(30,30,30,0.7) !important;
+}
+
+/* App Launcher Grid */
+.app-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 8px;
+}
+
+@media (min-width: 640px) {
+  .app-launcher-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.app-launcher-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-launcher-item:hover {
+  background: rgba(0,0,0,0.04);
+  transform: scale(1.02);
+}
+
+:root[data-theme='dark'] .app-launcher-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.app-launcher-icon {
+  font-size: 36px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.app-launcher-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ant-color-text);
+}
+
+/* Segmented Tabs Override */
+.segmented-tabs .ant-tabs-nav {
+  margin-bottom: 16px !important;
+}
+
+.segmented-tabs .ant-tabs-nav-wrap {
+  background: rgba(0,0,0,0.04);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+:root[data-theme='dark'] .segmented-tabs .ant-tabs-nav-wrap {
+  background: rgba(255,255,255,0.08);
+}
+
+.segmented-tabs .ant-tabs-tab {
+  padding: 6px 16px !important;
+  margin: 0 !important;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.segmented-tabs .ant-tabs-tab-active {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+:root[data-theme='dark'] .segmented-tabs .ant-tabs-tab-active {
+  background: #303030;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.segmented-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+/* Pulse Animation */
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(82, 196, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
+}
+
+.live-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #52c41a;
+  animation: live-pulse 2s infinite;
+}
+
+/* World Cup Header Chip */
+.wc-header-chip {
+  height: 38px;
+  border-radius: 999px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+  max-width: 320px;
+}
+
+.wc-header-chip:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.wc-header-chip.is-dark {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wc-header-chip.is-dark:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.wc-header-chip.is-live {
+  background: rgba(82, 196, 26, 0.1);
+  border-color: rgba(82, 196, 26, 0.3);
+}
+
+.wc-header-chip__icon {
+  color: #faad14;
+  font-size: 16px;
+}
+
+.wc-header-chip__text {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .wc-header-chip {
+    padding: 0 12px;
+    max-width: 140px;
+  }
+}
+
+/* World Cup Match Row */
+.wc-match-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  margin-bottom: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.wc-match-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wc-match-row.is-dark {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wc-match-row.is-dark:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wc-match-row--live {
+  background: rgba(82, 196, 26, 0.05);
+  border-color: rgba(82, 196, 26, 0.2);
+}
+
+.wc-match-row__time {
+  width: 48px;
+  font-size: 12px;
+  color: var(--ant-color-text-secondary);
+  font-weight: 600;
+}
+
+.wc-match-row__teams {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.wc-match-row__score {
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.live-score { color: #52c41a; }
+.vs-text { color: var(--ant-color-text-secondary); font-size: 12px; }
+
+.wc-match-row__status {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #52c41a;
+  background: rgba(82, 196, 26, 0.1);
+  padding: 4px 8px;
+  border-radius: 999px;
+}

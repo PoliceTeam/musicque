@@ -13,7 +13,7 @@ import {
   getTeamFlagUrl,
   getGroupLabel,
   formatKickoff,
-} from "./WorldCupScheduleView";
+} from "../../utils/worldCupUtils";
 import "./WorldCup.css";
 
 const WorldCupRail = () => {

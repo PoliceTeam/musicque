@@ -14,39 +14,34 @@ export default function WorldCupPage() {
   const { isDark } = useTheme()
 
   return (
-    <Layout className={`wc-page-shell ${isDark ? 'is-dark' : ''}`}>
-      <Header
-        className="wc-page-header"
-      >
+    <div className={`wc-page-shell ${isDark ? 'is-dark' : 'is-light'}`}>
+      <header className="wc-page-header">
         <Space size={16} align="center">
           <Button
+            type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/')}
-            style={{ display: 'inline-flex', alignItems: 'center' }}
+            className="wc-nav-btn"
           >
             Quay lại
           </Button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <Title level={4} style={{ margin: 0, lineHeight: 1.2, fontSize: '16px' }}>
-              World Cup 2026
-            </Title>
-            <Text type="secondary" style={{ fontSize: '12px', lineHeight: 1.2 }}>
-              Lịch đấu, bảng xếp hạng và knockout
-            </Text>
+          <div className="wc-header-title-stack">
+            <h1 className="wc-header-title">World Cup 2026</h1>
+            <span className="wc-header-subtitle">Lịch đấu, bảng xếp hạng và knockout</span>
           </div>
         </Space>
         <Button
           type="primary"
           icon={<HomeOutlined />}
           onClick={() => navigate('/')}
-          style={{ display: 'inline-flex', alignItems: 'center' }}
+          className="wc-home-btn"
         >
           Trang chính
         </Button>
-      </Header>
-      <Content className="wc-page-content">
+      </header>
+      <main className="wc-page-content">
         <WorldCupScheduleView />
-      </Content>
-    </Layout>
+      </main>
+    </div>
   )
 }
