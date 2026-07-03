@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal, Tabs } from 'antd';
+import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal, Tabs, Dropdown, Menu } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
@@ -7,6 +7,7 @@ import {
   MoonOutlined,
   SunOutlined,
   TrophyOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
@@ -15,9 +16,9 @@ import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
 import TechNewsWidget from '../components/TechNews/TechNewsWidget';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
-import WorldCupRail from '../components/WorldCup/WorldCupRail';
+import WorldCupHeaderChip from '../components/WorldCup/WorldCupHeaderChip';
+import WorldCupWidget from '../components/WorldCup/WorldCupWidget';
 import WeatherHeader from '../components/Weather/WeatherHeader';
-// import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NesGame from '../components/NesGame/NesGame';
@@ -231,111 +232,97 @@ const HomePage = () => {
       </style>
       <Header
         style={{
-          background: isDark ? '#141414' : '#fff',
-          padding: '0 20px',
+          background: 'var(--glass-bg)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid var(--border)',
+          padding: '0 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          transition: 'all 0.3s ease'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Title
             level={3}
-            style={{ margin: '16px 0', cursor: 'pointer' }}
+            style={{ margin: '16px 0', cursor: 'pointer', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}
             onClick={() => setIsAppSwitcherOpen(true)}
           >
             Music Order App
           </Title>
           <WeatherHeader />
-          <Button
-            type="text"
-            onClick={() => navigate('/world-cup')}
-            style={{
-              marginLeft: '20px',
-              paddingLeft: '20px',
-              borderLeft: `1px solid ${isDark ? '#434343' : '#f0f0f0'}`,
-              height: '38px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              borderRadius: '6px',
-            }}
-          >
-            <TrophyOutlined style={{ color: '#1677ff', fontSize: '18px' }} />
-            <span style={{ fontWeight: 'bold', color: isDark ? '#fff' : '#141414' }}>
-              World Cup 2026
-            </span>
-          </Button>
+          <div style={{ marginLeft: 20 }}>
+            <WorldCupHeaderChip />
+          </div>
         </div>
         <Space>
-          {!isAdmin && (
-            <Input
-              prefix={<UserOutlined />}
-              placeholder='Tên của bạn'
-              value={username}
-              onChange={handleUsernameChange}
-              style={{ width: 200 }}
-            />
-          )}
+          {!isAdmin &&                <Input
+                  prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                  placeholder='Tên của bạn'
+                  value={username}
+                  onChange={handleUsernameChange}
+                  bordered={false}
+                  style={{ width: 140, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderRadius: 12 }}
+                />
+          }
 
           {isAdmin ? (
-            <Space>
+            <Space size="small">
               <Button
                 onClick={toggleTheme}
                 icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                type='default'
+                type='text'
+              />
+              <Dropdown
+                menu={{
+                  items: [
+                    { key: 'snow', label: showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết', onClick: toggleSnowEffect },
+                    { key: 'admin', label: 'Admin Dashboard', onClick: () => navigate('/admin') }
+                  ]
+                }}
+                trigger={['click']}
+                placement="bottomRight"
               >
-                {isDark ? 'Sáng' : 'Tối'}
-              </Button>
-              <Button
-                onClick={toggleSnowEffect}
-                type={showSnowEffect ? 'default' : 'primary'}
-              >
-                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
-              </Button>
-              <Link to='/admin'>
-                <Button type='primary'>Admin Dashboard</Button>
-              </Link>
+                <Button type="text" icon={<AppstoreOutlined />} />
+              </Dropdown>
               <Button
                 onClick={logoutAdmin}
                 icon={<LoginOutlined />}
+                type="text"
               >
-                Đăng xuất
+                Thoát
               </Button>
             </Space>
           ) : (
-            <Space>
+            <Space size="small">
               <Button
                 onClick={toggleTheme}
                 icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                type='default'
+                type='text'
+              />
+              <Dropdown
+                menu={{
+                  items: [
+                    { key: 'snow', label: showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết', onClick: toggleSnowEffect },
+                    { key: 'contra', label: '🎮 Contra', onClick: () => handlePlayNesGame('/nes/contra.nes', 'Contra') },
+                    { key: 'mario', label: '🍄 Mario', onClick: () => handlePlayNesGame('/nes/super_mario.nes', 'Super Mario') }
+                  ]
+                }}
+                trigger={['click']}
+                placement="bottomRight"
               >
-                {isDark ? 'Sáng' : 'Tối'}
-              </Button>
-              <Button
-                onClick={toggleSnowEffect}
-                type={showSnowEffect ? 'default' : 'primary'}
-              >
-                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
-              </Button>
-              <Button
-                type='primary'
-                onClick={() => handlePlayNesGame('/nes/contra.nes', 'Contra')}
-              >
-                Contra
-              </Button>
-              <Button
-                type='primary'
-                onClick={() => handlePlayNesGame('/nes/super_mario.nes', 'Super Mario')}
-              >
-                Mario
-              </Button>
+                <Button type="text" icon={<AppstoreOutlined />} />
+              </Dropdown>
               <Link to='/login'>
                 <Button
                   type='primary'
                   icon={<LoginOutlined />}
                 >
-                  Admin Login
+                  Admin
                 </Button>
               </Link>
             </Space>
@@ -345,155 +332,128 @@ const HomePage = () => {
 
       <NowPlayingBar />
 
-      <WorldCupRail />
-
       <TetCountdown />
 
-      <Content style={{ padding: '24px' }}>
-        <Row gutter={[16, 16]}>
-          <Col
-            xs={24}
-            md={6}
-          >
-            <Card title={currentSession ? 'Thêm bài hát' : 'Thông báo'}>
-              {currentSession ? (
-                <AddSongForm />
-              ) : (
-                <div>
-                  <Text>
-                    Hiện tại không có phiên phát nhạc nào đang diễn ra.
-                  </Text>
-                  <br />
-                  <Text type='secondary'>
-                    Phiên phát nhạc chỉ nên được mở từ 15:00 đến 18:00 hàng
-                    ngày.
-                  </Text>
-                </div>
-              )}
-            </Card>
-            <div style={{ marginTop: 16 }}>
-              <LiveActivityFeed />
-            </div>
-          </Col>
-
-          <Col
-            xs={24}
-            md={12}
-          >
-            <PlaylistView />
-          </Col>
-
-          <Col
-            xs={24}
-            md={6}
-          >
-            <div
-              style={{
-                position: 'sticky',
-                top: 24,
-                maxHeight: 'calc(100vh - 48px)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-              }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '16px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                }}
+      <Content style={{ padding: '32px 24px 60px 24px' }}>
+        <div className="bento-grid">
+          <div className="bento-col-main">
+            <div className="bento-stack">
+              <Card 
+                title={
+                  <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                    {currentSession ? 'Thêm bài hát' : 'Thông báo'}
+                  </span>
+                } 
+                bordered={false}
+                style={{ background: 'var(--bg-card)', borderRadius: 24 }}
+                headStyle={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}
+                bodyStyle={{ padding: '24px' }}
               >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '-50%',
-                    left: '-50%',
-                    width: '200%',
-                    height: '200%',
-                    background:
-                      'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                    animation: 'float 6s ease-in-out infinite',
-                  }}
-                />
-                <Title
-                  level={3}
-                  style={{
-                    margin: 0,
-                    color: '#fff',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                    fontWeight: 'bold',
-                    letterSpacing: '1px',
-                    position: 'relative',
-                    zIndex: 1,
-                  }}
-                >
-                  🌍 Thế giới có gì mới?
+                {currentSession ? (
+                  <AddSongForm />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '48px 16px' }}>
+                    <div style={{ fontSize: 64, marginBottom: 24, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.1))' }}>
+                      ⏰
+                    </div>
+                    <Text strong style={{ fontSize: 18, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                      Chưa tới giờ phát nhạc
+                    </Text>
+                    <br />
+                    <Text type='secondary' style={{ display: 'block', marginTop: 12, fontSize: 14 }}>
+                      Hệ thống nhận order từ 15:00 đến 18:00 hàng ngày.
+                    </Text>
+                  </div>
+                )}
+              </Card>
+              <div style={{ flex: 1 }}>
+                <LiveActivityFeed />
+              </div>
+            </div>
+
+            <div className="bento-stack">
+              <PlaylistView />
+            </div>
+          </div>
+
+          <div className="bento-col-sidebar">
+            <WorldCupWidget />
+            <div style={{
+                textAlign: 'left',
+                padding: '24px',
+                background: 'transparent',
+                position: 'relative',
+              }}>
+                <Title level={4} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                  <span style={{ fontSize: '28px' }}>🌍</span> Thế giới
                 </Title>
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: isDark ? '#1f1f1f' : '#fff',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  padding: '0 8px'
-                }}
-              >
-                <Tabs
-                  defaultActiveKey="1"
-                  items={[
-                    {
-                      label: 'VnExpress',
-                      key: '1',
-                      children: <VnExpressNewsView />,
-                    },
-                    {
-                      label: 'Tech News',
-                      key: '2',
-                      children: <TechNewsWidget />,
-                    },
-                  ]}
-                />
-              </div>
+                <Text type="secondary" style={{ fontSize: '14px', marginTop: '4px', display: 'block' }}>
+                  Tin tức & Cập nhật
+                </Text>
             </div>
-          </Col>
-
-          {/* <Col xs={24} md={8}>
-            <ChatBox />
-          </Col> */}
-        </Row>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Tabs
+                className="segmented-tabs"
+                defaultActiveKey="1"
+                items={[
+                  {
+                    label: 'VnExpress',
+                    key: '1',
+                    children: <VnExpressNewsView />,
+                  },
+                  {
+                    label: 'Tech News',
+                    key: '2',
+                    children: <TechNewsWidget />,
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
       </Content>
 
       <Modal
-        title="Chọn ứng dụng"
+        title={null}
         open={isAppSwitcherOpen}
         onCancel={() => setIsAppSwitcherOpen(false)}
         footer={null}
+        width={480}
+        closeIcon={null}
+        styles={{ 
+          mask: { backdropFilter: 'blur(12px)', background: 'rgba(0,0,0,0.4)' },
+          content: { 
+            background: isDark ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.8)', 
+            backdropFilter: 'blur(32px)', 
+            WebkitBackdropFilter: 'blur(32px)',
+            borderRadius: 32, 
+            padding: '32px 24px',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.2)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.4)'}`
+          } 
+        }}
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button block type="primary" onClick={() => handleAppSelect('music')}>
-            Music Order App
-          </Button>
-          <Button block onClick={() => handleAppSelect('lunch-vote')}>
-            Lunch Vote
-          </Button>
-          <Button block onClick={() => handleAppSelect('poliboard')} style={{ backgroundColor: '#10b981', color: 'white', border: 'none' }}>
-            PoliBoard 
-          </Button>
-          <Button block onClick={() => handleAppSelect('world-cup')} style={{ backgroundColor: '#1677ff', color: 'white', border: 'none' }}>
-            World Cup
-          </Button>
-        </Space>
+        <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, paddingBottom: 24, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Chọn Ứng Dụng</div>
+        <div className="app-launcher-grid">
+          <button className="app-launcher-item" onClick={() => handleAppSelect('music')}>
+            <div className="app-launcher-icon" style={{ background: 'linear-gradient(135deg, #1890ff, #096dd9)' }}>🎵</div>
+            <span className="app-launcher-label">Music</span>
+          </button>
+          <button className="app-launcher-item" onClick={() => handleAppSelect('lunch-vote')}>
+            <div className="app-launcher-icon" style={{ background: 'linear-gradient(135deg, #ff4d4f, #cf1322)' }}>🍔</div>
+            <span className="app-launcher-label">Lunch Vote</span>
+          </button>
+          <button className="app-launcher-item" onClick={() => handleAppSelect('poliboard')}>
+            <div className="app-launcher-icon" style={{ background: 'linear-gradient(135deg, #52c41a, #389e0d)' }}>📊</div>
+            <span className="app-launcher-label">PoliBoard</span>
+          </button>
+          <button className="app-launcher-item" onClick={() => handleAppSelect('world-cup')}>
+            <div className="app-launcher-icon" style={{ background: 'linear-gradient(135deg, #faad14, #d48806)' }}>⚽</div>
+            <span className="app-launcher-label">World Cup</span>
+          </button>
+        </div>
       </Modal>
+
 
       <Footer style={{ textAlign: 'center' }}>
         Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}

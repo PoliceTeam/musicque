@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+const { fetchEspnScores, mergeEspnScores } = require("./espnWorldCup.adapter");
 const BASE_URL = "https://worldcup26.ir";
 
 const LIVE_TTL_MS = 30 * 1000;
@@ -223,19 +223,10 @@ function normalizeMatch(match, teamsLookup, stadiumsLookup) {
   const utcOffset = getUtcOffsetHours(stadiumInfo);
   const kickoffUtc = parseLocalDate(match.local_date, utcOffset);
 
-  // Determine status — with smart live inference
-  // The open-source API may be slow to update `time_elapsed`,
-  // so if kickoff has passed but API still says "notstarted", infer "live".
+  // Determine status
+  // We rely on worldcup26.ir for basic scheduling and finished states,
+  // but we will override this with ESPN data later which is much more accurate.
   let status = mapStatus(match.time_elapsed, match.finished);
-  if (status === "scheduled" && kickoffUtc) {
-    const now = Date.now();
-    const kickoffMs = new Date(kickoffUtc).getTime();
-    const MATCH_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours max
-    if (now >= kickoffMs && now <= kickoffMs + MATCH_DURATION_MS) {
-      status = "live";
-    }
-  }
-
   // Only show scores for live or finished matches
   let homeScore = null;
   let awayScore = null;
@@ -274,85 +265,6 @@ function normalizeMatch(match, teamsLookup, stadiumsLookup) {
 
 // ── Core fetchers ─────────────────────────────────────────────────
 
-// Fetch live scores from API-Football (free tier: 100 req/day)
-const LIVE_API_URL = "https://v3.football.api-sports.io";
-const LIVE_API_KEY = process.env.WC2026_API_KEY;
-const LIVE_SCORE_TTL_MS = 30 * 1000; // refresh live scores every 30s
-
-const persistentScores = {};
-
-async function fetchLiveScores() {
-  const cacheKey = "wc-live-scores";
-  const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.at < LIVE_SCORE_TTL_MS) return cached.data;
-
-  if (!LIVE_API_KEY) return persistentScores;
-
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const { data } = await axios.get(`${LIVE_API_URL}/fixtures`, {
-      params: { date: today },
-      headers: {
-        "x-apisports-key": LIVE_API_KEY,
-        Accept: "application/json",
-      },
-      timeout: 10000,
-    });
-
-    // Filter only World Cup matches
-    const wcMatches = (data.response || []).filter(
-      (m) => (m.league?.name || "").toLowerCase().includes("world cup")
-    );
-
-    for (const m of wcMatches) {
-      const homeName = m.teams?.home?.name || "";
-      const awayName = m.teams?.away?.name || "";
-      const key = `${homeName}|||${awayName}`;
-      
-      const statusShort = m.fixture?.status?.short || "";
-      let mappedStatus = "scheduled";
-      if (["1H", "2H", "HT", "ET", "P", "LIVE"].includes(statusShort)) {
-        mappedStatus = "live";
-      } else if (["FT", "AET", "PEN"].includes(statusShort)) {
-        mappedStatus = "finished";
-      }
-
-      persistentScores[key] = {
-        homeScore: m.goals?.home ?? null,
-        awayScore: m.goals?.away ?? null,
-        status: mappedStatus,
-        elapsed: m.fixture?.status?.elapsed || null,
-        statusShort: statusShort,
-      };
-    }
-
-    cache.set(cacheKey, { at: Date.now(), data: persistentScores });
-    return persistentScores;
-  } catch (err) {
-    console.warn("[WorldCup] Live scores fetch error:", err.message);
-    return persistentScores;
-  }
-}
-
-function mergeWithLiveScores(matches, liveMap) {
-  if (!liveMap || !Object.keys(liveMap).length) return matches;
-
-  return matches.map((match) => {
-    const key = `${match.homeTeam}|||${match.awayTeam}`;
-    const live = liveMap[key];
-    if (live) {
-      return {
-        ...match,
-        status: live.status,
-        homeScore: live.homeScore,
-        awayScore: live.awayScore,
-        elapsed: live.elapsed,
-      };
-    }
-    return match;
-  });
-}
-
 async function fetchWorldCupMatches() {
   const [gamesData, teamsLookup, stadiumsLookup] = await Promise.all([
     apiGet("/get/games"),
@@ -367,10 +279,10 @@ async function fetchWorldCupMatches() {
     .filter((m) => m.kickoffUtc)
     .sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc));
 
-  // Merge real-time live scores from API-Football
+  // Merge real-time live scores from ESPN
   try {
-    const liveMap = await fetchLiveScores();
-    matches = mergeWithLiveScores(matches, liveMap);
+    const liveMap = await fetchEspnScores();
+    matches = mergeEspnScores(matches, liveMap);
   } catch (err) {
     console.warn("[WorldCup] Failed to merge live scores:", err.message);
   }
@@ -380,12 +292,21 @@ async function fetchWorldCupMatches() {
 
 async function getAllMatches() {
   const cacheKey = "world-cup-matches";
+  const cachedEntry = cache.get(cacheKey);
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
-  const matches = await fetchWorldCupMatches();
-  cache.set(cacheKey, { at: Date.now(), data: matches });
-  return matches;
+  try {
+    const matches = await fetchWorldCupMatches();
+    cache.set(cacheKey, { at: Date.now(), data: matches });
+    return matches;
+  } catch (error) {
+    if (cachedEntry) {
+      console.warn("[WorldCup] getAllMatches fetch failed, serving stale cache:", error.message);
+      return cachedEntry.data;
+    }
+    throw error;
+  }
 }
 
 // ── Standings ─────────────────────────────────────────────────────
@@ -541,7 +462,17 @@ async function getWorldCupMatches({ limit = 8 } = {}) {
   const cacheKey = "world-cup-matches";
   const cachedEntry = cache.get(cacheKey);
   const cached = getCached(cacheKey);
-  const matches = cached || (await fetchWorldCupMatches());
+  let matches;
+  try {
+    matches = cached || (await fetchWorldCupMatches());
+  } catch (error) {
+    if (cachedEntry) {
+      console.warn("[WorldCup] Fetch failed, serving stale cache:", error.message);
+      matches = cachedEntry.data;
+    } else {
+      throw error;
+    }
+  }
   const fetchedAt = cached ? cachedEntry.at : Date.now();
 
   if (!cached) {

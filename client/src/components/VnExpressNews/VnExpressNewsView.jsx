@@ -47,9 +47,9 @@ const VnExpressNewsView = () => {
 
   return (
     <Card
-      size="small"
+      bordered={false}
       title={
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
           <ReadOutlined />
           Du lịch VnExpress
         </span>
@@ -57,28 +57,24 @@ const VnExpressNewsView = () => {
       extra={
         <Button
           type="text"
-          size="small"
           icon={<ReloadOutlined spin={loading} />}
           onClick={fetchNews}
           disabled={loading}
         />
       }
-      styles={{
-        body: {
-          padding: 0,
-        },
-      }}
+      styles={{ body: { padding: 0 } }}
+      headStyle={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}
       style={{
-        background: isDark ? '#1f1f1f' : '#fff',
-        borderColor: isDark ? '#434343' : '#f0f0f0',
+        background: 'transparent',
+        borderRadius: 24,
       }}
     >
       <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
         {loading && articles.length === 0 ? (
         <div style={{ padding: '16px' }}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} style={{ marginBottom: 24, paddingBottom: 12, borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}` }}>
-              <Skeleton.Button active block style={{ height: 120, borderRadius: 8, marginBottom: 8 }} />
+            <div key={i} style={{ marginBottom: 24, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+              <Skeleton.Button active block style={{ height: 120, borderRadius: 16, marginBottom: 8 }} />
               <Skeleton active title={{ width: '90%' }} paragraph={{ rows: 3, width: ['100%', '100%', '70%'] }} />
               <Skeleton.Button active size="small" style={{ width: 100, height: 14, marginTop: 8 }} />
             </div>
@@ -101,7 +97,7 @@ const VnExpressNewsView = () => {
       ) : (
         <div className="vnexpress-news-list">
           {articles.map((article) => (
-            <a
+              <a
               key={article.link}
               href={article.link}
               target="_blank"
@@ -109,8 +105,8 @@ const VnExpressNewsView = () => {
               className="vnexpress-news-item"
               style={{
                 display: 'block',
-                padding: '12px 16px',
-                borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
+                padding: '24px',
+                borderBottom: '1px solid var(--border)',
                 color: 'inherit',
                 textDecoration: 'none',
               }}
@@ -121,10 +117,10 @@ const VnExpressNewsView = () => {
                   alt={article.title}
                   style={{
                     width: '100%',
-                    height: 120,
+                    height: 140,
                     objectFit: 'cover',
-                    borderRadius: 8,
-                    marginBottom: 8,
+                    borderRadius: 12,
+                    marginBottom: 12,
                   }}
                   loading="lazy"
                 />
@@ -134,8 +130,9 @@ const VnExpressNewsView = () => {
                 style={{
                   display: 'block',
                   marginBottom: 6,
-                  color: isDark ? '#fff' : '#141414',
+                  color: 'var(--text-primary)',
                   lineHeight: 1.4,
+                  fontSize: 15,
                 }}
               >
                 {article.title}
