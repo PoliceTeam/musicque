@@ -19,6 +19,7 @@ import WeatherHeader from '../components/Weather/WeatherHeader';
 import DiceGame from '../games/dice/DiceGame';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NesGame from '../components/NesGame/NesGame';
+import ChibiOverlay from '../components/Chibi/ChibiOverlay';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { AuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -323,6 +324,8 @@ const HomePage = () => {
       <NowPlayingBar />
 
       <TetCountdown />
+
+      <ChibiOverlay />
 
       <Content style={{ padding: '24px' }}>
         <Row gutter={[16, 16]}>
