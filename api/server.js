@@ -4,7 +4,6 @@ const http = require('http')
 const app = require('./app')
 const { initSocket } = require('./socket')
 const { clearAllBoards } = require('./redis')
-const { startWorldCupRealtime } = require('./services/worldCupRealtime.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -55,7 +54,6 @@ mongoose
 
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()
-      startWorldCupRealtime(io)
     })
   })
   .catch((err) => {

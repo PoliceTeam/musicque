@@ -6,7 +6,6 @@ import {
   DropboxOutlined,
   MoonOutlined,
   SunOutlined,
-  TrophyOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
@@ -15,7 +14,6 @@ import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
 import TechNewsWidget from '../components/TechNews/TechNewsWidget';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
-import WorldCupRail from '../components/WorldCup/WorldCupRail';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame';
@@ -108,8 +106,6 @@ const HomePage = () => {
       navigate('/lunch-vote');
     } else if (app === 'poliboard') {
       navigate('/poliboard');
-    } else if (app === 'world-cup') {
-      navigate('/world-cup');
     }
   };
 
@@ -247,25 +243,6 @@ const HomePage = () => {
             Music Order App
           </Title>
           <WeatherHeader />
-          <Button
-            type="text"
-            onClick={() => navigate('/world-cup')}
-            style={{
-              marginLeft: '20px',
-              paddingLeft: '20px',
-              borderLeft: `1px solid ${isDark ? '#434343' : '#f0f0f0'}`,
-              height: '38px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              borderRadius: '6px',
-            }}
-          >
-            <TrophyOutlined style={{ color: '#1677ff', fontSize: '18px' }} />
-            <span style={{ fontWeight: 'bold', color: isDark ? '#fff' : '#141414' }}>
-              World Cup 2026
-            </span>
-          </Button>
         </div>
         <Space>
           {!isAdmin && (
@@ -344,8 +321,6 @@ const HomePage = () => {
       </Header>
 
       <NowPlayingBar />
-
-      <WorldCupRail />
 
       <TetCountdown />
 
@@ -488,9 +463,6 @@ const HomePage = () => {
           </Button>
           <Button block onClick={() => handleAppSelect('poliboard')} style={{ backgroundColor: '#10b981', color: 'white', border: 'none' }}>
             PoliBoard 
-          </Button>
-          <Button block onClick={() => handleAppSelect('world-cup')} style={{ backgroundColor: '#1677ff', color: 'white', border: 'none' }}>
-            World Cup
           </Button>
         </Space>
       </Modal>
