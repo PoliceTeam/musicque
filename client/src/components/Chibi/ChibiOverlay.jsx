@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment, useAnimations, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import ErrorBoundary from '../ErrorBoundary'
 
 const MODEL_URL = '/models/chibi.glb?v=fbx-reexport'
 const CLIP_SWITCH_MS = 15_000
@@ -90,7 +91,12 @@ function ChibiModel() {
   )
 }
 
-export default function ChibiOverlay() {
+function prefersReducedMotion() {
+  if (typeof window === 'undefined' || !window.matchMedia) return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches === true
+}
+
+function ChibiCanvas() {
   return (
     <div
       className="chibi-overlay"
@@ -101,7 +107,8 @@ export default function ChibiOverlay() {
         bottom: 0,
         height: '42vh',
         width: 'min(36vh, 320px)',
-        zIndex: 1100,
+        // Dưới zIndexPopupBase của antd (1000) để không vẽ đè lên Modal/Drawer.
+        zIndex: 900,
         pointerEvents: 'none',
       }}
     >
@@ -128,4 +135,15 @@ export default function ChibiOverlay() {
   )
 }
 
-useGLTF.preload(MODEL_URL)
+export default function ChibiOverlay() {
+  // Người dùng bật "giảm chuyển động" thì bỏ hẳn, khỏi dựng WebGL context.
+  if (prefersReducedMotion()) return null
+
+  // Canvas của react-three-fiber ném lỗi ra ngoài, nên bắt buộc phải chặn ở đây:
+  // model hoặc HDR tải hỏng chỉ làm mất con mascot, không làm trắng cả trang.
+  return (
+    <ErrorBoundary label="ChibiOverlay">
+      <ChibiCanvas />
+    </ErrorBoundary>
+  )
+}
