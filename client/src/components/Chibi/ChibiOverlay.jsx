@@ -12,7 +12,7 @@ const CLIP_FADE_SEC = 0.45
  * Re-exported from original FBX via Blender — character is ~1 unit tall.
  * (Sketchfab GLB had broken scale~100 transforms.)
  */
-const MODEL_SCALE = 1.85
+const MODEL_SCALE = 1.2
 
 function getOrderedClipNames(actions) {
   const names = Object.keys(actions || {})
@@ -105,8 +105,8 @@ function ChibiCanvas() {
         position: 'fixed',
         right: 0,
         bottom: 0,
-        height: '42vh',
-        width: 'min(36vh, 320px)',
+        height: '55vh',
+        width: 'min(46vh, 420px)',
         // Dưới zIndexPopupBase của antd (1000) để không vẽ đè lên Modal/Drawer.
         zIndex: 900,
         pointerEvents: 'none',
@@ -114,10 +114,15 @@ function ChibiCanvas() {
     >
       <Canvas
         dpr={[1, 1.75]}
-        camera={{ position: [0, 1.15, 3.4], fov: 30, near: 0.1, far: 100 }}
+        // fov là góc nhìn DỌC và cố định, nên chiều cao khung div KHÔNG đổi được
+        // vùng nhìn — nó chỉ phóng to. Muốn model nhỏ đi thì phải lùi camera (z).
+        // Lùi ra cũng nới vùng nhìn ngang, đủ chỗ cho tay chân khi nhảy.
+        // Model cao 1.089 đơn vị; ở z=4.9 nó chiếm ~50% chiều cao khung.
+        camera={{ position: [0, 1.44, 4.9], fov: 30, near: 0.1, far: 100 }}
         gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
         onCreated={({ camera, gl }) => {
-          camera.lookAt(0, 1.1, 0)
+          // Ngắm cao hơn tâm model để chân đứng sát đáy khung.
+          camera.lookAt(0, 1.39, 0)
           gl.setClearColor(0x000000, 0)
         }}
         style={{ width: '100%', height: '100%', background: 'transparent' }}
@@ -126,7 +131,14 @@ function ChibiCanvas() {
         <hemisphereLight intensity={0.7} color="#ffffff" groundColor="#888888" />
         <directionalLight position={[2.5, 4, 3]} intensity={1.45} />
         <directionalLight position={[-2.5, 2, 1]} intensity={0.55} />
-        <Environment preset="city" environmentIntensity={0.25} />
+        {/*
+          Environment tải HDR từ CDN ngoài (raw.githack.com) và có thể bị chặn
+          trong mạng nội bộ. Suspense RIÊNG để nó không giữ chân model: model
+          hiện ngay, ánh sáng môi trường ghép vào sau nếu tải được.
+        */}
+        <Suspense fallback={null}>
+          <Environment preset="city" environmentIntensity={0.25} />
+        </Suspense>
         <Suspense fallback={null}>
           <ChibiModel />
         </Suspense>
@@ -139,11 +151,15 @@ export default function ChibiOverlay() {
   // Người dùng bật "giảm chuyển động" thì bỏ hẳn, khỏi dựng WebGL context.
   if (prefersReducedMotion()) return null
 
-  // Canvas của react-three-fiber ném lỗi ra ngoài, nên bắt buộc phải chặn ở đây:
-  // model hoặc HDR tải hỏng chỉ làm mất con mascot, không làm trắng cả trang.
+  // <Canvas> đẩy cả lỗi lẫn suspend ra ngoài chính nó
+  // ("if (error) throw error" / "if (block) throw block"), nên cần cả hai lớp:
+  // ErrorBoundary để model/HDR hỏng không làm trắng trang, và Suspense để
+  // promise thoát ra có chỗ đỡ thay vì dội lên tận gốc cây React.
   return (
     <ErrorBoundary label="ChibiOverlay">
-      <ChibiCanvas />
+      <Suspense fallback={null}>
+        <ChibiCanvas />
+      </Suspense>
     </ErrorBoundary>
   )
 }
