@@ -110,7 +110,7 @@ class Kiss {
   constructor() {
     this.active = false;
   }
-  spawn(canvasWidth, canvasHeight) {
+  spawn(canvasWidth) {
     this.active = true;
     this.scale = 0.5 + Math.random() * 1.2; 
     this.size = BASE_KISS_SIZE * this.scale;
@@ -266,7 +266,7 @@ const TornadoKissEvent = () => {
           else if (!freeKiss) freeKiss = kissPool[i];
         }
         if (activeKisses < 50 && freeKiss) {
-          freeKiss.spawn(width, height);
+          freeKiss.spawn(width);
         }
       }
 

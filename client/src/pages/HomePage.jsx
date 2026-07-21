@@ -47,12 +47,6 @@ const HomePage = () => {
     setUserName(e.target.value);
   };
 
-  const handlePlayDice = () => {
-    const randomValue = Math.floor(Math.random() * 6) + 1;
-    setFinalValue(randomValue);
-    setShowDiceGame(true);
-  };
-
   const handlePlayNesGame = (gameFile, gameName) => {
     setCurrentGame({ file: gameFile, name: gameName });
     setShowNesGame(true);

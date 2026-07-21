@@ -4,7 +4,7 @@ import { Nostalgist } from 'nostalgist';
 
 const { Title } = Typography;
 
-const NesGame = ({ gameFile, gameName, onClose }) => {
+const NesGame = ({ gameFile }) => {
   const containerRef = useRef(null);
   const nostalgistRef = useRef(null);
 
