@@ -487,7 +487,6 @@ const WorldCupScheduleView = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [standings, setStandings] = useState(null);
   const [bracket, setBracket] = useState(null);
-  const [hasScrolledToCurrent, setHasScrolledToCurrent] = useState(false);
 
   const fetchTournamentDetails = async () => {
     const [standingsResult, bracketResult] = await Promise.allSettled([
@@ -620,7 +619,7 @@ const WorldCupScheduleView = () => {
   const standingsGroups = standings?.groups || [];
   const bracketRounds = bracket?.rounds || [];
 
-  const currentOrNextDateLabel = Object.entries(dateGroups).find(([label, dayMatches]) =>
+  const currentOrNextDateLabel = Object.entries(dateGroups).find(([, dayMatches]) =>
     dayMatches.some(m => !["finished", "completed"].includes(String(m.status).toLowerCase()))
   )?.[0];
 

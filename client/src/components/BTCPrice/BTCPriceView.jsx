@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Typography, Spin, Alert, Space, Tag, Row, Col } from "antd";
-import {
-  ReloadOutlined,
-  DollarOutlined,
-  CaretUpOutlined,
-  CaretDownOutlined,
-  MinusOutlined,
-} from "@ant-design/icons";
+import { ReloadOutlined, DollarOutlined } from "@ant-design/icons";
 import { getTodayBTCPrice } from "../../services/api";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -60,36 +54,6 @@ const BTCPriceView = () => {
     if (!percent) return "N/A";
     const sign = percent >= 0 ? "+" : "";
     return `${sign}${percent.toFixed(2)}%`;
-  };
-
-  const getStatusIcon = (change) => {
-    if (change > 0) {
-      return <CaretUpOutlined style={{ color: "#52c41a" }} />;
-    } else if (change < 0) {
-      return <CaretDownOutlined style={{ color: "#ff4d4f" }} />;
-    } else {
-      return <MinusOutlined style={{ color: "#1890ff" }} />;
-    }
-  };
-
-  const getStatusColor = (change) => {
-    if (change > 0) {
-      return "success";
-    } else if (change < 0) {
-      return "error";
-    } else {
-      return "processing";
-    }
-  };
-
-  const getStatusText = (change) => {
-    if (change > 0) {
-      return "Tăng";
-    } else if (change < 0) {
-      return "Giảm";
-    } else {
-      return "Giữ nguyên";
-    }
   };
 
   if (loading && !btcPrice) {

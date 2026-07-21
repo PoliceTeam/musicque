@@ -145,7 +145,7 @@ const MusicPlayer = () => {
   // ======== VieNeu-TTS (AI voice) ========
   const playVieneuTTS = useCallback(
     (songId) => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const startedAt = performance.now();
         const controller = new AbortController();
         const ttsState = {
@@ -193,49 +193,53 @@ const MusicPlayer = () => {
         ttsRef.current?.cancel(false);
         ttsRef.current = ttsState;
 
-        try {
-          console.log(`${TTS_LOG_PREFIX} Requesting VieNeu-TTS for song:`, songId);
-          const fullAudioUrl = await getVieneuAudioUrl(songId, controller.signal);
-          if (ttsState.done) return;
-          console.log(`${TTS_LOG_PREFIX} Playing AI audio:`, fullAudioUrl);
-
-          const audio = new Audio(fullAudioUrl);
-          ttsState.audio = audio;
-
-          audio.onended = () => {
-            console.log(`${TTS_LOG_PREFIX} AI audio playback finished`);
-            finishTTS(true, 'onended');
-          };
-
-          audio.onerror = (err) => {
+        const run = async () => {
+          try {
+            console.log(`${TTS_LOG_PREFIX} Requesting VieNeu-TTS for song:`, songId);
+            const fullAudioUrl = await getVieneuAudioUrl(songId, controller.signal);
             if (ttsState.done) return;
-            console.error(`${TTS_LOG_PREFIX} AI audio playback error:`, err);
+            console.log(`${TTS_LOG_PREFIX} Playing AI audio:`, fullAudioUrl);
+
+            const audio = new Audio(fullAudioUrl);
+            ttsState.audio = audio;
+
+            audio.onended = () => {
+              console.log(`${TTS_LOG_PREFIX} AI audio playback finished`);
+              finishTTS(true, 'onended');
+            };
+
+            audio.onerror = (err) => {
+              if (ttsState.done) return;
+              console.error(`${TTS_LOG_PREFIX} AI audio playback error:`, err);
+              if (ttsRef.current === ttsState) {
+                ttsRef.current = null;
+              }
+              reject(new Error('Audio playback failed'));
+            };
+
+            audio.play().catch((err) => {
+              if (ttsState.done) return;
+              console.error(`${TTS_LOG_PREFIX} AI audio play() rejected:`, err);
+              if (ttsRef.current === ttsState) {
+                ttsRef.current = null;
+              }
+              reject(err);
+            });
+          } catch (error) {
+            if (ttsState.done) return;
+            if (isCanceledError(error)) {
+              finishTTS(false, 'cancelled');
+              return;
+            }
+            console.error(`${TTS_LOG_PREFIX} VieNeu-TTS API error:`, error);
             if (ttsRef.current === ttsState) {
               ttsRef.current = null;
             }
-            reject(new Error('Audio playback failed'));
-          };
+            reject(error);
+          }
+        };
 
-          audio.play().catch((err) => {
-            if (ttsState.done) return;
-            console.error(`${TTS_LOG_PREFIX} AI audio play() rejected:`, err);
-            if (ttsRef.current === ttsState) {
-              ttsRef.current = null;
-            }
-            reject(err);
-          });
-        } catch (error) {
-          if (ttsState.done) return;
-          if (isCanceledError(error)) {
-            finishTTS(false, 'cancelled');
-            return;
-          }
-          console.error(`${TTS_LOG_PREFIX} VieNeu-TTS API error:`, error);
-          if (ttsRef.current === ttsState) {
-            ttsRef.current = null;
-          }
-          reject(error);
-        }
+        run().catch(reject);
       });
     },
     [getVieneuAudioUrl]
@@ -448,7 +452,6 @@ const MusicPlayer = () => {
 
   const handleNext = async () => {
     setNextLoading(true);
-    const wasPlaying = playing; // Lưu tạm trạng thái playing
     wasPlayingRef.current = true; // Luôn đặt thành true để đảm bảo bài mới sẽ phát
 
     handlePause();
