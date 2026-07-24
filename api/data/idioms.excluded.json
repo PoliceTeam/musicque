@@ -1,0 +1,14 @@
+{
+  "_note": "Các câu KHÔNG hiển thị khi bật chế độ an toàn (mặc định bật, xem IDIOMS_SAFE_MODE). Copy nguyên văn câu từ idioms.json vào mảng dưới đây để ẩn. Danh sách này mới chỉ seed những câu rõ ràng nhất — hãy tự duyệt tiếp phần cờ bạc, rượu bia và chính trị.",
+  "data": [
+    "Khi bạn có cơ hội qua đêm cùng một người phụ nữ. Nếu bạn giở trò đồi bại thì bạn đúng là đồ cầm thú. Nhưng nếu bạn không làm gì cả, thì bạn còn không bằng cả cầm thú.",
+    "Tích xuân chiêu giá xáo vị thu. Thẩm du tai tế sóng long trường. Thôn nữ lò tôn đương tượng sứ. Anh hùng độc mã thẩm dụ tư.",
+    "Trên đời này không có ai nhìn xuống háng mà tự cười cả",
+    "Phụ nữ giống như con đường, đường càng cong thì càng nguy hiểm.",
+    "Mỹ nhân trong thiên hạ điều tầm thường với ta, duy nhất chỉ có vợ của kẻ thù làm ta thích thú.",
+    "Đằng sau người là ông thất bại là một người đàn bà xúi dại. Đằng sau người đàn bà xúi dại là một kẻ thứ 3 rất lợi hại.",
+    "Cờ bạc chẳng tàn phá như chiến tranh, cũng không vô đạo đức như khiêu dâm.",
+    "Tiền thắng từ cờ bạc mang lại hạnh phúc gấp đôi so với thông thường.",
+    "Cá cược không phải tệ nạn mà chúng chỉ thể hiển bản chất con người."
+  ]
+}

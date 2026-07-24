@@ -3,6 +3,7 @@ import { Layout, Typography, Row, Col, Button, Space } from 'antd'
 import { LogoutOutlined, HomeOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import SessionManager from '../components/Admin/SessionManager'
+import IdiomManager from '../components/Admin/IdiomManager'
 import MusicPlayer from '../components/Player/MusicPlayer'
 import PlaylistView from '../components/Playlist/PlaylistView'
 import ChatBox from '../components/Chat/ChatBox'
@@ -58,6 +59,10 @@ const AdminPage = () => {
 
           <Col xs={24} md={8}>
             <PlaylistView />
+          </Col>
+
+          <Col xs={24}>
+            <IdiomManager />
           </Col>
 
           {/* <Col xs={24} md={6}>

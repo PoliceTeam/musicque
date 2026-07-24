@@ -84,6 +84,17 @@ export const getVnExpressNews = () => api.get("/api/news/vnexpress");
 
 export const getTechNews = (page = 1, limit = 7, seed = 1) => api.get(`/api/news/tech?page=${page}&limit=${limit}&seed=${seed}`);
 
+// Idioms API — trả 8 câu của ngày làm việc, client tự random 1 câu để hiển thị
+export const getDailyIdioms = (username) =>
+  api.get("/api/idioms/today", {
+    // _t chống cache trung gian: số like/dislike phải luôn tươi
+    params: { _t: Date.now(), ...(username ? { username } : {}) },
+  });
+export const getRandomIdiom = () => api.get("/api/idioms/random");
+export const voteIdiom = (id, username, value) =>
+  api.post("/api/idioms/vote", { id, username, value });
+export const rerollIdioms = () => api.post("/api/idioms/reroll");
+
 // TTS API (VieNeu-TTS)
 export const generateTTS = (songId, config = {}) =>
   api.post(`/api/tts/generate/${songId}`, {}, config);

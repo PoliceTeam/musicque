@@ -10,6 +10,7 @@ const weatherRoutes = require('./routes/weather.routes');
 const lunchVoteRoutes = require('./routes/lunchVote.routes');
 const newsRoutes = require('./routes/news.routes');
 const ttsRoutes = require('./routes/tts.routes');
+const idiomsRoutes = require('./routes/idioms.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/lunch-vote', lunchVoteRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tts', ttsRoutes);
+app.use('/api/idioms', idiomsRoutes);
 
 // Error handling
 app.use(errorHandler);

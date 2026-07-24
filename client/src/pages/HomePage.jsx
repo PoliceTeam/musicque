@@ -18,6 +18,7 @@ import WeatherHeader from '../components/Weather/WeatherHeader';
 // import ChatBox from '../components/Chat/ChatBox'
 import DiceGame from '../games/dice/DiceGame';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
+import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
 import NesGame from '../components/NesGame/NesGame';
 import ChibiOverlay from '../components/Chibi/ChibiOverlay';
 import { PlaylistContext } from '../contexts/PlaylistContext';
@@ -38,7 +39,7 @@ const HomePage = () => {
   const [finalValue, setFinalValue] = useState(null);
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
-  const [showSnowEffect, setShowSnowEffect] = useState(true);
+  const [showSnowEffect, setShowSnowEffect] = useState(false);
   const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -322,6 +323,7 @@ const HomePage = () => {
       <ChibiOverlay />
 
       <Content style={{ padding: '24px' }}>
+        <DailyIdiom />
         <Row gutter={[16, 16]}>
           <Col
             xs={24}

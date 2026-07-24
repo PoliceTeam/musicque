@@ -1,0 +1,157 @@
+.daily-idiom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 46px;
+  padding: 0 4px 0 16px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--di-border);
+  background: var(--di-bg);
+}
+
+.daily-idiom__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--di-badge);
+}
+
+.daily-idiom__badge-dot {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Vạch ngăn giữa badge và phần chữ chạy */
+.daily-idiom__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  background: var(--di-border);
+}
+
+.daily-idiom__viewport {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.daily-idiom__track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  /* Bắt đầu ngoài mép phải để không "chớp" trước khi animation chạy */
+  transform: translateX(var(--di-start, 100%));
+  animation: daily-idiom-scroll var(--di-duration, 20s) linear infinite;
+}
+
+.daily-idiom__viewport:hover .daily-idiom__track {
+  animation-play-state: paused;
+}
+
+.daily-idiom__item {
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--di-text);
+}
+
+.daily-idiom__date {
+  flex: 0 0 auto;
+  padding: 0 10px 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  color: var(--di-date);
+}
+
+.daily-idiom__vote {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+}
+
+.daily-idiom__vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--di-date);
+  transition: background 0.15s, color 0.15s;
+}
+
+.daily-idiom__vote-btn:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.14);
+  color: var(--di-text);
+}
+
+.daily-idiom__vote-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.daily-idiom__vote-btn.is-active {
+  color: #52c41a;
+}
+
+.daily-idiom__vote-btn.is-active-down {
+  color: #ff4d4f;
+}
+
+.daily-idiom__vote-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Câu vào từ mép phải, trôi sang trái tới khi khuất hẳn, rồi lặp lại từ phải.
+   Nhờ đó mỗi lượt vào trang user luôn đọc được câu từ chữ đầu tiên. */
+@keyframes daily-idiom-scroll {
+  from {
+    transform: translateX(var(--di-start, 100%));
+  }
+  to {
+    transform: translateX(var(--di-end, -100%));
+  }
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .daily-idiom__track {
+    animation: none;
+    transform: none;
+  }
+  .daily-idiom__viewport {
+    overflow-x: auto;
+  }
+}
