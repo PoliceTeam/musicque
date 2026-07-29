@@ -1,12 +1,28 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { PIP_MAP, isRedFace } from '../../utils/chohan'
 
 /**
- * Xúc xắc CSS tạm (Đợt 1). Đợt 2 sẽ thay bằng ảnh 3D anh cung cấp.
- * value = null/undefined → mặt úp (dấu ?), dùng lúc chưa mở bát.
+ * Xúc xắc: ưu tiên ảnh 3D /dice/die-N.png; nếu ảnh lỗi thì fallback về pip CSS.
+ * value = null/undefined → mặt úp (dùng khi chưa mở bát, thường bị nắp bát che).
  */
 const Dice = ({ value, size = 56, rolling = false }) => {
   const known = value >= 1 && value <= 6
+  const [imgError, setImgError] = useState(false)
+
+  if (known && !imgError) {
+    return (
+      <img
+        className={`sp-die-img${rolling ? ' sp-die--rolling' : ''}`}
+        src={`/dice/die-${value}.png`}
+        width={size}
+        height={size}
+        alt={`Xúc xắc ${value}`}
+        draggable={false}
+        onError={() => setImgError(true)}
+      />
+    )
+  }
+
   const pips = known ? PIP_MAP[value] || [] : []
   const red = known && isRedFace(value)
 

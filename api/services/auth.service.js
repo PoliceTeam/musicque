@@ -44,8 +44,21 @@ const assertCredentialShape = (username, password) => {
  * từ thời chưa có auth) thì lần đăng ký đầu tiên sẽ "claim" chính document đó,
  * giữ nguyên toàn bộ lịch sử bài hát và vote đã gắn với _id cũ.
  */
+// Tên admin (theo ADMIN_USERNAME) là "của riêng" hệ thống — user thường không
+// được đăng ký, claim hay đụng tới. So khớp không phân biệt hoa thường.
+const isReservedAdminUsername = (name) => {
+  const adminName = process.env.ADMIN_USERNAME
+  if (!adminName || !name || typeof name !== 'string') return false
+  return name.trim().toLowerCase() === adminName.trim().toLowerCase()
+}
+
 exports.register = async ({ username, password, displayName }) => {
   assertCredentialShape(username, password)
+
+  // Không cho ai đăng ký/claim tên admin — tài khoản admin chỉ do env quản lý
+  if (isReservedAdminUsername(username)) {
+    throw new AuthError(403, 'Tên đăng nhập này không khả dụng')
+  }
 
   const trimmedUsername = username.trim()
   const existing = await User.findByUsername(trimmedUsername, { withPassword: true })
@@ -104,6 +117,15 @@ exports.syncAdminAccount = async () => {
   // Luôn ghi đè theo env: env là nguồn sự thật cho mật khẩu admin
   admin.password = password
   await admin.save()
+
+  // Chỉ được tồn tại đúng 1 admin: hạ quyền mọi user khác lỡ mang role='admin'
+  const demoted = await User.updateMany(
+    { role: 'admin', _id: { $ne: admin._id } },
+    { $set: { role: 'user' } },
+  )
+  if (demoted.modifiedCount) {
+    console.log(`[Auth] Đã hạ quyền ${demoted.modifiedCount} admin thừa (chỉ giữ 1 admin từ env)`)
+  }
 
   console.log(`[Auth] Tài khoản admin "${admin.username}" đã sẵn sàng`)
   return admin

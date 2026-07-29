@@ -2,16 +2,42 @@
 .sp-coin {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 7px;
+  padding: 5px 14px 5px 5px;
   border-radius: var(--sp-radius-pill);
-  background: linear-gradient(135deg, #ffe9a8, #f5c542);
-  color: #6b4e00;
-  font-size: 13px;
-  font-weight: 800;
+  background: linear-gradient(135deg, #ffe07a 0%, #f4b823 52%, #e79b0c 100%);
+  color: #4d3400;
+  font-size: 15px;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   white-space: nowrap;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  border: 1.5px solid #ffe9a0;
+  box-shadow:
+    0 2px 10px rgba(238, 168, 20, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75);
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+.sp-coin:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 14px rgba(238, 168, 20, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75);
+}
+
+.sp-coin__img {
+  width: 26px;
+  height: 26px;
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(120, 80, 0, 0.35));
+}
+
+.sp-coin__unit {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.75;
+  margin-left: -2px;
 }
 
 :root[data-theme='dark'] .sp-coin {
@@ -223,6 +249,42 @@
   color: var(--sp-text);
 }
 
+/* Nút "?" xem luật — màu nổi bật + nhịp pulse hút mắt */
+.chohan-help {
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55);
+  animation: chohan-help-pulse 2s ease-out infinite;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.chohan-help:hover {
+  background: linear-gradient(135deg, #4f8ff8, #3b82f6);
+  transform: scale(1.1) rotate(-6deg);
+  animation: none;
+}
+
+@keyframes chohan-help-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+  70% { box-shadow: 0 0 0 9px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chohan-help {
+    animation: none;
+  }
+}
+
 /* Sân khấu bát + xúc xắc */
 .chohan-stage {
   display: flex;
@@ -232,25 +294,149 @@
   padding: 18px 0 10px;
 }
 
-.chohan-bowl {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  gap: 12px;
-  grid-auto-flow: column;
-  background: radial-gradient(circle at 50% 38%, #a9772f, #6f4a1b 72%, #3f2a0f);
-  box-shadow:
-    inset 0 -10px 22px rgba(0, 0, 0, 0.45),
-    inset 0 8px 16px rgba(255, 220, 160, 0.35),
-    0 10px 24px rgba(0, 0, 0, 0.3);
-  border: 3px solid #4d3213;
+/*
+ * Sân khấu: bát gỗ (úp che xúc xắc) ở trên; khi lắc xong, bát nghiêng và 2
+ * xúc xắc ĐỔ ra nền, nảy vài cái rồi nằm yên hé lộ mặt.
+ */
+.chohan-arena {
+  position: relative;
+  width: 300px;
+  height: 284px;
+  margin: 0 auto;
 }
 
-.chohan-dice-row {
-  display: flex;
-  gap: 12px;
+.sp-die-img {
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28));
+  user-select: none;
+}
+
+/* Bát gỗ — nằm trên cùng để che xúc xắc lúc đặt cược/lắc */
+.chohan-bowl3d {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 210px;
+  transform: translateX(-50%);
+  transform-origin: 50% 86%;
+  z-index: 3;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.3));
+}
+
+.chohan-arena--shaking .chohan-bowl3d {
+  animation: chohan-bowl-shake 0.42s ease-in-out infinite;
+}
+
+.chohan-arena--revealed .chohan-bowl3d,
+.chohan-arena--voided .chohan-bowl3d {
+  animation: chohan-bowl-pour 0.9s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+
+@keyframes chohan-bowl-shake {
+  0%, 100% { transform: translateX(-50%) rotate(-4deg); }
+  25% { transform: translateX(-53%) rotate(4deg); }
+  50% { transform: translateX(-47%) rotate(-3deg); }
+  75% { transform: translateX(-51%) rotate(3deg); }
+}
+
+/* Bát rướn nhẹ rồi nghiêng đổ về phía trước, dạt lên trên nhường chỗ cho xúc xắc */
+@keyframes chohan-bowl-pour {
+  0% { transform: translateX(-50%) translateY(0) rotate(0); }
+  30% { transform: translateX(-50%) translateY(-6px) rotate(-10deg); }
+  65% { transform: translateX(-70%) translateY(-20px) rotate(34deg); }
+  100% { transform: translateX(-78%) translateY(-28px) rotate(28deg); opacity: 0.96; }
+}
+
+/* Hai xúc xắc: ẩn trong bát lúc đặt cược/lắc, đổ ra nền khi mở */
+.chohan-die {
+  position: absolute;
+  z-index: 2;
+  opacity: 0;
+}
+
+.chohan-die--a {
+  left: 78px;
+  top: 184px;
+}
+
+.chohan-die--b {
+  left: 176px;
+  top: 198px;
+}
+
+.chohan-arena--revealed .chohan-die--a {
+  animation: chohan-spill-a 1s cubic-bezier(0.25, 0.6, 0.3, 1) 0.18s forwards;
+}
+
+.chohan-arena--revealed .chohan-die--b {
+  animation: chohan-spill-b 1s cubic-bezier(0.25, 0.6, 0.3, 1) 0.3s forwards;
+}
+
+@keyframes chohan-spill-a {
+  0% { transform: translate(44px, -106px) scale(0.35) rotate(0); opacity: 0; }
+  20% { opacity: 1; }
+  55% { transform: translate(8px, -34px) scale(1.06) rotate(220deg); opacity: 1; }
+  78% { transform: translate(0, -13px) scale(1) rotate(348deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(360deg); opacity: 1; }
+}
+
+@keyframes chohan-spill-b {
+  0% { transform: translate(-54px, -120px) scale(0.35) rotate(0); opacity: 0; }
+  20% { opacity: 1; }
+  55% { transform: translate(-8px, -38px) scale(1.06) rotate(-210deg); opacity: 1; }
+  80% { transform: translate(0, -11px) scale(1) rotate(-346deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(-360deg); opacity: 1; }
+}
+
+/* Bóng đổ dưới xúc xắc khi đã nằm yên */
+.chohan-shadow {
+  position: absolute;
+  z-index: 1;
+  width: 50px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  filter: blur(2px);
+  opacity: 0;
+}
+
+.chohan-shadow--a {
+  left: 80px;
+  top: 234px;
+}
+
+.chohan-shadow--b {
+  left: 180px;
+  top: 248px;
+}
+
+.chohan-arena--revealed .chohan-shadow {
+  animation: chohan-shadow-in 0.4s ease 0.6s forwards;
+}
+
+@keyframes chohan-shadow-in {
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chohan-arena--shaking .chohan-bowl3d {
+    animation: none;
+  }
+  .chohan-arena--revealed .chohan-bowl3d,
+  .chohan-arena--voided .chohan-bowl3d {
+    animation: none;
+    transform: translateX(-78%) translateY(-28px) rotate(28deg);
+  }
+  .chohan-arena--revealed .chohan-die--a,
+  .chohan-arena--revealed .chohan-die--b {
+    animation: none;
+    opacity: 1;
+  }
+  .chohan-arena--revealed .chohan-shadow {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 .chohan-phase {
@@ -412,6 +598,46 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* Line chart tổng xúc xắc */
+.chohan-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chohan-chart__grid {
+  stroke: var(--sp-border);
+  stroke-width: 1;
+}
+
+.chohan-chart__ytext,
+.chohan-chart__xtext {
+  fill: var(--sp-text-faint);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.chohan-chart__line {
+  fill: none;
+  stroke: var(--sp-text-faint);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chohan-chart__dot {
+  stroke: var(--sp-surface);
+  stroke-width: 1.5;
+}
+
+.chohan-chart__dot--cho {
+  fill: var(--sp-green);
+}
+
+.chohan-chart__dot--han {
+  fill: var(--sp-red);
 }
 
 /* ── Modal luật chơi ───────────────────────────────────────────────── */

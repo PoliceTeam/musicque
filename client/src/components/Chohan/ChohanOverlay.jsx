@@ -3,6 +3,7 @@ import { useChohan } from '../../contexts/ChohanContext'
 import { useAuth } from '../../contexts/AuthContext'
 import Dice from './Dice'
 import ChohanRulesModal from './ChohanRulesModal'
+import DiceSumChart from './DiceSumChart'
 import { getPhaseInfo, SIDE_LABEL } from '../../utils/chohan'
 
 const ChohanOverlay = ({ open, onClose }) => {
@@ -38,7 +39,6 @@ const ChohanOverlay = ({ open, onClose }) => {
 
   const { phase, remaining, label } = getPhaseInfo(round)
   const isBetting = phase === 'betting' && remaining > 0
-  const isShaking = phase === 'shaking'
   const isRevealed = phase === 'revealed'
 
   const maxAffordable = Math.min(config.maxBet, balance)
@@ -63,10 +63,10 @@ const ChohanOverlay = ({ open, onClose }) => {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               type="button"
-              className="chohan-close"
+              className="chohan-help"
               onClick={() => setRulesOpen(true)}
               aria-label="Luật chơi"
-              title="Luật chơi"
+              title="Xem luật chơi"
             >
               ?
             </button>
@@ -88,24 +88,31 @@ const ChohanOverlay = ({ open, onClose }) => {
           </div>
         ) : (
           <>
-            {/* Sân khấu: bát + 2 xúc xắc */}
+            {/* Sân khấu: 2 xúc xắc + nắp bát gỗ che/mở */}
             <div className="chohan-stage">
               <div className="chohan-phase">
                 Vòng #{round?.roundNumber ?? '—'} · {label}
               </div>
               {!isRevealed && <div className="chohan-countdown">{remaining}s</div>}
 
-              <div className="chohan-bowl">
-                <Dice
-                  value={isRevealed ? round.die1 : null}
-                  size={54}
-                  rolling={isShaking}
-                />
-                <Dice
-                  value={isRevealed ? round.die2 : null}
-                  size={54}
-                  rolling={isShaking}
-                />
+              <div className={`chohan-arena chohan-arena--${round?.status || 'idle'}`}>
+                <span className="chohan-shadow chohan-shadow--a" aria-hidden="true" />
+                <span className="chohan-shadow chohan-shadow--b" aria-hidden="true" />
+                <div className="chohan-die chohan-die--a">
+                  <Dice value={isRevealed ? round.die1 : null} size={56} />
+                </div>
+                <div className="chohan-die chohan-die--b">
+                  <Dice value={isRevealed ? round.die2 : null} size={56} />
+                </div>
+                {round && (
+                  <img
+                    className="chohan-bowl3d"
+                    src="/dice/bowl.png"
+                    alt=""
+                    draggable={false}
+                    aria-hidden="true"
+                  />
+                )}
               </div>
 
               {isRevealed && (
@@ -211,16 +218,13 @@ const ChohanOverlay = ({ open, onClose }) => {
               Số dư của bạn: <strong>{balance} PC</strong>
             </div>
 
-            {/* Lịch sử ngắn */}
+            {/* Lịch sử: biểu đồ đường tổng xúc xắc + dải chip nhanh */}
             <div className="chohan-history">
-              <div className="chohan-history__title">Kết quả gần đây</div>
-              <div className="chohan-history__row">
-                {history.length === 0 ? (
-                  <span className="sp-muted" style={{ fontSize: 12 }}>
-                    Chưa có vòng nào
-                  </span>
-                ) : (
-                  history.map((h) => (
+              <div className="chohan-history__title">Lịch sử tổng xúc xắc (tối đa 20 vòng)</div>
+              <DiceSumChart history={history} />
+              {history.length > 0 && (
+                <div className="chohan-history__row" style={{ marginTop: 10 }}>
+                  {history.map((h) => (
                     <span
                       key={h.roundNumber}
                       className={`chohan-chip chohan-chip--${h.result}`}
@@ -228,9 +232,9 @@ const ChohanOverlay = ({ open, onClose }) => {
                     >
                       {h.result === 'cho' ? 'C' : 'L'}
                     </span>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}

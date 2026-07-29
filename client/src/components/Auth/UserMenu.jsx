@@ -45,8 +45,9 @@ const UserMenu = () => {
   return (
     <>
       <span className='sp-coin' title='Polite Coins'>
-        <span aria-hidden='true'>🪙</span>
+        <img className='sp-coin__img' src='/dice/coin.png' alt='' draggable={false} />
         {balance}
+        <span className='sp-coin__unit'>PC</span>
       </span>
       <Dropdown menu={{ items }} trigger={['click']} placement='bottomRight'>
         <button type='button' className='sp-user-chip' aria-label='Menu tài khoản'>
