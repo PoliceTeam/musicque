@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { Button, Space } from 'antd';
 import { QUICK_REACTIONS, shouldRequestVote, isReactionActive } from '../../utils/reactions';
 import './QuickReactionButtons.css';
 
@@ -41,25 +40,25 @@ const QuickReactionButtons = ({
 
   return (
     <div ref={containerRef} className="quick-reaction-buttons" data-testid="quick-reaction-buttons">
-      <Space size={4}>
-        {QUICK_REACTIONS.map((reaction) => {
-          const isActive = isReactionActive(userVote, reaction, lastReactionEmoji);
+      {QUICK_REACTIONS.map((reaction) => {
+        const isActive = isReactionActive(userVote, reaction, lastReactionEmoji);
 
-          return (
-            <Button
-              key={`${songId}-${reaction.emoji}`}
-              type={isActive ? 'primary' : 'default'}
-              size="small"
-              aria-label={reaction.label}
-              disabled={disabled}
-              onClick={(event) => handleReaction(reaction, event)}
-              style={{ minWidth: 34, paddingInline: 6 }}
-            >
-              {reaction.emoji}
-            </Button>
-          );
-        })}
-      </Space>
+        return (
+          <button
+            type="button"
+            key={`${songId}-${reaction.emoji}`}
+            className={`quick-reaction-buttons__btn${
+              isActive ? ' quick-reaction-buttons__btn--active' : ''
+            }`}
+            aria-label={reaction.label}
+            aria-pressed={isActive}
+            disabled={disabled}
+            onClick={(event) => handleReaction(reaction, event)}
+          >
+            {reaction.emoji}
+          </button>
+        );
+      })}
       {bursts.map((burst) => (
         <span
           key={burst.id}

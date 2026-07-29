@@ -40,7 +40,8 @@ const getTodayReroll = async () => {
   return { date, rerollCount: doc?.rerollCount || 0 }
 }
 
-// GET /api/idioms/today?username=X — 8 câu của ngày (kèm số like/dislike), client random 1 câu
+// GET /api/idioms/today — 8 câu của ngày (kèm số like/dislike), client random 1 câu.
+// Vote của bản thân chỉ trả về khi có token hợp lệ (optionalAuthenticate).
 exports.getDailyIdioms = async (req, res) => {
   try {
     const { rerollCount } = await getTodayReroll()
@@ -50,7 +51,7 @@ exports.getDailyIdioms = async (req, res) => {
       return res.status(404).json({ message: 'Chưa có câu nào khả dụng' })
     }
 
-    const idioms = await attachVoteStats(result.idioms, req.query.username)
+    const idioms = await attachVoteStats(result.idioms, req.user?.username)
 
     // Số liệu vote thay đổi liên tục → không cache
     res.set('Cache-Control', 'no-store')
@@ -67,13 +68,15 @@ exports.getDailyIdioms = async (req, res) => {
   }
 }
 
-// POST /api/idioms/vote { id, username, value } — value 1=like, -1=dislike, 0=bỏ vote
+// POST /api/idioms/vote { id, value } — value 1=like, -1=dislike, 0=bỏ vote.
+// Người vote lấy từ token, không nhận username từ body.
 exports.voteIdiom = async (req, res) => {
   try {
-    const { id, username, value } = req.body
+    const { id, value } = req.body
+    const username = req.user.username
 
-    if (!id || !username) {
-      return res.status(400).json({ message: 'Thiếu id câu hoặc tên người dùng' })
+    if (!id) {
+      return res.status(400).json({ message: 'Thiếu id câu' })
     }
     if (![1, -1, 0].includes(value)) {
       return res.status(400).json({ message: 'Giá trị vote không hợp lệ' })
@@ -133,7 +136,7 @@ exports.rerollIdioms = async (req, res) => {
     )
 
     const result = idiomsService.getDailyIdioms(new Date(), doc.rerollCount)
-    const idioms = await attachVoteStats(result.idioms, req.query.username)
+    const idioms = await attachVoteStats(result.idioms, req.user?.username)
 
     return res.json({
       date,

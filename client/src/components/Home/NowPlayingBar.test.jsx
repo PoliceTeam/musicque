@@ -17,14 +17,14 @@ describe('NowPlayingBar', () => {
           title: 'Bohemian Rhapsody',
           youtubeId: 'abc123',
           message: 'Hello team',
-          addedBy: { username: 'Alice' },
+          addedBy: { username: 'alice', displayName: 'Alice' },
         },
       },
     });
 
     expect(screen.getByTestId('now-playing-bar')).toBeInTheDocument();
     expect(screen.getByText('Bohemian Rhapsody')).toBeInTheDocument();
-    expect(screen.getByText(/Alice/)).toBeInTheDocument();
-    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Đang phát')).toBeInTheDocument();
   });
 });

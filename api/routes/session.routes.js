@@ -1,15 +1,15 @@
 const express = require('express')
 const Session = require('../models/session.model')
-const { authenticateAdmin } = require('../middlewares/auth.middleware')
+const { requireAdmin } = require('../middlewares/auth.middleware')
 const sessionController = require('../controllers/session.controller')
 
 const router = express.Router()
 
 // Bắt đầu phiên mới (chỉ admin)
-router.post('/start', authenticateAdmin, sessionController.startSession)
+router.post('/start', requireAdmin, sessionController.startSession)
 
 // Kết thúc phiên hiện tại (chỉ admin)
-router.post('/end', authenticateAdmin, sessionController.endSession)
+router.post('/end', requireAdmin, sessionController.endSession)
 
 // Lấy thông tin phiên hiện tại
 router.get('/current', sessionController.getCurrentSession)

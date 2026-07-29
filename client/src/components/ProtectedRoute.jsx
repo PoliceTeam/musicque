@@ -1,26 +1,41 @@
-import React, { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
+import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children }) => {
-  const { admin, loading } = useContext(AuthContext);
+/**
+ * adminOnly=true (mặc định cho /admin) yêu cầu role='admin';
+ * ngược lại chỉ cần đăng nhập.
+ */
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large">
-          <div style={{ padding: '20px', textAlign: 'center' }}>Đang tải...</div>
-        </Spin>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: 'var(--sp-bg)',
+        }}
+      >
+        <Spin size='large' />
       </div>
     );
   }
 
-  if (!admin) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to='/login' state={{ from: location.pathname }} replace />;
+  }
+
+  if (adminOnly && !isAdmin) {
+    return <Navigate to='/' replace />;
   }
 
   return children;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

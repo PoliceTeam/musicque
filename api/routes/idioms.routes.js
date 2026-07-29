@@ -6,14 +6,19 @@ const {
   voteIdiom,
   rerollIdioms,
 } = require('../controllers/idioms.controller')
-const { authenticateAdmin } = require('../middlewares/auth.middleware')
+const {
+  authenticate,
+  optionalAuthenticate,
+  requireAdmin,
+} = require('../middlewares/auth.middleware')
 
 const router = express.Router()
 
-router.get('/today', getDailyIdioms)
+// optionalAuthenticate để trả kèm vote của chính người đang đăng nhập (nếu có)
+router.get('/today', optionalAuthenticate, getDailyIdioms)
 router.get('/random', getRandomIdiom)
 router.get('/stats', getStats)
-router.post('/vote', voteIdiom)
-router.post('/reroll', authenticateAdmin, rerollIdioms)
+router.post('/vote', authenticate, voteIdiom)
+router.post('/reroll', requireAdmin, rerollIdioms)
 
 module.exports = router

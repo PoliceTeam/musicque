@@ -10,10 +10,23 @@ const api = axios.create({
   },
 });
 
+// Một token duy nhất cho cả user thường và admin
+export const TOKEN_STORAGE_KEY = "musicque_token";
+
+export const getStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+
+export const setStoredToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+};
+
 // Thêm interceptor để gắn token vào header
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("adminToken");
+    const token = getStoredToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,11 +35,41 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Auth API
-export const login = (username, password) =>
-  api.post("/api/auth/admin/login", { username, password });
+// Token hết hạn / bị thu hồi → xoá và báo cho AuthContext biết
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && getStoredToken()) {
+      setStoredToken(null);
+      window.dispatchEvent(new CustomEvent("musicque:unauthenticated"));
+    }
+    return Promise.reject(error);
+  }
+);
 
-export const verifyToken = () => api.get("/api/auth/admin/verify");
+// Auth API
+export const register = (username, password, displayName) =>
+  api.post("/api/auth/register", { username, password, displayName });
+
+export const login = (username, password) =>
+  api.post("/api/auth/login", { username, password });
+
+export const fetchMe = () => api.get("/api/auth/me");
+
+// Polite Coins API
+export const getCoinBalance = () => api.get("/api/coins/me");
+export const claimDailyBonus = () => api.post("/api/coins/daily-bonus");
+
+// Cho-Han (Bakuchi) API
+export const getChohanState = () => api.get("/api/chohan/state");
+export const getChohanHistory = (limit = 20) =>
+  api.get(`/api/chohan/history?limit=${limit}`);
+export const placeChohanBet = (side, amount) =>
+  api.post("/api/chohan/bet", { side, amount });
+
+// Bid PC để đẩy điểm bài hát
+export const bidSong = (songId, amount) =>
+  api.post(`/api/songs/${songId}/bid`, { amount });
 
 // Session API
 export const startSession = () => api.post("/api/sessions/start");
@@ -38,12 +81,12 @@ export const getCurrentSession = () => api.get("/api/sessions/current");
 export const getSessionPlaylist = (sessionId) =>
   api.get(`/api/sessions/${sessionId}/playlist`);
 
-// Song API
-export const addSong = (youtubeUrl, message, username) =>
-  api.post("/api/songs", { youtubeUrl, message, username });
+// Song API — danh tính người gửi lấy từ token, không truyền username nữa
+export const addSong = (youtubeUrl, message) =>
+  api.post("/api/songs", { youtubeUrl, message });
 
-export const voteSong = (songId, voteType, username, playingId = undefined) =>
-  api.post(`/api/songs/${songId}/vote`, { voteType, username, playingId });
+export const voteSong = (songId, voteType, playingId = undefined) =>
+  api.post(`/api/songs/${songId}/vote`, { voteType, playingId });
 
 export const markSongAsPlayed = (songId) =>
   api.post(`/api/songs/${songId}/played`);
@@ -85,14 +128,13 @@ export const getVnExpressNews = () => api.get("/api/news/vnexpress");
 export const getTechNews = (page = 1, limit = 7, seed = 1) => api.get(`/api/news/tech?page=${page}&limit=${limit}&seed=${seed}`);
 
 // Idioms API — trả 8 câu của ngày làm việc, client tự random 1 câu để hiển thị
-export const getDailyIdioms = (username) =>
+export const getDailyIdioms = () =>
   api.get("/api/idioms/today", {
     // _t chống cache trung gian: số like/dislike phải luôn tươi
-    params: { _t: Date.now(), ...(username ? { username } : {}) },
+    params: { _t: Date.now() },
   });
 export const getRandomIdiom = () => api.get("/api/idioms/random");
-export const voteIdiom = (id, username, value) =>
-  api.post("/api/idioms/vote", { id, username, value });
+export const voteIdiom = (id, value) => api.post("/api/idioms/vote", { id, value });
 export const rerollIdioms = () => api.post("/api/idioms/reroll");
 
 // TTS API (VieNeu-TTS)

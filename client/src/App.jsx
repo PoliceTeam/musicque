@@ -9,8 +9,10 @@ import LunchVotePage from './pages/LunchVotePage'
 import PoliBoardPage from './pages/PoliBoardPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
+import { ChohanProvider } from './contexts/ChohanContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AuthModal from './components/Auth/AuthModal'
 import { useTheme } from './contexts/ThemeContext'
 import TornadoKissEvent from './components/TornadoKissEvent'
 
@@ -26,10 +28,12 @@ function AppContent() {
     <ConfigProvider locale={viVN} theme={antdTheme}>
       <AuthProvider>
         <PlaylistProvider>
+          <ChohanProvider>
           <Router>
             <Routes>
               <Route path='/' element={<HomePage />} />
-              <Route path='/login' element={<LoginPage />} />
+              <Route path='/login' element={<LoginPage initialMode='login' />} />
+              <Route path='/register' element={<LoginPage initialMode='register' />} />
               <Route path='/lunch-vote' element={<LunchVotePage />} />
               <Route path='/poliboard' element={<PoliBoardPage />} />
               <Route
@@ -41,7 +45,10 @@ function AppContent() {
                 }
               />
             </Routes>
+            {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
+            <AuthModal />
           </Router>
+          </ChohanProvider>
         </PlaylistProvider>
       </AuthProvider>
     </ConfigProvider>

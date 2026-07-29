@@ -1,38 +1,31 @@
 const express = require('express')
 const Song = require('../models/song.model')
-const Session = require('../models/session.model')
-const User = require('../models/user.model')
-const { google } = require('googleapis')
-const { authenticateAdmin } = require('../middlewares/auth.middleware')
+const { authenticate, requireAdmin } = require('../middlewares/auth.middleware')
 const songController = require('../controllers/song.controller')
 
 const router = express.Router()
 
-const youtube = google.youtube({
-  version: 'v3',
-  auth: process.env.YOUTUBE_API_KEY, // Thêm API key từ Google Cloud Console
-})
+// Thêm bài hát mới — phải đăng nhập
+router.post('/', authenticate, songController.addSong)
 
-// Thêm bài hát mới
-router.post('/', songController.addSong)
-
-// Lấy bài hát đang phát
+// Lấy bài hát đang phát (công khai, ai cũng xem được)
 router.get('/current', songController.getCurrentSong)
 
-// Lấy playlist
+// Lấy playlist (công khai)
 router.get('/playlist', songController.getPlaylist)
 
-// Vote cho bài hát
-router.post('/:songId/vote', songController.voteSong)
+// Vote cho bài hát — phải đăng nhập
+router.post('/:songId/vote', authenticate, songController.voteSong)
 
-// Đánh dấu bài hát đã phát
-router.post('/:songId/played', songController.markSongAsPlayed)
+// Bid Polite Coins để đẩy điểm bài hát — phải đăng nhập
+router.post('/:songId/bid', authenticate, songController.bidSong)
 
-// Đánh dấu bài hát đang phát
-router.post('/:songId/playing', songController.markSongAsPlaying)
+// Điều khiển phát nhạc — chỉ admin
+router.post('/:songId/played', requireAdmin, songController.markSongAsPlayed)
+router.post('/:songId/playing', requireAdmin, songController.markSongAsPlaying)
 
-// Thêm route để xóa bài hát
-router.delete('/:songId', async (req, res) => {
+// Xóa bài hát khỏi playlist — chỉ admin
+router.delete('/:songId', requireAdmin, async (req, res) => {
   try {
     const { songId } = req.params
 
@@ -48,8 +41,8 @@ router.delete('/:songId', async (req, res) => {
 
     // Lấy danh sách bài hát đã sắp xếp
     const updatedPlaylist = await Song.find({ sessionId: song.sessionId })
-      .populate('addedBy', 'username')
-      .sort({ voteScore: -1, addedAt: 1 })
+      .populate('addedBy', 'username displayName')
+      .sort({ rankScore: -1, addedAt: 1 })
 
     // Thông báo qua socket.io
     const io = req.app.get('io')

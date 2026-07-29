@@ -1,6 +1,6 @@
-const User = require('./models/user.model')
 const Message = require('./models/message.model')
 const Session = require('./models/session.model')
+const { resolveUserFromToken } = require('./services/auth.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 
 let io;
@@ -20,21 +20,19 @@ const initSocket = (server) => {
 
     socket.on('chat_message', async (data) => {
       try {
-        const { content, username } = data;
-        
+        const { content, token } = data;
+
+        // Danh tính lấy từ token, không nhận username tự khai từ client
+        const user = await resolveUserFromToken(token);
+        if (!user) {
+          socket.emit('chat_error', { message: 'Vui lòng đăng nhập để chat' });
+          return;
+        }
+
         // Tìm active session
         const activeSession = await Session.findOne({ isActive: true });
         if (!activeSession) {
           return;
-        }
-
-        // Tìm hoặc tạo user với color
-        let user = await User.findOne({ username });
-        if (!user) {
-          user = await User.create({
-            username,
-            sessionId: activeSession._id
-          });
         }
 
         // Lưu tin nhắn

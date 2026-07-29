@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useContext } from 'react'
 import { Card, Input, Button, List, Typography, Space } from 'antd'
 import { SendOutlined } from '@ant-design/icons'
 import { io } from 'socket.io-client'
-import { AuthContext } from '../../contexts/AuthContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
+import { getStoredToken } from '../../services/api'
 
 const { Text } = Typography
 
@@ -12,7 +13,7 @@ const ChatBox = () => {
   const [messageInput, setMessageInput] = useState('')
   const [socket, setSocket] = useState(null)
   const messagesEndRef = useRef(null)
-  const { username } = useContext(AuthContext)
+  const { isAuthenticated } = useAuth()
   const { currentSession } = useContext(PlaylistContext)
 
   // Kết nối socket khi component mount
@@ -45,11 +46,12 @@ const ChatBox = () => {
   }, [messages])
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !username || !socket || !currentSession) return
+    if (!messageInput.trim() || !isAuthenticated || !socket || !currentSession) return
 
+    // Server lấy danh tính từ token, không tin username do client gửi
     socket.emit('chat_message', {
       content: messageInput.trim(),
-      username,
+      token: getStoredToken(),
     })
 
     setMessageInput('')
@@ -103,13 +105,13 @@ const ChatBox = () => {
             onKeyDown={handleKeyDown}
             placeholder='Nhập tin nhắn...'
             autoSize={{ minRows: 1, maxRows: 4 }}
-            disabled={!username}
+            disabled={!isAuthenticated}
           />
           <Button
             type='primary'
             icon={<SendOutlined />}
             onClick={handleSendMessage}
-            disabled={!messageInput.trim() || !username}
+            disabled={!messageInput.trim() || !isAuthenticated}
           />
         </div>
       </div>

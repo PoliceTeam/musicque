@@ -107,14 +107,68 @@ for the full set and their production values. The Python side reads a parallel s
 `VIENEU_INFER_*` vars.
 
 ### Auth
-Deliberately minimal, not a general user system:
-- **Admin** = a single JWT issued against the `ADMIN_USERNAME` / `ADMIN_PASSWORD` env pair.
-  `authenticateAdmin` re-checks the decoded username against the env var on every request.
-  There is no admin record in Mongo.
-- **Regular users** = an unauthenticated username string in the request body
-  (`authenticateUser`). Anyone can claim any name. `User` documents are created lazily.
+One account system, one token. `api/services/auth.service.js` owns all of it.
 
-Treat this as intentional for a trusted-LAN app; don't harden it unprompted.
+- **Token** = JWT `{ userId, role }`, 7d TTL, stored client-side under the single
+  localStorage key `musicque_token` (`TOKEN_STORAGE_KEY` in `client/src/services/api.js`).
+  There is no separate admin token any more.
+- **Middlewares** (`api/middlewares/auth.middleware.js`): `authenticate` (must be logged in),
+  `requireAdmin` (logged in + `role === 'admin'`), `optionalAuthenticate` (attaches
+  `req.user` when a valid token is present, otherwise `null`). `authenticateAdmin` /
+  `authenticateUser` remain as aliases for the old names.
+  All of them put a real Mongoose `User` document on `req.user` — not a bare `{ username }`.
+- **Admin** = a normal `User` with `role: 'admin'`. `syncAdminAccount()` runs on every
+  server boot and upserts it from `ADMIN_USERNAME` / `ADMIN_PASSWORD`, so env stays the
+  source of truth for the admin password.
+- **Legacy claim**: `User` documents created before auth existed have no `password`.
+  The first `POST /api/auth/register` for such a username sets the password on that same
+  document, preserving its `_id` and therefore all its existing songs and votes. A second
+  attempt is rejected as a duplicate. Usernames match case-insensitively
+  (`User.findByUsername`) so `Tien` and `tien` cannot become two accounts.
+
+Endpoints that now require a token: `POST /api/songs`, `POST /api/songs/:id/vote`,
+`POST /api/idioms/vote` (user); everything under `/api/sessions/start|end`,
+`/api/songs/:id/played|playing`, `DELETE /api/songs/:id`, `/api/idioms/reroll` (admin).
+Reads (`/api/songs/playlist`, `/current`, `/api/idioms/today`) stay public so guests can
+browse. **Never take an identity from the request body** — `addSong`, `voteSong`,
+`voteIdiom` and the `chat_message` socket handler all derive the user from the token.
+
+### Polite Coins economy + Cho-Han game
+A play-money currency (`polites` on `User`, default 100; not real money — the system is an
+infinite house). All balance mutations go through `api/services/coins.service.js` using
+**atomic Mongo ops, never load-modify-save** — `debit` guards `polites: { $gte: amount }`,
+`credit` is `$inc`. There are no multi-doc transactions (standalone Mongo), so cross-doc
+flows use compensating actions: debit first, and on the second step failing, credit back.
+
+- **Earning**: 100 on signup; `POST /api/coins/daily-bonus` grants +20 once per calendar
+  day (server tz) via a conditional update (`lastDailyBonusAt < startOfToday`). Client calls
+  it once on auth in `AuthContext`.
+- **Spending — bidding**: `POST /api/songs/:id/bid { amount }` (1 PC = +1 rank point, no
+  cap). Song ranking is NOT `voteScore` anymore — it's a denormalized `rankScore =
+  voteScore + bidScore`, and **every playlist sort uses `rankScore`**. `voteScore` is still
+  never mutated directly (`calculateVoteScore` recomputes it and rankScore together); bids
+  `$inc` both `bidScore` and `rankScore`.
+- **Spending — Cho-Han Bakuchi** (`api/services/chohan.service.js`): a dice game that runs
+  **only while a session is active**, one authoritative in-memory loop (only ever one active
+  session). Started/stopped from `session.controller` start/end, and resumed on boot via
+  `resumeIfActiveSession`. Round = betting (`CHOHAN_BET_MS`, default 45s) → shaking
+  (`CHOHAN_SHAKE_MS`, 10s) → revealed (`CHOHAN_REVEAL_MS`, 5s). Dice are rolled with
+  `crypto.randomInt` at round creation but **withheld from the serialized payload until the
+  reveal phase** — clients cannot compute the result early. `cho`=even, `han`=odd. Bets are
+  5–15 PC, one per user per round (unique-in-`bets` guard), win pays 2× (they already paid
+  the stake, so net +stake). Server broadcasts `chohan_round` / `chohan_result` /
+  `chohan_stopped` on the shared bus; clients sync countdowns to `bettingEndsAt` etc. Ending
+  a session voids the open round and refunds unsettled bets.
+
+Frontend: `ChohanProvider` (reuses PlaylistContext's socket, no second connection) →
+`ChohanPanel` (right-rail CTA + history chips on Home) → `ChohanOverlay` (play) +
+`ChohanRulesModal`. Balance lives in `AuthContext` (`balance`, `setBalance`,
+`refreshBalance`), shown in the `UserMenu` coin pill. Dice are CSS placeholders
+(`components/Chohan/Dice.jsx`) — **Phase 2** swaps in the real 3D dice/bowl/coin images
+(drop them in `client/public/dice/` as `die-1..6.png`, `bowl.png`, `coin.png`), adds the
+shake / bowl-lift animations, and a line chart of the dice sum (2–12) over the last 20
+rounds. Dev tip: shorten rounds with `CHOHAN_BET_MS=6000 CHOHAN_SHAKE_MS=3000
+CHOHAN_REVEAL_MS=3000` when running `api` locally.
 
 ## Conventions
 
@@ -128,6 +182,14 @@ Treat this as intentional for a trusted-LAN app; don't harden it unprompted.
 - Frontend cross-cutting state lives in `client/src/contexts/`
   (`AuthContext`, `PlaylistContext`, `ThemeContext`). Widgets are self-contained folders
   under `client/src/components/`.
+- **UI is a Spotify-light design system**, not stock antd. Tokens and layout classes live in
+  `client/src/styles/spotify.css` (`--sp-*` variables, `.sp-shell` / `.sp-panel` /
+  `.sp-track` / `.sp-btn` / `.sp-nav`); `ThemeContext` feeds the same palette to antd via
+  `ConfigProvider`. Prefer the `sp-*` classes over inline styles or bare antd `Card`s.
+  Both light and dark are defined — dark keys off `:root[data-theme='dark']`.
+- Guests can read everything but any write goes through `requireAuth(reason)` from
+  `useAuth()`, which opens the shared `AuthModal` instead of erroring. Desktop-first:
+  everyone uses a laptop/PC, so narrow-viewport polish is not a priority.
 - Tests exist **only in `client/`** (vitest + React Testing Library + jsdom, setup in
   `src/test/setup.js`, helpers in `src/test/testUtils.jsx`), and only cover
   `src/utils/*` and a few `components/Home/*`. There is no backend test harness.

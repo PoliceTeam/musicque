@@ -2,10 +2,28 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { ThemeContext } from '../contexts/ThemeContext';
+import { AuthContext } from '../contexts/AuthContext';
 
 const defaultThemeValue = {
   isDark: false,
   toggleTheme: () => {},
+};
+
+// Mặc định là khách chưa đăng nhập — test nào cần user thì truyền authValue
+const defaultAuthValue = {
+  user: null,
+  loading: false,
+  isAuthenticated: false,
+  isAdmin: false,
+  username: '',
+  displayName: '',
+  requireAuth: () => true,
+  openAuthModal: () => {},
+  closeAuthModal: () => {},
+  login: async () => ({ ok: true }),
+  register: async () => ({ ok: true }),
+  logout: () => {},
+  authModal: null,
 };
 
 export const renderWithProviders = (
@@ -13,6 +31,7 @@ export const renderWithProviders = (
   {
     playlistValue = {},
     themeValue = defaultThemeValue,
+    authValue = {},
   } = {},
 ) => {
   const playlistContextValue = {
@@ -22,14 +41,16 @@ export const renderWithProviders = (
     loading: false,
     socket: null,
     voteSong: async () => true,
+    getUserVoteForSong: () => null,
+    getLastReactionForSong: () => null,
     ...playlistValue,
   };
 
   return render(
     <ThemeContext.Provider value={themeValue}>
-      <PlaylistContext.Provider value={playlistContextValue}>
-        {ui}
-      </PlaylistContext.Provider>
+      <AuthContext.Provider value={{ ...defaultAuthValue, ...authValue }}>
+        <PlaylistContext.Provider value={playlistContextValue}>{ui}</PlaylistContext.Provider>
+      </AuthContext.Provider>
     </ThemeContext.Provider>,
   );
 };

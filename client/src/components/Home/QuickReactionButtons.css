@@ -1,6 +1,41 @@
 .quick-reaction-buttons {
   position: relative;
   display: inline-flex;
+  gap: 2px;
+}
+
+.quick-reaction-buttons__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.quick-reaction-buttons__btn:hover:not(:disabled) {
+  background: var(--sp-surface-active);
+  transform: scale(1.12);
+}
+
+.quick-reaction-buttons__btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.quick-reaction-buttons__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quick-reaction-buttons__btn--active {
+  background: var(--sp-green-soft);
+  border-color: var(--sp-green);
 }
 
 .reaction-burst {

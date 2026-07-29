@@ -11,6 +11,8 @@ const lunchVoteRoutes = require('./routes/lunchVote.routes');
 const newsRoutes = require('./routes/news.routes');
 const ttsRoutes = require('./routes/tts.routes');
 const idiomsRoutes = require('./routes/idioms.routes');
+const coinsRoutes = require('./routes/coins.routes');
+const chohanRoutes = require('./routes/chohan.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -42,6 +44,8 @@ app.use('/api/lunch-vote', lunchVoteRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tts', ttsRoutes);
 app.use('/api/idioms', idiomsRoutes);
+app.use('/api/coins', coinsRoutes);
+app.use('/api/chohan', chohanRoutes);
 
 // Error handling
 app.use(errorHandler);

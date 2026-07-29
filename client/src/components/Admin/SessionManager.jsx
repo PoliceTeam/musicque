@@ -1,110 +1,80 @@
 import React, { useContext, useState } from 'react'
-import { Card, Button, Typography, Space, Statistic } from 'antd'
-import { PlayCircleOutlined, StopOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Statistic } from 'antd'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { useTheme } from '../../contexts/ThemeContext'
 
-const { Text, Title } = Typography
-const { Countdown } = Statistic
+// Phiên được coi là "kết thúc dự kiến" lúc 18:00 — chỉ dùng để đếm ngược cho vui
+const getEndTime = () => {
+  const end = new Date()
+  end.setHours(18, 0, 0, 0)
+  return end.getTime()
+}
 
 const SessionManager = () => {
-  const { isDark } = useTheme()
   const { currentSession, startSession, endSession } = useContext(PlaylistContext)
   const [loading, setLoading] = useState(false)
 
-  const handleStartSession = async () => {
+  const run = async (action) => {
     try {
       setLoading(true)
-      await startSession()
+      await action()
     } catch (error) {
-      console.error('Error starting session:', error)
+      console.error('Session action failed:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleEndSession = async () => {
-    try {
-      setLoading(true)
-      await endSession()
-    } catch (error) {
-      console.error('Error ending session:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Kiểm tra thời gian hiện tại có nằm trong khoảng 15:00-18:00 không
-  const isWithinAllowedTime = () => {
-    const now = new Date()
-    const hours = now.getHours()
-    return hours >= 0 && hours < 24
-  }
-
-  // Tính thời gian còn lại đến 18:00
-  const getEndTime = () => {
-    const now = new Date()
-    const end = new Date(now)
-    end.setHours(18, 0, 0, 0)
-    return end.getTime()
   }
 
   return (
-    <Card
-      title='Quản lý phiên phát nhạc'
-      style={{
-        background: isDark ? '#1f1f1f' : undefined,
-      }}
-    >
-      {currentSession ? (
-        <>
-          <Title level={4}>Phiên đang diễn ra</Title>
-          <Space direction='vertical' style={{ width: '100%' }}>
-            <Text>Bắt đầu lúc: {new Date(currentSession.startTime).toLocaleString()}</Text>
+    <section className='sp-panel'>
+      <div className='sp-panel__head'>
+        <h2 className='sp-panel__title'>
+          <span aria-hidden='true'>{currentSession ? '🟢' : '⚪'}</span>
+          Phiên phát nhạc
+        </h2>
+      </div>
+
+      <div className='sp-panel__body' style={{ padding: '0 20px 20px' }}>
+        {currentSession ? (
+          <>
+            <p className='sp-muted' style={{ fontSize: 13, margin: '0 0 4px' }}>
+              Bắt đầu lúc {new Date(currentSession.startTime).toLocaleTimeString('vi-VN')}
+            </p>
 
             <Statistic.Timer
-              title='Thời gian còn lại đến 18:00'
+              title='Còn lại đến 18:00'
               value={getEndTime()}
               format='HH:mm:ss'
               type='countdown'
             />
 
-            <Button
-              type='primary'
-              danger
-              icon={<StopOutlined />}
-              onClick={handleEndSession}
-              loading={loading}
-              block
+            <button
+              type='button'
+              className='sp-btn sp-btn--danger'
+              onClick={() => run(endSession)}
+              disabled={loading}
+              style={{ width: '100%', marginTop: 16 }}
             >
               Kết thúc phiên
-            </Button>
-          </Space>
-        </>
-      ) : (
-        <>
-          <Space direction='vertical' style={{ width: '100%' }}>
-            <Text>Hiện không có phiên phát nhạc nào đang diễn ra</Text>
-
-            {isWithinAllowedTime() ? (
-              <Button
-                type='primary'
-                icon={<PlayCircleOutlined />}
-                onClick={handleStartSession}
-                loading={loading}
-                block
-              >
-                Mở phiên mới
-              </Button>
-            ) : (
-              <Text type='warning'>
-                <ClockCircleOutlined /> Chỉ có thể mở phiên từ 15:00 đến 18:00
-              </Text>
-            )}
-          </Space>
-        </>
-      )}
-    </Card>
+            </button>
+          </>
+        ) : (
+          <>
+            <p className='sp-muted' style={{ fontSize: 13, margin: '0 0 16px' }}>
+              Hiện không có phiên nào đang diễn ra.
+            </p>
+            <button
+              type='button'
+              className='sp-btn sp-btn--primary'
+              onClick={() => run(startSession)}
+              disabled={loading}
+              style={{ width: '100%' }}
+            >
+              Mở phiên mới
+            </button>
+          </>
+        )}
+      </div>
+    </section>
   )
 }
 

@@ -1,93 +1,89 @@
 import React, { useContext } from 'react';
-import { Card, List, Typography, Button, Empty } from 'antd';
-import { ThunderboltOutlined, ClearOutlined } from '@ant-design/icons';
+import { ClearOutlined } from '@ant-design/icons';
 import { PlaylistContext } from '../../contexts/PlaylistContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import useActivityFeed from '../../hooks/useActivityFeed';
 import { formatActivityTime } from '../../utils/activityFeed';
 
-const { Text } = Typography;
-
 const toneColorMap = {
-  success: '#52c41a',
-  warning: '#faad14',
-  processing: '#1677ff',
-  default: undefined,
+  success: 'var(--sp-green)',
+  warning: '#f59b23',
+  processing: '#0d73ec',
+  default: 'var(--sp-text)',
 };
 
-const LiveActivityFeed = () => {
+const LiveActivityFeed = ({ className = '' }) => {
   const { socket, currentSession } = useContext(PlaylistContext);
-  const { isDark } = useTheme();
   const { items, clearItems } = useActivityFeed(socket);
 
+  const emptyMessage = !currentSession
+    ? 'Chờ phiên phát nhạc để xem hoạt động'
+    : 'Chưa có hoạt động nào';
+
   return (
-    <Card
-      size="small"
+    <section
+      className={`sp-panel sp-panel--grow ${className}`.trim()}
       data-testid="live-activity-feed"
-      title={
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <ThunderboltOutlined />
+    >
+      <div className="sp-panel__head">
+        <h2 className="sp-panel__title">
+          <span aria-hidden="true">⚡</span>
           Hoạt động trực tiếp
-        </span>
-      }
-      extra={
-        items.length > 0 ? (
-          <Button
-            type="text"
-            size="small"
-            icon={<ClearOutlined />}
+        </h2>
+        {items.length > 0 && (
+          <button
+            type="button"
+            className="sp-btn sp-btn--ghost sp-btn--icon"
             onClick={clearItems}
             aria-label="Clear activity feed"
-          />
-        ) : null
-      }
-      style={{
-        background: isDark ? '#1f1f1f' : '#fff',
-        borderColor: isDark ? '#434343' : '#f0f0f0',
-      }}
-      styles={{
-        body: {
-          padding: 0,
-          maxHeight: 280,
-          overflowY: 'auto',
-        },
-      }}
-    >
-      {!currentSession ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Chờ phiên phát nhạc để xem hoạt động"
-          style={{ padding: '16px 8px' }}
-        />
-      ) : items.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Chưa có hoạt động nào"
-          style={{ padding: '16px 8px' }}
-        />
-      ) : (
-        <List
-          dataSource={items}
-          renderItem={(item) => (
-            <List.Item style={{ padding: '10px 16px' }}>
-              <List.Item.Meta
-                avatar={<span style={{ fontSize: 18 }}>{item.icon}</span>}
-                title={
-                  <Text style={{ color: toneColorMap[item.tone] || undefined }}>
+          >
+            <ClearOutlined />
+          </button>
+        )}
+      </div>
+
+      <div className="sp-panel__body">
+        {!currentSession || items.length === 0 ? (
+          <div className="sp-empty">
+            <span className="sp-empty__icon" aria-hidden="true">
+              📡
+            </span>
+            <span>{emptyMessage}</span>
+          </div>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {items.map((item) => (
+              <li
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  padding: '9px 10px',
+                  borderRadius: 'var(--sp-radius)',
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: '20px' }} aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 13,
+                      color: toneColorMap[item.tone] || toneColorMap.default,
+                    }}
+                  >
                     {item.text}
-                  </Text>
-                }
-                description={
-                  <Text type="secondary" style={{ fontSize: 11 }}>
+                  </span>
+                  <span style={{ fontSize: 11 }} className="sp-muted">
                     {formatActivityTime(item.timestamp)}
-                  </Text>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      )}
-    </Card>
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 };
 

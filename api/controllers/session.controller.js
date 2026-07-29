@@ -5,6 +5,7 @@ const GoldPrice = require("../models/goldPrice.model");
 const OilPrice = require("../models/oilPrice.model");
 const { getGoldPrice, getVRTLPrice } = require("../services/goldPrice.service");
 const { getOilPrice, getRON95Price } = require("../services/oilPrice.service");
+const chohan = require("../services/chohan.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -26,15 +27,10 @@ exports.startSession = async (req, res) => {
       return res.status(400).json({ message: "Đã có phiên đang hoạt động" });
     }
 
-    // Kiểm tra req.user hoặc req.admin
-    if (!req.user && !req.admin) {
-      return res.status(401).json({ message: "Không có thông tin người dùng" });
-    }
-
-    // Tạo phiên mới - Sử dụng req.admin nếu req.user không tồn tại
+    // requireAdmin đã đảm bảo req.user tồn tại và có role='admin'
     const newSession = await Session.create({
       startTime: now,
-      createdBy: req.admin ? { username: req.admin.username } : req.user._id,
+      createdBy: req.user._id,
     });
 
     // Fetch và lưu giá vàng hôm nay (chạy bất đồng bộ)
@@ -127,9 +123,14 @@ exports.startSession = async (req, res) => {
       io.emit("session_updated", newSession);
       emitActivity(io, {
         type: "session_started",
-        username: req.admin?.username || req.user?.username || "Admin",
+        username: req.user?.username || "Admin",
       });
     }
+
+    // Mở luôn phiên game Cho-Han chạy song song (không chặn response nếu lỗi)
+    chohan.startGame(io, newSession).catch((error) => {
+      console.error("[Cho-Han] Không mở được game:", error.message);
+    });
 
     res.status(201).json({
       message: "Đã tạo phiên mới",
@@ -158,12 +159,17 @@ exports.endSession = async (req, res) => {
     activeSession.endTime = new Date();
     await activeSession.save();
 
+    // Dừng game Cho-Han + hoàn cược chưa chốt (không chặn response nếu lỗi)
+    await chohan.stopGame({ reason: "session_ended" }).catch((error) => {
+      console.error("[Cho-Han] Không dừng được game:", error.message);
+    });
+
     // Thông báo qua socket.io
     const io = req.app.get("io");
     io.emit("session_updated", null);
     emitActivity(io, {
       type: "session_ended",
-      username: req.admin?.username || req.user?.username || "Admin",
+      username: req.user?.username || "Admin",
     });
 
     res.status(200).json({
@@ -195,9 +201,9 @@ exports.getSessionPlaylist = async (req, res) => {
 
     // Tìm tất cả bài hát trong phiên
     const songs = await Song.find({ sessionId, playing: false, played: false })
-      .populate("addedBy", "username")
-      .populate("votes.userId", "username")
-      .sort({ voteScore: -1, addedAt: 1 });
+      .populate("addedBy", "username displayName")
+      .populate("votes.userId", "username displayName")
+      .sort({ rankScore: -1, addedAt: 1 });
 
     res.status(200).json({
       playlist: songs,

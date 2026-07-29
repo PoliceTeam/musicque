@@ -162,18 +162,13 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Light theme (default) */
+/* Bảng màu và layout nằm trong styles/spotify.css */
 :root {
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
 }
 
-/* Dark theme */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.85);
-  background-color: #141414;
 }
 
 /* Tùy chỉnh cho Ant Design */
@@ -181,33 +176,10 @@ body {
   transition: background-color 0.3s ease;
 }
 
-.ant-layout-header {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-:root[data-theme='dark'] .ant-layout-header {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
 .ant-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
-}
-
-:root[data-theme='dark'] .ant-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .ant-list-item {
   transition: all 0.3s;
-}
-
-.ant-list-item:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-:root[data-theme='dark'] .ant-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
 } 

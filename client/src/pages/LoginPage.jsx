@@ -1,78 +1,55 @@
-import React, { useState, useContext, useEffect } from 'react'
-import { Form, Input, Button, Card, Typography, Layout, message } from 'antd'
-import { UserOutlined, LockOutlined, HomeOutlined } from '@ant-design/icons'
-import { AuthContext } from '../contexts/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import AuthForm from '../components/Auth/AuthForm'
+import { useAuth } from '../contexts/AuthContext'
 
-const { Title } = Typography
-const { Content } = Layout
-
-const LoginPage = () => {
-  const [loading, setLoading] = useState(false)
-  const { loginAdmin, isAdmin } = useContext(AuthContext)
+/**
+ * Dùng chung cho /login và /register — initialMode quyết định form nào hiện trước.
+ */
+const LoginPage = ({ initialMode = 'login' }) => {
+  const [mode, setMode] = useState(initialMode)
+  const { isAuthenticated, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const redirectTo = location.state?.from || '/'
 
   useEffect(() => {
-    // Nếu đã đăng nhập, chuyển hướng đến trang admin
-    if (isAdmin) {
-      navigate('/admin')
-    }
-  }, [isAdmin, navigate])
+    setMode(initialMode)
+  }, [initialMode])
 
-  const handleSubmit = async (values) => {
-    try {
-      setLoading(true)
-      const success = await loginAdmin(values.username, values.password)
-
-      if (success) {
-        message.success('Đăng nhập thành công')
-        navigate('/admin')
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(redirectTo, { replace: true })
     }
-  }
+  }, [isAuthenticated, loading, navigate, redirectTo])
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Card style={{ width: 400 }}>
-          <div style={{ textAlign: 'right', marginBottom: 16 }}>
-            <Link to='/'>
-              <Button icon={<HomeOutlined />}>Trang chủ</Button>
-            </Link>
-          </div>
+    <div className='sp-auth'>
+      <div className='sp-auth__card'>
+        <div className='sp-auth__brand'>
+          <span className='sp-brand__mark' aria-hidden='true'>
+            ♪
+          </span>
+          <h1 className='sp-auth__title'>
+            {mode === 'register' ? 'Tạo tài khoản Musicque' : 'Đăng nhập vào Musicque'}
+          </h1>
+          <p className='sp-auth__hint'>
+            {mode === 'register'
+              ? 'Một tài khoản, một phiếu vote. Không còn chuyện đổi tên để vote hộ.'
+              : 'Đăng nhập để thêm bài và vote trong phiên phát nhạc.'}
+          </p>
+        </div>
 
-          <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
-            Admin Login
-          </Title>
+        <AuthForm mode={mode} onSwitchMode={setMode} />
 
-          <Form name='login' onFinish={handleSubmit} layout='vertical'>
-            <Form.Item
-              name='username'
-              rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập' }]}
-            >
-              <Input prefix={<UserOutlined />} placeholder='Tên đăng nhập' size='large' />
-            </Form.Item>
-
-            <Form.Item
-              name='password'
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
-            >
-              <Input.Password prefix={<LockOutlined />} placeholder='Mật khẩu' size='large' />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type='primary' htmlType='submit' size='large' block loading={loading}>
-                Đăng nhập
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      </Content>
-    </Layout>
+        <p style={{ textAlign: 'center', marginTop: 18, marginBottom: 0 }}>
+          <Link to='/' className='sp-muted' style={{ fontSize: 13 }}>
+            ← Về trang chủ
+          </Link>
+        </p>
+      </div>
+    </div>
   )
 }
 

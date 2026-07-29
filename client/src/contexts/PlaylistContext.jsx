@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
+import React, { createContext, useState, useEffect, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import {
   getCurrentSession,
@@ -9,7 +9,7 @@ import {
   endSession as endSessionApi,
   getCurrentSong,
 } from '../services/api'
-import { AuthContext } from './AuthContext'
+import { useAuth } from './AuthContext'
 import { message } from 'antd'
 import { buildUserVoteMapFromPlaylist } from '../utils/userVote'
 
@@ -24,8 +24,10 @@ export const PlaylistProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null)
   const [userVoteBySongId, setUserVoteBySongId] = useState({})
   const [lastReactionBySongId, setLastReactionBySongId] = useState({})
-  const [voterUserId, setVoterUserId] = useState(null)
-  const { username } = useContext(AuthContext)
+  const { user, requireAuth } = useAuth()
+
+  const username = user?.username || ''
+  const voterUserId = user?._id || null
 
   const mergeUserVotesFromPlaylist = useCallback(
     (songs) => {
@@ -38,6 +40,12 @@ export const PlaylistProvider = ({ children }) => {
     },
     [username, voterUserId],
   )
+
+  // Đổi tài khoản (hoặc đăng xuất) thì bỏ toàn bộ trạng thái vote của người trước
+  useEffect(() => {
+    setUserVoteBySongId({})
+    setLastReactionBySongId({})
+  }, [voterUserId])
 
   const getUserVoteForSong = useCallback(
     (songId) => {
@@ -60,8 +68,11 @@ export const PlaylistProvider = ({ children }) => {
   const fetchCurrentSong = async () => {
     try {
       const response = await getCurrentSong()
-      setPlaylist(response.data.updatedPlaylist)
-      mergeUserVotesFromPlaylist(response.data.updatedPlaylist)
+      // getCurrentSong có thể không trả updatedPlaylist (phiên rỗng, không có bài
+      // đang phát) → mặc định mảng rỗng để không set playlist thành undefined
+      const nextPlaylist = response.data.updatedPlaylist || []
+      setPlaylist(nextPlaylist)
+      mergeUserVotesFromPlaylist(nextPlaylist)
       setCurrentSong(response.data.currentSong)
     } catch (error) {
       console.error('Error fetching current song:', error)
@@ -101,7 +112,6 @@ export const PlaylistProvider = ({ children }) => {
         setPlaylist([])
         setUserVoteBySongId({})
         setLastReactionBySongId({})
-        setVoterUserId(null)
       }
     })
 
@@ -146,13 +156,12 @@ export const PlaylistProvider = ({ children }) => {
       return false
     }
 
-    if (!username || username.trim() === '') {
-      message.error('Vui lòng nhập tên của bạn trước khi thêm bài hát')
+    if (!requireAuth('Đăng nhập để thêm bài hát vào phiên phát nhạc.')) {
       return false
     }
 
     try {
-      await addSongApi(youtubeUrl, messageText, username)
+      await addSongApi(youtubeUrl, messageText)
       message.success('Đã thêm bài hát vào playlist')
       return true
     } catch (error) {
@@ -162,19 +171,14 @@ export const PlaylistProvider = ({ children }) => {
   }
 
   const voteSong = async (songId, voteType, reactionEmoji = undefined, playingId = undefined) => {
-    if (!username || username.trim() === '') {
-      message.error('Vui lòng nhập tên của bạn trước khi vote')
+    if (!requireAuth('Đăng nhập để vote cho bài hát.')) {
       return false
     }
 
     try {
-      const response = await voteSongApi(songId, voteType, username, playingId)
-      const { currentUserVote, voterUserId: nextVoterUserId } = response.data
+      const response = await voteSongApi(songId, voteType, playingId)
+      const { currentUserVote } = response.data
       const songKey = songId.toString()
-
-      if (nextVoterUserId) {
-        setVoterUserId(nextVoterUserId)
-      }
 
       setUserVoteBySongId((prev) => ({
         ...prev,

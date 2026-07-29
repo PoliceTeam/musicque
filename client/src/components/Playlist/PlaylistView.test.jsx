@@ -3,47 +3,46 @@ import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlaylistView from './PlaylistView';
 import { renderWithProviders } from '../../test/testUtils';
-import { AuthContext } from '../../contexts/AuthContext';
 
 describe('PlaylistView', () => {
-  it('renders playlist title and empty state', () => {
+  it('nhắc khách đăng nhập khi hàng chờ trống', () => {
     renderWithProviders(
       <MemoryRouter>
-        <AuthContext.Provider value={{ username: 'Alice', setUserName: () => {} }}>
-          <PlaylistView />
-        </AuthContext.Provider>
+        <PlaylistView />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Playlist hiện tại')).toBeInTheDocument();
-    expect(screen.getByText('Chưa có bài hát nào trong playlist')).toBeInTheDocument();
+    expect(screen.getByText('Hàng chờ')).toBeInTheDocument();
+    expect(screen.getByText('Hàng chờ đang trống')).toBeInTheDocument();
+    expect(
+      screen.getByText('Đăng nhập để trở thành người thêm bài đầu tiên.'),
+    ).toBeInTheDocument();
   });
 
   it('renders quick reactions for playlist items', () => {
     renderWithProviders(
       <MemoryRouter>
-        <AuthContext.Provider value={{ username: 'Alice', setUserName: () => {} }}>
-          <PlaylistView />
-        </AuthContext.Provider>
+        <PlaylistView />
       </MemoryRouter>,
       {
+        authValue: { isAuthenticated: true, username: 'alice', displayName: 'Alice' },
         playlistValue: {
           playlist: [
             {
               _id: 'song-1',
               title: 'Test Track',
-              addedBy: { username: 'Bob' },
+              youtubeId: 'abc123',
+              addedBy: { username: 'bob', displayName: 'Bob' },
               votes: [],
               voteScore: 0,
             },
           ],
-          getUserVoteForSong: () => null,
-          getLastReactionForSong: () => null,
         },
       },
     );
 
     expect(screen.getByText('Test Track')).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
     expect(screen.getByTestId('quick-reaction-buttons')).toBeInTheDocument();
   });
 });

@@ -4,6 +4,10 @@ const http = require('http')
 const app = require('./app')
 const { initSocket } = require('./socket')
 const { clearAllBoards } = require('./redis')
+const { syncAdminAccount } = require('./services/auth.service')
+const { backfillBalances } = require('./services/coins.service')
+const Song = require('./models/song.model')
+const chohan = require('./services/chohan.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -45,8 +49,25 @@ const scheduleMidnightClear = () => {
 // Kết nối MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB')
+
+    // Đồng bộ tài khoản admin từ env — không chặn khởi động nếu lỗi
+    try {
+      await syncAdminAccount()
+    } catch (error) {
+      console.error('[Auth] Không đồng bộ được tài khoản admin:', error.message)
+    }
+
+    // Cấp số dư khởi điểm cho user cũ + đồng bộ rankScore bài cũ (idempotent)
+    try {
+      const migrated = await backfillBalances()
+      if (migrated > 0) console.log(`[Coins] Đã cấp số dư khởi điểm cho ${migrated} user cũ`)
+      const ranked = await Song.backfillRankScore()
+      if (ranked > 0) console.log(`[Coins] Đã đồng bộ rankScore cho ${ranked} bài hát cũ`)
+    } catch (error) {
+      console.error('[Coins] Backfill lỗi:', error.message)
+    }
 
     // Khởi động server
     server.listen(PORT, () => {
@@ -54,6 +75,11 @@ mongoose
 
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()
+
+      // Nếu đang có phiên chạy dở (server restart giữa chừng) thì mở lại game Cho-Han
+      chohan.resumeIfActiveSession(io).catch((error) => {
+        console.error('[Cho-Han] Resume lỗi:', error.message)
+      })
     })
   })
   .catch((err) => {

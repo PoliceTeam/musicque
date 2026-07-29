@@ -1,25 +1,25 @@
 import React, { useContext } from 'react'
-import { List, Space, Typography, Card, Empty, Input } from 'antd'
-import { YoutubeOutlined } from '@ant-design/icons'
+import { Skeleton } from 'antd'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { AuthContext } from '../../contexts/AuthContext'
-import { useTheme } from '../../contexts/ThemeContext'
-import { message } from 'antd'
+import { useAuth } from '../../contexts/AuthContext'
+import { getYouTubeThumbnail } from '../../utils/reactions'
 import QuickReactionButtons from '../Home/QuickReactionButtons'
+import BidButton from './BidButton'
 
-const { Text } = Typography
+const scoreClass = (score) => {
+  if (score > 0) return 'sp-score sp-score--positive'
+  if (score < 0) return 'sp-score sp-score--negative'
+  return 'sp-score'
+}
 
-const PlaylistView = () => {
-  const { isDark } = useTheme()
-  const { playlist, voteSong, loading, getUserVoteForSong, getLastReactionForSong } =
+const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
+  const { playlist: rawPlaylist, voteSong, loading, getUserVoteForSong, getLastReactionForSong } =
     useContext(PlaylistContext)
-  const { username, setUserName } = useContext(AuthContext)
+  const playlist = rawPlaylist || []
+  const { isAuthenticated, requireAuth } = useAuth()
 
   const handleVote = async (songId, voteType, reactionEmoji) => {
-    if (!username || username.trim() === '') {
-      message.error('Vui lòng nhập tên của bạn trước khi vote')
-      return false
-    }
+    if (!requireAuth('Đăng nhập để vote cho bài hát.')) return false
 
     if (voteType === 'neutral') {
       const currentVote = getUserVoteForSong(songId)
@@ -30,61 +30,94 @@ const PlaylistView = () => {
     return voteSong(songId, voteType, reactionEmoji)
   }
 
-  const handleUsernameChange = (e) => {
-    setUserName(e.target.value)
-  }
-
   return (
-    <Card
-      title='Playlist hiện tại'
-      style={{
-        background: isDark ? '#1f1f1f' : undefined,
-      }}
-      extra={
-        <Input
-          placeholder='Nhập tên của bạn'
-          value={username}
-          onChange={handleUsernameChange}
-          style={{ width: 150 }}
-        />
-      }
-    >
-      <List
-        loading={loading}
-        dataSource={playlist}
-        renderItem={(song) => {
-          const userVote = getUserVoteForSong(song._id)
-          const lastReactionEmoji = getLastReactionForSong(song._id)
+    <section className='sp-panel sp-panel--grow' data-testid='playlist-view'>
+      <div className='sp-panel__head'>
+        <h2 className='sp-panel__title'>
+          <span aria-hidden='true'>🎧</span>
+          {title}
+        </h2>
+        <span className='sp-muted' style={{ fontSize: 12.5, fontWeight: 600 }}>
+          {playlist.length} bài
+        </span>
+      </div>
 
-          return (
-            <List.Item
-              actions={[
-                <QuickReactionButtons
-                  key={song._id}
-                  songId={song._id}
-                  onVote={handleVote}
-                  userVote={userVote}
-                  lastReactionEmoji={lastReactionEmoji}
-                />,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={<YoutubeOutlined style={{ fontSize: 24, color: 'red' }} />}
-                title={song.title}
-                description={
-                  <Space direction='vertical'>
-                    <Text type='secondary'>Thêm bởi: {song.addedBy.username}</Text>
-                    {song.message && <Text italic>"{song.message}"</Text>}
-                    <Text strong>Votes: {song.voteScore}</Text>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )
-        }}
-        locale={{ emptyText: <Empty description='Chưa có bài hát nào trong playlist' /> }}
-      />
-    </Card>
+      <div className='sp-panel__body'>
+        {loading ? (
+          <Skeleton active paragraph={{ rows: 4 }} style={{ padding: 12 }} />
+        ) : playlist.length === 0 ? (
+          <div className='sp-empty'>
+            <span className='sp-empty__icon' aria-hidden='true'>
+              🎵
+            </span>
+            <strong>Hàng chờ đang trống</strong>
+            <span>
+              {isAuthenticated
+                ? 'Dán link YouTube ở khung bên trái để mở màn.'
+                : 'Đăng nhập để trở thành người thêm bài đầu tiên.'}
+            </span>
+          </div>
+        ) : (
+          <div className={`sp-tracklist${compact ? ' sp-tracklist--compact' : ''}`}>
+            {playlist.map((song, index) => {
+              const addedBy = song.addedBy?.displayName || song.addedBy?.username || 'Ẩn danh'
+              const thumbnail = getYouTubeThumbnail(song.youtubeId)
+
+              return (
+                <div className='sp-track' key={song._id}>
+                  <span className={`sp-track__rank${index === 0 ? ' sp-track__rank--top' : ''}`}>
+                    {index + 1}
+                  </span>
+
+                  {thumbnail ? (
+                    <img className='sp-track__art' src={thumbnail} alt='' loading='lazy' />
+                  ) : (
+                    <span className='sp-track__art' />
+                  )}
+
+                  <div className='sp-track__meta'>
+                    <div className='sp-track__title' title={song.title}>
+                      {song.title}
+                    </div>
+                    <div className='sp-track__sub'>
+                      <span>{addedBy}</span>
+                      {song.message && (
+                        <>
+                          <span aria-hidden='true'>·</span>
+                          <span className='sp-track__note'>“{song.message}”</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className='sp-track__side'>
+                    <span
+                      className={scoreClass(song.rankScore ?? song.voteScore)}
+                      title={
+                        song.bidScore
+                          ? `${song.voteScore} vote + ${song.bidScore} bid`
+                          : undefined
+                      }
+                    >
+                      {(song.rankScore ?? song.voteScore) > 0
+                        ? `+${song.rankScore ?? song.voteScore}`
+                        : song.rankScore ?? song.voteScore}
+                    </span>
+                    <BidButton songId={song._id} />
+                    <QuickReactionButtons
+                      songId={song._id}
+                      onVote={handleVote}
+                      userVote={getUserVoteForSong(song._id)}
+                      lastReactionEmoji={getLastReactionForSong(song._id)}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 

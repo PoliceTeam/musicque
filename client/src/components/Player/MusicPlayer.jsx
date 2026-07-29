@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import ReactPlayer from 'react-player';
-import { Card, Button, Typography, Space, message } from 'antd';
+import { Button, Typography, Space, message } from 'antd';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -15,7 +15,6 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { PlaylistContext } from '../../contexts/PlaylistContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import {
   markSongAsPlayed,
   removeSongFromPlaylist,
@@ -23,7 +22,7 @@ import {
   generateTTS,
 } from '../../services/api';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const TTS_LOG_PREFIX = '[MusicPlayer][TTS]';
 const TTS_WAIT_TIMEOUT_MS = Number(import.meta.env.VITE_TTS_WAIT_TIMEOUT_MS || 90000);
@@ -58,7 +57,6 @@ const isCanceledError = (error) =>
   error?.code === 'ERR_CANCELED';
 
 const MusicPlayer = () => {
-  const { isDark } = useTheme();
   const { playlist, refreshPlaylist, currentSession } =
     useContext(PlaylistContext);
   const [currentSong, setCurrentSong] = useState(null);
@@ -374,7 +372,7 @@ const MusicPlayer = () => {
           const speechCompleted = await playSpeech(
             currentSong.message,
             currentSong.title,
-            currentSong.addedBy.username,
+            currentSong.addedBy?.displayName || currentSong.addedBy?.username,
             currentSong._id
           );
           console.log(`${TTS_LOG_PREFIX} playSpeech resolved`);
@@ -517,41 +515,50 @@ const MusicPlayer = () => {
 
   if (!currentSong || !currentSession) {
     return (
-      <Card
-        title='Music Player'
-        style={{
-          background: isDark ? '#1f1f1f' : undefined,
-        }}
-      >
-        <Space
-          direction='vertical'
-          align='center'
-          style={{ width: '100%' }}
-        >
-          <Text>Không có bài hát nào đang phát</Text>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={refreshing}
-          >
-            Làm mới
-          </Button>
-        </Space>
-      </Card>
+      <section className='sp-panel'>
+        <div className='sp-panel__head'>
+          <h2 className='sp-panel__title'>
+            <span aria-hidden='true'>▶</span>
+            Trình phát
+          </h2>
+        </div>
+        <div className='sp-panel__body'>
+          <div className='sp-empty'>
+            <span className='sp-empty__icon' aria-hidden='true'>
+              🎚️
+            </span>
+            <strong>Không có bài hát nào đang phát</strong>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+              loading={refreshing}
+              style={{ marginTop: 8 }}
+            >
+              Làm mới
+            </Button>
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-    <Card
-      title='Music Player'
-      style={{
-        background: isDark ? '#1f1f1f' : undefined,
-      }}
-    >
-      {currentSong && (
+    <section className='sp-panel'>
+      <div className='sp-panel__head'>
+        <h2 className='sp-panel__title'>
+          <span aria-hidden='true'>▶</span>
+          Trình phát
+        </h2>
+      </div>
+      <div className='sp-panel__body' style={{ padding: '0 20px 20px' }}>
+        {currentSong && (
         <>
-          <Title level={4}>{currentSong.title}</Title>
-          <Text type='secondary'>Thêm bởi: {currentSong.addedBy.username}</Text>
+          <h3 className='sp-section-title' style={{ fontSize: 20, marginBottom: 4 }}>
+            {currentSong.title}
+          </h3>
+          <Text type='secondary'>
+            Thêm bởi {currentSong.addedBy?.displayName || currentSong.addedBy?.username || 'Ẩn danh'}
+          </Text>
 
           <div
             style={{ marginTop: 16, marginBottom: 16, position: 'relative' }}
@@ -680,8 +687,9 @@ const MusicPlayer = () => {
             </div>
           )}
         </>
-      )}
-    </Card>
+        )}
+      </div>
+    </section>
   );
 };
 

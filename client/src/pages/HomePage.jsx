@@ -1,13 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Input, Space, Modal, Tabs } from 'antd';
-import {
-  UserOutlined,
-  LoginOutlined,
-  DropboxOutlined,
-  MoonOutlined,
-  SunOutlined,
-} from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Tabs, Tooltip } from 'antd';
+import { MoonOutlined, SunOutlined } from '@ant-design/icons';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
@@ -15,38 +8,35 @@ import TechNewsWidget from '../components/TechNews/TechNewsWidget';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
-// import ChatBox from '../components/Chat/ChatBox'
-import DiceGame from '../games/dice/DiceGame';
+import UserMenu from '../components/Auth/UserMenu';
+import SidebarNav from '../components/Layout/SidebarNav';
+import ChohanPanel from '../components/Chohan/ChohanPanel';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
 import NesGame from '../components/NesGame/NesGame';
 import ChibiOverlay from '../components/Chibi/ChibiOverlay';
 import { PlaylistContext } from '../contexts/PlaylistContext';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { warmupTTS } from '../services/api';
 
-const { Header, Content, Footer } = Layout;
-const { Title, Text } = Typography;
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 11) return 'Chào buổi sáng';
+  if (hour < 14) return 'Chào buổi trưa';
+  if (hour < 18) return 'Chào buổi chiều';
+  return 'Chào buổi tối';
+};
 
 const HomePage = () => {
-  const { currentSession } = useContext(PlaylistContext);
-  const { isAdmin, username, setUserName, logoutAdmin } =
-    useContext(AuthContext);
+  const { currentSession, currentSong } = useContext(PlaylistContext);
+  const { displayName } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const [showDiceGame, setShowDiceGame] = useState(false);
-  const [finalValue, setFinalValue] = useState(null);
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
   const [showSnowEffect, setShowSnowEffect] = useState(false);
-  const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-
-  const handleUsernameChange = (e) => {
-    setUserName(e.target.value);
-  };
 
   const handlePlayNesGame = (gameFile, gameName) => {
     setCurrentGame({ file: gameFile, name: gameName });
@@ -56,10 +46,6 @@ const HomePage = () => {
   const handleCloseNesGame = () => {
     setShowNesGame(false);
     setCurrentGame({ file: null, name: '' });
-  };
-
-  const toggleSnowEffect = () => {
-    setShowSnowEffect((prev) => !prev);
   };
 
   useEffect(() => {
@@ -94,24 +80,13 @@ const HomePage = () => {
     };
   }, []);
 
-  const handleAppSelect = (app) => {
-    setIsAppSwitcherOpen(false);
-    if (app === 'music') {
-      navigate('/');
-    } else if (app === 'lunch-vote') {
-      navigate('/lunch-vote');
-    } else if (app === 'poliboard') {
-      navigate('/poliboard');
-    }
-  };
-
   useEffect(() => {
     if (!showSnowEffect || !snowCanvasRef.current) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-      return;
+      return undefined;
     }
 
     const canvas = snowCanvasRef.current;
@@ -194,21 +169,13 @@ const HomePage = () => {
     };
   }, [showSnowEffect]);
 
+  const hasPlayer = Boolean(currentSession && currentSong);
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      {showSnowEffect && (
-        <canvas
-          ref={snowCanvasRef}
-          className="easter-egg"
-          id="snowCanvas"
-        />
-      )}
+    <>
+      {showSnowEffect && <canvas ref={snowCanvasRef} className="easter-egg" id="snowCanvas" />}
       <style>
         {`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(180deg); }
-          }
           canvas.easter-egg {
             opacity: 0.7;
             position: fixed;
@@ -221,324 +188,127 @@ const HomePage = () => {
           }
         `}
       </style>
-      <Header
-        style={{
-          background: isDark ? '#141414' : '#fff',
-          padding: '0 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Title
-            level={3}
-            style={{ margin: '16px 0', cursor: 'pointer' }}
-            onClick={() => setIsAppSwitcherOpen(true)}
-          >
-            Music Order App
-          </Title>
-          <WeatherHeader />
-        </div>
-        <Space>
-          {!isAdmin && (
-            <Input
-              prefix={<UserOutlined />}
-              placeholder='Tên của bạn'
-              value={username}
-              onChange={handleUsernameChange}
-              style={{ width: 200 }}
-            />
-          )}
-
-          {isAdmin ? (
-            <Space>
-              <Button
-                onClick={toggleTheme}
-                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                type='default'
-              >
-                {isDark ? 'Sáng' : 'Tối'}
-              </Button>
-              <Button
-                onClick={toggleSnowEffect}
-                type={showSnowEffect ? 'default' : 'primary'}
-              >
-                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
-              </Button>
-              <Link to='/admin'>
-                <Button type='primary'>Admin Dashboard</Button>
-              </Link>
-              <Button
-                onClick={logoutAdmin}
-                icon={<LoginOutlined />}
-              >
-                Đăng xuất
-              </Button>
-            </Space>
-          ) : (
-            <Space>
-              <Button
-                onClick={toggleTheme}
-                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                type='default'
-              >
-                {isDark ? 'Sáng' : 'Tối'}
-              </Button>
-              <Button
-                onClick={toggleSnowEffect}
-                type={showSnowEffect ? 'default' : 'primary'}
-              >
-                {showSnowEffect ? '❄️ Tắt Tuyết' : '❄️ Bật Tuyết'}
-              </Button>
-              <Button
-                type='primary'
-                onClick={() => handlePlayNesGame('/nes/contra.nes', 'Contra')}
-              >
-                Contra
-              </Button>
-              <Button
-                type='primary'
-                onClick={() => handlePlayNesGame('/nes/super_mario.nes', 'Super Mario')}
-              >
-                Mario
-              </Button>
-              <Link to='/login'>
-                <Button
-                  type='primary'
-                  icon={<LoginOutlined />}
-                >
-                  Admin Login
-                </Button>
-              </Link>
-            </Space>
-          )}
-        </Space>
-      </Header>
-
-      <NowPlayingBar />
-
-      <TetCountdown />
 
       <ChibiOverlay />
 
-      <Content style={{ padding: '24px' }}>
-        <DailyIdiom />
-        <Row gutter={[16, 16]}>
-          <Col
-            xs={24}
-            md={6}
-          >
-            <Card title={currentSession ? 'Thêm bài hát' : 'Thông báo'}>
-              {currentSession ? (
-                <AddSongForm />
-              ) : (
-                <div>
-                  <Text>
-                    Hiện tại không có phiên phát nhạc nào đang diễn ra.
-                  </Text>
-                  <br />
-                  <Text type='secondary'>
-                    Phiên phát nhạc chỉ nên được mở từ 15:00 đến 18:00 hàng
-                    ngày.
-                  </Text>
-                </div>
-              )}
-            </Card>
-            <div style={{ marginTop: 16 }}>
-              <LiveActivityFeed />
-            </div>
-          </Col>
-
-          <Col
-            xs={24}
-            md={12}
-          >
-            <PlaylistView />
-          </Col>
-
-          <Col
-            xs={24}
-            md={6}
-          >
-            <div
-              style={{
-                position: 'sticky',
-                top: 24,
-                maxHeight: 'calc(100vh - 48px)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-              }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '16px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '-50%',
-                    left: '-50%',
-                    width: '200%',
-                    height: '200%',
-                    background:
-                      'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                    animation: 'float 6s ease-in-out infinite',
-                  }}
-                />
-                <Title
-                  level={3}
-                  style={{
-                    margin: 0,
-                    color: '#fff',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                    fontWeight: 'bold',
-                    letterSpacing: '1px',
-                    position: 'relative',
-                    zIndex: 1,
-                  }}
+      <div className={`sp-shell${hasPlayer ? '' : ' sp-shell--no-player'}`}>
+        {/* ── Sidebar ─────────────────────────────────────────────── */}
+        <aside className="sp-sidebar">
+          <SidebarNav>
+            {/* Easter egg gói gọn thành hàng icon để chừa chỗ cho form thêm bài */}
+            <div className="sp-quicktoys">
+              <Tooltip title="Contra">
+                <button
+                  type="button"
+                  className="sp-quicktoys__btn"
+                  aria-label="Chơi Contra"
+                  onClick={() => handlePlayNesGame('/nes/contra.nes', 'Contra')}
                 >
-                  🌍 Thế giới có gì mới?
-                </Title>
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: isDark ? '#1f1f1f' : '#fff',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  padding: '0 8px'
-                }}
-              >
-                <Tabs
-                  defaultActiveKey="1"
-                  items={[
-                    {
-                      label: 'VnExpress',
-                      key: '1',
-                      children: <VnExpressNewsView />,
-                    },
-                    {
-                      label: 'Tech News',
-                      key: '2',
-                      children: <TechNewsWidget />,
-                    },
-                  ]}
-                />
-              </div>
+                  🎮
+                </button>
+              </Tooltip>
+              <Tooltip title="Super Mario">
+                <button
+                  type="button"
+                  className="sp-quicktoys__btn"
+                  aria-label="Chơi Super Mario"
+                  onClick={() => handlePlayNesGame('/nes/super_mario.nes', 'Super Mario')}
+                >
+                  🍄
+                </button>
+              </Tooltip>
+              <Tooltip title={showSnowEffect ? 'Tắt tuyết' : 'Bật tuyết'}>
+                <button
+                  type="button"
+                  className={`sp-quicktoys__btn${showSnowEffect ? ' is-active' : ''}`}
+                  aria-label="Bật/tắt hiệu ứng tuyết"
+                  onClick={() => setShowSnowEffect((prev) => !prev)}
+                >
+                  ❄️
+                </button>
+              </Tooltip>
             </div>
-          </Col>
+          </SidebarNav>
 
-          {/* <Col xs={24} md={8}>
-            <ChatBox />
-          </Col> */}
-        </Row>
-      </Content>
-
-      <Modal
-        title="Chọn ứng dụng"
-        open={isAppSwitcherOpen}
-        onCancel={() => setIsAppSwitcherOpen(false)}
-        footer={null}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button block type="primary" onClick={() => handleAppSelect('music')}>
-            Music Order App
-          </Button>
-          <Button block onClick={() => handleAppSelect('lunch-vote')}>
-            Lunch Vote
-          </Button>
-          <Button block onClick={() => handleAppSelect('poliboard')} style={{ backgroundColor: '#10b981', color: 'white', border: 'none' }}>
-            PoliBoard 
-          </Button>
-        </Space>
-      </Modal>
-
-      <Footer style={{ textAlign: 'center' }}>
-        Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
-        <span
-          style={{
-            fontSize: '12px',
-            color: isDark ? '#8c8c8c' : '#e0c9c8',
-            fontWeight: 'bold',
-          }}
-        >
-          100% Made with AI
-        </span>
-      </Footer>
-
-      {/* Dice Game Modal */}
-      {showDiceGame && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              width: '500px',
-              height: '500px',
-              backgroundColor: isDark ? '#1f1f1f' : '#fff',
-              borderRadius: '8px',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '20px',
-              }}
-            >
-              <Title
-                level={4}
-                style={{ margin: 0 }}
-              >
-                Cùng xoay nào
-              </Title>
-              <Button
-                type='text'
-                onClick={() => {
-                  setShowDiceGame(false);
-                  setFinalValue(null);
-                }}
-                style={{ fontSize: '20px' }}
-              >
-                ×
-              </Button>
+          <section className="sp-panel sp-panel--grow">
+            <div className="sp-panel__head">
+              <h2 className="sp-panel__title">
+                <span aria-hidden="true">➕</span>
+                Thêm bài hát
+              </h2>
             </div>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <DiceGame finalValue={finalValue} />
+            <div className="sp-panel__body" style={{ padding: '0 20px 20px' }}>
+              <AddSongForm />
             </div>
+          </section>
+        </aside>
+
+        {/* ── Nội dung chính ──────────────────────────────────────── */}
+        <main className="sp-main">
+          <header className="sp-topbar">
+            <h1 className="sp-topbar__greeting">
+              {getGreeting()}
+              {displayName ? `, ${displayName}` : ''}
+            </h1>
+            <div className="sp-topbar__actions">
+              <WeatherHeader />
+              <Tooltip title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
+                <button
+                  type="button"
+                  className="sp-btn sp-btn--ghost sp-btn--icon"
+                  onClick={toggleTheme}
+                  aria-label="Đổi giao diện sáng/tối"
+                >
+                  {isDark ? <SunOutlined /> : <MoonOutlined />}
+                </button>
+              </Tooltip>
+              <UserMenu />
+            </div>
+          </header>
+
+          <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <TetCountdown />
+            <DailyIdiom />
+            <PlaylistView />
           </div>
-        </div>
-      )}
+        </main>
 
-      {/* NES Game Modal */}
+        {/* ── Cột phải ────────────────────────────────────────────── */}
+        <aside className="sp-rail">
+          <ChohanPanel />
+
+          <LiveActivityFeed className="sp-rail-activity" />
+
+          <section className="sp-panel sp-panel--grow sp-rail-news">
+            <div className="sp-panel__head">
+              <h2 className="sp-panel__title">
+                <span aria-hidden="true">🌍</span>
+                Thế giới có gì mới?
+              </h2>
+            </div>
+            <div
+              className="sp-panel__body sp-newsdock"
+              style={{ padding: '0 16px 12px', overflowY: 'hidden' }}
+            >
+              <Tabs
+                defaultActiveKey="1"
+                items={[
+                  { label: 'VnExpress', key: '1', children: <VnExpressNewsView /> },
+                  { label: 'Tech News', key: '2', children: <TechNewsWidget /> },
+                ]}
+              />
+            </div>
+          </section>
+        </aside>
+
+        {/* ── Thanh phát nhạc ─────────────────────────────────────── */}
+        {hasPlayer && (
+          <div className="sp-player">
+            <NowPlayingBar />
+          </div>
+        )}
+      </div>
+
       {showNesGame && currentGame.file && (
         <NesGame
           gameFile={currentGame.file}
@@ -546,7 +316,7 @@ const HomePage = () => {
           onClose={handleCloseNesGame}
         />
       )}
-    </Layout>
+    </>
   );
 };
 

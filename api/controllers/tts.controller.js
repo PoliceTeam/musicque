@@ -45,7 +45,7 @@ exports.generateForSong = async (req, res) => {
     }
 
     // Find song by ID and populate addedBy
-    const song = await Song.findById(songId).populate('addedBy', 'username')
+    const song = await Song.findById(songId).populate('addedBy', 'username displayName')
     if (!song) {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
@@ -55,7 +55,13 @@ exports.generateForSong = async (req, res) => {
       return res.status(400).json({ message: 'Bài hát không có lời nhắn để đọc' })
     }
 
-    const speechText = ttsService.buildSpeechText(song.message, song.addedBy?.username)
+    // Đọc tên hiển thị (có dấu, có khoảng trắng) chứ không phải username đăng nhập.
+    // Phải khớp đúng logic ở song.controller.addSong, nếu lệch thì cache warm
+    // sinh ra content-hash khác và bị bỏ phí.
+    const speechText = ttsService.buildSpeechText(
+      song.message,
+      song.addedBy?.displayName || song.addedBy?.username,
+    )
     if (!speechText) {
       return res.status(400).json({ message: 'Lời nhắn không có nội dung phù hợp để đọc' })
     }

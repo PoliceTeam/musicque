@@ -33,6 +33,14 @@ export const formatActivityItem = (event) => {
         tone: event.voteType === 'up' ? 'success' : 'warning',
       };
     }
+    case 'song_boosted':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        icon: '🚀',
+        text: `${event.username} đã bid ${event.amount} PC cho "${event.songTitle}" (${event.rankScore ?? 0} điểm)`,
+        tone: 'success',
+      };
     case 'now_playing':
       return {
         id: event.id,

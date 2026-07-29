@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useContext } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { message } from 'antd';
 import { LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled } from '@ant-design/icons';
 import { getDailyIdioms, voteIdiom } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './DailyIdiom.css';
 
 // Nhãn ngắn hiển thị bên trái thanh chạy chữ
@@ -14,7 +14,7 @@ const SCROLL_SPEED = 90;
 
 const DailyIdiom = () => {
   const { isDark } = useTheme();
-  const { username } = useContext(AuthContext);
+  const { isAuthenticated, requireAuth } = useAuth();
   // idiom = 1 câu (object {id,text,likes,dislikes,myVote}) chọn ngẫu nhiên trong 8 câu của ngày
   const [idiom, setIdiom] = useState(null);
   const [date, setDate] = useState('');
@@ -28,7 +28,7 @@ const DailyIdiom = () => {
   useEffect(() => {
     let cancelled = false;
 
-    getDailyIdioms(username)
+    getDailyIdioms()
       .then(({ data }) => {
         if (cancelled) return;
         const list = Array.isArray(data.idioms) ? data.idioms : [];
@@ -47,21 +47,17 @@ const DailyIdiom = () => {
     return () => {
       cancelled = true;
     };
-    // Chỉ random 1 lần mỗi lượt truy cập; không đổi câu khi user gõ tên
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Chỉ random 1 lần mỗi lượt truy cập
   }, []);
 
   const handleVote = (value) => {
     if (!idiom || voting) return;
-    if (!username) {
-      message.info('Nhập tên của bạn để đánh giá câu này');
-      return;
-    }
+    if (!requireAuth('Đăng nhập để đánh giá câu nói của ngày.')) return;
     // Bấm lại đúng nút đang chọn = bỏ vote
     const nextValue = idiom.myVote === value ? 0 : value;
 
     setVoting(true);
-    voteIdiom(idiom.id, username, nextValue)
+    voteIdiom(idiom.id, nextValue)
       .then(({ data }) => {
         setIdiom((prev) => ({
           ...prev,
@@ -151,7 +147,7 @@ const DailyIdiom = () => {
           className={`daily-idiom__vote-btn${idiom.myVote === 1 ? ' is-active' : ''}`}
           onClick={() => handleVote(1)}
           disabled={voting}
-          title={username ? 'Thích câu này' : 'Nhập tên để đánh giá'}
+          title={isAuthenticated ? 'Thích câu này' : 'Đăng nhập để đánh giá'}
           aria-label='Thích'
         >
           {idiom.myVote === 1 ? <LikeFilled /> : <LikeOutlined />}
@@ -162,7 +158,7 @@ const DailyIdiom = () => {
           className={`daily-idiom__vote-btn${idiom.myVote === -1 ? ' is-active-down' : ''}`}
           onClick={() => handleVote(-1)}
           disabled={voting}
-          title={username ? 'Không thích câu này' : 'Nhập tên để đánh giá'}
+          title={isAuthenticated ? 'Không thích câu này' : 'Đăng nhập để đánh giá'}
           aria-label='Không thích'
         >
           {idiom.myVote === -1 ? <DislikeFilled /> : <DislikeOutlined />}

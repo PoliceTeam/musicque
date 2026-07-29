@@ -1,89 +1,58 @@
-import React, { useContext } from 'react'
-import { Layout, Typography, Row, Col, Button, Space } from 'antd'
-import { LogoutOutlined, HomeOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router-dom'
+import React from 'react'
+import { Tooltip } from 'antd'
+import { MoonOutlined, SunOutlined } from '@ant-design/icons'
+import SidebarNav from '../components/Layout/SidebarNav'
 import SessionManager from '../components/Admin/SessionManager'
 import IdiomManager from '../components/Admin/IdiomManager'
 import MusicPlayer from '../components/Player/MusicPlayer'
 import PlaylistView from '../components/Playlist/PlaylistView'
-import ChatBox from '../components/Chat/ChatBox'
-import { AuthContext } from '../contexts/AuthContext'
+import LiveActivityFeed from '../components/Home/LiveActivityFeed'
+import UserMenu from '../components/Auth/UserMenu'
 import { useTheme } from '../contexts/ThemeContext'
 
-const { Header, Content, Footer } = Layout
-const { Title } = Typography
-
 const AdminPage = () => {
-  const { isDark } = useTheme()
-  const { logoutAdmin } = useContext(AuthContext)
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logoutAdmin()
-    navigate('/login')
-  }
+  const { isDark, toggleTheme } = useTheme()
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header
-        style={{
-          background: isDark ? '#141414' : '#fff',
-          padding: '0 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Title level={3} style={{ margin: '16px 0' }}>
-          Admin Dashboard
-        </Title>
-        <Space>
-          <Link to='/'>
-            <Button icon={<HomeOutlined />}>Trang chủ</Button>
-          </Link>
-          <Button icon={<LogoutOutlined />} onClick={handleLogout}>
-            Đăng xuất
-          </Button>
-        </Space>
-      </Header>
+    <div className='sp-shell sp-shell--no-player'>
+      <aside className='sp-sidebar'>
+        <SidebarNav subtitle='Bảng điều khiển' />
 
-      <Content style={{ padding: '24px' }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
-            <SessionManager />
-          </Col>
+        <SessionManager />
 
-          <Col xs={24} md={8}>
-            <MusicPlayer />
-          </Col>
+        <LiveActivityFeed />
+      </aside>
 
-          <Col xs={24} md={8}>
-            <PlaylistView />
-          </Col>
+      <main className='sp-main'>
+        <header className='sp-topbar'>
+          <h1 className='sp-topbar__greeting'>Điều khiển phiên phát nhạc</h1>
+          <div className='sp-topbar__actions'>
+            <Tooltip title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
+              <button
+                type='button'
+                className='sp-btn sp-btn--ghost sp-btn--icon'
+                onClick={toggleTheme}
+                aria-label='Đổi giao diện sáng/tối'
+              >
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </button>
+            </Tooltip>
+            <UserMenu />
+          </div>
+        </header>
 
-          <Col xs={24}>
-            <IdiomManager />
-          </Col>
-
-          {/* <Col xs={24} md={6}>
-            <ChatBox />
-          </Col> */}
-        </Row>
-      </Content>
-
-      <Footer style={{ textAlign: 'center' }}>
-        Polite Music Order ©{new Date().getFullYear()} - Iced Tea Team -{' '}
-        <span
-          style={{
-            fontSize: '12px',
-            color: isDark ? '#8c8c8c' : '#e0c9c8',
-            fontWeight: 'bold',
-          }}
+        <div
+          style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}
         >
-          100% Made with AI
-        </span>
-      </Footer>
-    </Layout>
+          <MusicPlayer />
+          <IdiomManager />
+        </div>
+      </main>
+
+      <aside className='sp-rail'>
+        <PlaylistView title='Hàng chờ' compact />
+      </aside>
+    </div>
   )
 }
 

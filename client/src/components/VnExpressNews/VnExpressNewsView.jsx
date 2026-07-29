@@ -73,7 +73,8 @@ const VnExpressNewsView = () => {
         borderColor: isDark ? '#434343' : '#f0f0f0',
       }}
     >
-      <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
+      {/* Chiều cao do khung cha quyết định (.sp-newsdock) — không tự tính theo 100vh */}
+      <div className="news-scroll">
         {loading && articles.length === 0 ? (
         <div style={{ padding: '16px' }}>
           {[1, 2, 3, 4, 5].map((i) => (

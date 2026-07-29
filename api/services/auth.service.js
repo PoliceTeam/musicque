@@ -1,0 +1,129 @@
+const jwt = require('jsonwebtoken')
+const User = require('../models/user.model')
+
+const TOKEN_TTL = process.env.JWT_EXPIRES_IN || '7d'
+
+// Lỗi nghiệp vụ có status code — controller chỉ việc map thẳng ra response
+class AuthError extends Error {
+  constructor(status, message) {
+    super(message)
+    this.name = 'AuthError'
+    this.status = status
+  }
+}
+
+const issueToken = (user) =>
+  jwt.sign({ userId: user._id.toString(), role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: TOKEN_TTL,
+  })
+
+const buildAuthPayload = (user) => ({
+  token: issueToken(user),
+  user: user.toPublicJSON(),
+})
+
+const assertCredentialShape = (username, password) => {
+  if (!username || !password) {
+    throw new AuthError(400, 'Vui lòng nhập tên đăng nhập và mật khẩu')
+  }
+
+  if (!User.isValidUsername(username)) {
+    throw new AuthError(
+      400,
+      'Tên đăng nhập phải từ 3 đến 24 ký tự, chỉ gồm chữ, số và . _ -',
+    )
+  }
+
+  if (typeof password !== 'string' || password.length < 6) {
+    throw new AuthError(400, 'Mật khẩu phải có ít nhất 6 ký tự')
+  }
+}
+
+/**
+ * Đăng ký. Nếu username đã tồn tại nhưng chưa có mật khẩu (user được tạo tự động
+ * từ thời chưa có auth) thì lần đăng ký đầu tiên sẽ "claim" chính document đó,
+ * giữ nguyên toàn bộ lịch sử bài hát và vote đã gắn với _id cũ.
+ */
+exports.register = async ({ username, password, displayName }) => {
+  assertCredentialShape(username, password)
+
+  const trimmedUsername = username.trim()
+  const existing = await User.findByUsername(trimmedUsername, { withPassword: true })
+
+  if (existing && !existing.isClaimable()) {
+    throw new AuthError(409, 'Tên đăng nhập đã tồn tại')
+  }
+
+  const user = existing || new User({ username: trimmedUsername })
+
+  user.password = password
+  user.displayName = (displayName || user.displayName || trimmedUsername).trim()
+  user.lastLoginAt = new Date()
+  await user.save()
+
+  return { ...buildAuthPayload(user), claimed: Boolean(existing) }
+}
+
+exports.login = async ({ username, password }) => {
+  if (!username || !password) {
+    throw new AuthError(400, 'Vui lòng nhập tên đăng nhập và mật khẩu')
+  }
+
+  const user = await User.findByUsername(username, { withPassword: true })
+
+  // Cùng một thông báo cho mọi trường hợp sai để không lộ tên nào đã tồn tại
+  if (!user || !(await user.comparePassword(password))) {
+    throw new AuthError(401, 'Tên đăng nhập hoặc mật khẩu không đúng')
+  }
+
+  user.lastLoginAt = new Date()
+  await user.save()
+
+  return buildAuthPayload(user)
+}
+
+/**
+ * Đồng bộ tài khoản admin từ ADMIN_USERNAME/ADMIN_PASSWORD mỗi lần khởi động.
+ * Admin giờ là một User bình thường với role='admin', không còn nhánh xác thực riêng.
+ */
+exports.syncAdminAccount = async () => {
+  const username = process.env.ADMIN_USERNAME
+  const password = process.env.ADMIN_PASSWORD
+
+  if (!username || !password) {
+    console.warn('[Auth] Thiếu ADMIN_USERNAME/ADMIN_PASSWORD — bỏ qua seed tài khoản admin')
+    return null
+  }
+
+  const admin =
+    (await User.findByUsername(username, { withPassword: true })) ||
+    new User({ username: username.trim() })
+
+  admin.role = 'admin'
+  admin.displayName = admin.displayName || username.trim()
+  // Luôn ghi đè theo env: env là nguồn sự thật cho mật khẩu admin
+  admin.password = password
+  await admin.save()
+
+  console.log(`[Auth] Tài khoản admin "${admin.username}" đã sẵn sàng`)
+  return admin
+}
+
+/**
+ * Giải mã token thành User document. Dùng cho Socket.IO — nơi không có
+ * req/res để chạy middleware Express. Trả null nếu token thiếu hoặc sai.
+ */
+exports.resolveUserFromToken = async (token) => {
+  if (!token || typeof token !== 'string') return null
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    if (!decoded?.userId) return null
+    return await User.findById(decoded.userId)
+  } catch {
+    return null
+  }
+}
+
+exports.issueToken = issueToken
+exports.AuthError = AuthError
