@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { lazy, Suspense, useState } from 'react'
 import { Tooltip } from 'antd'
-import { MoonOutlined, SunOutlined } from '@ant-design/icons'
+import { BarChartOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
 import SidebarNav from '../components/Layout/SidebarNav'
 import SessionManager from '../components/Admin/SessionManager'
 import IdiomManager from '../components/Admin/IdiomManager'
@@ -10,8 +10,11 @@ import LiveActivityFeed from '../components/Home/LiveActivityFeed'
 import UserMenu from '../components/Auth/UserMenu'
 import { useTheme } from '../contexts/ThemeContext'
 
+const CoinEconomyModal = lazy(() => import('../components/Admin/CoinEconomyModal'))
+
 const AdminPage = () => {
   const { isDark, toggleTheme } = useTheme()
+  const [showCoinEconomy, setShowCoinEconomy] = useState(false)
 
   return (
     <div className='sp-shell sp-shell--no-player'>
@@ -27,6 +30,14 @@ const AdminPage = () => {
         <header className='sp-topbar'>
           <h1 className='sp-topbar__greeting'>Điều khiển phiên phát nhạc</h1>
           <div className='sp-topbar__actions'>
+            <button
+              type='button'
+              className='sp-btn sp-btn--outline'
+              onClick={() => setShowCoinEconomy(true)}
+            >
+              <BarChartOutlined />
+              <span>Thống kê PC</span>
+            </button>
             <Tooltip title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
               <button
                 type='button'
@@ -52,6 +63,15 @@ const AdminPage = () => {
       <aside className='sp-rail'>
         <PlaylistView title='Hàng chờ' compact />
       </aside>
+
+      {showCoinEconomy && (
+        <Suspense fallback={null}>
+          <CoinEconomyModal
+            open={showCoinEconomy}
+            onClose={() => setShowCoinEconomy(false)}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

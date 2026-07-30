@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const Song = require('../models/song.model')
 const Session = require('../models/session.model')
 const ytdl = require('ytdl-core')
@@ -284,7 +285,17 @@ exports.bidSong = async (req, res) => {
     }
 
     // Trừ PC nguyên tử trước — thất bại nghĩa là không đủ số dư
-    const debited = await coinsService.debit(user._id, amount)
+    const bidOperationId = crypto.randomUUID()
+    const debited = await coinsService.debit(user._id, amount, {
+      type: 'song_bid',
+      operationKey: `song_bid:${bidOperationId}`,
+      referenceType: 'Song',
+      referenceId: song._id,
+      metadata: {
+        sessionId: activeSession._id,
+        songTitle: song.title,
+      },
+    })
     if (!debited) {
       return res.status(400).json({ message: 'Số dư Polite Coins không đủ' })
     }
@@ -296,7 +307,13 @@ exports.bidSong = async (req, res) => {
       { new: true },
     )
     if (!updatedSong) {
-      await coinsService.credit(user._id, amount)
+      await coinsService.credit(user._id, amount, {
+        type: 'song_bid_refund',
+        operationKey: `song_bid_refund:${bidOperationId}`,
+        referenceType: 'Song',
+        referenceId: song._id,
+        metadata: { reason: 'song_left_queue' },
+      })
       return res.status(409).json({ message: 'Bài hát không còn trong hàng chờ, đã hoàn PC' })
     }
 

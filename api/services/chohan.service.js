@@ -64,7 +64,13 @@ const voidPendingRounds = async (sid) => {
   for (const round of stale) {
     for (const bet of round.bets) {
       if (!bet.settled) {
-        await coinsService.credit(bet.userId, bet.amount)
+        await coinsService.credit(bet.userId, bet.amount, {
+          type: 'chohan_refund',
+          operationKey: `chohan_refund:${round._id}:${bet.userId}:resume`,
+          referenceType: 'GameRound',
+          referenceId: round._id,
+          metadata: { reason: 'resume_pending_round' },
+        })
         bet.settled = true
         bet.payout = bet.amount
       }
@@ -121,7 +127,18 @@ const settleRound = async (round) => {
     if (bet.side === round.result) {
       bet.won = true
       bet.payout = bet.amount * 2 // đã trừ stake lúc cược → net thắng = +amount
-      await coinsService.credit(bet.userId, bet.payout)
+      await coinsService.credit(bet.userId, bet.payout, {
+        type: 'chohan_payout',
+        operationKey: `chohan_payout:${round._id}:${bet.userId}`,
+        referenceType: 'GameRound',
+        referenceId: round._id,
+        metadata: {
+          stake: bet.amount,
+          profit: bet.amount,
+          side: bet.side,
+          result: round.result,
+        },
+      })
     } else {
       bet.won = false
       bet.payout = 0
@@ -174,7 +191,13 @@ const stopGame = async ({ reason = 'session_ended' } = {}) => {
     if (round && round.status !== 'revealed') {
       for (const bet of round.bets) {
         if (!bet.settled) {
-          await coinsService.credit(bet.userId, bet.amount) // hoàn cược chưa chốt
+          await coinsService.credit(bet.userId, bet.amount, {
+            type: 'chohan_refund',
+            operationKey: `chohan_refund:${round._id}:${bet.userId}:stop`,
+            referenceType: 'GameRound',
+            referenceId: round._id,
+            metadata: { reason },
+          }) // hoàn cược chưa chốt
           bet.settled = true
           bet.payout = bet.amount
         }
@@ -220,7 +243,17 @@ const placeBet = async ({ user, side, amount }) => {
   }
 
   // Trừ PC nguyên tử trước
-  const debited = await coinsService.debit(user._id, stake)
+  const debited = await coinsService.debit(user._id, stake, {
+    type: 'chohan_bet',
+    operationKey: `chohan_bet:${round._id}:${user._id}`,
+    referenceType: 'GameRound',
+    referenceId: round._id,
+    metadata: {
+      sessionId,
+      roundNumber: round.roundNumber,
+      side,
+    },
+  })
   if (!debited) throw httpError(400, 'Số dư Polite Coins không đủ')
 
   // Ghi cược nguyên tử: chỉ khi vòng còn mở và user chưa cược
@@ -230,7 +263,13 @@ const placeBet = async ({ user, side, amount }) => {
     { new: true },
   )
   if (!updated) {
-    await coinsService.credit(user._id, stake) // hoàn tiền nếu lỡ nhịp
+    await coinsService.credit(user._id, stake, {
+      type: 'chohan_refund',
+      operationKey: `chohan_refund:${round._id}:${user._id}:placement`,
+      referenceType: 'GameRound',
+      referenceId: round._id,
+      metadata: { reason: 'bet_placement_race' },
+    }) // hoàn tiền nếu lỡ nhịp
     throw httpError(409, 'Không đặt được cược (hết giờ hoặc đã cược), đã hoàn PC')
   }
 

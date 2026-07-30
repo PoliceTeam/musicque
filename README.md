@@ -29,6 +29,10 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
   `ADMIN_PASSWORD` mỗi khi API khởi động.
 - Tài khoản mới nhận mặc định 100 PC và có thể nhận 20 PC thưởng đăng nhập mỗi ngày.
 - Bảng “Ngũ đại phú” công khai 5 tài khoản sở hữu nhiều Polite Coins nhất.
+- Ledger append-only ghi lại các luồng cấp vốn, thưởng ngày, bid nhạc và Cho-Han;
+  admin có dashboard “Dòng chảy Polite Coins” theo 7 ngày, 30 ngày hoặc toàn bộ.
+  Số liệu lịch sử bắt đầu được ghi nhận từ phiên bản có ledger, không backfill
+  biến động trước đó.
 - Vốn đăng ký chỉ được cấp một lần cho mỗi hồ sơ trình duyệt. Tài khoản tiếp theo
   trên cùng trình duyệt vẫn được tạo nhưng bắt đầu với 0 PC và không nhận daily
   bonus trong ngày đăng ký.

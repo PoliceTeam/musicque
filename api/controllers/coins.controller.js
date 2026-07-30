@@ -17,6 +17,18 @@ exports.getLeaderboard = async (req, res) => {
   }
 }
 
+// GET /api/coins/admin/stats — dashboard kinh tế PC, chỉ dành cho admin
+exports.getEconomyStats = async (req, res) => {
+  try {
+    const stats = await coinsService.getEconomyStats(req.query.period)
+    res.set('Cache-Control', 'no-store')
+    res.status(200).json(stats)
+  } catch (error) {
+    console.error('[Coins] Không tải được thống kê kinh tế:', error)
+    res.status(500).json({ message: 'Không tải được thống kê Polite Coins' })
+  }
+}
+
 // POST /api/coins/daily-bonus — nhận thưởng đăng nhập ngày (1 lần/ngày)
 exports.claimDailyBonus = async (req, res) => {
   try {

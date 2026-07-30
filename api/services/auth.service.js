@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/user.model')
 const signupGrantService = require('./signupGrant.service')
+const coinsService = require('./coins.service')
 
 const TOKEN_TTL = process.env.JWT_EXPIRES_IN || '7d'
 const SIGNUP_START_BALANCE = Math.max(0, Number(process.env.SIGNUP_START_BALANCE || 100))
@@ -89,6 +90,12 @@ exports.register = async ({ username, password, displayName, deviceId }) => {
 
   try {
     await user.save()
+    if (welcomeGrant && SIGNUP_START_BALANCE > 0) {
+      await coinsService.recordTransaction(user, SIGNUP_START_BALANCE, {
+        type: 'signup_grant',
+        operationKey: `signup_grant:${user._id}`,
+      })
+    }
   } catch (error) {
     if (welcomeGrant) {
       try {
