@@ -18,12 +18,19 @@ const handleError = (res, error) => {
 exports.register = async (req, res) => {
   try {
     const { username, password, displayName } = req.body
-    const result = await authService.register({ username, password, displayName })
+    const result = await authService.register({
+      username,
+      password,
+      displayName,
+      deviceId: req.get('X-Musicque-Device'),
+    })
 
     res.status(201).json({
       message: result.claimed
         ? 'Đã kích hoạt tài khoản và giữ lại lịch sử cũ của bạn'
-        : 'Đăng ký thành công',
+        : result.welcomeGrant
+          ? 'Đăng ký thành công'
+          : 'Đăng ký thành công. Vốn khởi tạo đã được nhận trên trình duyệt này.',
       ...result,
     })
   } catch (error) {

@@ -12,6 +12,23 @@ const api = axios.create({
 
 // Một token duy nhất cho cả user thường và admin
 export const TOKEN_STORAGE_KEY = "musicque_token";
+const DEVICE_STORAGE_KEY = "musicque_device_id";
+
+const createDeviceId = () => {
+  if (crypto.randomUUID) return crypto.randomUUID();
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const getDeviceId = () => {
+  let deviceId = localStorage.getItem(DEVICE_STORAGE_KEY);
+  if (!deviceId) {
+    deviceId = createDeviceId();
+    localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+  }
+  return deviceId;
+};
 
 export const getStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
 
@@ -49,7 +66,11 @@ api.interceptors.response.use(
 
 // Auth API
 export const register = (username, password, displayName) =>
-  api.post("/api/auth/register", { username, password, displayName });
+  api.post(
+    "/api/auth/register",
+    { username, password, displayName },
+    { headers: { "X-Musicque-Device": getDeviceId() } },
+  );
 
 export const login = (username, password) =>
   api.post("/api/auth/login", { username, password });

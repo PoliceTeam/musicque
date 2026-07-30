@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/user.model')
+const signupGrantService = require('./signupGrant.service')
 
 const TOKEN_TTL = process.env.JWT_EXPIRES_IN || '7d'
+const SIGNUP_START_BALANCE = Math.max(0, Number(process.env.SIGNUP_START_BALANCE || 100))
 
 // Lỗi nghiệp vụ có status code — controller chỉ việc map thẳng ra response
 class AuthError extends Error {
@@ -52,7 +54,7 @@ const isReservedAdminUsername = (name) => {
   return name.trim().toLowerCase() === adminName.trim().toLowerCase()
 }
 
-exports.register = async ({ username, password, displayName }) => {
+exports.register = async ({ username, password, displayName, deviceId }) => {
   assertCredentialShape(username, password)
 
   // Không cho ai đăng ký/claim tên admin — tài khoản admin chỉ do env quản lý
@@ -68,13 +70,37 @@ exports.register = async ({ username, password, displayName }) => {
   }
 
   const user = existing || new User({ username: trimmedUsername })
+  let welcomeGrant = false
+
+  if (!existing) {
+    const grant = await signupGrantService.reserveWelcomeGrant({
+      deviceId,
+      userId: user._id,
+    })
+    welcomeGrant = grant.granted
+    user.polites = welcomeGrant ? SIGNUP_START_BALANCE : 0
+    // Tài khoản phụ không được nhận thêm daily bonus ngay trong ngày đăng ký.
+    user.lastDailyBonusAt = welcomeGrant ? null : new Date()
+  }
 
   user.password = password
   user.displayName = (displayName || user.displayName || trimmedUsername).trim()
   user.lastLoginAt = new Date()
-  await user.save()
 
-  return { ...buildAuthPayload(user), claimed: Boolean(existing) }
+  try {
+    await user.save()
+  } catch (error) {
+    if (welcomeGrant) {
+      try {
+        await signupGrantService.releaseWelcomeGrant(user._id)
+      } catch (cleanupError) {
+        console.error('[Auth] Không hoàn tác được lượt cấp vốn đăng ký:', cleanupError.message)
+      }
+    }
+    throw error
+  }
+
+  return { ...buildAuthPayload(user), claimed: Boolean(existing), welcomeGrant }
 }
 
 exports.login = async ({ username, password }) => {

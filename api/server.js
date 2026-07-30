@@ -6,6 +6,7 @@ const { initSocket } = require('./socket')
 const { clearAllBoards } = require('./redis')
 const { syncAdminAccount } = require('./services/auth.service')
 const { backfillBalances } = require('./services/coins.service')
+const { ensureIndexes: ensureSignupGrantIndexes } = require('./services/signupGrant.service')
 const Song = require('./models/song.model')
 const chohan = require('./services/chohan.service')
 
@@ -51,6 +52,9 @@ mongoose
   .connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB')
+
+    // Unique index phải sẵn sàng trước khi nhận đăng ký đồng thời lúc launch.
+    await ensureSignupGrantIndexes()
 
     // Đồng bộ tài khoản admin từ env — không chặn khởi động nếu lỗi
     try {
