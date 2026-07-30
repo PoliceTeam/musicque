@@ -64,6 +64,15 @@ body {
   color: var(--sp-text);
 }
 
+.sp-route-loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: var(--sp-bg);
+  color: var(--sp-text-muted);
+  font-size: 14px;
+}
+
 /* ── Khung ứng dụng ────────────────────────────────────────────────── */
 
 .sp-shell {

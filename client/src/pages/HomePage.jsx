@@ -1,10 +1,8 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useContext, useState, useEffect, useRef } from 'react';
 import { Tabs, Tooltip } from 'antd';
 import { MoonOutlined, SunOutlined } from '@ant-design/icons';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
-import VnExpressNewsView from '../components/VnExpressNews/VnExpressNewsView';
-import TechNewsWidget from '../components/TechNews/TechNewsWidget';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
@@ -13,12 +11,15 @@ import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
-import NesGame from '../components/NesGame/NesGame';
-import ChibiOverlay from '../components/Chibi/ChibiOverlay';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { warmupTTS } from '../services/api';
+
+const ChibiOverlay = lazy(() => import('../components/Chibi/ChibiOverlay'))
+const NesGame = lazy(() => import('../components/NesGame/NesGame'))
+const TechNewsWidget = lazy(() => import('../components/TechNews/TechNewsWidget'))
+const VnExpressNewsView = lazy(() => import('../components/VnExpressNews/VnExpressNewsView'))
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -35,6 +36,8 @@ const HomePage = () => {
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
   const [showSnowEffect, setShowSnowEffect] = useState(false);
+  const [showChibi, setShowChibi] = useState(false);
+  const [newsTab, setNewsTab] = useState('1');
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -47,6 +50,18 @@ const HomePage = () => {
     setShowNesGame(false);
     setCurrentGame({ file: null, name: '' });
   };
+
+  useEffect(() => {
+    const show = () => setShowChibi(true)
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(show, { timeout: 4000 })
+      return () => window.cancelIdleCallback(idleId)
+    }
+
+    const timeoutId = window.setTimeout(show, 2500)
+    return () => window.clearTimeout(timeoutId)
+  }, [])
 
   useEffect(() => {
     if (sessionStorage.getItem('vieneuTTSWarmupStarted') === 'true') {
@@ -189,7 +204,11 @@ const HomePage = () => {
         `}
       </style>
 
-      <ChibiOverlay />
+      {showChibi && (
+        <Suspense fallback={null}>
+          <ChibiOverlay />
+        </Suspense>
+      )}
 
       <div className={`sp-shell${hasPlayer ? '' : ' sp-shell--no-player'}`}>
         {/* ── Sidebar ─────────────────────────────────────────────── */}
@@ -291,10 +310,27 @@ const HomePage = () => {
               style={{ padding: '0 16px 12px', overflowY: 'hidden' }}
             >
               <Tabs
-                defaultActiveKey="1"
+                activeKey={newsTab}
+                onChange={setNewsTab}
                 items={[
-                  { label: 'VnExpress', key: '1', children: <VnExpressNewsView /> },
-                  { label: 'Tech News', key: '2', children: <TechNewsWidget /> },
+                  {
+                    label: 'VnExpress',
+                    key: '1',
+                    children: newsTab === '1' ? (
+                      <Suspense fallback={null}>
+                        <VnExpressNewsView />
+                      </Suspense>
+                    ) : null,
+                  },
+                  {
+                    label: 'Tech News',
+                    key: '2',
+                    children: newsTab === '2' ? (
+                      <Suspense fallback={null}>
+                        <TechNewsWidget />
+                      </Suspense>
+                    ) : null,
+                  },
                 ]}
               />
             </div>
@@ -310,11 +346,13 @@ const HomePage = () => {
       </div>
 
       {showNesGame && currentGame.file && (
-        <NesGame
-          gameFile={currentGame.file}
-          gameName={currentGame.name}
-          onClose={handleCloseNesGame}
-        />
+        <Suspense fallback={null}>
+          <NesGame
+            gameFile={currentGame.file}
+            gameName={currentGame.name}
+            onClose={handleCloseNesGame}
+          />
+        </Suspense>
       )}
     </>
   );

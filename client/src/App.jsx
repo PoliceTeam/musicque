@@ -1,12 +1,7 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import viVN from 'antd/lib/locale/vi_VN'
-import HomePage from './pages/HomePage'
-import AdminPage from './pages/AdminPage'
-import LoginPage from './pages/LoginPage'
-import LunchVotePage from './pages/LunchVotePage'
-import PoliBoardPage from './pages/PoliBoardPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
 import { ChohanProvider } from './contexts/ChohanContext'
@@ -14,7 +9,22 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
 import { useTheme } from './contexts/ThemeContext'
-import TornadoKissEvent from './components/TornadoKissEvent'
+
+const HomePage = lazy(() => import('./pages/HomePage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const LunchVotePage = lazy(() => import('./pages/LunchVotePage'))
+const PoliBoardPage = lazy(() => import('./pages/PoliBoardPage'))
+const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
+
+const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
+const TORNADO_EVENT_END = Date.parse('2026-06-23T23:59:59Z')
+
+const RouteFallback = () => (
+  <div className='sp-route-loading' role='status' aria-live='polite'>
+    Đang tải...
+  </div>
+)
 
 // Expose socket URL globally so micro-frontends có thể dùng chung
 if (typeof window !== 'undefined') {
@@ -30,21 +40,23 @@ function AppContent() {
         <PlaylistProvider>
           <ChohanProvider>
           <Router>
-            <Routes>
-              <Route path='/' element={<HomePage />} />
-              <Route path='/login' element={<LoginPage initialMode='login' />} />
-              <Route path='/register' element={<LoginPage initialMode='register' />} />
-              <Route path='/lunch-vote' element={<LunchVotePage />} />
-              <Route path='/poliboard' element={<PoliBoardPage />} />
-              <Route
-                path='/admin'
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path='/' element={<HomePage />} />
+                <Route path='/login' element={<LoginPage initialMode='login' />} />
+                <Route path='/register' element={<LoginPage initialMode='register' />} />
+                <Route path='/lunch-vote' element={<LunchVotePage />} />
+                <Route path='/poliboard' element={<PoliBoardPage />} />
+                <Route
+                  path='/admin'
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Suspense>
             {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
             <AuthModal />
           </Router>
@@ -56,10 +68,17 @@ function AppContent() {
 }
 
 function App() {
+  const now = Date.now()
+  const tornadoEventActive = now >= TORNADO_EVENT_START && now <= TORNADO_EVENT_END
+
   return (
     <ThemeProvider>
       <AppContent />
-      <TornadoKissEvent />
+      {tornadoEventActive && (
+        <Suspense fallback={null}>
+          <TornadoKissEvent />
+        </Suspense>
+      )}
     </ThemeProvider>
   )
 }
