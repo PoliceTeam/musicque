@@ -129,9 +129,9 @@ const WealthLeaderboardModal = ({ open, onClose }) => {
           <div>
             <span className='wealth-header__eyebrow'>
               <TrophyOutlined />
-              Polite Wealth League
+              Bảng vàng Polite
             </span>
-            <h2>Top đại phú</h2>
+            <h2>Ngũ đại phú</h2>
             <p>5 ví Polite Coins quyền lực nhất hệ thống</p>
           </div>
         </header>
