@@ -54,6 +54,31 @@ async function claimDailyBonus(userId) {
 }
 
 /**
+ * Top người dùng sở hữu nhiều PC nhất. Chỉ tính tài khoản thường đã kích hoạt,
+ * không đưa admin hoặc user legacy chưa claim vào bảng xếp hạng.
+ */
+async function getLeaderboard(limit = 5) {
+  const safeLimit = Math.min(20, Math.max(1, Number(limit) || 5))
+  const users = await User.find({
+    role: 'user',
+    password: { $exists: true, $ne: null },
+  })
+    .select('username displayName color polites')
+    .sort({ polites: -1, createdAt: 1, _id: 1 })
+    .limit(safeLimit)
+    .lean()
+
+  return users.map((user, index) => ({
+    rank: index + 1,
+    userId: user._id,
+    username: user.username,
+    displayName: user.displayName || user.username,
+    color: user.color,
+    balance: user.polites ?? 0,
+  }))
+}
+
+/**
  * Backfill 1 lần lúc boot: cấp số dư khởi điểm cho user tạo từ thời chưa có ví.
  * Idempotent — chỉ chạm doc thiếu field polites.
  */
@@ -70,5 +95,6 @@ module.exports = {
   debit,
   credit,
   claimDailyBonus,
+  getLeaderboard,
   backfillBalances,
 }

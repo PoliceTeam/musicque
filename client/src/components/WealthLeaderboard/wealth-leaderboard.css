@@ -1,0 +1,478 @@
+.wealth-trigger {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #d7a82f;
+  border-radius: 6px;
+  background: #161616;
+  color: #ffd76a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(215, 168, 47, 0.18);
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.wealth-trigger:hover {
+  border-color: #ffe29a;
+  color: #fff2c2;
+  transform: translateY(-1px);
+}
+
+.wealth-trigger:focus-visible,
+.wealth-refresh:focus-visible,
+.wealth-error button:focus-visible {
+  outline: 2px solid #35d9d0;
+  outline-offset: 2px;
+}
+
+.wealth-modal .ant-modal-content {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #53451f;
+  border-radius: 8px;
+  background: #111315;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.64), 0 0 32px rgba(255, 205, 84, 0.12);
+}
+
+.wealth-modal .ant-modal-close {
+  top: 14px;
+  right: 14px;
+  color: #c8ced3;
+  background: #25282b;
+  border: 1px solid #3d4246;
+}
+
+.wealth-modal .ant-modal-close:hover {
+  color: #ffffff;
+  background: #303438;
+}
+
+.wealth-shell {
+  min-height: 520px;
+  padding: 28px;
+  color: #f5f6f7;
+  background-color: #111315;
+  background-image:
+    linear-gradient(rgba(255, 215, 106, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(53, 217, 208, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.wealth-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 40px;
+}
+
+.wealth-header__emblem {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  place-items: center;
+  border: 1px solid #6e5927;
+  border-radius: 50%;
+  background: #1b1c1d;
+  box-shadow: inset 0 0 0 5px #121415, 0 0 24px rgba(255, 208, 91, 0.16);
+}
+
+.wealth-header__emblem img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.wealth-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #35d9d0;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wealth-header h2 {
+  margin: 2px 0 0;
+  color: #ffd76a;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.wealth-header p {
+  margin: 5px 0 0;
+  color: #9da5ab;
+  font-size: 13px;
+}
+
+.wealth-podiums {
+  display: grid;
+  min-height: 276px;
+  align-items: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.wealth-podium {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.wealth-podium--rank-1 {
+  grid-column: 2;
+}
+
+.wealth-podium--rank-2 {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.wealth-podium--rank-3 {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.wealth-podium__identity {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  padding: 8px 6px 10px;
+}
+
+.wealth-podium__crown {
+  position: absolute;
+  top: -17px;
+  color: #ffd76a;
+  font-size: 24px;
+  filter: drop-shadow(0 3px 5px rgba(255, 215, 106, 0.35));
+}
+
+.wealth-avatar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid #747b80;
+  border-radius: 50%;
+  background: var(--wealth-avatar-color);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.wealth-avatar--rank-1 {
+  width: 62px;
+  height: 62px;
+  border-color: #ffd76a;
+  font-size: 16px;
+  box-shadow: 0 0 0 4px rgba(255, 215, 106, 0.1), 0 7px 20px rgba(0, 0, 0, 0.36);
+}
+
+.wealth-avatar--rank-2 {
+  border-color: #b9c5cd;
+}
+
+.wealth-avatar--rank-3 {
+  border-color: #e68961;
+}
+
+.wealth-podium__name,
+.wealth-podium__username {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wealth-podium__name {
+  margin-top: 8px;
+  color: #f8f9fa;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.wealth-podium__username {
+  color: #7f8990;
+  font-size: 11px;
+}
+
+.wealth-podium__base {
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #4c4f51;
+  border-bottom-width: 4px;
+  border-radius: 7px 7px 3px 3px;
+  background: #202326;
+}
+
+.wealth-podium--rank-1 .wealth-podium__base {
+  min-height: 148px;
+  border-color: #806626;
+  border-bottom-color: #ffd76a;
+  background: #262316;
+}
+
+.wealth-podium--rank-2 .wealth-podium__base {
+  min-height: 124px;
+  border-bottom-color: #b9c5cd;
+}
+
+.wealth-podium--rank-3 .wealth-podium__base {
+  border-bottom-color: #e68961;
+}
+
+.wealth-podium__rank {
+  color: #777f85;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.wealth-podium--rank-1 .wealth-podium__rank {
+  color: #ffd76a;
+  font-size: 34px;
+}
+
+.wealth-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #d9dde0;
+  white-space: nowrap;
+}
+
+.wealth-balance img {
+  width: 25px;
+  height: 25px;
+}
+
+.wealth-balance strong {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.wealth-balance span {
+  color: #ffd76a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.wealth-ranking {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.wealth-row {
+  display: grid;
+  min-height: 58px;
+  align-items: center;
+  grid-template-columns: 34px 40px minmax(0, 1fr) auto auto;
+  gap: 10px;
+  padding: 7px 12px;
+  border: 1px solid #353a3d;
+  border-radius: 6px;
+  background: #1a1d1f;
+}
+
+.wealth-row.is-current-user,
+.wealth-podium.is-current-user .wealth-podium__base {
+  border-color: #35d9d0;
+}
+
+.wealth-row__rank {
+  color: #7e878d;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.wealth-row .wealth-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 11px;
+}
+
+.wealth-row__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.wealth-row__identity strong,
+.wealth-row__identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wealth-row__identity strong {
+  color: #f0f2f3;
+  font-size: 13px;
+}
+
+.wealth-row__identity small {
+  color: #778087;
+  font-size: 11px;
+}
+
+.wealth-balance--compact {
+  margin-left: auto;
+}
+
+.wealth-balance--compact img {
+  width: 22px;
+  height: 22px;
+}
+
+.wealth-balance--compact strong {
+  font-size: 14px;
+}
+
+.wealth-you-badge {
+  display: inline-flex;
+  min-height: 18px;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid #238e89;
+  border-radius: 4px;
+  background: #153b3a;
+  color: #67eee6;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wealth-loading,
+.wealth-error,
+.wealth-empty {
+  display: flex;
+  min-height: 344px;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  color: #9ca4aa;
+}
+
+.wealth-loading img {
+  width: 58px;
+  height: 58px;
+  animation: wealth-coin-pulse 1.2s ease-in-out infinite;
+}
+
+.wealth-error button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid #35d9d0;
+  border-radius: 5px;
+  background: #17312f;
+  color: #6ce9e2;
+  cursor: pointer;
+}
+
+.wealth-footer {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  border-top: 1px solid #2c3033;
+  color: #6f787e;
+  font-size: 10px;
+}
+
+.wealth-refresh {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8e979d;
+  cursor: pointer;
+}
+
+.wealth-refresh:hover:not(:disabled) {
+  background: #25292c;
+  color: #35d9d0;
+}
+
+.wealth-refresh:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@keyframes wealth-coin-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .wealth-shell {
+    padding: 22px 14px 18px;
+  }
+
+  .wealth-header__emblem {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+  }
+
+  .wealth-header__emblem img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .wealth-header h2 {
+    font-size: 23px;
+  }
+
+  .wealth-podiums {
+    gap: 5px;
+  }
+
+  .wealth-podium__base {
+    padding: 8px 2px;
+  }
+
+  .wealth-balance {
+    gap: 3px;
+  }
+
+  .wealth-balance img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .wealth-balance strong {
+    font-size: 13px;
+  }
+}

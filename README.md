@@ -28,6 +28,7 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 - Admin là user có `role=admin`, được đồng bộ từ `ADMIN_USERNAME` và
   `ADMIN_PASSWORD` mỗi khi API khởi động.
 - Tài khoản mới nhận mặc định 100 PC và có thể nhận 20 PC thưởng đăng nhập mỗi ngày.
+- Bảng “Top đại phú” công khai 5 tài khoản sở hữu nhiều Polite Coins nhất.
 - Vốn đăng ký chỉ được cấp một lần cho mỗi hồ sơ trình duyệt. Tài khoản tiếp theo
   trên cùng trình duyệt vẫn được tạo nhưng bắt đầu với 0 PC và không nhận daily
   bonus trong ngày đăng ký.

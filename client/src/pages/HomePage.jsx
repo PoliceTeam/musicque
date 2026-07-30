@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useContext, useState, useEffect, useRef } from 'react';
 import { Tabs, Tooltip } from 'antd';
-import { MoonOutlined, SunOutlined } from '@ant-design/icons';
+import { MoonOutlined, SunOutlined, TrophyOutlined } from '@ant-design/icons';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
@@ -15,11 +15,15 @@ import { PlaylistContext } from '../contexts/PlaylistContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { warmupTTS } from '../services/api';
+import '../components/WealthLeaderboard/wealth-leaderboard.css';
 
 const ChibiOverlay = lazy(() => import('../components/Chibi/ChibiOverlay'))
 const NesGame = lazy(() => import('../components/NesGame/NesGame'))
 const TechNewsWidget = lazy(() => import('../components/TechNews/TechNewsWidget'))
 const VnExpressNewsView = lazy(() => import('../components/VnExpressNews/VnExpressNewsView'))
+const WealthLeaderboardModal = lazy(
+  () => import('../components/WealthLeaderboard/WealthLeaderboardModal'),
+)
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -37,6 +41,7 @@ const HomePage = () => {
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
   const [showSnowEffect, setShowSnowEffect] = useState(false);
   const [showChibi, setShowChibi] = useState(false);
+  const [showWealthLeaderboard, setShowWealthLeaderboard] = useState(false);
   const [newsTab, setNewsTab] = useState('1');
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -271,6 +276,14 @@ const HomePage = () => {
             </h1>
             <div className="sp-topbar__actions">
               <WeatherHeader />
+              <button
+                type="button"
+                className="wealth-trigger"
+                onClick={() => setShowWealthLeaderboard(true)}
+              >
+                <TrophyOutlined />
+                <span>Top đại phú</span>
+              </button>
               <Tooltip title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
                 <button
                   type="button"
@@ -351,6 +364,15 @@ const HomePage = () => {
             gameFile={currentGame.file}
             gameName={currentGame.name}
             onClose={handleCloseNesGame}
+          />
+        </Suspense>
+      )}
+
+      {showWealthLeaderboard && (
+        <Suspense fallback={null}>
+          <WealthLeaderboardModal
+            open={showWealthLeaderboard}
+            onClose={() => setShowWealthLeaderboard(false)}
           />
         </Suspense>
       )}

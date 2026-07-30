@@ -79,6 +79,8 @@ export const fetchMe = () => api.get("/api/auth/me");
 
 // Polite Coins API
 export const getCoinBalance = () => api.get("/api/coins/me");
+export const getCoinLeaderboard = (config = {}) =>
+  api.get("/api/coins/leaderboard", config);
 export const claimDailyBonus = () => api.post("/api/coins/daily-bonus");
 
 // Cho-Han (Bakuchi) API
