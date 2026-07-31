@@ -127,7 +127,8 @@ body {
  * - Feed hoạt động: có trần, cuộn bên trong.
  * - Khung tin tức: chiếm phần chiều cao còn lại.
  */
-.sp-rail > .chohan-rail {
+.sp-rail > .chohan-rail,
+.sp-rail > .bil-rail {
   flex: 0 0 auto;
 }
 

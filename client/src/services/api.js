@@ -162,6 +162,11 @@ export const getRandomIdiom = () => api.get("/api/idioms/random");
 export const voteIdiom = (id, value) => api.post("/api/idioms/vote", { id, value });
 export const rerollIdioms = () => api.post("/api/idioms/reroll");
 
+// Bi-a 9 bóng — NPC dọn bàn (quỹ đạo do server mô phỏng sẵn)
+export const getBilliardsCurrent = () => api.get("/api/billiards/current");
+export const getBilliardsSummary = () => api.get("/api/billiards/summary");
+export const getBilliardsGame = (id) => api.get(`/api/billiards/games/${id}`);
+
 // TTS API (VieNeu-TTS)
 export const generateTTS = (songId, config = {}) =>
   api.post(`/api/tts/generate/${songId}`, {}, config);

@@ -9,6 +9,7 @@ import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
+import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
 import { PlaylistContext } from '../contexts/PlaylistContext';
@@ -308,6 +309,8 @@ const HomePage = () => {
         {/* ── Cột phải ────────────────────────────────────────────── */}
         <aside className="sp-rail">
           <ChohanPanel />
+
+          <BilliardsPanel />
 
           <LiveActivityFeed className="sp-rail-activity" />
 
