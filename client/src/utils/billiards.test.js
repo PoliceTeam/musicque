@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   SHOT_TYPE_LABEL,
   BALL_IN_HAND_REASON_LABEL,
+  DIFFICULTY_LABEL,
+  DIFFICULTY_COLOR,
   getPlaybackState,
   interpolateFrame,
   getPottedSoFar,
@@ -205,6 +207,13 @@ describe('nhãn kiểu cơ / lý do đặt lại bi cái', () => {
   it('có nhãn cho mọi lý do phải đặt lại bi cái', () => {
     ['scratch', 'snookered'].forEach((reason) => {
       expect(BALL_IN_HAND_REASON_LABEL[reason]).toBeTruthy();
+    });
+  });
+
+  it('có nhãn và màu cho mọi mức độ khó của cửa ăn', () => {
+    ['easy', 'medium', 'hard'].forEach((level) => {
+      expect(DIFFICULTY_LABEL[level]).toBeTruthy();
+      expect(DIFFICULTY_COLOR[level]).toMatch(/^#[0-9a-f]{6}$/i);
     });
   });
 });

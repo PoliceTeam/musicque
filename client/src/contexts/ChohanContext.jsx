@@ -89,6 +89,9 @@ export const ChohanProvider = ({ children }) => {
       const mine = myBetRef.current
       if (mine && mine.roundId === r._id) {
         if (mine.side === r.result) {
+          // Stake đã bị trừ khi đặt cược; thắng được server trả 2× stake.
+          // Cập nhật ngay toàn bộ UI, rồi gọi API bên dưới để đối soát.
+          setBalance((current) => current + mine.amount * 2)
           message.success(`🎉 Thắng! +${mine.amount} PC (cửa ${SIDE_LABEL[mine.side]})`)
         } else {
           message.error(`😢 Thua ${mine.amount} PC (ra ${SIDE_LABEL[r.result]})`)
@@ -98,10 +101,20 @@ export const ChohanProvider = ({ children }) => {
       refreshBalance()
     }
 
-    const onStopped = () => {
+    const onStopped = (payload) => {
+      const mine = myBetRef.current
+      if (
+        payload?.round?.status === 'voided'
+        && mine
+        && payload.round._id === mine.roundId
+      ) {
+        setBalance((current) => current + mine.amount)
+      }
       setActive(false)
       setRound(null)
       setMyBet(null)
+      // Session có thể kết thúc giữa vòng và server vừa hoàn stake.
+      refreshBalance()
     }
 
     socket.on('chohan_round', onRound)
@@ -113,7 +126,7 @@ export const ChohanProvider = ({ children }) => {
       socket.off('chohan_result', onResult)
       socket.off('chohan_stopped', onStopped)
     }
-  }, [socket, refreshBalance])
+  }, [socket, refreshBalance, setBalance])
 
   const placeBet = useCallback(
     async (side, amount) => {

@@ -31,6 +31,11 @@ export const BALL_IN_HAND_REASON_LABEL = {
   snookered: 'bị che hết đường',
 }
 
+// Mỗi cơ có thể có nhiều cửa ăn với độ khó khác nhau — nền cho việc cược
+// "bi số N vào lỗ nào". Màu dùng cho cả chip ở panel lẫn đường vẽ trên bàn.
+export const DIFFICULTY_LABEL = { easy: 'Dễ', medium: 'Vừa', hard: 'Khó' }
+export const DIFFICULTY_COLOR = { easy: '#1db954', medium: '#e8a317', hard: '#e2513d' }
+
 const toMs = (value) => (value instanceof Date ? value.getTime() : new Date(value).getTime())
 
 /**

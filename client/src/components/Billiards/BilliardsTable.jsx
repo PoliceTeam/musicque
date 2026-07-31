@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import {
   BALL_STYLES,
+  DIFFICULTY_COLOR,
   getPlaybackState,
   interpolateFrame,
   getCueOffset,
@@ -234,6 +235,22 @@ const drawCue = (ctx, cueBall, angle, offset, ballRadius) => {
   ctx.restore()
 }
 
+// Đường bi mục tiêu → lỗ, tô theo độ khó. Chỉ hiện trong pha chờ, để người
+// xem thấy NPC đang có mấy lựa chọn trước khi nó vào cơ.
+const drawOptionLine = (ctx, target, pocket, difficulty) => {
+  if (!pocket) return
+  ctx.save()
+  ctx.globalAlpha = difficulty === 'easy' ? 0.85 : difficulty === 'medium' ? 0.65 : 0.5
+  ctx.strokeStyle = DIFFICULTY_COLOR[difficulty] || DIFFICULTY_COLOR.medium
+  ctx.lineWidth = difficulty === 'easy' ? 0.9 : 0.6
+  ctx.setLineDash(difficulty === 'hard' ? [1.6, 2.6] : [3.4, 2.4])
+  ctx.beginPath()
+  ctx.moveTo(target.x, target.y)
+  ctx.lineTo(pocket.x, pocket.y)
+  ctx.stroke()
+  ctx.restore()
+}
+
 // Vòng tròn nét đứt co lại — dấu hiệu NPC đang đặt bi cái xuống chỗ mới
 const drawPlacementRing = (ctx, cueBall, ballRadius, appear) => {
   ctx.save()
@@ -328,7 +345,15 @@ const BilliardsTable = ({ game }) => {
       const balls = interpolateFrame(shot, playback.frame)
 
       if (playback.subPhase === 'wait') {
-        // Bàn đứng yên chờ tới lượt — chưa dựng cây cơ
+        // Bàn đứng yên chờ tới lượt — chưa dựng cây cơ. Vẽ sẵn các cửa ăn
+        // được của bi mục tiêu để người xem cân nhắc (sau này là để cược).
+        const target = balls.find((b) => b.id === shot.targetBall)
+        const options = shot.options || []
+        if (target) {
+          options.forEach((option) => {
+            drawOptionLine(ctx, target, table.pockets[option.pocket], option.difficulty)
+          })
+        }
         balls.forEach((ball) => drawBall(ctx, ball, radius, scale))
       } else if (playback.subPhase === 'aim') {
         const offset = getCueOffset(playback.aimProgress, shot.cue.power)

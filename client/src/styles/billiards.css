@@ -358,3 +358,74 @@
     max-height: 240px;
   }
 }
+
+/* ── Các cửa ăn được của cơ hiện tại (nền cho tính năng cược) ──────── */
+.bil-odds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bil-odds__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--sp-text);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--bil-odds-color);
+  background: color-mix(in srgb, var(--bil-odds-color) 10%, transparent);
+}
+
+.bil-odds__row--easy {
+  --bil-odds-color: #1db954;
+}
+
+.bil-odds__row--medium {
+  --bil-odds-color: #e8a317;
+}
+
+.bil-odds__row--hard {
+  --bil-odds-color: #e2513d;
+}
+
+.bil-odds__pocket {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Người cược nhìn con số nhân, không nhìn chữ "Dễ/Khó" — nhãn chữ có thể
+   trùng nhau giữa hai cửa trả giá khác hẳn, con số thì không bao giờ. */
+.bil-odds__chance {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sp-text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bil-odds__mult {
+  min-width: 46px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--bil-odds-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bil-block__note {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sp-text-faint);
+  text-transform: none;
+}

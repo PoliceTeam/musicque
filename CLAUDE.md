@@ -177,11 +177,31 @@ dumb replay player. Two pure modules under `api/services/billiards/`:
   exceed its pre-impact speed. Seeded RNG (`createRng`) makes any game reproducible.
 - **`planner.js`** — the NPC. For the target ball it builds ghost-ball lines to all 6
   pockets, filters by cut angle and path clearance, then **actually simulates**
-  candidates (pocket × spin × power × aim jitter) and scores each by `0.35 × shot
-  quality + 0.65 × position for the *next* ball`, stopping early at `GOOD_ENOUGH`.
+  candidates (pocket × spin × power × aim jitter).
+
+  **It does not just take the best shot.** `planShotOptions` scans up to
+  `MAX_OPTION_POCKETS` pockets and keeps one viable candidate for *each*, so a shot
+  carries an `options[]` list (pocket + `difficulty` easy/medium/hard) and NPC then
+  picks one with `pickOption`, weighted by ease so the favourite usually wins but
+  not always. That list is the betting market: users will bet "ball N into pocket X",
+  and `chosenPocket` settles it. Every option must clear `OPTION_MIN_POSITION`, so a
+  random pick can never strand the run-out.
+
+  Two things drive how many options exist, and both were tuned against measurement:
+  `positionScore` scores the leave as `0.4 × next-ball quality + 0.6 × how many
+  pockets that ball can reach` — without that openness term the NPC parks itself
+  where only one pocket works. And `buildCandidatesForLine` must stay rich (spin ×
+  power variants): cutting it down starves cue-ball control and options collapse.
+  Measured: **1.7 options/shot, 55% of shots offer ≥2.** A grid scan of cue
+  positions says the geometric ceiling is 3–4, and a *random* cue position averages
+  1.1 — so this is real positional play, not luck.
+
   `planGame(seed)` is **async and yields to the event loop** every `YIELD_EVERY`
-  simulations — a game costs a few hundred ms of CPU and must not block the shared
-  socket bus (measured p99 event-loop delay ~19ms).
+  simulations. Cost is ~1.3s of CPU and ~780 simulations per game, i.e. ~1.7ms per
+  simulation and ~3.4ms per chunk between yields. Measure with `process.cpuUsage()`
+  or a step counter, **not** wall-clock or `monitorEventLoopDelay` on a busy laptop —
+  contention from other processes produces phantom 1–2s "stalls" that do not exist
+  (per-simulation work only varies 2.4× between median and worst case).
 
   **Picking up the cue ball looks like teleporting, so the ladder is built to avoid it**
   (in order, each step only runs if the one above found nothing):
@@ -227,8 +247,42 @@ lerps between frames) and is the tested part. `BilliardsTable.jsx` is a canvas r
 on its own `requestAnimationFrame` loop reading a ref, so React never re-renders at
 60fps — the overlay ticks at 200ms for text only. Because playback derives from server
 timestamps, opening the overlay mid-game jumps straight to the right moment.
-`potOrder` on every game already records ball → pocket → shot, which is exactly what
-Phase 2 betting will settle against.
+### Billiards betting market (data is ready, user-facing betting is not built)
+Every pot shot already carries the full market: `options[]` (each with `pocket`,
+`probability`, `odds`, `difficulty`), `chosenPocket`, and a `bettable` flag.
+
+- **Odds = `1 / probability`, and probability comes straight from `optionWeight`** —
+  the same weights `pickOption` draws with. So the published price always matches the
+  NPC's real behaviour, and it self-corrects if the weighting is ever retuned. Do not
+  hardcode an odds table.
+- **The house takes nothing.** Polite Coins have no real value, so RTP is 100% on every
+  option, matching Cho-Han (2× on a 50/50). Players pick a pocket by risk appetite, not
+  because one is mispriced. To give the house a margin later, multiply `odds` by a
+  factor < 1 — nothing else needs to change.
+- **`bettable` is false when a shot has only one option** (~45% of pot shots). Those are
+  a guaranteed 100% win and must never open a market.
+- `difficulty` is derived from `odds`, not from an absolute `quality` threshold. The old
+  absolute version labelled 28% of multi-option shots with duplicates ("Dễ / Dễ / Khó")
+  while the three paid very different multipliers. The UI shows the multiplier; the
+  label is only a colour hint.
+
+**Two settlement bugs a betting simulation caught that watching the game never would.**
+Both are guarded now — do not undo either:
+1. `isSuccessful` used to accept the target ball dropping into *any* pocket. A shot
+   aimed at pocket A that rattled off a cushion into B still counted, and kept A's
+   label — so `chosenPocket` disagreed with reality on ~4% of shots. It now requires
+   the intended `expectedPocket`.
+2. Backtracking re-played the previous shot but reused `prev.meta`, so a retry that
+   potted into a different pocket kept the old `chosenPocket`. Backtracking is now
+   constrained to the **same pocket**, changing only power and spin — which also keeps
+   the realised frequencies matching the declared probabilities.
+
+Measured after both fixes: `chosenPocket` matches the real pocket on **100%** of shots,
+1.56 options/shot, 48% of pot shots bettable (~4 bets per game).
+
+**Still open before real coins:** `/api/billiards/current` ships `chosenPocket` and the
+full trajectory during the wait phase, so the outcome is readable in DevTools. Withhold
+un-played shots via `serializeGame(game, { includeShots })` first.
 
 The overlay's height is driven by the **table**, not the side column: `.bil-side__inner`
 is absolutely positioned so a growing pot log scrolls inside its box instead of

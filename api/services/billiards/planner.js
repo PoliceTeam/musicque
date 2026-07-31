@@ -27,8 +27,12 @@ const MIN_SPEED = 95
 const MAX_SPEED = 640
 const BREAK_SPEED_MIN = 600
 const MAX_SHOTS = 26
-const SIM_BUDGET = 1600 // trần số lần mô phỏng cho cả ván, chặn CPU
-const GOOD_ENOUGH = 0.72 // điểm đủ tốt thì dừng tìm sớm
+const SIM_BUDGET = 3200 // trần số lần mô phỏng cho cả ván, chặn CPU
+const GOOD_ENOUGH = 0.8 // điểm đủ tốt thì dừng tìm sớm
+
+// Mỗi cơ gom phương án ăn bi ở nhiều lỗ khác nhau để về sau có cái mà cược.
+const MAX_OPTION_POCKETS = 3 // đo được: 4 lỗ cùng khả thi chỉ ~0.3% vị trí, quét thừa
+const OPTION_MIN_POSITION = 0.2 // phương án nào cũng phải giữ được thế cho bi kế tiếp
 
 // Quay lui: khi bí đường ăn, ưu tiên đánh lại CƠ TRƯỚC để bi cái tự lăn tới
 // chỗ còn đánh được, thay vì nhấc bi cái đặt lại (nhìn như dịch chuyển).
@@ -75,7 +79,7 @@ const potLines = (cueX, cueY, target, balls) => {
     const ax = (gx - cueX) / dCue
     const ay = (gy - cueY) / dCue
     const cut = ax * ux + ay * uy // cos góc cắt
-    if (cut < 0.3) continue // cắt quá mỏng, NPC không nhận
+    if (cut < 0.2) continue // mỏng hơn ~78° thì NPC không nhận
 
     if (!isPathClear(cueX, cueY, gx, gy, balls, [0, target.id])) continue
     if (!isPathClear(target.x, target.y, pocket.x, pocket.y, balls, [0, target.id], R2 * 0.96)) {
@@ -102,7 +106,7 @@ const potLines = (cueX, cueY, target, balls) => {
 // Lực cần thiết: bi mục tiêu phải đủ đà đi hết dTarget, bi cái phải đủ đà tới điểm chạm
 const requiredSpeed = (line) => {
   const targetSpeed = Math.sqrt(2 * DECEL * line.dTarget * 1.3)
-  const impactSpeed = targetSpeed / Math.max(line.cut, 0.32)
+  const impactSpeed = targetSpeed / Math.max(line.cut, 0.22)
   return clamp(Math.sqrt(impactSpeed * impactSpeed + 2 * DECEL * line.dCue), MIN_SPEED, MAX_SPEED)
 }
 
@@ -120,22 +124,40 @@ const positionScore = (balls, nextTargetId) => {
   // Cự ly đẹp nhất khoảng 30–110cm: gần quá thì bí góc, xa quá thì khó chuẩn
   const d = best.dCue
   const distanceScore = d < 25 ? 0.45 + d / 55 : d > 130 ? Math.max(0.25, 1 - (d - 130) / 190) : 1
-  return clamp(best.quality * 1.5 * distanceScore, 0, 1)
+  const base = best.quality * 1.5 * distanceScore
+
+  // Thưởng thế mở: bi kế tiếp nhìn thấy càng nhiều lỗ thì cơ sau càng có nhiều
+  // cửa để cược. Không có khoản này thì NPC toàn để lại thế chỉ ăn được 1 lỗ.
+  const pocketCount = new Set(lines.map((l) => l.pocket)).size
+  const openScore = Math.min(1, (pocketCount - 1) / 2)
+
+  return clamp(base * 0.4 + openScore * 0.6, 0, 1)
 }
 
-// Cú đánh hợp lệ cho màn trình diễn: chạm bi mục tiêu trước, ăn nó,
-// không thụt bi cái, và không lỡ tay ăn bi 9 sớm.
-const isSuccessful = (res, targetId) => {
+/**
+ * Cú đánh hợp lệ cho màn trình diễn: chạm bi mục tiêu trước, ăn nó, không thụt
+ * bi cái, không lỡ tay ăn bi 9 sớm.
+ *
+ * `expectedPocket` là ràng buộc SỐNG CÒN cho tính năng cược: bi phải rơi đúng
+ * lỗ đã nhắm. Không có nó thì một cú đánh trượt lỗ A, chạm băng rồi lọt lỗ B
+ * vẫn bị tính là "thành công" và được gắn nhãn lỗ A — tức `chosenPocket` công
+ * bố cho người cược khác lỗ bi thật sự rơi vào.
+ */
+const isSuccessful = (res, targetId, expectedPocket = null) => {
   if (res.firstContact !== targetId) return false
   if (res.pots.some((p) => p.ball === 0)) return false
   if (targetId !== 9 && res.pots.some((p) => p.ball === 9)) return false
-  return res.pots.some((p) => p.ball === targetId)
+
+  const pot = res.pots.find((p) => p.ball === targetId)
+  if (!pot) return false
+  if (expectedPocket !== null && pot.pocket !== expectedPocket) return false
+  return true
 }
 
 // Dựng một ván tốn vài trăm ms CPU. Nhả event loop đều đặn để socket/HTTP
 // không bị nghẽn trong lúc mô phỏng.
 const yieldToLoop = () => new Promise((resolve) => setImmediate(resolve))
-const YIELD_EVERY = 5 // số lần mô phỏng giữa hai lần nhả event loop
+const YIELD_EVERY = 2 // số lần mô phỏng giữa hai lần nhả event loop
 
 // Lực + xoáy là hai cần điều bi của NPC. Thứ tự duyệt đi từ cú "tự nhiên"
 // nhất ra ngoài, để tìm sớm là dừng sớm.
@@ -160,8 +182,40 @@ const buildCandidates = (lines) => {
   return out
 }
 
+// Biến thể cho MỘT lỗ cụ thể. Ít hơn buildCandidates vì phải quét cả nhiều lỗ
+// để gom đủ tình huống, không phải tìm được một cái là thôi.
+const buildCandidatesForLine = (line) => {
+  const base = requiredSpeed(line)
+  const out = []
+  for (const spin of [0, 0.45, -0.45, 0.75, -0.7]) {
+    for (const powerMul of [1, 1.28, 0.85, 1.6]) {
+      for (const jitter of [0, 0.008]) {
+        out.push({
+          angle: line.angle + jitter,
+          speed: clamp(base * powerMul, MIN_SPEED, MAX_SPEED),
+          spin,
+          pocket: line.pocket,
+          quality: line.quality,
+        })
+      }
+    }
+  }
+  return out
+}
+
 // Khoá định danh một phương án, dùng để loại các phương án đã thử khi quay lui
 const candidateKey = (c) => `${c.angle.toFixed(5)}|${c.speed.toFixed(2)}|${c.spin || 0}`
+
+/**
+ * Nhãn khó/dễ suy từ TỶ LỆ TRẢ, không phải từ chất lượng tuyệt đối.
+ *
+ * Trước đây dùng ngưỡng tuyệt đối trên `quality`, kết quả là 28% số cơ hiện
+ * nhãn trùng nhau ("Dễ / Dễ / Khó") trong khi ba cửa trả tỷ lệ khác hẳn — người
+ * cược không hiểu vì sao hai cửa cùng "Dễ" lại khác giá. Gắn nhãn theo odds thì
+ * nhãn luôn cùng thứ tự với tiền, và cửa dễ nhất của một cơ toàn cửa khó vẫn
+ * được gọi là dễ nhất.
+ */
+const difficultyFromOdds = (odds) => (odds < 1.8 ? 'easy' : odds < 3.5 ? 'medium' : 'hard')
 
 /**
  * Thử lần lượt các phương án, trả phương án điểm cao nhất tìm được.
@@ -189,7 +243,8 @@ const searchCandidates = async (
     }
 
     const res = shoot(balls, candidate.angle, candidate.speed, { spin: candidate.spin || 0 })
-    if (!isSuccessful(res, targetId)) continue
+    // Bắt buộc vào ĐÚNG lỗ đã nhắm — kèo cược chốt theo con số này
+    if (!isSuccessful(res, targetId, candidate.pocket ?? null)) continue
 
     const position = positionScore(res.balls, nextTargetId)
     if (position < minPosition) continue
@@ -201,15 +256,94 @@ const searchCandidates = async (
   return best
 }
 
-// Cơ bình thường: bi cái đang ở đâu thì đánh từ đó
-const planShot = async (balls, targetId, nextTargetId, budget) => {
+/**
+ * Gom TẤT CẢ phương án ăn bi mục tiêu — mỗi lỗ khả thi một phương án, kèm độ
+ * khó. Không dừng ở cái tốt nhất, vì mục đích là tạo nhiều tình huống để người
+ * xem cược "bi số N vào lỗ nào".
+ *
+ * Mọi phương án đều phải qua `OPTION_MIN_POSITION`: dù NPC bốc trúng cửa khó
+ * thì bi cái vẫn phải dừng ở chỗ còn đánh tiếp được, không thì bốc random xong
+ * là gãy mạch dọn bàn.
+ */
+const planShotOptions = async (balls, targetId, nextTargetId, budget) => {
   const cue = balls.find((b) => b.id === 0)
   const target = balls.find((b) => b.id === targetId)
-  if (!cue || cue.potted || !target) return null
+  if (!cue || cue.potted || !target) return []
 
   const lines = potLines(cue.x, cue.y, target, balls)
-  if (!lines.length) return null
-  return searchCandidates(balls, buildCandidates(lines), targetId, nextTargetId, budget)
+  if (!lines.length) return []
+
+  // potLines đã sắp theo chất lượng giảm dần; mỗi lỗ chỉ giữ đường tốt nhất
+  const perPocket = []
+  const seen = new Set()
+  for (const line of lines) {
+    if (seen.has(line.pocket)) continue
+    seen.add(line.pocket)
+    perPocket.push(line)
+    if (perPocket.length >= MAX_OPTION_POCKETS) break
+  }
+
+  const options = []
+  for (const line of perPocket) {
+    if (budget.used >= budget.max) break
+    const found = await searchCandidates(
+      balls,
+      buildCandidatesForLine(line),
+      targetId,
+      nextTargetId,
+      budget,
+      { minPosition: OPTION_MIN_POSITION },
+    )
+    if (found) {
+      options.push({
+        ...found,
+        pocket: line.pocket,
+        lineQuality: line.quality,
+      })
+    }
+  }
+
+  return options
+}
+
+// Trọng số bốc cửa: cửa dễ hay ra hơn — vừa giống người chơi thật (thường
+// chọn đường dễ, thỉnh thoảng mới làm màu), vừa khiến kèo cược có ý nghĩa
+// thay vì mọi cửa đều như nhau.
+const optionWeight = (option) => Math.pow(Math.max(option.lineQuality, 0.01), 1.4) + 0.06
+
+/**
+ * Gắn xác suất + tỷ lệ trả cho từng cửa.
+ *
+ * Xác suất suy THẲNG từ trọng số của pickOption, nên tỷ lệ luôn khớp đúng
+ * hành vi thật của NPC — không phải con số ước lượng từ thống kê, và tự đúng
+ * lại nếu sau này chỉnh optionWeight.
+ *
+ * Polite Coins là tiền chơi không có giá trị thật nên NHÀ CÁI KHÔNG ĂN ĐỒNG
+ * NÀO: tỷ lệ = 1/xác suất, RTP 100% ở mọi cửa, giống Cho-Han (2x cho cửa
+ * 50/50). Người chơi chọn cửa theo khẩu vị mạo hiểm chứ không phải vì có cửa
+ * bị định giá sai. Muốn nhà cái có biên thì nhân thêm hệ số < 1 vào `odds`.
+ */
+const withOdds = (options) => {
+  const weights = options.map(optionWeight)
+  const total = weights.reduce((a, b) => a + b, 0)
+  if (!total) return options
+
+  return options.map((option, i) => {
+    const probability = weights[i] / total
+    const odds = Math.round((1 / probability) * 100) / 100
+    return { ...option, probability, odds, difficulty: difficultyFromOdds(odds) }
+  })
+}
+
+// Bốc một cửa theo đúng xác suất đã gắn ở withOdds
+const pickOption = (options, rng) => {
+  if (options.length <= 1) return options[0] || null
+  let r = rng()
+  for (let i = 0; i < options.length; i += 1) {
+    r -= options[i].probability
+    if (r <= 0) return options[i]
+  }
+  return options[options.length - 1]
 }
 
 // Được cầm bi cái đặt tuỳ ý (sau lỗi, hoặc khi bí hoàn toàn):
@@ -375,6 +509,9 @@ const recordShot = (balls, angle, speed, meta, spin = 0) => {
       targetBall: meta.targetBall ?? null,
       ballInHand: Boolean(meta.ballInHand),
       ballInHandReason: meta.ballInHandReason || null,
+      options: meta.options || [],
+      chosenPocket: meta.chosenPocket ?? null,
+      bettable: Boolean(meta.bettable),
       cue: {
         x: Math.round(cue.x * 10) / 10,
         y: Math.round(cue.y * 10) / 10,
@@ -455,10 +592,12 @@ const planGame = async (seed) => {
     let plan = null
     let ballInHand = false
     let ballInHandReason = null
+    let options = []
 
-    // Bi cái còn trên bàn và chưa bí thì thử đánh tại chỗ trước
+    // Bi cái còn trên bàn và chưa bí thì gom mọi cửa ăn được rồi bốc một cửa
     if (!cue.potted && misses < 2) {
-      plan = await planShot(state, targetId, nextTargetId, budget)
+      options = withOdds(await planShotOptions(state, targetId, nextTargetId, budget))
+      plan = pickOption(options, rng)
     }
 
     // Bí đường ăn → QUAY LUI: đánh lại cơ trước bằng lực/xoáy khác, bắt buộc
@@ -474,14 +613,22 @@ const planGame = async (seed) => {
     ) {
       const prevCue = prev.stateBefore.find((b) => b.id === 0)
       const prevTarget = prev.stateBefore.find((b) => b.id === prev.targetId)
-      const retry = await searchCandidates(
-        prev.stateBefore,
-        buildCandidates(potLines(prevCue.x, prevCue.y, prevTarget, prev.stateBefore)),
-        prev.targetId,
-        prev.nextTargetId,
-        budget,
-        { minPosition: BACKTRACK_MIN_POSITION, exclude: prev.tried },
-      )
+      const prevLines = potLines(prevCue.x, prevCue.y, prevTarget, prev.stateBefore)
+
+      // GIỮ NGUYÊN lỗ đã bốc, chỉ đổi lực/xoáy. Nếu để quay lui đổi luôn lỗ thì
+      // `chosenPocket` công bố cho người cược sẽ khác lỗ bi thật sự rơi vào, và
+      // tần suất thật lệch khỏi xác suất đã khai báo.
+      const sameLine = prevLines.find((l) => l.pocket === prev.meta.chosenPocket)
+      const retry = sameLine
+        ? await searchCandidates(
+            prev.stateBefore,
+            buildCandidatesForLine(sameLine),
+            prev.targetId,
+            prev.nextTargetId,
+            budget,
+            { minPosition: BACKTRACK_MIN_POSITION, exclude: prev.tried },
+          )
+        : null
 
       if (retry) {
         backtracks += 1
@@ -513,6 +660,7 @@ const planGame = async (seed) => {
       if (withBallInHand) {
         plan = withBallInHand
         ballInHand = true
+        options = withOdds([{ ...withBallInHand, lineQuality: withBallInHand.quality }])
       }
     }
 
@@ -532,10 +680,12 @@ const planGame = async (seed) => {
     if (!plan && reposition) {
       plan = reposition
       type = 'reposition'
+      options = [] // không nhắm ăn bi nên không có cửa nào để cược
       misses = 0
     } else if (!plan) {
       plan = await planSafety(state, targetId, rng, budget)
       type = 'safety'
+      options = []
       misses += 1
     } else {
       misses = 0
@@ -547,6 +697,18 @@ const planGame = async (seed) => {
       targetBall: targetId,
       ballInHand,
       ballInHandReason,
+      // Mọi cửa ăn được ở cơ này + cửa NPC đã bốc. Nền cho việc cược
+      // "bi số N vào lỗ nào" — cược trúng lỗ đã chọn thì ăn.
+      options: options.map((o) => ({
+        pocket: o.pocket,
+        difficulty: o.difficulty,
+        quality: Math.round(o.lineQuality * 1000) / 1000,
+        probability: Math.round(o.probability * 1000) / 1000,
+        odds: o.odds,
+      })),
+      chosenPocket: plan && plan.pocket !== undefined ? plan.pocket : null,
+      // Chỉ mở kèo khi có từ 2 cửa trở lên — cơ độc cửa là thắng chắc 100%
+      bettable: options.length >= 2,
     }
     // Chụp lại trạng thái ngay trước khi đánh (đã gồm việc đặt bi cái nếu có)
     prev = {
@@ -599,7 +761,9 @@ const planGame = async (seed) => {
 
 module.exports = {
   planGame,
-  planShot,
+  planShotOptions,
+  pickOption,
+  withOdds,
   planBallInHand,
   potLines,
   positionScore,

@@ -142,6 +142,29 @@ const BilliardsOverlay = ({ open, onClose }) => {
                 </div>
               </div>
 
+              {shot?.options?.length > 0 && (
+                <div className="bil-block">
+                  <div className="bil-block__title">
+                    Cửa ăn được của bi {shot.targetBall}
+                    {!shot.bettable && <em className="bil-block__note">độc cửa</em>}
+                  </div>
+                  <ul className="bil-odds">
+                    {shot.options.map((option) => (
+                      <li
+                        key={option.pocket}
+                        className={`bil-odds__row bil-odds__row--${option.difficulty}`}
+                      >
+                        <span className="bil-odds__pocket">{pocketName(option.pocket)}</span>
+                        <span className="bil-odds__chance">
+                          {Math.round(option.probability * 100)}%
+                        </span>
+                        <span className="bil-odds__mult">×{option.odds.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="bil-block">
                 <div className="bil-block__title">Tiến độ 1 → 9</div>
                 <div className="bil-progress">

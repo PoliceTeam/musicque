@@ -18,6 +18,24 @@ const billiardsShotSchema = new mongoose.Schema(
       angle: Number,
       power: Number,
     },
+    // Mọi cửa ăn được của bi mục tiêu ở cơ này. NPC bốc ngẫu nhiên (ưu tiên
+    // cửa dễ) ra `chosenPocket` — nền cho việc cược "bi số N vào lỗ nào".
+    options: [
+      {
+        _id: false,
+        pocket: Number,
+        difficulty: { type: String, enum: ['easy', 'medium', 'hard'] },
+        quality: Number,
+        // Xác suất NPC bốc trúng cửa này, suy thẳng từ trọng số của pickOption
+        probability: Number,
+        // Tỷ lệ trả = 1/probability. Polite Coins không có giá trị thật nên
+        // NHÀ CÁI KHÔNG ĂN: RTP 100% ở mọi cửa, giống Cho-Han.
+        odds: Number,
+      },
+    ],
+    chosenPocket: { type: Number, default: null },
+    // Cơ độc cửa là thắng chắc 100% → không được mở kèo
+    bettable: { type: Boolean, default: false },
     ids: [Number], // các bi còn trên bàn lúc bắt đầu cú đánh
     frames: { type: [[Number]], default: [] }, // 25fps
     pots: [

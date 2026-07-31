@@ -155,7 +155,10 @@ export const AuthProvider = ({ children }) => {
 
   // Cập nhật số dư tại chỗ (sau khi cược/bid trả về balance mới)
   const setBalance = useCallback((next) => {
-    if (typeof next === 'number' && Number.isFinite(next)) setBalanceState(next)
+    setBalanceState((current) => {
+      const resolved = typeof next === 'function' ? next(current) : next
+      return typeof resolved === 'number' && Number.isFinite(resolved) ? resolved : current
+    })
   }, [])
 
   // Lấy lại số dư từ server (sau khi vòng Cho-Han chốt xong)
