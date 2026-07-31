@@ -44,18 +44,6 @@ const SidebarNav = ({ subtitle = 'Iced Tea Team', children }) => {
           </button>
         )}
 
-        {/* Tạm tắt lối vào Lunch Vote và PoliBoard — route /lunch-vote và
-            /poliboard vẫn còn, mở lại bằng cách bỏ comment khối này. */}
-        {/*
-        <button type='button' className={itemClass('/lunch-vote')} onClick={() => navigate('/lunch-vote')}>
-          <CoffeeOutlined className='sp-nav__icon' />
-          Lunch Vote
-        </button>
-        <button type='button' className={itemClass('/poliboard')} onClick={() => navigate('/poliboard')}>
-          <HighlightOutlined className='sp-nav__icon' />
-          PoliBoard
-        </button>
-        */}
       </div>
 
       {children}

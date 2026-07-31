@@ -84,20 +84,6 @@ services:
       retries: 3
       start_period: 120s
 
-  lunch-vote-mf:
-    build:
-      context: ./lunch-vote-mf
-      dockerfile: Dockerfile
-    ports:
-      - '5806:80'
-
-  poliboard:
-    build:
-      context: ./poliboard
-      dockerfile: Dockerfile
-    ports:
-      - '5807:80'
-
   client:
     build:
       context: ./client
@@ -105,8 +91,6 @@ services:
       args:
         - VITE_API_URL=your_api_url
         - VITE_SOCKET_URL=your_socket_url
-        - VITE_LUNCH_VOTE_REMOTE_URL=your_lunch_vote_remote_url
-        - VITE_POLIBOARD_REMOTE_URL=your_poliboard_remote_url
     ports:
       - '3800:80'
 

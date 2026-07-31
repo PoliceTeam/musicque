@@ -16,8 +16,6 @@ Each service installs and runs independently.
 |---|---|---|---|
 | `api/` | Node + Express + Mongoose + Socket.IO (CommonJS) | 5000 | 5001 |
 | `client/` | Vite + React 18 + antd (host app) | 8080 | 8080 |
-| `lunch-vote-mf/` | Vite + React (Module Federation remote) | 5006 | 5806 |
-| `poliboard/` | Vite + React + TypeScript + Konva (MF remote) | 5002 | 5807 |
 | `tts-service/` | Python + FastAPI + VieNeu-TTS + edge-tts | 8100 | 8100 |
 | `mongodb/` | Mongo image w/ init scripts | 27017 | 27017 |
 
@@ -39,32 +37,25 @@ npm test                                  # vitest run
 npm run test:watch
 npx vitest run src/utils/reactions.test.js            # single file
 npx vitest run -t "name of the test"                  # single test by name
-
-# Micro-frontend remotes — NOTE: `dev` builds + previews, it is not an HMR dev server.
-# Module Federation needs a real built `remoteEntry.js`, so the remotes run
-# `vite build --watch` alongside `vite preview`. Expect a rebuild delay on save.
-cd lunch-vote-mf && npm install && npm run dev
-cd poliboard && npm install && npm run dev   # `npm run build` runs `tsc -b` first
 ```
-
-Running the client without the remotes up means `/lunch-vote` and `/poliboard` fail to
-load their remote chunk; the rest of the app is unaffected.
 
 ## Architecture
 
-### Module Federation
-`client` is the host (`client-host`). `client/vite.config.js` declares two remotes whose
-URLs come from `VITE_LUNCH_VOTE_REMOTE_URL` / `VITE_POLIBOARD_REMOTE_URL` (baked in at
-**build** time — the Dockerfile passes them as build args, not runtime env).
+### Module Federation is gone
+The `lunch-vote-mf` and `poliboard` micro-frontends were **switched off entirely**:
+their compose services, the `@originjs/vite-plugin-federation` host config, the
+`VITE_*_REMOTE_URL` build args, the `/lunch-vote` and `/poliboard` routes and both page
+components are all removed. `client/` is now a plain single Vite app. The
+`lunch-vote-mf/` and `poliboard/` **source directories still exist but nothing builds or
+serves them**, and `client/src/App.jsx` still sets `window.__SOCKET_URL__` (harmless).
 
-- `lunch-vote-mf` exposes `./LunchVoteApp`, shares `react`, `react-dom`, `antd`, `react-router-dom`
-- `poliboard` exposes `./Board`, shares only `react`, `react-dom`
+Leftovers that are now dead but still wired on the backend: `/api/lunch-vote` routes +
+`lunchTeam`/`lunchVote` models, and the PoliBoard socket handlers in `api/socket.js`
+(plus `api/redis.js` and the midnight board-clear timer in `api/server.js`).
+Nothing on the frontend calls them any more.
 
-Remotes get the socket URL from `window.__SOCKET_URL__`, which `client/src/App.jsx` sets
-from `VITE_SOCKET_URL` at module load. Don't add a second socket connection in a remote.
-
-All three Vite builds set `minify: false` and `target: 'esnext'` — required for
-`@originjs/vite-plugin-federation` to work correctly. Don't "optimize" these away.
+`client/vite.config.js` still has `minify: false` and `target: 'esnext'` — those were
+federation requirements, so they are now safe to revisit if you want smaller bundles.
 
 ### Socket.IO is one shared bus for several unrelated domains
 `api/socket.js` registers every handler on a single global namespace, and controllers
@@ -169,6 +160,79 @@ Frontend: `ChohanProvider` (reuses PlaylistContext's socket, no second connectio
 shake / bowl-lift animations, and a line chart of the dice sum (2–12) over the last 20
 rounds. Dev tip: shorten rounds with `CHOHAN_BET_MS=6000 CHOHAN_SHAKE_MS=3000
 CHOHAN_REVEAL_MS=3000` when running `api` locally.
+
+### Billiards (9-ball, NPC clears the table)
+A spectator-only sim: one NPC — rendered as nothing but a cue stick — runs out balls
+1→9 on a 6-pocket table. **Users only watch; there is no betting yet** (that is Phase 2).
+
+The whole game is simulated server-side *before* anyone sees it, and the client is a
+dumb replay player. Two pure modules under `api/services/billiards/`:
+
+- **`engine.js`** — deterministic 2D physics in cm (table 254×127, ball r=2.85), fixed
+  `DT = 1/180` with adaptive sub-steps, rolling friction, equal-mass ball collisions,
+  cushion restitution, pocket capture. `simulate(balls, { record })` records frames at
+  **25fps** (`RECORD_FPS`) as flat `[x0,y0,x1,y1,…]` rows keyed by the shot's `ids`.
+  Spin is a deliberate simplification: at first cue contact, `ctx.spin × pre-impact
+  velocity` is added to the cue ball (+follow / −draw), then clamped so it can never
+  exceed its pre-impact speed. Seeded RNG (`createRng`) makes any game reproducible.
+- **`planner.js`** — the NPC. For the target ball it builds ghost-ball lines to all 6
+  pockets, filters by cut angle and path clearance, then **actually simulates**
+  candidates (pocket × spin × power × aim jitter) and scores each by `0.35 × shot
+  quality + 0.65 × position for the *next* ball`, stopping early at `GOOD_ENOUGH`.
+  `planGame(seed)` is **async and yields to the event loop** every `YIELD_EVERY`
+  simulations — a game costs a few hundred ms of CPU and must not block the shared
+  socket bus (measured p99 event-loop delay ~19ms).
+
+  **Picking up the cue ball looks like teleporting, so the ladder is built to avoid it**
+  (in order, each step only runs if the one above found nothing):
+  1. `planShot` — pot from where the cue ball actually is.
+  2. **Backtrack** — re-plan the *previous* shot with different power/spin, forced via
+     `minPosition` to leave a position that has a real pot line. The cue ball then rolls
+     to the needed spot on its own. Bounded by `MAX_BACKTRACKS`.
+  3. `planRepositionShot` (`type: 'reposition'`) — a legal shot that hits the target
+     first and is scored purely on where it parks the cue ball. This is what a real
+     player does when snookered.
+  4. `planBallInHand` — only now is the cue ball picked up, and the shot carries
+     `ballInHandReason` (`scratch` = cue ball was potted, a real foul; `snookered` =
+     genuinely stuck). The client always shows this reason.
+  5. `planSafety` — blind cluster-break, last resort.
+
+  Measured over 80+ seeds: every table cleared, ~9.7 shots/game, **only 1.7% of shots
+  need ball-in-hand** (and a third of those are legitimate scratches), ~50KB of replay
+  JSON per game.
+
+The break is the only random shot; everything after it is search. Candidates that pot
+the 9 early are rejected so every game runs the full 1→9.
+
+`billiards.service.js` keeps one shared game so everyone watching sees the same thing,
+generated **lazily — there is no background timer**: a request past `endsAt` builds the
+next game (an in-flight `pending` promise stops concurrent requests from building two).
+`startsAt = now + BILLIARDS_INTERMISSION_MS` (7s) is the gap that becomes the Phase 2
+betting window (27s). Every non-break shot then opens with its own **wait phase**
+(`waitMs`, `BILLIARDS_WAIT_MS`, 20s): the table sits still, no cue is drawn, the client
+counts down. That is the per-shot betting window, and **it is the knob to turn when
+someone asks for more waiting time** — do *not* pad `BILLIARDS_AIM_MS` instead, because
+`aimMs` also drives the cue-pullback animation (`getCueOffset`), so inflating it turns
+the stroke into slow motion. Full pacing chain per shot:
+`waitMs → aimMs → rollMs → settleMs`. A game runs ~4–5 minutes. `serializeGame(game, { includeShots })` is the hook for withholding
+un-played shots; `serializeGame(game, { includeShots })` is the hook for withholding
+un-played shots then. Games persist to `BilliardsGame` with a TTL index
+(`BILLIARDS_RETENTION_MS`, 2h). Routes are public reads only:
+`/api/billiards/current` (full replay), `/summary` (timing only, for the rail badge),
+`/games/:id`.
+
+Client: `utils/billiards.js` holds all the pure replay math (`getPlaybackState` maps
+wall-clock → shot + sub-phase aim/roll/settle + fractional frame; `interpolateFrame`
+lerps between frames) and is the tested part. `BilliardsTable.jsx` is a canvas renderer
+on its own `requestAnimationFrame` loop reading a ref, so React never re-renders at
+60fps — the overlay ticks at 200ms for text only. Because playback derives from server
+timestamps, opening the overlay mid-game jumps straight to the right moment.
+`potOrder` on every game already records ball → pocket → shot, which is exactly what
+Phase 2 betting will settle against.
+
+The overlay's height is driven by the **table**, not the side column: `.bil-side__inner`
+is absolutely positioned so a growing pot log scrolls inside its box instead of
+stretching the modal. Don't make that column static again.
 
 ## Conventions
 
