@@ -57,7 +57,7 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 - PoliBoard: bảng vẽ real-time theo room, hỗ trợ con trỏ cộng tác, undo và xóa bảng.
 - Chat theo phiên nhạc; danh tính người gửi được lấy từ JWT.
 - Thành ngữ mỗi ngày, vote thành ngữ và admin reroll bộ câu.
-- Tin VnExpress, tin công nghệ, thời tiết hiện tại, giá vàng, dầu và Bitcoin.
+- Tin VnExpress, tin công nghệ và thời tiết hiện tại.
 - Giao diện sáng/tối, activity feed, quick reactions, đếm ngược Tết và các hiệu ứng
   sự kiện.
 - Trình giả lập NES với các game tích hợp trong giao diện.
@@ -285,7 +285,6 @@ CHOHAN_REVEAL_MS=3000
 | Biến | Mục đích |
 | --- | --- |
 | `WEATHER_API_KEY`, `WEATHER_LOCATION` | Thời tiết |
-| `BTC_API_KEY` | Dữ liệu Bitcoin |
 | `IDIOMS_SAFE_MODE`, `IDIOMS_TIMEZONE` | Chế độ lọc và timezone thành ngữ |
 | `IDIOMS_PER_DAY`, `IDIOMS_MAX_REROLLS` | Số câu/ngày và lượt reroll |
 | `REDIS_HOST`, `REDIS_PORT` | Redis cho PoliBoard, nếu sử dụng |
@@ -337,7 +336,6 @@ Các nhóm endpoint chính:
 | `/api/idioms` | Thành ngữ, vote và reroll |
 | `/api/lunch-vote` | Team, lựa chọn và vote bữa trưa |
 | `/api/news`, `/api/weather` | Tin tức và thời tiết |
-| `/api/gold`, `/api/oil`, `/api/btc` | Giá hiện tại và lịch sử |
 
 Guest có thể đọc dữ liệu công khai. Thao tác thêm bài, vote, bid, chat và đặt cược
 cần user token. Mở/đóng phiên, điều khiển playback, xóa bài và reroll thành ngữ cần

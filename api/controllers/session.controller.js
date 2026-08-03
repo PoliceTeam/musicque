@@ -1,10 +1,6 @@
 const Session = require("../models/session.model");
 const { emitActivity } = require("../utils/activityEmitter");
 const Song = require("../models/song.model");
-const GoldPrice = require("../models/goldPrice.model");
-const OilPrice = require("../models/oilPrice.model");
-const { getGoldPrice, getVRTLPrice } = require("../services/goldPrice.service");
-const { getOilPrice, getRON95Price } = require("../services/oilPrice.service");
 const chohan = require("../services/chohan.service");
 
 // Bắt đầu phiên mới
@@ -32,90 +28,6 @@ exports.startSession = async (req, res) => {
       startTime: now,
       createdBy: req.user._id,
     });
-
-    // Fetch và lưu giá vàng hôm nay (chạy bất đồng bộ)
-    const fetchAndSaveGoldPrice = async () => {
-      try {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-
-        // Kiểm tra xem đã có giá vàng hôm nay chưa
-        const existingGoldPrice = await GoldPrice.findOne({ date: today });
-
-        if (!existingGoldPrice) {
-          console.log("Fetching gold price for new session...");
-          const goldData = await getGoldPrice("ngay");
-          const vrtlPrice = getVRTLPrice(goldData);
-
-          if (vrtlPrice && vrtlPrice.buyPrice && vrtlPrice.sellPrice) {
-            await GoldPrice.create({
-              date: today,
-              buyPrice: vrtlPrice.buyPrice,
-              sellPrice: vrtlPrice.sellPrice,
-              source: "BTMC",
-              updatedAtText: goldData.updatedAtText,
-              rawData: {
-                brand: vrtlPrice.brand,
-                hamLuong: vrtlPrice.hamLuong,
-                status: vrtlPrice.status,
-              },
-            });
-            console.log(
-              `Gold price saved for ${today}: Buy ${vrtlPrice.buyPrice}, Sell ${vrtlPrice.sellPrice}`
-            );
-          } else {
-            console.warn("Could not extract VRTL price from gold data");
-          }
-        } else {
-          console.log(`Gold price already exists for ${today}`);
-        }
-      } catch (goldError) {
-        console.error("Error fetching/saving gold price:", goldError);
-        // Không fail session nếu lỗi fetch giá vàng
-      }
-    };
-
-    // Fetch và lưu giá xăng hôm nay (chạy bất đồng bộ)
-    const fetchAndSaveOilPrice = async () => {
-      try {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-
-        // Kiểm tra xem đã có giá xăng hôm nay chưa
-        const existingOilPrice = await OilPrice.findOne({ date: today });
-
-        if (!existingOilPrice) {
-          console.log("Fetching oil price for new session...");
-          const oilData = await getOilPrice();
-          const ron95Price = getRON95Price(oilData);
-
-          if (ron95Price && ron95Price.price) {
-            await OilPrice.create({
-              date: today,
-              products: oilData.products,
-              source: "PVOIL",
-              updatedAtText: oilData.updatedAtText,
-              rawData: {
-                ron95: ron95Price,
-                fullData: oilData,
-              },
-            });
-            console.log(
-              `Oil price saved for ${today}: RON95 ${ron95Price.price} (${ron95Price.change >= 0 ? '+' : ''}${ron95Price.change})`
-            );
-          } else {
-            console.warn("Could not extract RON95 price from oil data");
-          }
-        } else {
-          console.log(`Oil price already exists for ${today}`);
-        }
-      } catch (oilError) {
-        console.error("Error fetching/saving oil price:", oilError);
-        // Không fail session nếu lỗi fetch giá xăng
-      }
-    };
-
-    // Chạy bất đồng bộ, không await
-    fetchAndSaveGoldPrice();
-    fetchAndSaveOilPrice();
 
     // Thông báo qua socket.io
     const io = req.app.get("io");

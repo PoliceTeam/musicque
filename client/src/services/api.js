@@ -126,24 +126,6 @@ export const getPlaylist = () => api.get("/api/songs/playlist");
 export const markSongAsPlaying = (songId) =>
   api.post(`/api/songs/${songId}/playing`);
 
-// Gold Price API
-export const getTodayGoldPrice = () => api.get("/api/gold/today");
-
-export const getGoldPriceHistory = (limit = 30, page = 1) =>
-  api.get(`/api/gold/history?limit=${limit}&page=${page}`);
-
-// Oil Price API
-export const getTodayOilPrice = () => api.get("/api/oil/today");
-
-export const getOilPriceHistory = (limit = 30, page = 1) =>
-  api.get(`/api/oil/history?limit=${limit}&page=${page}`);
-
-// BTC Price API
-export const getTodayBTCPrice = () => api.get("/api/btc/today");
-
-export const getBTCPriceHistory = (limit = 30, page = 1) =>
-  api.get(`/api/btc/history?limit=${limit}&page=${page}`);
-
 // Weather API
 export const getCurrentWeather = () => api.get("/api/weather");
 
