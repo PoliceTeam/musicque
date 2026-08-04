@@ -128,7 +128,6 @@ const BilliardsBetPanel = ({ game, shot, playback, myBet, onPlaced, betConfig })
                   {optionLabel(option, pocketName)}
                   {mine && <em className="bil-odds__tag">kèo của bạn</em>}
                 </span>
-                <span className="bil-odds__chance">{Math.round(option.probability * 100)}%</span>
                 <span className="bil-odds__mult">×{option.odds.toFixed(2)}</span>
               </button>
 

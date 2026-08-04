@@ -537,17 +537,7 @@
   font-weight: 800;
 }
 
-/* Người cược nhìn con số nhân, không nhìn chữ "Dễ/Khó" — nhãn chữ có thể
-   trùng nhau giữa hai cửa trả giá khác hẳn, con số thì không bao giờ. */
-.bil-odds__chance {
-  flex: 0 0 auto;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sp-text-faint);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
+/* Người cược nhìn con số nhân, không nhìn chữ "Dễ/Khó" hay xác suất nội bộ. */
 .bil-odds__mult {
   flex: 0 0 auto;
   min-width: 44px;
