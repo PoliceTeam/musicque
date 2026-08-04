@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react'
+import { PlaylistContext } from '../../contexts/PlaylistContext'
+import { useAuth } from '../../contexts/AuthContext'
 import BilliardsOverlay from './BilliardsOverlay'
 import { getSummaryLabel } from '../../utils/billiards'
 import { getBilliardsSummary } from '../../services/api'
 
 const BilliardsPanel = () => {
+  // Dùng chung socket của PlaylistContext, không mở kết nối thứ hai
+  const { socket } = useContext(PlaylistContext)
+  const { user, refreshBalance } = useAuth()
   const [open, setOpen] = useState(false)
   const [summary, setSummary] = useState(null)
   const [, setTick] = useState(0)
@@ -33,6 +38,18 @@ const BilliardsPanel = () => {
     if (!summary) return
     if (Date.now() > new Date(summary.endsAt).getTime() + 1200) loadSummary()
   })
+
+  // Kèo được chốt ở phía server một cách lười (không có timer nền), nên client
+  // phải được báo mới biết tiền đã về. Không có chỗ này thì user thắng cược mà
+  // pill PC vẫn đứng im cho tới khi refresh trang.
+  useEffect(() => {
+    if (!socket || !user?._id) return undefined
+    const onSettled = ({ userIds }) => {
+      if (Array.isArray(userIds) && userIds.includes(String(user._id))) refreshBalance()
+    }
+    socket.on('billiards_settled', onSettled)
+    return () => socket.off('billiards_settled', onSettled)
+  }, [socket, user?._id, refreshBalance])
 
   return (
     <div className="bil-rail">

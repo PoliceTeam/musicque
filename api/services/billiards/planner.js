@@ -34,6 +34,15 @@ const GOOD_ENOUGH = 0.8 // điểm đủ tốt thì dừng tìm sớm
 const MAX_OPTION_POCKETS = 3 // đo được: 4 lỗ cùng khả thi chỉ ~0.3% vị trí, quét thừa
 const OPTION_MIN_POSITION = 0.2 // phương án nào cũng phải giữ được thế cho bi kế tiếp
 
+/**
+ * NPC không phải máy hoàn hảo: có xác suất đánh trượt, bi không vào lỗ nào.
+ *
+ * Đây không chỉ để cho thật — nó khiến MỌI cơ đều cược được. Cơ chỉ có một
+ * đường ăn (gần một nửa số cơ) trước đây là thắng chắc 100% nên không mở kèo
+ * được; giờ thành kèo hai chiều: vào lỗ đó (95%, ×1.05) hoặc trượt (5%, ×20).
+ */
+const MISS_CHANCE = Number(process.env.BILLIARDS_MISS_CHANCE || 0.05)
+
 // Quay lui: khi bí đường ăn, ưu tiên đánh lại CƠ TRƯỚC để bi cái tự lăn tới
 // chỗ còn đánh được, thay vì nhấc bi cái đặt lại (nhìn như dịch chuyển).
 const MAX_BACKTRACKS = 4
@@ -323,19 +332,39 @@ const optionWeight = (option) => Math.pow(Math.max(option.lineQuality, 0.01), 1.
  * 50/50). Người chơi chọn cửa theo khẩu vị mạo hiểm chứ không phải vì có cửa
  * bị định giá sai. Muốn nhà cái có biên thì nhân thêm hệ số < 1 vào `odds`.
  */
-const withOdds = (options) => {
-  const weights = options.map(optionWeight)
+const withOdds = (pocketOptions) => {
+  const weights = pocketOptions.map(optionWeight)
   const total = weights.reduce((a, b) => a + b, 0)
-  if (!total) return options
+  if (!total) return []
 
-  return options.map((option, i) => {
-    const probability = weights[i] / total
+  // Phần xác suất chia cho các lỗ; phần còn lại thuộc về cửa "trượt"
+  const potShare = 1 - MISS_CHANCE
+  const out = pocketOptions.map((option, i) => {
+    const probability = (potShare * weights[i]) / total
     const odds = Math.round((1 / probability) * 100) / 100
-    return { ...option, probability, odds, difficulty: difficultyFromOdds(odds) }
+    return {
+      ...option,
+      outcome: 'pocket',
+      probability,
+      odds,
+      difficulty: difficultyFromOdds(odds),
+    }
   })
+
+  // Cửa "trượt" luôn có mặt — nhờ nó mà cơ độc cửa cũng cược được
+  out.push({
+    outcome: 'miss',
+    pocket: null,
+    lineQuality: 0,
+    probability: MISS_CHANCE,
+    odds: Math.round((1 / MISS_CHANCE) * 100) / 100,
+    difficulty: 'hard',
+  })
+
+  return out
 }
 
-// Bốc một cửa theo đúng xác suất đã gắn ở withOdds
+// Bốc một cửa theo đúng xác suất đã gắn ở withOdds (gồm cả cửa "trượt")
 const pickOption = (options, rng) => {
   if (options.length <= 1) return options[0] || null
   let r = rng()
@@ -344,6 +373,33 @@ const pickOption = (options, rng) => {
     if (r <= 0) return options[i]
   }
   return options[options.length - 1]
+}
+
+/**
+ * Dựng cú đánh TRƯỢT: lấy đúng đường NPC định đánh rồi cộng dần sai số góc cho
+ * tới khi bi mục tiêu không vào lỗ nào.
+ *
+ * "Trượt" bắt buộc là KHÔNG vào lỗ nào — vào nhầm lỗ khác thì người cược lỗ đó
+ * ăn oan trong khi kèo công bố không hề có kết quả ấy. Vẫn phải chạm bi mục
+ * tiêu trước (cú đánh hợp lệ) và không được thụt bi cái.
+ */
+const planMissShot = async (balls, targetId, base, budget) => {
+  const errors = [0.028, -0.028, 0.045, -0.045, 0.018, -0.018, 0.065, -0.065, 0.09, -0.09]
+  for (const err of errors) {
+    if (budget.used >= budget.max) break
+    budget.used += 1
+    await yieldToLoop()
+
+    const angle = base.angle + err
+    const res = shoot(balls, angle, base.speed, { spin: base.spin || 0 })
+    if (res.firstContact !== targetId) continue
+    if (res.pots.some((p) => p.ball === 0)) continue
+    if (res.pots.some((p) => p.ball === targetId)) continue
+    if (targetId !== 9 && res.pots.some((p) => p.ball === 9)) continue
+
+    return { ...base, angle, missed: true }
+  }
+  return null
 }
 
 // Được cầm bi cái đặt tuỳ ý (sau lỗi, hoặc khi bí hoàn toàn):
@@ -511,6 +567,7 @@ const recordShot = (balls, angle, speed, meta, spin = 0) => {
       ballInHandReason: meta.ballInHandReason || null,
       options: meta.options || [],
       chosenPocket: meta.chosenPocket ?? null,
+      missed: Boolean(meta.missed),
       bettable: Boolean(meta.bettable),
       cue: {
         x: Math.round(cue.x * 10) / 10,
@@ -578,6 +635,7 @@ const planGame = async (seed) => {
   let state = breakRecord.result.balls
   let misses = 0
   let backtracks = 0
+  let lastMissedBall = null // không để NPC trượt hai lần liên tiếp cùng một bi
   let prev = null // ngữ cảnh cơ liền trước, để quay lui đánh lại
 
   // 2) Các cơ dọn bàn: luôn nhắm bi số nhỏ nhất còn lại
@@ -595,9 +653,35 @@ const planGame = async (seed) => {
     let options = []
 
     // Bi cái còn trên bàn và chưa bí thì gom mọi cửa ăn được rồi bốc một cửa
+    // (danh sách gồm cả cửa "trượt", xem withOdds)
     if (!cue.potted && misses < 2) {
-      options = withOdds(await planShotOptions(state, targetId, nextTargetId, budget))
-      plan = pickOption(options, rng)
+      const pocketOptions = await planShotOptions(state, targetId, nextTargetId, budget)
+      if (pocketOptions.length) {
+        options = withOdds(pocketOptions)
+        const drawn = pickOption(options, rng)
+
+        if (drawn && drawn.outcome === 'miss' && lastMissedBall !== targetId) {
+          // Đánh trượt: lấy cửa nhiều khả năng nhất làm đường NPC "định đánh"
+          const intended = pocketOptions[0]
+          plan = await planMissShot(state, targetId, intended, budget)
+        }
+
+        // Không dựng được cú trượt (hoặc vừa trượt bi này rồi) thì đánh vào
+        // lỗ như bình thường — bốc lại trong nhóm lỗ để xác suất không lệch.
+        if (!plan) {
+          const pocketOnly = options.filter((o) => o.outcome === 'pocket')
+          const share = pocketOnly.reduce((a, o) => a + o.probability, 0)
+          let r = rng() * share
+          plan = pocketOnly[pocketOnly.length - 1]
+          for (const o of pocketOnly) {
+            r -= o.probability
+            if (r <= 0) {
+              plan = o
+              break
+            }
+          }
+        }
+      }
     }
 
     // Bí đường ăn → QUAY LUI: đánh lại cơ trước bằng lực/xoáy khác, bắt buộc
@@ -700,14 +784,17 @@ const planGame = async (seed) => {
       // Mọi cửa ăn được ở cơ này + cửa NPC đã bốc. Nền cho việc cược
       // "bi số N vào lỗ nào" — cược trúng lỗ đã chọn thì ăn.
       options: options.map((o) => ({
-        pocket: o.pocket,
+        outcome: o.outcome,
+        pocket: o.pocket ?? null,
         difficulty: o.difficulty,
         quality: Math.round(o.lineQuality * 1000) / 1000,
         probability: Math.round(o.probability * 1000) / 1000,
         odds: o.odds,
       })),
-      chosenPocket: plan && plan.pocket !== undefined ? plan.pocket : null,
-      // Chỉ mở kèo khi có từ 2 cửa trở lên — cơ độc cửa là thắng chắc 100%
+      // Trượt thì không có lỗ nào thắng; chốt kèo theo cặp (missed, chosenPocket)
+      missed: Boolean(plan && plan.missed),
+      chosenPocket: plan && !plan.missed && plan.pocket !== undefined ? plan.pocket : null,
+      // Nhờ có cửa "trượt" nên mọi cơ ăn bi đều mở kèo được
       bettable: options.length >= 2,
     }
     // Chụp lại trạng thái ngay trước khi đánh (đã gồm việc đặt bi cái nếu có)
@@ -718,6 +805,8 @@ const planGame = async (seed) => {
       meta,
       tried: new Set([candidateKey(plan)]),
     }
+
+    lastMissedBall = meta.missed ? targetId : null
 
     const recorded = recordShot(state, plan.angle, plan.speed, meta, plan.spin || 0)
     shots.push(recorded.shot)

@@ -9,6 +9,7 @@ const { backfillBalances } = require('./services/coins.service')
 const { ensureIndexes: ensureSignupGrantIndexes } = require('./services/signupGrant.service')
 const Song = require('./models/song.model')
 const chohan = require('./services/chohan.service')
+const billiards = require('./services/billiards.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -83,6 +84,12 @@ mongoose
       // Nếu đang có phiên chạy dở (server restart giữa chừng) thì mở lại game Cho-Han
       chohan.resumeIfActiveSession(io).catch((error) => {
         console.error('[Cho-Han] Resume lỗi:', error.message)
+      })
+
+      // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,
+      // không thì PC đã trừ mà người thắng không nhận được gì.
+      billiards.settlePendingGames().catch((error) => {
+        console.error('[Bi-a] Chốt kèo treo lỗi:', error.message)
       })
     })
   })

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   SHOT_TYPE_LABEL,
+  payoutFor,
+  minStakeFor,
+  optionKey,
+  optionLabel,
+  betMatchesOption,
+  optionWon,
   BALL_IN_HAND_REASON_LABEL,
   DIFFICULTY_LABEL,
   DIFFICULTY_COLOR,
@@ -215,6 +221,65 @@ describe('nhãn kiểu cơ / lý do đặt lại bi cái', () => {
       expect(DIFFICULTY_LABEL[level]).toBeTruthy();
       expect(DIFFICULTY_COLOR[level]).toMatch(/^#[0-9a-f]{6}$/i);
     });
+  });
+});
+
+describe('tiền cược — Polite Coins là số nguyên', () => {
+  it('tiền thắng luôn làm tròn XUỐNG', () => {
+    expect(payoutFor(10, 1.05)).toBe(10); // 10.5 → 10, hoà vốn
+    expect(payoutFor(20, 1.05)).toBe(21); // 21.0 → 21
+    expect(payoutFor(7, 3.31)).toBe(23); // 23.17 → 23
+    expect(payoutFor(5, 20)).toBe(100);
+  });
+
+  it('mức đặt tối thiểu để lãi nổi 1 PC', () => {
+    // cửa càng chắc ăn càng phải đặt nhiều
+    expect(minStakeFor(1.05)).toBe(20);
+    expect(minStakeFor(2)).toBe(1);
+    expect(minStakeFor(20)).toBe(1);
+    // đúng ngưỡng thì có lãi, dưới ngưỡng thì không
+    const odds = 1.27;
+    const need = minStakeFor(odds);
+    expect(payoutFor(need, odds)).toBeGreaterThan(need);
+    expect(payoutFor(need - 1, odds)).toBeLessThanOrEqual(need - 1);
+  });
+
+  it('cửa ×1 (không thể có lãi) trả về vô cực', () => {
+    expect(minStakeFor(1)).toBe(Infinity);
+  });
+});
+
+describe('cửa cược', () => {
+  const pocketOpt = { outcome: 'pocket', pocket: 3, odds: 1.66 };
+  const missOpt = { outcome: 'miss', pocket: null, odds: 20 };
+  const pocketName = (i) => `Lỗ ${i}`;
+
+  it('nhãn và khoá phân biệt được cửa lỗ với cửa trượt', () => {
+    expect(optionLabel(pocketOpt, pocketName)).toBe('Lỗ 3');
+    expect(optionLabel(missOpt, pocketName)).toBe('NPC đánh trượt');
+    expect(optionKey(pocketOpt)).toBe('pocket:3');
+    expect(optionKey(missOpt)).toBe('miss');
+  });
+
+  it('khớp kèo đã đặt với đúng cửa', () => {
+    expect(betMatchesOption({ outcome: 'pocket', pocket: 3 }, pocketOpt)).toBe(true);
+    expect(betMatchesOption({ outcome: 'pocket', pocket: 4 }, pocketOpt)).toBe(false);
+    expect(betMatchesOption({ outcome: 'miss', pocket: null }, missOpt)).toBe(true);
+    expect(betMatchesOption({ outcome: 'miss', pocket: null }, pocketOpt)).toBe(false);
+    expect(betMatchesOption(null, pocketOpt)).toBe(false);
+  });
+
+  it('NPC ăn bi: cửa đúng lỗ thắng, cửa trượt thua', () => {
+    const shot = { missed: false, chosenPocket: 3 };
+    expect(optionWon(pocketOpt, shot)).toBe(true);
+    expect(optionWon({ ...pocketOpt, pocket: 4 }, shot)).toBe(false);
+    expect(optionWon(missOpt, shot)).toBe(false);
+  });
+
+  it('NPC trượt: mọi cửa lỗ đều thua, chỉ cửa trượt thắng', () => {
+    const shot = { missed: true, chosenPocket: null };
+    expect(optionWon(missOpt, shot)).toBe(true);
+    expect(optionWon(pocketOpt, shot)).toBe(false);
   });
 });
 

@@ -36,6 +36,35 @@ export const BALL_IN_HAND_REASON_LABEL = {
 export const DIFFICULTY_LABEL = { easy: 'Dễ', medium: 'Vừa', hard: 'Khó' }
 export const DIFFICULTY_COLOR = { easy: '#1db954', medium: '#e8a317', hard: '#e2513d' }
 
+/** Nhãn cửa cược: lỗ cụ thể, hoặc "NPC đánh trượt" */
+export const optionLabel = (option, pocketName) =>
+  option.outcome === 'miss' ? 'NPC đánh trượt' : pocketName(option.pocket)
+
+/** Khoá định danh một cửa, dùng làm React key và để so kèo đã đặt */
+export const optionKey = (option) =>
+  option.outcome === 'miss' ? 'miss' : `pocket:${option.pocket}`
+
+/**
+ * Polite Coins là số nguyên nên tiền thắng LÀM TRÒN XUỐNG. Hệ quả: cửa gần
+ * chắc ăn (×1.05) mà đặt ít thì floor() ăn hết phần lãi — phải đặt đủ lớn mới
+ * lời nổi 1 PC. Hai hàm này phải khớp với payoutFor/minStakeFor ở
+ * api/services/billiards.service.js.
+ */
+export const payoutFor = (amount, odds) => Math.floor(amount * odds)
+export const minStakeFor = (odds) => (odds > 1 ? Math.ceil(1 / (odds - 1)) : Infinity)
+
+/** Kèo đã đặt có trúng cửa này không (dùng để tô sáng lựa chọn của user) */
+export const betMatchesOption = (bet, option) =>
+  Boolean(bet) &&
+  bet.outcome === option.outcome &&
+  (option.outcome === 'miss' || bet.pocket === option.pocket)
+
+/** Kết quả thật của một cơ, để đối chiếu với kèo đã đặt */
+export const optionWon = (option, shot) =>
+  option.outcome === 'miss'
+    ? Boolean(shot.missed)
+    : !shot.missed && shot.chosenPocket === option.pocket
+
 const toMs = (value) => (value instanceof Date ? value.getTime() : new Date(value).getTime())
 
 /**

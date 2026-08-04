@@ -148,6 +148,9 @@ export const rerollIdioms = () => api.post("/api/idioms/reroll");
 export const getBilliardsCurrent = () => api.get("/api/billiards/current");
 export const getBilliardsSummary = () => api.get("/api/billiards/summary");
 export const getBilliardsGame = (id) => api.get(`/api/billiards/games/${id}`);
+export const placeBilliardsBet = (payload) => api.post("/api/billiards/bet", payload);
+export const getBilliardsMyBets = (gameId) =>
+  api.get("/api/billiards/my-bets", { params: { gameId } });
 
 // TTS API (VieNeu-TTS)
 export const generateTTS = (songId, config = {}) =>

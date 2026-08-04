@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import BilliardsTable from './BilliardsTable'
+import BilliardsBetPanel from './BilliardsBetPanel'
 import {
   BALL_STYLES,
   SHOT_TYPE_LABEL,
@@ -8,7 +9,8 @@ import {
   getPottedSoFar,
   getRemainingBalls,
 } from '../../utils/billiards'
-import { getBilliardsCurrent } from '../../services/api'
+import { getBilliardsCurrent, getBilliardsMyBets } from '../../services/api'
+import { useAuth } from '../../contexts/AuthContext'
 
 const ALL_BALLS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -26,7 +28,10 @@ const BallDot = ({ id, muted }) => {
 }
 
 const BilliardsOverlay = ({ open, onClose }) => {
+  const { isAuthenticated, setBalance } = useAuth()
   const [game, setGame] = useState(null)
+  const [betConfig, setBetConfig] = useState(null)
+  const [myBets, setMyBets] = useState([])
   const [error, setError] = useState(null)
   const [, setTick] = useState(0)
   const loadingRef = useRef(false)
@@ -37,7 +42,11 @@ const BilliardsOverlay = ({ open, onClose }) => {
     loadingRef.current = true
     try {
       const { data } = await getBilliardsCurrent()
-      setGame(data.game)
+      setGame((prev) => {
+        if (prev?._id !== data.game?._id) setMyBets([])
+        return data.game
+      })
+      if (data.bet) setBetConfig(data.bet)
       setError(null)
     } catch {
       setError('Không tải được ván bi-a, thử lại sau nhé')
@@ -61,7 +70,29 @@ const BilliardsOverlay = ({ open, onClose }) => {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Hỏi kèo của mình sau mỗi cơ. Chính request này cũng khiến server chốt các
+  // kèo đã có kết quả, nên không cần timer nền phía backend.
+  const loadMyBets = useCallback(async () => {
+    if (!isAuthenticated || !game?._id) return
+    try {
+      const { data } = await getBilliardsMyBets(game._id)
+      setMyBets(data.bets || [])
+      // Số dư đọc sau khi server chốt kèo — thắng là pill PC nhảy ngay,
+      // không phải chờ F5 mới thấy tiền về.
+      if (typeof data.balance === 'number') setBalance(data.balance)
+    } catch {
+      /* lần sau thử lại */
+    }
+  }, [isAuthenticated, game?._id, setBalance])
+
   const playback = getPlaybackState(game)
+
+  // Nạp lại kèo mỗi khi sang cơ mới — cơ trước vừa có kết quả nên cần biết
+  // thắng/thua, và request này cũng là cái kích hoạt server chốt kèo.
+  useEffect(() => {
+    if (!open) return
+    loadMyBets()
+  }, [open, playback.shotIndex, loadMyBets])
 
   // Ván xong thì xin ván kế tiếp (chính request này khiến server dựng ván mới)
   useEffect(() => {
@@ -142,28 +173,14 @@ const BilliardsOverlay = ({ open, onClose }) => {
                 </div>
               </div>
 
-              {shot?.options?.length > 0 && (
-                <div className="bil-block">
-                  <div className="bil-block__title">
-                    Cửa ăn được của bi {shot.targetBall}
-                    {!shot.bettable && <em className="bil-block__note">độc cửa</em>}
-                  </div>
-                  <ul className="bil-odds">
-                    {shot.options.map((option) => (
-                      <li
-                        key={option.pocket}
-                        className={`bil-odds__row bil-odds__row--${option.difficulty}`}
-                      >
-                        <span className="bil-odds__pocket">{pocketName(option.pocket)}</span>
-                        <span className="bil-odds__chance">
-                          {Math.round(option.probability * 100)}%
-                        </span>
-                        <span className="bil-odds__mult">×{option.odds.toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <BilliardsBetPanel
+                game={game}
+                shot={shot}
+                playback={playback}
+                betConfig={betConfig}
+                myBet={myBets.find((b) => b.shotIndex === shot?.index)}
+                onPlaced={(bet) => setMyBets((prev) => [...prev, bet])}
+              />
 
               <div className="bil-block">
                 <div className="bil-block__title">Tiến độ 1 → 9</div>

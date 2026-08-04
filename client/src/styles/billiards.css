@@ -372,13 +372,145 @@
 .bil-odds__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
   color: var(--sp-text);
-  padding: 4px 8px;
   border-radius: 6px;
   border-left: 3px solid var(--bil-odds-color);
   background: color-mix(in srgb, var(--bil-odds-color) 10%, transparent);
+}
+
+/* Cả hàng là một nút đặt cược */
+.bil-odds__pick {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 8px;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.bil-odds__pick:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bil-odds-color) 18%, transparent);
+}
+
+.bil-odds__pick:disabled {
+  cursor: default;
+}
+
+/* Kèo mình đã đặt */
+.bil-odds__row--mine {
+  outline: 2px solid var(--bil-odds-color);
+  outline-offset: -1px;
+}
+
+.bil-odds__tag {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--bil-odds-color);
+}
+
+/* Kết quả sau khi bi đã lăn xong */
+.bil-odds__row--won {
+  background: color-mix(in srgb, #1db954 22%, transparent);
+  border-left-color: #1db954;
+}
+
+.bil-odds__row--lost {
+  opacity: 0.4;
+}
+
+.bil-odds__gain {
+  flex: 0 0 auto;
+  padding-right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #1db954;
+  white-space: nowrap;
+}
+
+.bil-odds__gain--off {
+  color: var(--sp-text-faint);
+  font-weight: 600;
+}
+
+/* ── Khu đặt cược ──────────────────────────────────────────────────── */
+.bil-bet__timer {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 800;
+  color: #e8a317;
+  text-transform: none;
+}
+
+.bil-bet__stakes {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.bil-bet__stake {
+  flex: 1 1 0;
+  padding: 5px 0;
+  border-radius: 6px;
+  border: 1px solid var(--sp-border-strong);
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.bil-bet__stake--on {
+  background: var(--sp-green);
+  border-color: var(--sp-green);
+  color: #fff;
+}
+
+.bil-bet__stake:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.bil-bet__error {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sp-red);
+}
+
+.bil-bet__mine {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--sp-text-muted);
+}
+
+.bil-bet__win {
+  color: #1db954;
+  font-weight: 800;
+}
+
+.bil-bet__lose {
+  color: var(--sp-red);
+  font-weight: 800;
+}
+
+.bil-bet__hint {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--sp-text-faint);
 }
 
 .bil-odds__row--easy {
@@ -401,9 +533,14 @@
   white-space: nowrap;
 }
 
+.bil-odds__row--won .bil-odds__pocket {
+  font-weight: 800;
+}
+
 /* Người cược nhìn con số nhân, không nhìn chữ "Dễ/Khó" — nhãn chữ có thể
    trùng nhau giữa hai cửa trả giá khác hẳn, con số thì không bao giờ. */
 .bil-odds__chance {
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 700;
   color: var(--sp-text-faint);
@@ -412,7 +549,8 @@
 }
 
 .bil-odds__mult {
-  min-width: 46px;
+  flex: 0 0 auto;
+  min-width: 44px;
   text-align: right;
   font-size: 12px;
   font-weight: 800;

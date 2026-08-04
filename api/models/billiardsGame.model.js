@@ -23,7 +23,9 @@ const billiardsShotSchema = new mongoose.Schema(
     options: [
       {
         _id: false,
-        pocket: Number,
+        // pocket = bi vào lỗ này | miss = NPC đánh trượt, bi không vào lỗ nào
+        outcome: { type: String, enum: ['pocket', 'miss'], default: 'pocket' },
+        pocket: { type: Number, default: null },
         difficulty: { type: String, enum: ['easy', 'medium', 'hard'] },
         quality: Number,
         // Xác suất NPC bốc trúng cửa này, suy thẳng từ trọng số của pickOption
@@ -33,8 +35,10 @@ const billiardsShotSchema = new mongoose.Schema(
         odds: Number,
       },
     ],
+    // Lỗ bi thật sự rơi vào; null khi NPC đánh trượt
     chosenPocket: { type: Number, default: null },
-    // Cơ độc cửa là thắng chắc 100% → không được mở kèo
+    missed: { type: Boolean, default: false },
+    // Nhờ luôn có cửa "trượt" nên mọi cơ ăn bi đều mở kèo được
     bettable: { type: Boolean, default: false },
     ids: [Number], // các bi còn trên bàn lúc bắt đầu cú đánh
     frames: { type: [[Number]], default: [] }, // 25fps

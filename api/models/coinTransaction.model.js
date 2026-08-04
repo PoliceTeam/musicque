@@ -8,6 +8,9 @@ const TRANSACTION_TYPES = [
   'chohan_bet',
   'chohan_payout',
   'chohan_refund',
+  'billiards_bet',
+  'billiards_payout',
+  'billiards_refund',
   'admin_adjustment',
 ]
 
@@ -48,7 +51,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame'],
       default: undefined,
     },
     referenceId: {

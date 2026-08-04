@@ -247,9 +247,9 @@ lerps between frames) and is the tested part. `BilliardsTable.jsx` is a canvas r
 on its own `requestAnimationFrame` loop reading a ref, so React never re-renders at
 60fps — the overlay ticks at 200ms for text only. Because playback derives from server
 timestamps, opening the overlay mid-game jumps straight to the right moment.
-### Billiards betting market (data is ready, user-facing betting is not built)
-Every pot shot already carries the full market: `options[]` (each with `pocket`,
-`probability`, `odds`, `difficulty`), `chosenPocket`, and a `bettable` flag.
+### Billiards betting (live)
+Every pot shot is a market: `options[]` (each with `outcome`, `pocket`,
+`probability`, `odds`, `difficulty`), plus `chosenPocket` / `missed` for settlement.
 
 - **Odds = `1 / probability`, and probability comes straight from `optionWeight`** —
   the same weights `pickOption` draws with. So the published price always matches the
@@ -259,8 +259,18 @@ Every pot shot already carries the full market: `options[]` (each with `pocket`,
   option, matching Cho-Han (2× on a 50/50). Players pick a pocket by risk appetite, not
   because one is mispriced. To give the house a margin later, multiply `odds` by a
   factor < 1 — nothing else needs to change.
-- **`bettable` is false when a shot has only one option** (~45% of pot shots). Those are
-  a guaranteed 100% win and must never open a market.
+- **The NPC misses `BILLIARDS_MISS_CHANCE` (5%) of pot shots**, and that miss is itself
+  a betting option (`outcome: 'miss'`, ~×20). This is what makes *every* pot shot
+  bettable: a shot with one pot line used to be a guaranteed 100% win with nothing to
+  price, and is now a two-way market (that pocket ×1.05 vs miss ×20). A miss must drop
+  the ball into **no pocket at all** — dropping into a different pocket would pay a
+  bet the market never advertised. `planMissShot` enforces that, and the NPC never
+  misses the same ball twice in a row.
+- **Payouts are integers — Polite Coins have no decimals.** `payoutFor` floors, which
+  quietly eats the whole profit on short-odds bets: 10 PC on ×1.05 returns
+  `floor(10.5) = 10`. `placeBet` therefore rejects any stake that cannot clear +1 PC
+  and tells the user the minimum (`minStakeFor`, = 20 PC at ×1.05). The client mirrors
+  both functions in `utils/billiards.js` — keep the two in sync.
 - `difficulty` is derived from `odds`, not from an absolute `quality` threshold. The old
   absolute version labelled 28% of multi-option shots with duplicates ("Dễ / Dễ / Khó")
   while the three paid very different multipliers. The UI shows the multiplier; the
@@ -277,12 +287,26 @@ Both are guarded now — do not undo either:
    constrained to the **same pocket**, changing only power and spin — which also keeps
    the realised frequencies matching the declared probabilities.
 
-Measured after both fixes: `chosenPocket` matches the real pocket on **100%** of shots,
-1.56 options/shot, 48% of pot shots bettable (~4 bets per game).
+Measured: `chosenPocket` matches the real pocket on **100%** of shots, miss rate 5.1%
+against a 5% target, 2.6 options/shot, **100% of pot shots bettable** (~10 markets per
+game), and every table still cleared.
 
-**Still open before real coins:** `/api/billiards/current` ships `chosenPocket` and the
-full trajectory during the wait phase, so the outcome is readable in DevTools. Withhold
-un-played shots via `serializeGame(game, { includeShots })` first.
+Bets live in their own `BilliardsBet` collection (not embedded like Cho-Han — a game
+doc is already ~50KB of frames and carries ~10 separate markets). Odds are frozen onto
+the bet at placement, so retuning the odds formula never changes what an open bet was
+promised. The betting window for a shot is exactly its **wait phase**; `placeBet` debits
+first and credits back if the insert fails (no multi-doc transactions on standalone
+Mongo), and the unique index on `(gameId, shotIndex, userId)` is what stops double bets.
+
+**Settlement has no background timer**, matching the lazy game generation: `settleBets`
+runs on `getState`, on `getMyBets` (which the client polls after every shot), when a new
+game replaces the old one, and via `settlePendingGames()` at boot — that last one matters
+because a server restart mid-game would otherwise leave coins debited and never paid.
+
+**Still open — do this before it matters:** `/api/billiards/current` ships `chosenPocket`,
+`missed` and the full trajectory during the wait phase, so a bettor can read the outcome
+in DevTools before betting closes. Withhold un-played shots via
+`serializeGame(game, { includeShots })`.
 
 The overlay's height is driven by the **table**, not the side column: `.bil-side__inner`
 is absolutely positioned so a growing pot log scrolls inside its box instead of

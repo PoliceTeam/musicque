@@ -18,6 +18,34 @@ exports.getSummary = async (req, res) => {
   }
 }
 
+// POST /api/billiards/bet — đặt cược vào một cơ (phải đăng nhập)
+exports.placeBet = async (req, res) => {
+  try {
+    const { gameId, shotIndex, outcome, pocket, amount } = req.body
+    const result = await billiards.placeBet({
+      user: req.user,
+      gameId,
+      shotIndex,
+      outcome,
+      pocket,
+      amount,
+    })
+    res.status(200).json({ message: 'Đã đặt cược', ...result })
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message })
+  }
+}
+
+// GET /api/billiards/my-bets?gameId= — kèo của chính mình trong ván
+exports.getMyBets = async (req, res) => {
+  try {
+    const result = await billiards.getMyBets(req.user, req.query.gameId)
+    res.status(200).json(result)
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
+  }
+}
+
 // GET /api/billiards/games/:id — xem lại một ván cũ
 exports.getGame = async (req, res) => {
   try {
