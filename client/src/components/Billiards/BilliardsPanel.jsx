@@ -33,11 +33,12 @@ const BilliardsPanel = () => {
     return () => clearInterval(id)
   }, [loadSummary])
 
-  // Hết ván thì hỏi lại server — chính request này kích hoạt việc dựng ván kế tiếp
+  // endsAt bị giấu trong lúc chơi (nó lộ tổng số cơ), nên không canh được lúc
+  // hết ván — hỏi lại định kỳ. Chính request này kích hoạt việc dựng ván kế tiếp.
   useEffect(() => {
-    if (!summary) return
-    if (Date.now() > new Date(summary.endsAt).getTime() + 1200) loadSummary()
-  })
+    const id = setInterval(loadSummary, 15000)
+    return () => clearInterval(id)
+  }, [loadSummary])
 
   // Kèo được chốt ở phía server một cách lười (không có timer nền), nên client
   // phải được báo mới biết tiền đã về. Không có chỗ này thì user thắng cược mà

@@ -8,6 +8,7 @@ import {
   getPlaybackState,
   getPottedSoFar,
   getRemainingBalls,
+  mergeShots,
 } from '../../utils/billiards'
 import { getBilliardsCurrent, getBilliardsMyBets } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
@@ -36,15 +37,25 @@ const BilliardsOverlay = ({ open, onClose }) => {
   const [, setTick] = useState(0)
   const loadingRef = useRef(false)
   const requestedNextRef = useRef(null)
+  const gameRef = useRef(null)
 
-  const loadGame = useCallback(async () => {
+  /**
+   * Tải ván. `since` = chỉ xin các cơ từ chỉ số đó trở đi rồi gộp vào danh sách
+   * đang có — server chỉ tiết lộ cơ đã tới lượt và giấu kết quả của cơ đang mở
+   * kèo, nên không thể tải một phát cả ván như trước.
+   */
+  const loadGame = useCallback(async (since) => {
     if (loadingRef.current) return
     loadingRef.current = true
     try {
-      const { data } = await getBilliardsCurrent()
+      const { data } = await getBilliardsCurrent(since)
       setGame((prev) => {
-        if (prev?._id !== data.game?._id) setMyBets([])
-        return data.game
+        const sameGame = prev && prev._id === data.game?._id
+        if (!sameGame) {
+          setMyBets([])
+          return data.game
+        }
+        return { ...prev, ...data.game, shots: mergeShots(prev.shots, data.game.shots) }
       })
       if (data.bet) setBetConfig(data.bet)
       setError(null)
@@ -85,6 +96,10 @@ const BilliardsOverlay = ({ open, onClose }) => {
     }
   }, [isAuthenticated, game?._id, setBalance])
 
+  useEffect(() => {
+    gameRef.current = game
+  }, [game])
+
   const playback = getPlaybackState(game)
 
   // Nạp lại kèo mỗi khi sang cơ mới — cơ trước vừa có kết quả nên cần biết
@@ -97,11 +112,38 @@ const BilliardsOverlay = ({ open, onClose }) => {
   // Ván xong thì xin ván kế tiếp (chính request này khiến server dựng ván mới)
   useEffect(() => {
     if (!open || !game) return
-    if (playback.phase !== 'finished' || playback.overMs < 1500) return
+    if (!game.finished || playback.overMs < 1500) return
     if (requestedNextRef.current === game._id) return
     requestedNextRef.current = game._id
     loadGame()
-  }, [open, game, playback.phase, playback.overMs, loadGame])
+  }, [open, game, playback.overMs, loadGame])
+
+  // Xin thêm cơ theo tiến độ. Hai trường hợp cần hỏi server:
+  //  - cơ hiện tại vừa hết giờ chờ, cần quỹ đạo để phát (awaitingReveal)
+  //  - đã qua cơ hiện tại mà chưa thấy cơ kế (server chưa cho biết nó tồn tại)
+  useEffect(() => {
+    if (!open) return undefined
+    const id = setInterval(() => {
+      const g = gameRef.current
+      if (!g || g.finished) return
+      const pb = getPlaybackState(g)
+      if (pb.phase !== 'playing') return
+
+      const shot = pb.shot
+      const hasFullShot = typeof shot.rollMs === 'number'
+      if (pb.awaitingReveal) {
+        loadGame(shot.index)
+        return
+      }
+      // Cơ hiện tại đã chạy hết mà chưa có cơ kế tiếp trong danh sách
+      const elapsed = Date.now() - new Date(g.startsAt).getTime()
+      const endOfShot = shot.startAt + (shot.durationMs || 0)
+      if (hasFullShot && elapsed >= endOfShot && pb.shotIndex === g.shots.length - 1) {
+        loadGame(shot.index + 1)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [open, loadGame])
 
   if (!open) return null
 
@@ -149,8 +191,9 @@ const BilliardsOverlay = ({ open, onClose }) => {
                 </div>
                 <div className="bil-stat">
                   <span className="bil-stat__label">Cơ</span>
+                  {/* Không hiện tổng số cơ: nó lộ ván này có cú trượt nào không */}
                   <span className="bil-stat__value">
-                    {playback.shotIndex >= 0 ? playback.shotIndex + 1 : 0}/{game?.totalShots ?? '—'}
+                    {playback.shotIndex >= 0 ? playback.shotIndex + 1 : '—'}
                   </span>
                 </div>
                 <div className="bil-stat">

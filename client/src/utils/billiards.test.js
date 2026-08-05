@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   SHOT_TYPE_LABEL,
+  mergeShots,
   payoutFor,
   minStakeFor,
   optionKey,
@@ -87,11 +88,27 @@ describe('getPlaybackState', () => {
     expect(state.subPhase).toBe('aim');
   });
 
-  it('báo finished khi qua tổng thời lượng', () => {
-    const state = getPlaybackState(game, START + 9000);
-    expect(state.phase).toBe('finished');
-    expect(state.overMs).toBe(4000);
-    expect(state.shotIndex).toBe(1);
+  it('chỉ báo finished khi SERVER nói ván đã xong', () => {
+    // Client không được tự suy từ mảng shots: mảng đó chỉ chứa các cơ đã tới
+    // lượt, nên độ dài của nó không nói lên ván dài bao nhiêu.
+    expect(getPlaybackState(game, START + 9000).phase).toBe('playing');
+
+    const done = getPlaybackState({ ...game, finished: true }, START + 9000);
+    expect(done.phase).toBe('finished');
+    expect(done.overMs).toBe(4000);
+    expect(done.shotIndex).toBe(1);
+  });
+
+  it('giữ pha ngắm khi server chưa tiết lộ quỹ đạo', () => {
+    // Cơ đang mở kèo không kèm rollMs/frames — hết giờ chờ mà chưa kịp tải thêm
+    // thì phải chờ, tuyệt đối không được đoán kết quả.
+    const hidden = {
+      ...game,
+      shots: [{ ...makeShot(0, 0, [0, 1]), waitMs: 5000, rollMs: undefined, frames: [] }],
+    };
+    const state = getPlaybackState(hidden, START + 5000 + 1000 + 500);
+    expect(state.subPhase).toBe('aim');
+    expect(state.awaitingReveal).toBe(true);
   });
 
   it('an toàn khi chưa có ván', () => {
@@ -283,12 +300,32 @@ describe('cửa cược', () => {
   });
 });
 
+describe('mergeShots — tải cơ theo tiến độ', () => {
+  it('thêm cơ mới và giữ đúng thứ tự', () => {
+    const out = mergeShots([{ index: 0 }, { index: 1 }], [{ index: 2 }]);
+    expect(out.map((s) => s.index)).toEqual([0, 1, 2]);
+  });
+
+  it('bản mới ghi đè bản cũ — mức tiết lộ tăng theo thời gian', () => {
+    const before = [{ index: 1, rollMs: undefined, chosenPocket: null }];
+    const after = mergeShots(before, [{ index: 1, rollMs: 1200, chosenPocket: 4 }]);
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ rollMs: 1200, chosenPocket: 4 });
+  });
+
+  it('không có gì mới thì giữ nguyên tham chiếu cũ', () => {
+    const existing = [{ index: 0 }];
+    expect(mergeShots(existing, [])).toBe(existing);
+  });
+});
+
 describe('getStatusLabel', () => {
   it('mô tả từng giai đoạn của ván', () => {
     expect(getStatusLabel(null)).toBe('Đang tải...');
     expect(getStatusLabel(game, START - 2500)).toBe('Xếp bi · 3s');
-    expect(getStatusLabel(game, START + 100)).toBe('Cơ 1/2');
-    expect(getStatusLabel(game, START + 3000)).toBe('Cơ 2/2');
-    expect(getStatusLabel(game, START + 99999)).toBe('Hết ván');
+    // Không có mẫu số: tổng số cơ bị giấu trong lúc ván đang chạy
+    expect(getStatusLabel(game, START + 100)).toBe('Cơ 1');
+    expect(getStatusLabel(game, START + 3000)).toBe('Cơ 2');
+    expect(getStatusLabel({ ...game, finished: true }, START + 99999)).toBe('Hết ván');
   });
 });

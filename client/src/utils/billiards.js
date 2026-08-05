@@ -65,6 +65,18 @@ export const optionWon = (option, shot) =>
     ? Boolean(shot.missed)
     : !shot.missed && shot.chosenPocket === option.pocket
 
+/**
+ * Gộp các cơ mới tải về vào danh sách đang có.
+ * Cơ trùng chỉ số thì bản mới thắng — vì server nâng mức tiết lộ theo thời gian
+ * (đang mở kèo → đã đóng kèo, lúc đó mới có quỹ đạo và kết quả).
+ */
+export const mergeShots = (existing = [], incoming = []) => {
+  if (!incoming.length) return existing
+  const byIndex = new Map(existing.map((s) => [s.index, s]))
+  incoming.forEach((s) => byIndex.set(s.index, s))
+  return [...byIndex.values()].sort((a, b) => a.index - b.index)
+}
+
 const toMs = (value) => (value instanceof Date ? value.getTime() : new Date(value).getTime())
 
 /**
@@ -93,9 +105,11 @@ export const getPlaybackState = (game, now = Date.now()) => {
 
   const shots = game.shots
   const last = shots[shots.length - 1]
-  const totalMs = last.startAt + last.durationMs
 
-  if (elapsed >= totalMs) {
+  // Server mới là nơi biết ván đã xong hay chưa. Client KHÔNG được tự suy ra từ
+  // mảng shots, vì mảng đó chỉ chứa các cơ đã tới lượt — chính là điều khiến
+  // tổng số cơ không bị lộ ra trước.
+  if (game.finished) {
     return {
       phase: 'finished',
       shotIndex: shots.length - 1,
@@ -103,7 +117,7 @@ export const getPlaybackState = (game, now = Date.now()) => {
       subPhase: 'settle',
       frame: Math.max(0, (last.frames?.length || 1) - 1),
       progress: 1,
-      overMs: elapsed - totalMs,
+      overMs: elapsed - (last.startAt + (last.durationMs || 0)),
     }
   }
 
@@ -118,8 +132,8 @@ export const getPlaybackState = (game, now = Date.now()) => {
   const shot = shots[shotIndex]
   const local = elapsed - shot.startAt
   const lastFrame = Math.max(0, (shot.frames?.length || 1) - 1)
-  const base = { phase: 'playing', shotIndex, shot, progress: elapsed / totalMs }
-  const waitMs = shot.waitMs || 0 // ván cũ trong cache chưa có trường này
+  const base = { phase: 'playing', shotIndex, shot, progress: 0 }
+  const waitMs = shot.waitMs || 0
 
   // Pha chờ: bàn đứng yên, chưa dựng cây cơ. Client đếm ngược ở đây.
   if (local < waitMs) {
@@ -139,6 +153,12 @@ export const getPlaybackState = (game, now = Date.now()) => {
       frame: 0,
       aimProgress: (local - waitMs) / shot.aimMs,
     }
+  }
+
+  // Hết giờ chờ nhưng server chưa kịp gửi quỹ đạo (rollMs chỉ có ở mức tiết lộ
+  // đầy đủ) → giữ ở pha ngắm và báo cho client biết cần xin thêm dữ liệu.
+  if (typeof shot.rollMs !== 'number') {
+    return { ...base, subPhase: 'aim', frame: 0, aimProgress: 1, awaitingReveal: true }
   }
 
   const rollLocal = local - waitMs - shot.aimMs
@@ -218,17 +238,17 @@ export const getStatusLabel = (game, now = Date.now()) => {
   }
   if (playback.phase === 'finished') return 'Hết ván'
   if (playback.phase === 'idle') return 'Đang chờ'
-  return `Cơ ${playback.shotIndex + 1}/${game.totalShots}`
+  return `Cơ ${playback.shotIndex + 1}`
 }
 
 /** Nhãn cho nút ở cột phải — chỉ cần startsAt/endsAt, không cần tải cả frames */
 export const getSummaryLabel = (summary, now = Date.now()) => {
   if (!summary) return 'Đang tải...'
   const startsAt = toMs(summary.startsAt)
-  const endsAt = toMs(summary.endsAt)
   if (now < startsAt) return `Xếp bi · ${Math.ceil((startsAt - now) / 1000)}s`
-  if (now < endsAt) return `Đang dọn bàn · còn ${Math.ceil((endsAt - now) / 1000)}s`
-  return 'Ván mới'
+  // Không đếm ngược tới hết ván: thời điểm kết thúc lộ tổng số cơ, mà từ đó
+  // suy ra được ván có cú trượt nào không (xem serializeGame ở backend).
+  return summary.finished ? 'Ván mới' : 'Đang dọn bàn'
 }
 
 /**

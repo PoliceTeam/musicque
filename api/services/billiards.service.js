@@ -91,45 +91,118 @@ const getCurrentGame = async () => {
   return pending
 }
 
-const serializeGame = (game, { includeShots = true } = {}) => {
-  if (!game) return null
-  const base = {
-    _id: game._id,
-    gameNumber: game.gameNumber,
-    status: game.status,
-    totalShots: game.totalShots,
-    durationMs: game.durationMs,
-    startsAt: game.startsAt,
-    endsAt: game.endsAt,
-    serverNow: Date.now(),
-  }
-  if (!includeShots) return base
+const SERIALIZED_TABLE = {
+  width: TABLE.width,
+  height: TABLE.height,
+  ballRadius: TABLE.ballRadius,
+  pockets: TABLE.pockets.map((p) => ({ index: p.index, x: p.x, y: p.y, r: p.r, name: p.name })),
+}
 
+/**
+ * Một cơ được tiết lộ tới đâu, tuỳ thời điểm.
+ *
+ * Cả ván đã được mô phỏng sẵn từ trước, nên nếu gửi nguyên mảng `shots` thì mở
+ * tab Network là đọc được kết quả TRƯỚC KHI kèo đóng. Ba mức:
+ *
+ *  - chưa tới lượt   → không gửi gì cả, kể cả sự tồn tại của cơ đó (nếu không
+ *                      `shots.length` lại lộ tổng số cơ, mà từ đó suy ra được
+ *                      ván này có cú trượt nào không).
+ *  - đang mở kèo     → chỉ thông tin cần để đặt cược và vẽ bàn đứng yên:
+ *                      bi mục tiêu, các cửa, khung hình đầu. KHÔNG gửi
+ *                      chosenPocket/missed/frames, và không gửi cả góc ngắm —
+ *                      góc ngắm chỉ vào đúng lỗ NPC định đánh.
+ *  - kèo đã đóng     → gửi đủ, client cần frames để phát lại.
+ */
+const REVEAL = { HIDDEN: 0, BETTING: 1, FULL: 2 }
+
+const revealLevelFor = (game, shot, now) => {
+  const startAt = game.startsAt.getTime() + shot.startAt
+  if (now < startAt) return REVEAL.HIDDEN
+  if (now < startAt + (shot.waitMs || 0)) return REVEAL.BETTING
+  return REVEAL.FULL
+}
+
+const serializeShot = (shot, level) => {
+  const base = {
+    index: shot.index,
+    type: shot.type,
+    targetBall: shot.targetBall,
+    ballInHand: shot.ballInHand,
+    ballInHandReason: shot.ballInHandReason,
+    startAt: shot.startAt,
+    waitMs: shot.waitMs,
+    aimMs: shot.aimMs,
+    ids: shot.ids,
+    bettable: shot.bettable,
+    options: shot.options,
+  }
+
+  if (level === REVEAL.FULL) {
+    return {
+      ...base,
+      rollMs: shot.rollMs,
+      settleMs: shot.settleMs,
+      durationMs: shot.durationMs,
+      cue: shot.cue,
+      frames: shot.frames,
+      pots: shot.pots,
+      chosenPocket: shot.chosenPocket,
+      missed: shot.missed,
+    }
+  }
+
+  // Đang mở kèo: chỉ khung hình đầu để vẽ bàn đứng yên + vị trí bi cái.
+  // Toạ độ lúc bi chưa lăn không hé lộ kết quả.
   return {
     ...base,
-    table: {
-      width: TABLE.width,
-      height: TABLE.height,
-      ballRadius: TABLE.ballRadius,
-      pockets: TABLE.pockets.map((p) => ({
-        index: p.index,
-        x: p.x,
-        y: p.y,
-        r: p.r,
-        name: p.name,
-      })),
-    },
-    rack: game.rack,
-    shots: game.shots,
-    // Lượt bi vào lỗ chỉ để tổng kết cuối ván — client tự lấy theo tiến độ phát lại
-    potOrder: game.potOrder,
+    cue: { x: shot.cue?.x, y: shot.cue?.y },
+    frames: shot.frames?.length ? [shot.frames[0]] : [],
+    pots: [],
+    chosenPocket: null,
+    missed: false,
   }
 }
 
-const getState = async () => {
+const serializeGame = (game, { includeShots = true, since = null, now = Date.now() } = {}) => {
+  if (!game) return null
+
+  const finished = now >= game.endsAt.getTime()
+  const base = {
+    _id: game._id,
+    gameNumber: game.gameNumber,
+    startsAt: game.startsAt,
+    serverNow: now,
+    finished,
+    // `totalShots` và `endsAt` đều lộ số cơ của cả ván, mà từ số cơ + số bi ăn
+    // ở cơ phá là suy ra được ván này có cú trượt nào không (đo được: 19/50 ván
+    // đoán đúng 100%). endsAt còn lộ chính xác hơn: 9 cơ = 229–238s, 10 cơ =
+    // 258–268s, không nhóm nào chồng lấn. Chỉ công bố khi ván đã xong.
+    ...(finished
+      ? {
+          status: game.status,
+          totalShots: game.totalShots,
+          potOrder: game.potOrder,
+          endsAt: game.endsAt,
+        }
+      : {}),
+  }
+  if (!includeShots) return base
+
+  const shots = []
+  for (const shot of game.shots) {
+    const level = revealLevelFor(game, shot, now)
+    if (level === REVEAL.HIDDEN) break // các cơ sau chắc chắn cũng chưa tới lượt
+    if (since !== null && shot.index < since) continue
+    shots.push(serializeShot(shot, level))
+  }
+
+  return { ...base, table: SERIALIZED_TABLE, rack: game.rack, shots }
+}
+
+const getState = async ({ since = null } = {}) => {
   const game = await getCurrentGame()
   await settleBets(game)
-  return { game: serializeGame(game), bet: getBetConfig() }
+  return { game: serializeGame(game, { since }), bet: getBetConfig() }
 }
 
 const getSummary = async () => ({

@@ -3,7 +3,9 @@ const billiards = require('../services/billiards.service')
 // GET /api/billiards/current — ván đang chạy kèm toàn bộ quỹ đạo để phát lại (công khai)
 exports.getCurrent = async (req, res) => {
   try {
-    res.status(200).json(await billiards.getState())
+    // `since` để client tải dần: chỉ xin các cơ từ chỉ số đó trở đi
+    const since = req.query.since === undefined ? null : Number(req.query.since)
+    res.status(200).json(await billiards.getState({ since: Number.isFinite(since) ? since : null }))
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }

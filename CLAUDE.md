@@ -303,10 +303,34 @@ runs on `getState`, on `getMyBets` (which the client polls after every shot), wh
 game replaces the old one, and via `settlePendingGames()` at boot — that last one matters
 because a server restart mid-game would otherwise leave coins debited and never paid.
 
-**Still open — do this before it matters:** `/api/billiards/current` ships `chosenPocket`,
-`missed` and the full trajectory during the wait phase, so a bettor can read the outcome
-in DevTools before betting closes. Withhold un-played shots via
-`serializeGame(game, { includeShots })`.
+**The payload reveals a shot in three steps, and this is load-bearing** — the whole game
+is simulated before anyone sees it, so shipping it wholesale hands the bettor the answer:
+
+| Reveal | When | Sent |
+|---|---|---|
+| hidden | shot hasn't started | nothing, not even that it exists |
+| betting | its wait phase | `targetBall`, `options[]`, first frame only |
+| full | wait phase over | `frames`, `pots`, `chosenPocket`, `missed`, `cue.angle` |
+
+Three fields leak the outcome indirectly and are withheld until the game ends. Do not
+put them back:
+- **`totalShots`** — with the balls potted on the break (visible on screen), it says
+  whether the game contains *any* miss. Measured: on 19 of 50 games it predicted "no
+  miss anywhere" with 100% accuracy, which makes every ×20 miss bet a known loser.
+- **`endsAt`** — worse, it gives the shot count exactly: 9 shots run 229–238s, 10 shots
+  258–268s, with **zero overlap** between adjacent counts.
+- **`shots.length`** — which is why un-started shots are omitted entirely rather than
+  stubbed.
+
+Also withheld during the betting window: `cue.angle` (it points at the pocket the NPC
+picked) and `rollMs` (roll duration could differ between a pot and a miss).
+
+Because of this the client cannot hold the whole game. It fetches incrementally with
+`GET /api/billiards/current?since=<shotIndex>` and merges via `mergeShots` (later copies
+of a shot win, since reveal level only ever increases). Two consequences worth
+remembering: `getPlaybackState` must take `finished` from the server rather than infer it
+from the shots array, and when the wait ends before the next fetch lands it returns
+`awaitingReveal` and holds on the aim phase instead of guessing.
 
 The overlay's height is driven by the **table**, not the side column: `.bil-side__inner`
 is absolutely positioned so a growing pot log scrolls inside its box instead of

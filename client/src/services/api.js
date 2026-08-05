@@ -145,7 +145,10 @@ export const voteIdiom = (id, value) => api.post("/api/idioms/vote", { id, value
 export const rerollIdioms = () => api.post("/api/idioms/reroll");
 
 // Bi-a 9 bóng — NPC dọn bàn (quỹ đạo do server mô phỏng sẵn)
-export const getBilliardsCurrent = () => api.get("/api/billiards/current");
+// since = chỉ số cơ nhỏ nhất muốn nhận. Server chỉ tiết lộ các cơ đã tới lượt,
+// và giấu kết quả của cơ đang mở kèo — nên client phải xin lại theo tiến độ.
+export const getBilliardsCurrent = (since) =>
+  api.get("/api/billiards/current", { params: since === undefined ? {} : { since } });
 export const getBilliardsSummary = () => api.get("/api/billiards/summary");
 export const getBilliardsGame = (id) => api.get(`/api/billiards/games/${id}`);
 export const placeBilliardsBet = (payload) => api.post("/api/billiards/bet", payload);
