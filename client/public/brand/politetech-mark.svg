@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Politetech">
+  <!--
+    Dấu hiệu Politetech.
+
+    Cấu trúc: bốn cụm giống hệt nhau, quay 90° quanh tâm (50,50). Mỗi cụm gồm
+    một ngoặc vuông và một chấm tròn:
+
+      - KHUỶU ngoặc quay VÀO TÂM, hai tay vươn RA NGOÀI rìa.
+      - CHẤM nằm ở góc NGOÀI của ô, tức chéo đối diện với khuỷu.
+
+    Hướng này là chỗ dễ dựng ngược nhất — bản dựng đầu tiên của repo làm
+    ngược đúng chiều đó (khuỷu quay ra rìa, chấm nằm giữa) và trông vẫn
+    "hợp lý" nên rất khó tự phát hiện. Đối chiếu với ảnh gốc trước khi sửa.
+
+    Chấm có đường kính bằng đúng bề dày nét (16) — cùng một cây bút.
+    Khe giữa bốn ô là 12 đơn vị; cả dấu hiệu lấp vừa khít khung 100×100.
+
+    Màu lấy bằng mắt từ ảnh chụp nên có thể lệch vài đơn vị so với mã màu
+    chính thức. Thứ tự theo chiều kim đồng hồ từ ô trên trái:
+    xanh dương → xanh lá → vàng → đỏ.
+  -->
+  <g fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M36 8 L36 36 L8 36" stroke="#3D7DEE"/>
+    <path d="M36 8 L36 36 L8 36" stroke="#4CAF50" transform="rotate(90 50 50)"/>
+    <path d="M36 8 L36 36 L8 36" stroke="#F5C13D" transform="rotate(180 50 50)"/>
+    <path d="M36 8 L36 36 L8 36" stroke="#E8443A" transform="rotate(270 50 50)"/>
+  </g>
+  <g>
+    <circle cx="8" cy="8" r="8" fill="#3D7DEE"/>
+    <circle cx="8" cy="8" r="8" fill="#4CAF50" transform="rotate(90 50 50)"/>
+    <circle cx="8" cy="8" r="8" fill="#F5C13D" transform="rotate(180 50 50)"/>
+    <circle cx="8" cy="8" r="8" fill="#E8443A" transform="rotate(270 50 50)"/>
+  </g>
+</svg>

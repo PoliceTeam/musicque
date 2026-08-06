@@ -1,0 +1,14 @@
+{
+  "name": "Musicque — Polite Music Solutions",
+  "short_name": "Musicque",
+  "description": "Xếp hàng bài hát, lời nhắn và bình chọn cho phiên phát nhạc của cả team.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#17181C",
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

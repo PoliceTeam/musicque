@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730 128" role="img" aria-label="Musicque">
+  <!--
+    Khoá logo ngang: icon + wordmark. Dùng cho header, thanh điều hướng,
+    ảnh social. Icon lấy đúng hình của favicon.svg để cả bộ chỉ có một
+    dạng icon duy nhất.
+  -->
+  <defs>
+    <linearGradient id="mql-band" gradientUnits="userSpaceOnUse" x1="21" y1="0" x2="91" y2="0">
+      <stop offset="0" stop-color="#A855F7"/>
+      <stop offset="0.25" stop-color="#EA4335"/>
+      <stop offset="0.5" stop-color="#FBBC05"/>
+      <stop offset="0.75" stop-color="#34A853"/>
+      <stop offset="1" stop-color="#4FA0FF"/>
+    </linearGradient>
+    <linearGradient id="mql-spectrum" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="928" y2="0">
+      <stop offset="0" stop-color="#7B3FE4"/>
+      <stop offset="0.16" stop-color="#D93A8B"/>
+      <stop offset="0.30" stop-color="#EA4335"/>
+      <stop offset="0.46" stop-color="#F58220"/>
+      <stop offset="0.60" stop-color="#FBBC05"/>
+      <stop offset="0.74" stop-color="#34A853"/>
+      <stop offset="0.88" stop-color="#12A0AE"/>
+      <stop offset="1" stop-color="#4285F4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: bản thu nhỏ 0.21875 của favicon.svg (512 → 112) -->
+  <g transform="translate(8 8)">
+    <rect width="112" height="112" rx="25.4" fill="#17181C"/>
+    <path d="M28 65.6 A28 28 0 0 1 84 65.6"
+          fill="none" stroke="url(#mql-band)" stroke-width="12.25" stroke-linecap="round"/>
+    <rect x="21" y="59.5" width="14" height="33.25" rx="7" fill="#A855F7"/>
+    <rect x="77" y="59.5" width="14" height="33.25" rx="7" fill="#4FA0FF"/>
+    <circle cx="56" cy="73.5" r="20.1" fill="#ffffff"/>
+
+    <!-- Dấu hiệu Politetech — chép từ politetech-mark.svg -->
+    <g transform="translate(41.56 59.06) scale(0.28875)">
+      <g fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M36 8 L36 36 L8 36" stroke="#3D7DEE"/>
+        <path d="M36 8 L36 36 L8 36" stroke="#4CAF50" transform="rotate(90 50 50)"/>
+        <path d="M36 8 L36 36 L8 36" stroke="#F5C13D" transform="rotate(180 50 50)"/>
+        <path d="M36 8 L36 36 L8 36" stroke="#E8443A" transform="rotate(270 50 50)"/>
+      </g>
+      <g>
+        <circle cx="8" cy="8" r="8" fill="#3D7DEE"/>
+        <circle cx="8" cy="8" r="8" fill="#4CAF50" transform="rotate(90 50 50)"/>
+        <circle cx="8" cy="8" r="8" fill="#F5C13D" transform="rotate(180 50 50)"/>
+        <circle cx="8" cy="8" r="8" fill="#E8443A" transform="rotate(270 50 50)"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Wordmark thu nhỏ 0.62; cả cụm nằm trong một transform nên gradient vẫn đúng -->
+  <g transform="translate(146 8.2) scale(0.62)"
+     fill="none" stroke="url(#mql-spectrum)" stroke-width="30"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 150 L15 52 L53 116 L91 52 L91 150"/>
+    <path d="M145 30 L145 112 A38 38 0 0 0 221 112 L221 30"/>
+    <path d="M329 60 A30 30 0 1 0 299 90 A30 30 0 1 1 269 120"/>
+    <path d="M377 30 L377 150"/>
+    <path d="M499 57.8 A44 44 0 1 0 499 122.2"/>
+    <path d="M555 90 A44 44 0 1 1 643 90 A44 44 0 1 1 555 90"/>
+    <path d="M617 112 L647 142"/>
+    <path d="M695 30 L695 112 A38 38 0 0 0 771 112 L771 30"/>
+    <path d="M825 30 L901 30 M825 90 L885 90 M825 150 L913 150"/>
+  </g>
+</svg>

@@ -1,10 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Polite Order</title>
+
+    <title>Musicque — Polite Music Solutions</title>
+    <meta name="description" content="Xếp hàng bài hát, lời nhắn và bình chọn cho phiên phát nhạc của cả team." />
+
+    <!--
+      Trình duyệt desktop dùng thẳng favicon.svg. Hai file PNG chỉ có mặt vì
+      Safari iOS (apple-touch-icon) và manifest không nhận SVG — chúng được
+      sinh ra từ chính favicon.svg bằng scripts/build-brand-assets.sh, đừng
+      sửa tay.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
   </head>
   <body>
     <div id="root"></div>

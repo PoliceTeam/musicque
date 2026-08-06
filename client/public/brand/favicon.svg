@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Musicque">
+  <!--
+    Favicon / app icon: tai nghe Musicque ôm lấy dấu hiệu Politetech.
+
+    Đây KHÔNG phải logo-wordmark thu nhỏ. Ở 16px mọi chi tiết mảnh đều thành
+    cháo, nên bản này được vẽ riêng: nét càng tai dày 56, chụp tai to, và
+    dấu hiệu ở giữa đặt trên đĩa trắng.
+
+    Đĩa trắng là bắt buộc: dấu hiệu Politetech gồm bốn màu bão hoà, đặt thẳng
+    lên tile sẫm thì bốn nhánh dính vào nền, mất hẳn hình ngoặc.
+
+    Tile sẫm cũng không phải trang trí — nó là thứ duy nhất giữ cho icon còn
+    hình khối nhận ra được ở 16px trên cả tab sáng lẫn tab tối.
+
+    Khối <g id="politetech"> bên dưới chép nguyên từ politetech-mark.svg và
+    LÀ BẢN DỰNG LẠI BẰNG MẮT từ ảnh chụp. Có file gốc thì thay cả khối.
+  -->
+  <defs>
+    <linearGradient id="fv-spectrum" gradientUnits="userSpaceOnUse" x1="96" y1="0" x2="416" y2="0">
+      <stop offset="0" stop-color="#A855F7"/>
+      <stop offset="0.25" stop-color="#EA4335"/>
+      <stop offset="0.5" stop-color="#FBBC05"/>
+      <stop offset="0.75" stop-color="#34A853"/>
+      <stop offset="1" stop-color="#4FA0FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="#17181C"/>
+
+  <!-- Càng tai nghe -->
+  <path d="M128 300 A128 128 0 0 1 384 300"
+        fill="none" stroke="url(#fv-spectrum)" stroke-width="56" stroke-linecap="round"/>
+
+  <!-- Hai chụp tai -->
+  <rect x="96" y="272" width="64" height="152" rx="32" fill="#A855F7"/>
+  <rect x="352" y="272" width="64" height="152" rx="32" fill="#4FA0FF"/>
+
+  <!-- Đĩa trắng đỡ dấu hiệu -->
+  <circle cx="256" cy="336" r="92" fill="#ffffff"/>
+
+  <g id="politetech" transform="translate(190 270) scale(1.32)">
+    <g fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M36 8 L36 36 L8 36" stroke="#3D7DEE"/>
+      <path d="M36 8 L36 36 L8 36" stroke="#4CAF50" transform="rotate(90 50 50)"/>
+      <path d="M36 8 L36 36 L8 36" stroke="#F5C13D" transform="rotate(180 50 50)"/>
+      <path d="M36 8 L36 36 L8 36" stroke="#E8443A" transform="rotate(270 50 50)"/>
+    </g>
+    <g>
+      <circle cx="8" cy="8" r="8" fill="#3D7DEE"/>
+      <circle cx="8" cy="8" r="8" fill="#4CAF50" transform="rotate(90 50 50)"/>
+      <circle cx="8" cy="8" r="8" fill="#F5C13D" transform="rotate(180 50 50)"/>
+      <circle cx="8" cy="8" r="8" fill="#E8443A" transform="rotate(270 50 50)"/>
+    </g>
+  </g>
+</svg>

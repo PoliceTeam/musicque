@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img"
+     aria-label="Musicque — Polite Music Solutions, by Iced-Tea Team">
+  <!--
+    Khoá logo dọc: wordmark + dải sóng âm + dòng mô tả + dòng ghi công.
+    Dùng cho README, màn hình chờ, slide.
+
+    Lưu ý: cả cụm chữ nằm trong MỘT <g transform> duy nhất. Gradient
+    userSpaceOnUse ăn theo hệ toạ độ của <g> đó nên vẫn trải đúng bề ngang
+    chữ. Tách các chữ ra nhiều transform khác nhau là gradient vỡ ngay
+    (xem chú thích trong logo-wordmark.svg).
+
+    Hai dòng chữ nhỏ dùng font hệ thống, không convert thành path — máy
+    thiếu font sẽ hiển thị hơi khác. Nếu cần bản bất biến tuyệt đối thì
+    xuất PNG bằng scripts/build-brand-assets.sh.
+  -->
+  <defs>
+    <linearGradient id="mqf-spectrum" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="928" y2="0">
+      <stop offset="0" stop-color="#7B3FE4"/>
+      <stop offset="0.16" stop-color="#D93A8B"/>
+      <stop offset="0.30" stop-color="#EA4335"/>
+      <stop offset="0.46" stop-color="#F58220"/>
+      <stop offset="0.60" stop-color="#FBBC05"/>
+      <stop offset="0.74" stop-color="#34A853"/>
+      <stop offset="0.88" stop-color="#12A0AE"/>
+      <stop offset="1" stop-color="#4285F4"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(36 34)">
+    <g fill="none" stroke="url(#mqf-spectrum)" stroke-width="30"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 150 L15 52 L53 116 L91 52 L91 150"/>
+      <path d="M145 30 L145 112 A38 38 0 0 0 221 112 L221 30"/>
+      <path d="M329 60 A30 30 0 1 0 299 90 A30 30 0 1 1 269 120"/>
+      <path d="M377 30 L377 150"/>
+      <path d="M499 57.8 A44 44 0 1 0 499 122.2"/>
+      <path d="M555 90 A44 44 0 1 1 643 90 A44 44 0 1 1 555 90"/>
+      <path d="M617 112 L647 142"/>
+      <path d="M695 30 L695 112 A38 38 0 0 0 771 112 L771 30"/>
+      <path d="M825 30 L901 30 M825 90 L885 90 M825 150 L913 150"/>
+    </g>
+
+    <!--
+      Dải sóng âm chạy suốt bề ngang chữ. Đỉnh sóng cao nhất dừng ở y=172,
+      dưới đáy nét chữ (y=165) đúng 7 đơn vị — kéo cao hơn là sóng chọc vào
+      chân chữ M và chữ I.
+    -->
+    <path d="M0 200 L96 200 L110 176 L124 226 L138 200 L286 200 L298 182
+             L310 218 L322 200 L470 200 L484 172 L498 232 L512 200 L660 200
+             L672 186 L684 214 L696 200 L836 200 L848 178 L860 222 L872 200 L928 200"
+          fill="none" stroke="url(#mqf-spectrum)" stroke-width="5"
+          stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  </g>
+
+  <!--
+    Dòng mô tả, kẹp giữa hai vạch. Dòng chữ giãn 8.5 nên rộng khoảng 600
+    đơn vị (x 200→800); hai vạch phải nằm ngoài khoảng đó, nếu không chữ
+    đè lên vạch.
+  -->
+  <g stroke="#3c4043" stroke-width="3" stroke-linecap="round">
+    <path d="M60 300 L180 300"/>
+    <path d="M820 300 L940 300"/>
+  </g>
+  <text x="500" y="309" text-anchor="middle"
+        font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-size="31" font-weight="600" letter-spacing="8.5" fill="#3c4043">POLITE MUSIC SOLUTIONS</text>
+
+  <text x="500" y="368" text-anchor="middle"
+        font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-size="23" font-weight="600" letter-spacing="3.4" fill="#7a7f85">BY ICED-TEA TEAM</text>
+</svg>

@@ -21,9 +21,8 @@ const SidebarNav = ({ subtitle = 'Iced Tea Team', children }) => {
   return (
     <nav className='sp-panel'>
       <button type='button' className='sp-brand' onClick={() => navigate('/')}>
-        <span className='sp-brand__mark' aria-hidden='true'>
-          ♪
-        </span>
+        <img className='sp-brand__mark' src='/brand/favicon.svg' alt='' aria-hidden='true'
+             width='34' height='34' />
         <span>
           <span className='sp-brand__name'>Musicque</span>
           <br />

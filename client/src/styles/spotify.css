@@ -221,15 +221,15 @@ body {
   text-align: left;
 }
 
+/*
+ * Icon app trong sidebar. Bo góc và nền sẫm đã nằm sẵn trong favicon.svg
+ * nên ở đây không đặt background hay border-radius — đặt thêm là viền tile
+ * bị cắt cụt.
+ */
 .sp-brand__mark {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  background: var(--sp-green);
-  color: #000;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
+  display: block;
   flex-shrink: 0;
 }
 

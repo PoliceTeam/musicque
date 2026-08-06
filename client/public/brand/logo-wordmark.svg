@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-14 0 956 190" role="img" aria-label="Musicque">
+  <!--
+    Wordmark MUSICQUE.
+
+    Chữ dựng thuần bằng cung tròn và đoạn thẳng (không phải font, không phải
+    ảnh), nên phóng to bao nhiêu cũng nét. Chiều cao chữ hoa 120, nét 30,
+    đầu nét bo tròn — cùng ngôn ngữ hình với logo Politetech.
+
+    Hai điều dễ làm hỏng nếu sửa về sau:
+
+    1. Mọi chữ phải dùng TOẠ ĐỘ TUYỆT ĐỐI, tuyệt đối không gói vào
+       transform="translate(...)". Gradient là userSpaceOnUse trải từ x=0 đến
+       x=928 (đúng bề ngang chữ), mà userSpaceOnUse được tính trong hệ toạ độ
+       của chính phần tử tham chiếu nó. Bọc translate vào là mỗi chữ tự nhận
+       gradient trong hệ toạ độ riêng, chỉ lấy được lát màu đầu dải — cả từ
+       mất sạch cầu vồng, chỉ còn tím.
+
+    2. Khoảng cách giữa các chữ là khoảng cách THỊ GIÁC, không phải hình học.
+       Cạnh tròn (S, C, Q) hụt sáng ở mép nên phải đứng sát hơn cạnh thẳng:
+       24 cho thẳng|thẳng, 18 cho thẳng|tròn, 12 cho tròn|tròn (cặp C|Q).
+       Đặt đều 24 hết thì "MUSIC" và "QUE" trông như hai từ rời nhau.
+  -->
+  <defs>
+    <linearGradient id="mq-spectrum" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="928" y2="0">
+      <stop offset="0" stop-color="#7B3FE4"/>
+      <stop offset="0.16" stop-color="#D93A8B"/>
+      <stop offset="0.30" stop-color="#EA4335"/>
+      <stop offset="0.46" stop-color="#F58220"/>
+      <stop offset="0.60" stop-color="#FBBC05"/>
+      <stop offset="0.74" stop-color="#34A853"/>
+      <stop offset="0.88" stop-color="#12A0AE"/>
+      <stop offset="1" stop-color="#4285F4"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke="url(#mq-spectrum)" stroke-width="30"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- M -->
+    <path d="M15 150 L15 52 L53 116 L91 52 L91 150"/>
+    <!-- U -->
+    <path d="M145 30 L145 112 A38 38 0 0 0 221 112 L221 30"/>
+    <!-- S: hai nửa đường tròn nối nhau, đối xứng tuyệt đối -->
+    <path d="M329 60 A30 30 0 1 0 299 90 A30 30 0 1 1 269 120"/>
+    <!-- I -->
+    <path d="M377 30 L377 150"/>
+    <!-- C -->
+    <path d="M499 57.8 A44 44 0 1 0 499 122.2"/>
+    <!-- Q -->
+    <path d="M555 90 A44 44 0 1 1 643 90 A44 44 0 1 1 555 90"/>
+    <path d="M617 112 L647 142"/>
+    <!-- U -->
+    <path d="M695 30 L695 112 A38 38 0 0 0 771 112 L771 30"/>
+    <!-- E: ba vạch dài ngắn khác nhau, gợi cột sóng âm -->
+    <path d="M825 30 L901 30 M825 90 L885 90 M825 150 L913 150"/>
+  </g>
+</svg>
