@@ -35,7 +35,8 @@
 
   /* Khung layout */
   --sp-sidebar-w: 280px;
-  --sp-rail-w: 340px;
+  --sp-rail-w: 360px;
+  --sp-rail-news-min: 420px;
   --sp-player-h: 84px;
   --sp-gap: 8px;
 }
@@ -119,13 +120,20 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--sp-gap);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /*
  * Bố cục cột phải Home (dùng class rõ ràng, không phụ thuộc thứ tự con):
  * - Nút Cho-Han: cao tự nhiên, luôn nổi ở trên.
  * - Feed hoạt động: có trần, cuộn bên trong.
- * - Khung tin tức: chiếm phần chiều cao còn lại.
+ * - Khung tin tức: chiếm phần chiều cao còn lại, nhưng có sàn tối thiểu.
+ *
+ * Trước đây khung tin chỉ có `flex: 1 1 auto; min-height: 0`, nên trên laptop
+ * màn thấp nó bị Cho-Han + Billiards + feed bóp còn vài chục pixel — đúng vào
+ * phần mà người ta muốn đọc. Giờ nó giữ sàn `--sp-rail-news-min` và cả cột
+ * phải tự cuộn khi không đủ chỗ, thay vì bóp mỗi khung tin.
  */
 .sp-rail > .chohan-rail,
 .sp-rail > .bil-rail {
@@ -134,13 +142,13 @@ body {
 
 .sp-rail > .sp-rail-activity {
   flex: 0 1 auto;
-  max-height: 300px;
-  min-height: 160px;
+  max-height: 240px;
+  min-height: 140px;
 }
 
 .sp-rail > .sp-rail-news {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: var(--sp-rail-news-min);
 }
 
 .chohan-rail {
@@ -883,7 +891,7 @@ body {
  * truyền được xuống tận .news-scroll. Thiếu một mắt xích là widget lại phình
  * ra ngoài khung và nuốt mất thao tác cuộn/click.
  * Cấu trúc: .sp-newsdock > .ant-tabs > .ant-tabs-content-holder
- *           > .ant-tabs-tabpane > .ant-card > .ant-card-body > .news-scroll
+ *           > .ant-tabs-tabpane > .news-view > .news-scroll
  */
 .sp-newsdock {
   display: flex;
@@ -895,9 +903,7 @@ body {
 .sp-newsdock > .ant-tabs,
 .sp-newsdock .ant-tabs-content-holder,
 .sp-newsdock .ant-tabs-content,
-.sp-newsdock .ant-tabs-tabpane:not(.ant-tabs-tabpane-hidden),
-.sp-newsdock .ant-card,
-.sp-newsdock .ant-card-body {
+.sp-newsdock .ant-tabs-tabpane:not(.ant-tabs-tabpane-hidden) {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -917,9 +923,6 @@ body {
   flex: 0 0 auto;
 }
 
-.sp-newsdock .ant-card-head {
-  flex: 0 0 auto;
-}
 
 .news-scroll {
   flex: 1;

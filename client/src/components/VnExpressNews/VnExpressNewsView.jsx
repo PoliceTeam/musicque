@@ -1,32 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Typography, Spin, Alert, Button, Empty, Skeleton } from 'antd';
-import { ReloadOutlined, ReadOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ReloadOutlined } from '@ant-design/icons';
 import { getVnExpressNews } from '../../services/api';
-import { useTheme } from '../../contexts/ThemeContext';
+import {
+  CardArticle,
+  GridSkeleton,
+  HeroArticle,
+  NewsState,
+  RailSkeleton,
+  RowArticle,
+} from '../News/ArticleItems';
 
-const { Text, Paragraph } = Typography;
+const SOURCE_LABEL = 'VnExpress · Tin nổi bật';
 
-const formatPubDate = (pubDate) => {
-  if (!pubDate) return '';
-  const date = new Date(pubDate);
-  if (Number.isNaN(date.getTime())) return pubDate;
-
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
-const VnExpressNewsView = () => {
-  const { isDark } = useTheme();
+/**
+ * Tin nổi bật trong ngày (RSS vnexpress.net/rss/tin-noi-bat.rss).
+ *
+ * `variant='rail'` là widget hẹp ở cột phải Home; `variant='reader'` là lưới
+ * tạp chí trong NewsReaderModal. Cùng một nguồn dữ liệu, khác cách bày.
+ */
+const VnExpressNewsView = ({ variant = 'rail' }) => {
+  const isReader = variant === 'reader';
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -35,130 +33,73 @@ const VnExpressNewsView = () => {
       setArticles(response.data.data || []);
     } catch (err) {
       console.error('Error fetching VnExpress news:', err);
-      setError(err.response?.data?.message || 'Không thể tải tin tức VnExpress');
+      setError(err.response?.data?.message || 'Không thể tải tin nổi bật VnExpress');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNews();
-  }, []);
+  }, [fetchNews]);
+
+  const renderBody = () => {
+    if (loading && articles.length === 0) {
+      return isReader ? <GridSkeleton /> : <RailSkeleton />;
+    }
+
+    if (error) {
+      return <NewsState message={error} onRetry={fetchNews} />;
+    }
+
+    if (articles.length === 0) {
+      return <NewsState message="Chưa có tin tức" />;
+    }
+
+    if (isReader) {
+      return (
+        <div className="news-grid">
+          {articles.map((article, index) => (
+            <CardArticle key={article.link} article={article} lead={index === 0} />
+          ))}
+        </div>
+      );
+    }
+
+    const [hero, ...rest] = articles;
+
+    return (
+      <div className="news-list">
+        <HeroArticle article={hero} />
+        {rest.map((article) => (
+          <RowArticle key={article.link} article={article} />
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <Card
-      size="small"
-      title={
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <ReadOutlined />
-          Du lịch VnExpress
+    <div className="news-view" style={{ '--news-accent': '#e11d48' }}>
+      <div className="news-toolbar">
+        <span className="news-source">
+          <span className="news-source__dot" />
+          {SOURCE_LABEL}
         </span>
-      }
-      extra={
-        <Button
-          type="text"
-          size="small"
-          icon={<ReloadOutlined spin={loading} />}
+        <button
+          type="button"
+          className="news-refresh"
           onClick={fetchNews}
           disabled={loading}
-        />
-      }
-      styles={{
-        body: {
-          padding: 0,
-        },
-      }}
-      style={{
-        background: isDark ? '#1f1f1f' : '#fff',
-        borderColor: isDark ? '#434343' : '#f0f0f0',
-      }}
-    >
-      {/* Chiều cao do khung cha quyết định (.sp-newsdock) — không tự tính theo 100vh */}
-      <div className="news-scroll">
-        {loading && articles.length === 0 ? (
-        <div style={{ padding: '16px' }}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} style={{ marginBottom: 24, paddingBottom: 12, borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}` }}>
-              <Skeleton.Button active block style={{ height: 120, borderRadius: 8, marginBottom: 8 }} />
-              <Skeleton active title={{ width: '90%' }} paragraph={{ rows: 3, width: ['100%', '100%', '70%'] }} />
-              <Skeleton.Button active size="small" style={{ width: 100, height: 14, marginTop: 8 }} />
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <Alert
-          type="error"
-          message={error}
-          showIcon
-          style={{ margin: 16 }}
-          action={
-            <Button size="small" onClick={fetchNews}>
-              Thử lại
-            </Button>
-          }
-        />
-      ) : articles.length === 0 ? (
-        <Empty description="Chưa có tin tức" style={{ padding: '24px 16px' }} />
-      ) : (
-        <div className="vnexpress-news-list">
-          {articles.map((article) => (
-            <a
-              key={article.link}
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="vnexpress-news-item"
-              style={{
-                display: 'block',
-                padding: '12px 16px',
-                borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-                color: 'inherit',
-                textDecoration: 'none',
-              }}
-            >
-              {article.imageUrl && (
-                <img
-                  src={article.imageUrl}
-                  alt={article.title}
-                  style={{
-                    width: '100%',
-                    height: 120,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    marginBottom: 8,
-                  }}
-                  loading="lazy"
-                />
-              )}
-              <Text
-                strong
-                style={{
-                  display: 'block',
-                  marginBottom: 6,
-                  color: isDark ? '#fff' : '#141414',
-                  lineHeight: 1.4,
-                }}
-              >
-                {article.title}
-              </Text>
-              {article.summary && (
-                <Paragraph
-                  type="secondary"
-                  ellipsis={{ rows: 3 }}
-                  style={{ marginBottom: 6, fontSize: 13 }}
-                >
-                  {article.summary}
-                </Paragraph>
-              )}
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {formatPubDate(article.pubDate)}
-              </Text>
-            </a>
-          ))}
-        </div>
-      )}
+          aria-label="Tải lại tin nổi bật"
+          title="Tải lại"
+        >
+          <ReloadOutlined spin={loading} />
+        </button>
       </div>
-    </Card>
+
+      {/* Chiều cao do khung cha quyết định (.sp-newsdock / .news-reader) */}
+      <div className="news-scroll">{renderBody()}</div>
+    </div>
   );
 };
 

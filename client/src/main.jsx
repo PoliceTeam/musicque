@@ -5,6 +5,7 @@ import './index.css'
 import './styles/spotify.css'
 import './styles/chohan.css'
 import './styles/billiards.css'
+import './styles/news.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

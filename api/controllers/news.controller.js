@@ -1,7 +1,13 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const VNEXPRESS_RSS_URL = 'https://vnexpress.net/rss/du-lich.rss';
+// Tin nổi bật trong ngày — thay cho feed du lịch cũ.
+const VNEXPRESS_RSS_URL = 'https://vnexpress.net/rss/tin-noi-bat.rss';
+const VNEXPRESS_CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
+// Cache trong tiến trình: mọi client mở Home đều gọi endpoint này nên không
+// việc gì phải đấm vào RSS của VnExpress mỗi lần.
+let vnexpressCache = { items: [], fetchedAt: 0 };
 
 const parseDescription = (descriptionHtml) => {
   const $ = cheerio.load(descriptionHtml || '', null, false);
@@ -13,6 +19,14 @@ const parseDescription = (descriptionHtml) => {
 
 exports.getVnExpressNews = async (req, res) => {
   try {
+    if (vnexpressCache.items.length > 0 && Date.now() - vnexpressCache.fetchedAt < VNEXPRESS_CACHE_TTL) {
+      return res.status(200).json({
+        message: 'VnExpress news retrieved successfully',
+        data: vnexpressCache.items,
+        cached: true,
+      });
+    }
+
     const response = await axios.get(VNEXPRESS_RSS_URL, {
       timeout: 10000,
       headers: {
@@ -41,12 +55,25 @@ exports.getVnExpressNews = async (req, res) => {
       });
     });
 
+    vnexpressCache = { items, fetchedAt: Date.now() };
+
     res.status(200).json({
       message: 'VnExpress news retrieved successfully',
       data: items,
+      cached: false,
     });
   } catch (error) {
     console.error('Error fetching VnExpress RSS:', error);
+
+    // Thà trả tin cũ còn hơn để widget trống khi VnExpress chập chờn.
+    if (vnexpressCache.items.length > 0) {
+      return res.status(200).json({
+        message: 'VnExpress news retrieved from stale cache',
+        data: vnexpressCache.items,
+        cached: true,
+        stale: true,
+      });
+    }
 
     if (error.response) {
       return res.status(error.response.status).json({
@@ -134,7 +161,12 @@ const fetchRSS = async (url, sourceName, page = 1, limit = 7) => {
         imageUrl = desc$('img').attr('src') || null;
       }
       
-      let summary = description ? cheerio.load(description, null, false).text().replace(/\s+/g, ' ').substring(0, 150) + '...' : '';
+      // Lobsters chỉ nhét mỗi link "Comments" vào description — cắt 150 ký tự
+      // xong ra "Comments..." trông như tóm tắt hỏng, thà để trống còn hơn.
+      const plain = description
+        ? cheerio.load(description, null, false).text().replace(/\s+/g, ' ').trim()
+        : '';
+      let summary = plain.length > 20 ? `${plain.substring(0, 150)}...` : '';
 
       items.push({
         id: link,

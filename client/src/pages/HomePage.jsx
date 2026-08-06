@@ -25,6 +25,7 @@ const VnExpressNewsView = lazy(() => import('../components/VnExpressNews/VnExpre
 const WealthLeaderboardModal = lazy(
   () => import('../components/WealthLeaderboard/WealthLeaderboardModal'),
 )
+const NewsReaderModal = lazy(() => import('../components/News/NewsReaderModal'))
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -44,6 +45,7 @@ const HomePage = () => {
   const [showChibi, setShowChibi] = useState(false);
   const [showWealthLeaderboard, setShowWealthLeaderboard] = useState(false);
   const [newsTab, setNewsTab] = useState('1');
+  const [showNewsReader, setShowNewsReader] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -320,6 +322,13 @@ const HomePage = () => {
                 <span aria-hidden="true">🌍</span>
                 Thế giới có gì mới?
               </h2>
+              <button
+                type="button"
+                className="news-expand"
+                onClick={() => setShowNewsReader(true)}
+              >
+                Xem tất cả
+              </button>
             </div>
             <div
               className="sp-panel__body sp-newsdock"
@@ -330,7 +339,7 @@ const HomePage = () => {
                 onChange={setNewsTab}
                 items={[
                   {
-                    label: 'VnExpress',
+                    label: 'Tin nổi bật',
                     key: '1',
                     children: newsTab === '1' ? (
                       <Suspense fallback={null}>
@@ -376,6 +385,16 @@ const HomePage = () => {
           <WealthLeaderboardModal
             open={showWealthLeaderboard}
             onClose={() => setShowWealthLeaderboard(false)}
+          />
+        </Suspense>
+      )}
+
+      {showNewsReader && (
+        <Suspense fallback={null}>
+          <NewsReaderModal
+            open={showNewsReader}
+            onClose={() => setShowNewsReader(false)}
+            defaultTab={newsTab}
           />
         </Suspense>
       )}
