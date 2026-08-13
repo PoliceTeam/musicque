@@ -1,6 +1,6 @@
-const Message = require('./models/message.model')
 const Session = require('./models/session.model')
 const { resolveUserFromToken } = require('./services/auth.service')
+const chatService = require('./services/chat.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 
 let io;
@@ -18,46 +18,67 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     console.log('Client connected');
 
-    socket.on('chat_message', async (data) => {
+    socket.on('chat:join', async (data = {}) => {
       try {
-        const { content, token } = data;
+        const sessionId = data.sessionId
+        if (!sessionId) return
+
+        const room = chatService.getRoomName(sessionId)
+        socket.join(room)
+        socket.chatRoom = room
+        socket.emit('chat:joined', { sessionId, room })
+      } catch (error) {
+        socket.emit('chat:error', { message: error.message || 'Không vào được phòng chat' })
+      }
+    })
+
+    socket.on('chat:leave', (data = {}) => {
+      const sessionId = data.sessionId
+      const room = sessionId ? chatService.getRoomName(sessionId) : socket.chatRoom
+      if (!room) return
+
+      socket.leave(room)
+      if (socket.chatRoom === room) socket.chatRoom = null
+    })
+
+    const handleChatMessage = async (data = {}) => {
+      try {
+        const { content, token } = data
 
         // Danh tính lấy từ token, không nhận username tự khai từ client
-        const user = await resolveUserFromToken(token);
+        const user = await resolveUserFromToken(token)
         if (!user) {
-          socket.emit('chat_error', { message: 'Vui lòng đăng nhập để chat' });
-          return;
+          socket.emit('chat:error', { message: 'Vui lòng đăng nhập để chat' })
+          socket.emit('chat_error', { message: 'Vui lòng đăng nhập để chat' })
+          return
         }
 
-        // Tìm active session
-        const activeSession = await Session.findOne({ isActive: true });
-        if (!activeSession) {
-          return;
+        const sessionId = data.sessionId || (await Session.findOne({ isActive: true }))?._id
+        if (!sessionId) {
+          socket.emit('chat:error', { message: 'Chưa có phiên phát nhạc để chat' })
+          return
         }
 
-        // Lưu tin nhắn
-        const message = await Message.create({
+        const message = await chatService.createSessionMessage({
+          sessionId,
+          user,
           content,
-          userId: user._id,
-          sessionId: activeSession._id
-        });
+        })
 
-        // Populate user info và emit message
-        await message.populate('userId', 'username color');
-        io.emit('new_message', {
-          content: message.content,
-          username: message.userId.username,
-          color: message.userId.color,
-          createdAt: message.createdAt
-        });
+        const room = chatService.getRoomName(message.sessionId)
+        socket.join(room)
+        socket.chatRoom = room
+
+        io.to(room).emit('chat:message', message)
+        io.to(room).emit('new_message', message)
       } catch (error) {
-        console.error('Chat error:', error);
+        console.error('Chat error:', error)
+        socket.emit('chat:error', { message: error.message || 'Không gửi được tin nhắn' })
       }
-    });
+    }
 
-    socket.on('disconnect', () => {
-      console.log('Client disconnected');
-    });
+    socket.on('chat:message', handleChatMessage)
+    socket.on('chat_message', handleChatMessage)
 
     // Whiteboard (PoliBoard) real-time handlers
     socket.on('join-room', async (roomId) => {

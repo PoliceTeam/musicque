@@ -3,7 +3,7 @@ import { CrownOutlined, ReloadOutlined, TrophyOutlined } from '@ant-design/icons
 import { Modal } from 'antd'
 import { useAuth } from '../../contexts/AuthContext'
 import { getCoinLeaderboard } from '../../services/api'
-import { getAvatarColor, getInitials } from '../../utils/avatar'
+import UserAvatar from '../Avatar/UserAvatar'
 
 const PODIUM_ORDER = [2, 1, 3]
 const numberFormatter = new Intl.NumberFormat('vi-VN')
@@ -20,13 +20,12 @@ const PlayerAvatar = ({ player, rank }) => {
   const name = player.displayName || player.username
 
   return (
-    <span
+    <UserAvatar
+      user={player}
+      name={name}
+      size={rank <= 3 ? 70 : 44}
       className={`wealth-avatar wealth-avatar--rank-${rank}`}
-      style={{ '--wealth-avatar-color': player.color || getAvatarColor(name) }}
-      aria-hidden='true'
-    >
-      {getInitials(name)}
-    </span>
+    />
   )
 }
 

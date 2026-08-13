@@ -55,6 +55,16 @@ exports.me = async (req, res) => {
   res.status(200).json({ user: req.user.toPublicJSON() })
 }
 
+// PATCH /api/auth/me/avatar — đổi avatar động vật cho tài khoản hiện tại
+exports.updateAvatar = async (req, res) => {
+  try {
+    const user = await authService.updateAvatar(req.user, req.body.avatarId)
+    res.status(200).json({ message: 'Đã cập nhật avatar', user })
+  } catch (error) {
+    handleError(res, error)
+  }
+}
+
 // POST /api/auth/admin/login — vẫn là login thường, chỉ chặn thêm người không phải admin
 exports.loginAdmin = async (req, res) => {
   try {

@@ -2,13 +2,15 @@ import React, { useState, useContext } from 'react'
 import { Form, Input, message } from 'antd'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
 import { useAuth } from '../../contexts/AuthContext'
-import { getAvatarColor, getInitials } from '../../utils/avatar'
+import UserAvatar from '../Avatar/UserAvatar'
 
-const AddSongForm = () => {
+const AddSongForm = ({ variant = 'default' }) => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const { addSong, currentSession } = useContext(PlaylistContext)
-  const { isAuthenticated, displayName, openAuthModal } = useAuth()
+  const { isAuthenticated, displayName, openAuthModal, user } = useAuth()
+  const isMain = variant === 'main'
+  const className = `add-song-form add-song-form--${variant}`
 
   const handleSubmit = async (values) => {
     if (!currentSession) {
@@ -31,7 +33,7 @@ const AddSongForm = () => {
 
   if (!currentSession) {
     return (
-      <div className='sp-empty'>
+      <div className={`${className} sp-empty add-song-form__empty`}>
         <span className='sp-empty__icon' aria-hidden='true'>
           🌙
         </span>
@@ -43,7 +45,7 @@ const AddSongForm = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className='sp-empty'>
+      <div className={`${className} sp-empty add-song-form__empty`}>
         <span className='sp-empty__icon' aria-hidden='true'>
           🔒
         </span>
@@ -63,56 +65,59 @@ const AddSongForm = () => {
   }
 
   return (
-    <Form form={form} layout='vertical' onFinish={handleSubmit} requiredMark={false}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 14,
-          fontSize: 13,
-        }}
-      >
-        <span className='sp-avatar' style={{ background: getAvatarColor(displayName) }}>
-          {getInitials(displayName)}
-        </span>
+    <Form
+      form={form}
+      layout='vertical'
+      onFinish={handleSubmit}
+      requiredMark={false}
+      className={className}
+    >
+      <div className='add-song-form__identity'>
+        <UserAvatar user={user} name={displayName} />
         <span>
           <span className='sp-muted'>Thêm với tên </span>
           <strong>{displayName}</strong>
         </span>
       </div>
 
-      <Form.Item
-        name='youtubeUrl'
-        label='Link YouTube'
-        rules={[
-          { required: true, message: 'Vui lòng nhập link YouTube' },
-          {
-            pattern: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/,
-            message: 'Vui lòng nhập link YouTube hợp lệ',
-          },
-        ]}
-      >
-        <Input placeholder='https://www.youtube.com/watch?v=...' />
-      </Form.Item>
+      <div className='add-song-form__fields'>
+        <Form.Item
+          name='youtubeUrl'
+          label='Link YouTube'
+          className='add-song-form__url'
+          rules={[
+            { required: true, message: 'Vui lòng nhập link YouTube' },
+            {
+              pattern: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/,
+              message: 'Vui lòng nhập link YouTube hợp lệ',
+            },
+          ]}
+        >
+          <Input placeholder='https://www.youtube.com/watch?v=...' />
+        </Form.Item>
 
-      <Form.Item
-        name='message'
-        label='Lời nhắn'
-        extra='Sẽ được đọc lên trước khi bài hát phát.'
-        style={{ marginBottom: 18 }}
-      >
-        <Input.TextArea rows={3} placeholder='Gửi lời nhắn tới cả team...' maxLength={200} />
-      </Form.Item>
+        <Form.Item
+          name='message'
+          label='Lời nhắn'
+          extra={isMain ? null : 'Sẽ được đọc lên trước khi bài hát phát.'}
+          className='add-song-form__message'
+        >
+          <Input.TextArea
+            rows={isMain ? 1 : 3}
+            autoSize={isMain ? { minRows: 1, maxRows: 2 } : undefined}
+            placeholder='Gửi lời nhắn tới cả team...'
+            maxLength={200}
+          />
+        </Form.Item>
 
-      <button
-        type='submit'
-        className='sp-btn sp-btn--primary'
-        disabled={loading}
-        style={{ width: '100%' }}
-      >
-        {loading ? 'Đang thêm...' : 'Thêm vào hàng chờ'}
-      </button>
+        <button
+          type='submit'
+          className='sp-btn sp-btn--primary add-song-form__submit'
+          disabled={loading}
+        >
+          {loading ? 'Đang thêm...' : 'Thêm vào hàng chờ'}
+        </button>
+      </div>
     </Form>
   )
 }

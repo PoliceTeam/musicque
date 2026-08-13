@@ -77,6 +77,9 @@ export const login = (username, password) =>
 
 export const fetchMe = () => api.get("/api/auth/me");
 
+export const updateMyAvatar = (avatarId) =>
+  api.patch("/api/auth/me/avatar", { avatarId });
+
 // Polite Coins API
 export const getCoinBalance = () => api.get("/api/coins/me");
 export const getCoinLeaderboard = (config = {}) =>
@@ -105,6 +108,13 @@ export const getCurrentSession = () => api.get("/api/sessions/current");
 
 export const getSessionPlaylist = (sessionId) =>
   api.get(`/api/sessions/${sessionId}/playlist`);
+
+// Chat room theo phiên phát nhạc
+export const getChatMessages = (sessionId, params = {}, config = {}) =>
+  api.get(`/api/chat/sessions/${sessionId}/messages`, {
+    ...config,
+    params: { limit: 50, ...params },
+  });
 
 // Song API — danh tính người gửi lấy từ token, không truyền username nữa
 export const addSong = (youtubeUrl, message) =>

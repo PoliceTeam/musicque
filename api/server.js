@@ -4,7 +4,7 @@ const http = require('http')
 const app = require('./app')
 const { initSocket } = require('./socket')
 const { clearAllBoards } = require('./redis')
-const { syncAdminAccount } = require('./services/auth.service')
+const { backfillMissingAvatars, syncAdminAccount } = require('./services/auth.service')
 const { backfillBalances } = require('./services/coins.service')
 const { ensureIndexes: ensureSignupGrantIndexes } = require('./services/signupGrant.service')
 const Song = require('./models/song.model')
@@ -60,8 +60,12 @@ mongoose
     // Đồng bộ tài khoản admin từ env — không chặn khởi động nếu lỗi
     try {
       await syncAdminAccount()
+      const avatarBackfilled = await backfillMissingAvatars()
+      if (avatarBackfilled > 0) {
+        console.log(`[Auth] Đã gắn avatar cho ${avatarBackfilled} user cũ`)
+      }
     } catch (error) {
-      console.error('[Auth] Không đồng bộ được tài khoản admin:', error.message)
+      console.error('[Auth] Không đồng bộ/backfill được tài khoản:', error.message)
     }
 
     // Cấp số dư khởi điểm cho user cũ + đồng bộ rankScore bài cũ (idempotent)

@@ -4,6 +4,9 @@ const messageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true,
+    trim: true,
+    minlength: 1,
+    maxlength: 500,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,6 +23,8 @@ const messageSchema = new mongoose.Schema({
     default: Date.now,
   },
 })
+
+messageSchema.index({ sessionId: 1, createdAt: -1 })
 
 const Message = mongoose.model('Message', messageSchema)
 module.exports = Message

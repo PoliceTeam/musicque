@@ -4,6 +4,7 @@ import {
   fetchMe,
   login as loginApi,
   register as registerApi,
+  updateMyAvatar,
   getStoredToken,
   setStoredToken,
   getCoinBalance,
@@ -134,6 +135,17 @@ export const AuthProvider = ({ children }) => {
     message.success('Đã đăng xuất')
   }, [])
 
+  const updateAvatar = useCallback(async (avatarId) => {
+    try {
+      const response = await updateMyAvatar(avatarId)
+      setUser(response.data.user)
+      message.success(response.data.message || 'Đã cập nhật avatar')
+      return { ok: true, user: response.data.user }
+    } catch (error) {
+      return { ok: false, error: extractError(error, 'Không cập nhật được avatar') }
+    }
+  }, [])
+
   /**
    * Guard cho hành động cần tài khoản. Trả true nếu được phép đi tiếp,
    * ngược lại mở modal đăng nhập và trả false.
@@ -182,6 +194,7 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       logout,
+      updateAvatar,
       requireAuth,
       authModal,
       openAuthModal,
@@ -200,6 +213,7 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       logout,
+      updateAvatar,
       requireAuth,
       authModal,
       openAuthModal,

@@ -10,6 +10,7 @@ import UserMenu from '../components/Auth/UserMenu';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
+import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
 import { PlaylistContext } from '../contexts/PlaylistContext';
@@ -257,17 +258,7 @@ const HomePage = () => {
             </div>
           </SidebarNav>
 
-          <section className="sp-panel sp-panel--grow">
-            <div className="sp-panel__head">
-              <h2 className="sp-panel__title">
-                <span aria-hidden="true">➕</span>
-                Thêm bài hát
-              </h2>
-            </div>
-            <div className="sp-panel__body" style={{ padding: '0 20px 20px' }}>
-              <AddSongForm />
-            </div>
-          </section>
+          <ChatBox className="chat-room--sidebar" />
         </aside>
 
         {/* ── Nội dung chính ──────────────────────────────────────── */}
@@ -304,6 +295,17 @@ const HomePage = () => {
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             <TetCountdown />
             <DailyIdiom />
+            <section className="sp-panel sp-main-add">
+              <div className="sp-panel__head">
+                <h2 className="sp-panel__title">
+                  <span aria-hidden="true">➕</span>
+                  Thêm bài hát
+                </h2>
+              </div>
+              <div className="sp-panel__body">
+                <AddSongForm variant="main" />
+              </div>
+            </section>
             <PlaylistView />
           </div>
         </main>

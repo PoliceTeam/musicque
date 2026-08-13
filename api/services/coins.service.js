@@ -119,7 +119,7 @@ async function getLeaderboard(limit = 5) {
     role: 'user',
     password: { $exists: true, $ne: null },
   })
-    .select('username displayName color polites')
+    .select('username displayName color avatarId polites')
     .sort({ polites: -1, createdAt: 1, _id: 1 })
     .limit(safeLimit)
     .lean()
@@ -130,6 +130,7 @@ async function getLeaderboard(limit = 5) {
     username: user.username,
     displayName: user.displayName || user.username,
     color: user.color,
+    avatarId: user.avatarId,
     balance: user.polites ?? 0,
   }))
 }

@@ -2,6 +2,11 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/user.model')
 const signupGrantService = require('./signupGrant.service')
 const coinsService = require('./coins.service')
+const {
+  ANIMAL_AVATAR_IDS,
+  getStableAvatarId,
+  isValidAvatarId,
+} = require('../constants/animalAvatars')
 
 const TOKEN_TTL = process.env.JWT_EXPIRES_IN || '7d'
 const SIGNUP_START_BALANCE = Math.max(0, Number(process.env.SIGNUP_START_BALANCE || 100))
@@ -126,6 +131,50 @@ exports.login = async ({ username, password }) => {
   await user.save()
 
   return buildAuthPayload(user)
+}
+
+exports.updateAvatar = async (user, avatarId) => {
+  if (!user?._id) {
+    throw new AuthError(401, 'Vui lòng đăng nhập để tiếp tục')
+  }
+
+  if (!isValidAvatarId(avatarId)) {
+    throw new AuthError(400, 'Avatar không hợp lệ')
+  }
+
+  user.avatarId = avatarId
+  await user.save()
+
+  return user.toPublicJSON()
+}
+
+/**
+ * Backfill avatar cho user cũ khi backend restart. Chỉ sửa document đang thiếu
+ * hoặc có avatarId không hợp lệ; avatar người dùng đã chọn sẽ được giữ nguyên.
+ */
+exports.backfillMissingAvatars = async () => {
+  const users = await User.find({ avatarId: { $nin: ANIMAL_AVATAR_IDS } })
+    .select('_id username')
+    .lean()
+
+  if (users.length === 0) return 0
+
+  const operations = users.map((user) => ({
+    updateOne: {
+      filter: {
+        _id: user._id,
+        avatarId: { $nin: ANIMAL_AVATAR_IDS },
+      },
+      update: {
+        $set: {
+          avatarId: getStableAvatarId(user._id?.toString() || user.username),
+        },
+      },
+    },
+  }))
+
+  const result = await User.bulkWrite(operations, { ordered: false })
+  return result.modifiedCount || 0
 }
 
 /**

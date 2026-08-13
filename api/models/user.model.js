@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
+const { ANIMAL_AVATAR_IDS, getStableAvatarId } = require('../constants/animalAvatars')
 
 const SALT_ROUNDS = 10
 
@@ -52,6 +53,13 @@ const userSchema = new mongoose.Schema({
   color: {
     type: String,
     default: () => AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+  },
+  avatarId: {
+    type: String,
+    enum: ANIMAL_AVATAR_IDS,
+    default() {
+      return getStableAvatarId(this._id?.toString() || this.username)
+    },
   },
   // Ví Polite Coins — tiền chơi nội bộ, dùng để cược Cho-Han và bid bài hát.
   // Không phải tiền thật; hệ thống là nhà cái nên nguồn/đích là vô hạn.
@@ -118,6 +126,7 @@ userSchema.methods.toPublicJSON = function () {
     displayName: this.displayName || this.username,
     role: this.role,
     color: this.color,
+    avatarId: this.avatarId || getStableAvatarId(this._id?.toString() || this.username),
     polites: this.polites ?? 0,
   }
 }

@@ -34,9 +34,9 @@
   --sp-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
 
   /* Khung layout */
-  --sp-sidebar-w: 280px;
-  --sp-rail-w: 360px;
-  --sp-rail-news-min: 420px;
+  --sp-sidebar-w: 340px;
+  --sp-rail-w: 340px;
+  --sp-rail-news-min: 380px;
   --sp-player-h: 84px;
   --sp-gap: 8px;
 }
@@ -102,6 +102,64 @@ body {
   flex-direction: column;
   gap: var(--sp-gap);
   min-height: 0;
+}
+
+.sp-main-add {
+  flex: 0 0 auto;
+}
+
+.sp-main-add .sp-panel__head {
+  padding: 16px 20px 8px;
+}
+
+.sp-main-add .sp-panel__body {
+  padding: 0 20px 18px;
+}
+
+.add-song-form__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.add-song-form__fields {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-song-form__submit {
+  width: 100%;
+}
+
+.add-song-form--main .add-song-form__identity {
+  margin-bottom: 10px;
+}
+
+.add-song-form--main .add-song-form__fields {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.1fr) minmax(220px, 0.9fr) 170px;
+  gap: 12px;
+  align-items: end;
+}
+
+.add-song-form--main .ant-form-item {
+  margin-bottom: 0;
+}
+
+.add-song-form--main .add-song-form__submit {
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 0;
+}
+
+.add-song-form--main.add-song-form__empty {
+  padding: 18px 20px 20px;
+}
+
+.add-song-form--main.add-song-form__empty .sp-empty__icon {
+  font-size: 24px;
 }
 
 .sp-main {
@@ -462,10 +520,66 @@ body {
   text-transform: uppercase;
 }
 
+.sp-avatar--image {
+  position: relative;
+  overflow: hidden;
+  background: var(--sp-surface-2);
+}
+
+.sp-avatar--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sp-avatar__fallback {
+  display: none;
+}
+
 .sp-avatar--lg {
   width: 44px;
   height: 44px;
   font-size: 17px;
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.avatar-picker__item {
+  min-width: 0;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 10px 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.avatar-picker__item:hover {
+  background: var(--sp-surface-hover);
+}
+
+.avatar-picker__item.is-selected {
+  border-color: var(--sp-green);
+  background: var(--sp-green-soft);
+  box-shadow: inset 0 0 0 1px var(--sp-green);
+}
+
+.avatar-picker__item span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Danh sách bài hát ────────────────────────────────────────────── */
@@ -861,6 +975,14 @@ body {
   /* Sidebar xếp dọc phía trên nội dung — vẫn giữ nguyên form thêm bài */
   .sp-sidebar {
     flex-direction: column;
+  }
+
+  .add-song-form--main .add-song-form__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .avatar-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .sp-track {

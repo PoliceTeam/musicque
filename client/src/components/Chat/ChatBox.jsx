@@ -1,121 +1,211 @@
-import React, { useState, useEffect, useRef, useContext } from 'react'
-import { Card, Input, Button, List, Typography, Space } from 'antd'
-import { SendOutlined } from '@ant-design/icons'
-import { io } from 'socket.io-client'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Empty, Input, Spin, Typography, message as toastMessage } from 'antd'
+import { LoginOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { getStoredToken } from '../../services/api'
+import { getChatMessages, getStoredToken } from '../../services/api'
+import UserAvatar from '../Avatar/UserAvatar'
+import './chat.css'
 
 const { Text } = Typography
 
-const ChatBox = () => {
+const formatTime = (value) =>
+  new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+
+const mergeMessages = (current, incoming) => {
+  const seen = new Set(current.map((message) => message._id || `${message.createdAt}:${message.content}`))
+  const next = [...current]
+
+  incoming.forEach((message) => {
+    const key = message._id || `${message.createdAt}:${message.content}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      next.push(message)
+    }
+  })
+
+  return next
+}
+
+const ChatBox = ({ className = '' }) => {
   const [messages, setMessages] = useState([])
   const [messageInput, setMessageInput] = useState('')
-  const [socket, setSocket] = useState(null)
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const messagesEndRef = useRef(null)
-  const { isAuthenticated } = useAuth()
-  const { currentSession } = useContext(PlaylistContext)
+  const { currentSession, socket } = useContext(PlaylistContext)
+  const { isAuthenticated, openAuthModal, user } = useAuth()
 
-  // Kết nối socket khi component mount
+  const sessionId = currentSession?._id
+  const canSend = isAuthenticated && Boolean(socket) && Boolean(sessionId)
+  const trimmedInput = messageInput.trim()
+
+  const roomTitle = useMemo(() => {
+    if (!currentSession) return 'Phòng chat'
+    return 'Phòng chat phiên này'
+  }, [currentSession])
+
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-    })
-    setSocket(newSocket)
+    if (!sessionId) {
+      setMessages([])
+      return undefined
+    }
 
-    return () => newSocket.disconnect()
-  }, [])
+    const controller = new AbortController()
+    setLoadingHistory(true)
 
-  // Lắng nghe tin nhắn mới
+    getChatMessages(sessionId, { limit: 50 }, { signal: controller.signal })
+      .then((response) => setMessages(response.data.messages || []))
+      .catch((error) => {
+        if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return
+        toastMessage.error(error.response?.data?.message || 'Không tải được lịch sử chat')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingHistory(false)
+      })
+
+    return () => controller.abort()
+  }, [sessionId])
+
   useEffect(() => {
-    if (!socket) return
+    if (!socket || !sessionId) return undefined
 
-    socket.on('new_message', (message) => {
-      setMessages((prevMessages) => [...prevMessages, message])
-    })
+    const handleMessage = (message) => {
+      if (message.sessionId?.toString() !== sessionId.toString()) return
+      setMessages((current) => mergeMessages(current, [message]))
+    }
+
+    const handleError = (payload) => {
+      toastMessage.warning(payload?.message || 'Không gửi được tin nhắn')
+    }
+
+    socket.emit('chat:join', { sessionId })
+    socket.on('chat:message', handleMessage)
+    socket.on('chat:error', handleError)
 
     return () => {
-      socket.off('new_message')
+      socket.emit('chat:leave', { sessionId })
+      socket.off('chat:message', handleMessage)
+      socket.off('chat:error', handleError)
     }
-  }, [socket])
+  }, [socket, sessionId])
 
-  // Tự động cuộn xuống tin nhắn mới nhất
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !isAuthenticated || !socket || !currentSession) return
+    if (!isAuthenticated) {
+      openAuthModal('login', 'Đăng nhập để trò chuyện trong phiên phát nhạc.')
+      return
+    }
 
-    // Server lấy danh tính từ token, không tin username do client gửi
-    socket.emit('chat_message', {
-      content: messageInput.trim(),
+    if (!trimmedInput) return
+
+    if (!socket || !sessionId) {
+      toastMessage.warning('Chưa có phiên chat đang mở')
+      return
+    }
+
+    socket.emit('chat:message', {
+      sessionId,
+      content: trimmedInput,
       token: getStoredToken(),
     })
 
     setMessageInput('')
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
       handleSendMessage()
     }
   }
 
-  if (!currentSession) {
-    return null
-  }
-
   return (
-    <Card title='Chat Room'>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '500px' }}>
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            marginBottom: 16,
-            padding: '8px',
-          }}
-        >
-          <List
-            dataSource={messages}
-            renderItem={(message) => (
-              <List.Item style={{ border: 'none' }}>
-                <Space direction='vertical' style={{ width: '100%' }}>
-                  <Text strong style={{ color: message.color }}>
-                    {message.username}
-                  </Text>
-                  <Text>{message.content}</Text>
-                  {/* <Text type='secondary' style={{ fontSize: '12px' }}>
-                    {new Date(message.createdAt).toLocaleTimeString()}
-                  </Text> */}
-                </Space>
-              </List.Item>
-            )}
-          />
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Input.TextArea
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder='Nhập tin nhắn...'
-            autoSize={{ minRows: 1, maxRows: 4 }}
-            disabled={!isAuthenticated}
-          />
-          <Button
-            type='primary'
-            icon={<SendOutlined />}
-            onClick={handleSendMessage}
-            disabled={!messageInput.trim() || !isAuthenticated}
-          />
-        </div>
+    <section className={`sp-panel chat-room ${className}`.trim()}>
+      <div className="sp-panel__head chat-room__head">
+        <h2 className="sp-panel__title">
+          <MessageOutlined />
+          {roomTitle}
+        </h2>
+        {messages.length > 0 && <span className="chat-room__count">{messages.length}</span>}
       </div>
-    </Card>
+
+      <div className="sp-panel__body chat-room__body">
+        {!currentSession ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="Mở phiên phát nhạc để chat cùng mọi người"
+          />
+        ) : loadingHistory ? (
+          <div className="chat-room__state">
+            <Spin size="small" />
+            <Text type="secondary">Đang tải chat...</Text>
+          </div>
+        ) : messages.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="Chưa có tin nhắn nào"
+          />
+        ) : (
+          <div className="chat-room__list">
+            {messages.map((chatMessage) => {
+              const author = chatMessage.user || {}
+              const authorName = chatMessage.displayName || author.displayName || chatMessage.username
+              const isMine = user?._id && author._id?.toString() === user._id.toString()
+
+              return (
+                <article
+                  key={chatMessage._id || `${chatMessage.createdAt}:${chatMessage.content}`}
+                  className={`chat-room__message${isMine ? ' chat-room__message--mine' : ''}`}
+                >
+                  <UserAvatar
+                    user={author}
+                    name={authorName}
+                    avatarId={chatMessage.avatarId || author.avatarId}
+                    size={28}
+                  />
+                  <div className="chat-room__bubble">
+                    <div className="chat-room__meta">
+                      <span className="chat-room__author">{authorName}</span>
+                      {chatMessage.role === 'admin' && <span className="chat-room__role">admin</span>}
+                      <span className="chat-room__time">{formatTime(chatMessage.createdAt)}</span>
+                    </div>
+                    <p>{chatMessage.content}</p>
+                  </div>
+                </article>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+
+      <div className="chat-room__composer">
+        <Input.TextArea
+          value={messageInput}
+          onChange={(event) => setMessageInput(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            isAuthenticated ? 'Nhập tin nhắn...' : 'Đăng nhập để gửi tin nhắn'
+          }
+          autoSize={{ minRows: 1, maxRows: 3 }}
+          maxLength={500}
+          disabled={!currentSession}
+        />
+        <Button
+          type="primary"
+          icon={isAuthenticated ? <SendOutlined /> : <LoginOutlined />}
+          onClick={handleSendMessage}
+          disabled={!currentSession || (!trimmedInput && isAuthenticated) || (!canSend && isAuthenticated)}
+          aria-label={isAuthenticated ? 'Gửi tin nhắn' : 'Đăng nhập để chat'}
+        />
+      </div>
+    </section>
   )
 }
 

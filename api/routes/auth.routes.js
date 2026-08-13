@@ -12,6 +12,7 @@ router.post('/login', authController.login)
 
 // Thông tin người đang đăng nhập
 router.get('/me', authenticate, authController.me)
+router.patch('/me/avatar', authenticate, authController.updateAvatar)
 
 // ── Route cũ, giữ lại cho client chưa cập nhật ────────────────────────
 router.get('/verify', authenticate, authController.me)
