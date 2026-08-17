@@ -140,6 +140,19 @@ describe('pha chờ trước mỗi cơ', () => {
     expect(state.aimProgress).toBeCloseTo(0.4);
   });
 
+  it('hết giờ chờ là xin quỹ đạo ngay để không lỡ pha gậy và bóng lăn', () => {
+    const bettingShot = {
+      ...waitShot,
+      cue: { x: 60, y: 63 },
+      frames: [waitShot.frames[0]],
+      rollMs: undefined,
+    };
+    const state = getPlaybackState({ ...waitGame, shots: [bettingShot] }, START + 20400);
+    expect(state.subPhase).toBe('aim');
+    expect(state.awaitingReveal).toBe(true);
+    expect(state.aimProgress).toBeCloseTo(0.4);
+  });
+
   it('pha lăn bị đẩy lùi đúng bằng waitMs', () => {
     const state = getPlaybackState(waitGame, START + 20000 + 1000 + 400);
     expect(state.subPhase).toBe('roll');

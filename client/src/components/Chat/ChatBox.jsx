@@ -15,14 +15,31 @@ const formatTime = (value) =>
     minute: '2-digit',
   }).format(new Date(value))
 
+const createClientMessageId = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return `${Date.now()}:${Math.random().toString(36).slice(2)}`
+}
+
+const getAuthorId = (message) => message.user?._id || message.userId || message.username || 'unknown'
+
+const getMessageKeys = (message) => {
+  const keys = []
+  if (message._id) keys.push(`id:${message._id}`)
+  if (message.clientMessageId) {
+    keys.push(`client:${message.sessionId}:${getAuthorId(message)}:${message.clientMessageId}`)
+  }
+  if (!keys.length) keys.push(`fallback:${message.createdAt}:${message.content}`)
+  return keys
+}
+
 const mergeMessages = (current, incoming) => {
-  const seen = new Set(current.map((message) => message._id || `${message.createdAt}:${message.content}`))
+  const seen = new Set(current.flatMap(getMessageKeys))
   const next = [...current]
 
   incoming.forEach((message) => {
-    const key = message._id || `${message.createdAt}:${message.content}`
-    if (!seen.has(key)) {
-      seen.add(key)
+    const keys = getMessageKeys(message)
+    if (!keys.some((key) => seen.has(key))) {
+      keys.forEach((key) => seen.add(key))
       next.push(message)
     }
   })
@@ -35,6 +52,7 @@ const ChatBox = ({ className = '' }) => {
   const [messageInput, setMessageInput] = useState('')
   const [loadingHistory, setLoadingHistory] = useState(false)
   const messagesEndRef = useRef(null)
+  const lastSubmitRef = useRef(null)
   const { currentSession, socket } = useContext(PlaylistContext)
   const { isAuthenticated, openAuthModal, user } = useAuth()
 
@@ -109,10 +127,23 @@ const ChatBox = ({ className = '' }) => {
       return
     }
 
+    const signature = `${sessionId}:${trimmedInput}`
+    const now = Date.now()
+    if (
+      lastSubmitRef.current?.signature === signature &&
+      now - lastSubmitRef.current.sentAt < 750
+    ) {
+      return
+    }
+
+    const clientMessageId = createClientMessageId()
+    lastSubmitRef.current = { signature, sentAt: now, clientMessageId }
+
     socket.emit('chat:message', {
       sessionId,
       content: trimmedInput,
       token: getStoredToken(),
+      clientMessageId,
     })
 
     setMessageInput('')

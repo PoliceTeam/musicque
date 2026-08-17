@@ -134,6 +134,11 @@ export const getPlaybackState = (game, now = Date.now()) => {
   const lastFrame = Math.max(0, (shot.frames?.length || 1) - 1)
   const base = { phase: 'playing', shotIndex, shot, progress: 0 }
   const waitMs = shot.waitMs || 0
+  const hasFullShot =
+    typeof shot.rollMs === 'number' &&
+    Array.isArray(shot.frames) &&
+    shot.frames.length > 1 &&
+    typeof shot.cue?.angle === 'number'
 
   // Pha chờ: bàn đứng yên, chưa dựng cây cơ. Client đếm ngược ở đây.
   if (local < waitMs) {
@@ -146,6 +151,20 @@ export const getPlaybackState = (game, now = Date.now()) => {
     }
   }
 
+  // Hết giờ cược là server đã được phép tiết lộ góc cơ + quỹ đạo. Nếu client
+  // vẫn đang giữ bản betting thì xin lại ngay từ đầu pha ngắm, nếu không cây cơ
+  // bị vẽ với angle undefined và tới khi tải xong có thể đã lỡ mất cú lăn.
+  if (!hasFullShot) {
+    const aimMs = shot.aimMs || 1
+    return {
+      ...base,
+      subPhase: 'aim',
+      frame: 0,
+      aimProgress: Math.min(1, Math.max(0, (local - waitMs) / aimMs)),
+      awaitingReveal: true,
+    }
+  }
+
   if (local < waitMs + shot.aimMs) {
     return {
       ...base,
@@ -153,12 +172,6 @@ export const getPlaybackState = (game, now = Date.now()) => {
       frame: 0,
       aimProgress: (local - waitMs) / shot.aimMs,
     }
-  }
-
-  // Hết giờ chờ nhưng server chưa kịp gửi quỹ đạo (rollMs chỉ có ở mức tiết lộ
-  // đầy đủ) → giữ ở pha ngắm và báo cho client biết cần xin thêm dữ liệu.
-  if (typeof shot.rollMs !== 'number') {
-    return { ...base, subPhase: 'aim', frame: 0, aimProgress: 1, awaitingReveal: true }
   }
 
   const rollLocal = local - waitMs - shot.aimMs

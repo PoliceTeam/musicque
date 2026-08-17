@@ -39,6 +39,13 @@ const normalizeContent = (content) => {
   return normalized
 }
 
+const normalizeClientMessageId = (value) => {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim()
+  if (!normalized) return null
+  return normalized.slice(0, 120)
+}
+
 const formatMessage = (message) => {
   const user = message.userId
   const publicUser = {
@@ -46,14 +53,15 @@ const formatMessage = (message) => {
     username: user?.username || 'unknown',
     displayName: user?.displayName || user?.username || 'Ẩn danh',
     role: user?.role || 'user',
-          color: user?.color || '#1db954',
-          avatarId: user?.avatarId,
-        }
+    color: user?.color || '#1db954',
+    avatarId: user?.avatarId,
+  }
 
   return {
     _id: message._id,
     content: message.content,
     sessionId: message.sessionId,
+    clientMessageId: message.clientMessageId,
     user: publicUser,
     username: publicUser.username,
     displayName: publicUser.displayName || publicUser.username,
@@ -81,6 +89,14 @@ const findSessionForRoom = async (sessionId, { requireActive = false } = {}) => 
 
 exports.getRoomName = getRoomName
 exports.formatMessage = formatMessage
+
+const markDeduplicated = (message) => {
+  Object.defineProperty(message, 'deduplicated', {
+    value: true,
+    enumerable: false,
+  })
+  return message
+}
 
 exports.getCurrentRoom = async () => {
   const session = await Session.findOne({ isActive: true })
@@ -112,19 +128,45 @@ exports.getSessionMessages = async ({ sessionId, limit, before }) => {
   return messages.reverse().map(formatMessage)
 }
 
-exports.createSessionMessage = async ({ sessionId, user, content }) => {
+exports.createSessionMessage = async ({ sessionId, user, content, clientMessageId }) => {
   if (!user?._id) {
     throw chatError(401, 'Vui lòng đăng nhập để chat')
   }
 
   const session = await findSessionForRoom(sessionId, { requireActive: true })
   const normalizedContent = normalizeContent(content)
+  const normalizedClientMessageId = normalizeClientMessageId(clientMessageId)
 
-  const message = await Message.create({
-    content: normalizedContent,
-    userId: user._id,
-    sessionId: session._id,
-  })
+  if (normalizedClientMessageId) {
+    const existing = await Message.findOne({
+      sessionId: session._id,
+      userId: user._id,
+      clientMessageId: normalizedClientMessageId,
+    }).populate('userId', 'username displayName role color avatarId')
+
+    if (existing) return markDeduplicated(formatMessage(existing))
+  }
+
+  let message
+  try {
+    message = await Message.create({
+      content: normalizedContent,
+      userId: user._id,
+      sessionId: session._id,
+      ...(normalizedClientMessageId ? { clientMessageId: normalizedClientMessageId } : {}),
+    })
+  } catch (error) {
+    if (error?.code !== 11000 || !normalizedClientMessageId) throw error
+
+    message = await Message.findOne({
+      sessionId: session._id,
+      userId: user._id,
+      clientMessageId: normalizedClientMessageId,
+    })
+    if (!message) throw error
+    await message.populate('userId', 'username displayName role color avatarId')
+    return markDeduplicated(formatMessage(message))
+  }
 
   await message.populate('userId', 'username displayName role color avatarId')
   return formatMessage(message)

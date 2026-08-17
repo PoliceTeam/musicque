@@ -43,7 +43,7 @@ const initSocket = (server) => {
 
     const handleChatMessage = async (data = {}) => {
       try {
-        const { content, token } = data
+        const { content, token, clientMessageId } = data
 
         // Danh tính lấy từ token, không nhận username tự khai từ client
         const user = await resolveUserFromToken(token)
@@ -63,7 +63,10 @@ const initSocket = (server) => {
           sessionId,
           user,
           content,
+          clientMessageId,
         })
+
+        if (message.deduplicated) return
 
         const room = chatService.getRoomName(message.sessionId)
         socket.join(room)

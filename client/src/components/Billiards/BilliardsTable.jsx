@@ -9,6 +9,7 @@ import {
 
 const RAIL = 15 // bề rộng khung gỗ quanh mặt vải (cm)
 const CUE_LENGTH = 145 // chiều dài cây cơ vẽ ra (cm)
+const TRAIL_FRAMES = 16
 
 const roundRect = (ctx, x, y, w, h, r) => {
   if (ctx.roundRect) {
@@ -277,6 +278,53 @@ const drawAimLine = (ctx, cueBall, angle, alpha) => {
   ctx.restore()
 }
 
+const drawMotionTrails = (ctx, shot, frame, radius) => {
+  if (!shot?.frames?.length || !shot.ids?.length) return
+
+  const current = Math.max(0, Math.min(frame, shot.frames.length - 1))
+  const currentBalls = interpolateFrame(shot, current)
+  const start = Math.max(0, Math.floor(current - TRAIL_FRAMES))
+  const end = Math.floor(current)
+  const potFrames = new Map()
+  ;(shot.pots || []).forEach((pot) => potFrames.set(pot.ball, pot.frame))
+
+  shot.ids.forEach((id, k) => {
+    const points = []
+    const potFrame = potFrames.get(id)
+    for (let f = start; f <= end; f += 2) {
+      if (potFrame !== undefined && f > potFrame + 2) break
+      const source = shot.frames[f]
+      if (!source) continue
+      points.push({ x: source[k * 2], y: source[k * 2 + 1] })
+    }
+
+    const latest = currentBalls.find((ball) => ball.id === id)
+    if (latest && (potFrame === undefined || current <= potFrame + 2)) {
+      points.push({ x: latest.x, y: latest.y })
+    }
+    if (points.length < 2) return
+
+    const first = points[0]
+    const last = points[points.length - 1]
+    if (Math.hypot(last.x - first.x, last.y - first.y) < 0.7) return
+
+    const style = BALL_STYLES[id] || BALL_STYLES[0]
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = id === 0 ? 'rgba(255,255,255,0.86)' : style.color
+    ctx.lineWidth = id === 0 ? radius * 0.48 : radius * 0.36
+    for (let i = 1; i < points.length; i += 1) {
+      ctx.globalAlpha = 0.08 + (i / points.length) * 0.34
+      ctx.beginPath()
+      ctx.moveTo(points[i - 1].x, points[i - 1].y)
+      ctx.lineTo(points[i].x, points[i].y)
+      ctx.stroke()
+    }
+    ctx.restore()
+  })
+}
+
 const BilliardsTable = ({ game }) => {
   const canvasRef = useRef(null)
   const wrapRef = useRef(null)
@@ -356,17 +404,25 @@ const BilliardsTable = ({ game }) => {
         }
         balls.forEach((ball) => drawBall(ctx, ball, radius, scale))
       } else if (playback.subPhase === 'aim') {
-        const offset = getCueOffset(playback.aimProgress, shot.cue.power)
+        const offset = getCueOffset(playback.aimProgress, shot.cue?.power)
         const cueBall = balls.find((b) => b.id === 0) || shot.cue
+        const hasCueAngle = typeof shot.cue?.angle === 'number'
         // Cơ được đặt lại bi cái: bi cái hiện dần ra thay vì nhảy cóc
         const appear = shot.ballInHand ? Math.min(1, playback.aimProgress / 0.4) : 1
 
         if (shot.ballInHand && appear < 1) drawPlacementRing(ctx, cueBall, radius, appear)
-        drawAimLine(ctx, cueBall, shot.cue.angle, Math.min(1, playback.aimProgress * 2.2) * 0.8)
+        if (hasCueAngle) {
+          drawAimLine(ctx, cueBall, shot.cue.angle, Math.min(1, playback.aimProgress * 2.2) * 0.8)
+        }
         balls.forEach((ball) =>
           drawBall(ctx, ball, radius, scale, ball.id === 0 ? appear : 1),
         )
-        if (appear >= 1) drawCue(ctx, cueBall, shot.cue.angle, offset, radius)
+        if (appear >= 1 && hasCueAngle) {
+          drawCue(ctx, cueBall, shot.cue.angle, offset, radius)
+        }
+      } else if (playback.subPhase === 'roll') {
+        drawMotionTrails(ctx, shot, playback.frame, radius)
+        balls.forEach((ball) => drawBall(ctx, ball, radius, scale))
       } else {
         balls.forEach((ball) => drawBall(ctx, ball, radius, scale))
       }

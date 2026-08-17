@@ -123,7 +123,7 @@ const BilliardsOverlay = ({ open, onClose }) => {
   //  - đã qua cơ hiện tại mà chưa thấy cơ kế (server chưa cho biết nó tồn tại)
   useEffect(() => {
     if (!open) return undefined
-    const id = setInterval(() => {
+    const syncProgress = () => {
       const g = gameRef.current
       if (!g || g.finished) return
       const pb = getPlaybackState(g)
@@ -141,7 +141,9 @@ const BilliardsOverlay = ({ open, onClose }) => {
       if (hasFullShot && elapsed >= endOfShot && pb.shotIndex === g.shots.length - 1) {
         loadGame(shot.index + 1)
       }
-    }, 1000)
+    }
+    syncProgress()
+    const id = setInterval(syncProgress, 500)
     return () => clearInterval(id)
   }, [open, loadGame])
 
