@@ -41,6 +41,14 @@ export const formatActivityItem = (event) => {
         text: `${event.username} đã bid ${event.amount} PC cho "${event.songTitle}" (${event.rankScore ?? 0} điểm)`,
         tone: 'success',
       };
+    case 'song_skipped_by_pc':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        icon: '⏭️',
+        text: `Cộng đồng đã dùng 100 PCs để next "${event.songTitle}"`,
+        tone: 'warning',
+      };
     case 'now_playing':
       return {
         id: event.id,

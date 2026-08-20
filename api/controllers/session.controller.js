@@ -2,6 +2,7 @@ const Session = require("../models/session.model");
 const { emitActivity } = require("../utils/activityEmitter");
 const Song = require("../models/song.model");
 const chohan = require("../services/chohan.service");
+const songSkip = require("../services/songSkip.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -75,6 +76,13 @@ exports.endSession = async (req, res) => {
     await chohan.stopGame({ reason: "session_ended" }).catch((error) => {
       console.error("[Cho-Han] Không dừng được game:", error.message);
     });
+
+    // Khoản góp chưa đủ 100 PCs không tạo ra lượt next nên phải hoàn toàn bộ.
+    await songSkip.refundSessionPools(
+      activeSession._id,
+      "session_ended",
+      req.app.get("io"),
+    );
 
     // Thông báo qua socket.io
     const io = req.app.get("io");

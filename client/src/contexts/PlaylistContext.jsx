@@ -8,6 +8,8 @@ import {
   startSession as startSessionApi,
   endSession as endSessionApi,
   getCurrentSong,
+  getSongSkipState,
+  contributeSongSkip,
 } from '../services/api'
 import { useAuth } from './AuthContext'
 import { message } from 'antd'
@@ -24,7 +26,15 @@ export const PlaylistProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null)
   const [userVoteBySongId, setUserVoteBySongId] = useState({})
   const [lastReactionBySongId, setLastReactionBySongId] = useState({})
-  const { user, requireAuth } = useAuth()
+  const [skipState, setSkipState] = useState({
+    songId: null,
+    total: 0,
+    threshold: 100,
+    remaining: 100,
+    myContribution: 0,
+    status: 'collecting',
+  })
+  const { user, requireAuth, setBalance, refreshBalance } = useAuth()
 
   const username = user?.username || ''
   const voterUserId = user?._id || null
@@ -65,6 +75,27 @@ export const PlaylistProvider = ({ children }) => {
     [lastReactionBySongId],
   )
 
+  const fetchSkipState = async (songId) => {
+    if (!songId) {
+      setSkipState({
+        songId: null,
+        total: 0,
+        threshold: 100,
+        remaining: 100,
+        myContribution: 0,
+        status: 'collecting',
+      })
+      return
+    }
+
+    try {
+      const response = await getSongSkipState(songId)
+      setSkipState(response.data)
+    } catch (error) {
+      console.error('Không lấy được tiến độ PC next:', error)
+    }
+  }
+
   const fetchCurrentSong = async () => {
     try {
       const response = await getCurrentSong()
@@ -74,6 +105,7 @@ export const PlaylistProvider = ({ children }) => {
       setPlaylist(nextPlaylist)
       mergeUserVotesFromPlaylist(nextPlaylist)
       setCurrentSong(response.data.currentSong)
+      await fetchSkipState(response.data.currentSong?._id)
     } catch (error) {
       console.error('Error fetching current song:', error)
     }
@@ -115,11 +147,40 @@ export const PlaylistProvider = ({ children }) => {
       }
     })
 
+    socket.on('song_skip_progress', (state) => {
+      setSkipState((current) => {
+        if (current.songId && current.songId !== state.songId) return current
+        return { ...current, ...state }
+      })
+    })
+
+    socket.on('song_skip_refunded', ({ songId }) => {
+      setSkipState((current) => {
+        if (current.songId !== songId) return current
+        return {
+          ...current,
+          total: 0,
+          remaining: current.threshold,
+          myContribution: 0,
+          status: 'refunded',
+        }
+      })
+      refreshBalance()
+    })
+
+    socket.on('song_playback_advanced', ({ currentSong: nextSong }) => {
+      setCurrentSong(nextSong || null)
+      fetchSkipState(nextSong?._id)
+    })
+
     return () => {
       socket.off('playlist_updated')
       socket.off('session_updated')
+      socket.off('song_skip_progress')
+      socket.off('song_skip_refunded')
+      socket.off('song_playback_advanced')
     }
-  }, [socket, mergeUserVotesFromPlaylist])
+  }, [socket, mergeUserVotesFromPlaylist, refreshBalance])
 
   const fetchCurrentSession = async () => {
     try {
@@ -197,6 +258,25 @@ export const PlaylistProvider = ({ children }) => {
     }
   }
 
+  const contributeToSkip = async (amount) => {
+    if (!currentSong?._id) return false
+    if (!requireAuth('Đăng nhập để góp PCs và next bài.')) return false
+
+    try {
+      const requestKey = crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const response = await contributeSongSkip(currentSong._id, amount, requestKey)
+      setBalance(response.data.balance)
+      if (!response.data.triggered) setSkipState(response.data.state)
+      message.success(response.data.message)
+      return response.data
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Không thể góp PCs để next bài')
+      return false
+    }
+  }
+
   const startSession = async () => {
     try {
       await startSessionApi()
@@ -241,6 +321,8 @@ export const PlaylistProvider = ({ children }) => {
         playSong,
         playing,
         currentSong,
+        skipState,
+        contributeToSkip,
         socket,
         getUserVoteForSong,
         getLastReactionForSong,

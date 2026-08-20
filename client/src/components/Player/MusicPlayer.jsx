@@ -16,8 +16,7 @@ import {
 } from '@ant-design/icons';
 import { PlaylistContext } from '../../contexts/PlaylistContext';
 import {
-  markSongAsPlayed,
-  removeSongFromPlaylist,
+  advanceSong,
   getCurrentSong,
   generateTTS,
 } from '../../services/api';
@@ -57,7 +56,7 @@ const isCanceledError = (error) =>
   error?.code === 'ERR_CANCELED';
 
 const MusicPlayer = () => {
-  const { playlist, refreshPlaylist, currentSession } =
+  const { playlist, refreshPlaylist, currentSession, socket } =
     useContext(PlaylistContext);
   const [currentSong, setCurrentSong] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -70,6 +69,11 @@ const MusicPlayer = () => {
   const wasMessageSpokenRef = useRef(false);
   const ttsRef = useRef(null);
   const ttsAudioUrlCacheRef = useRef(new Map());
+  const currentSongRef = useRef(null);
+
+  useEffect(() => {
+    currentSongRef.current = currentSong;
+  }, [currentSong]);
 
   const getFullAudioUrl = useCallback((audioUrl) => {
     if (!audioUrl) return null;
@@ -456,19 +460,11 @@ const MusicPlayer = () => {
 
     if (currentSong) {
       try {
-        await markSongAsPlayed(currentSong._id);
-        await removeSongFromPlaylist(currentSong._id);
+        const { data } = await advanceSong(currentSong._id);
         wasMessageSpokenRef.current = false;
-
-        // Chỉ set currentSong = null và fetch bài mới
-        setCurrentSong(null);
+        setCurrentSong(data.currentSong || null);
         await refreshPlaylist();
-
-        // Đảm bảo wasPlayingRef.current vẫn là true trước khi fetch bài mới
-        wasPlayingRef.current = true;
-        await fetchCurrentSong();
-
-        message.success('Đã phát xong và xóa bài hát khỏi playlist');
+        message.success('Đã chuyển sang bài tiếp theo');
       } catch (error) {
         console.error('Error handling song completion:', error);
         message.error('Có lỗi xảy ra khi xóa bài hát');
@@ -487,6 +483,27 @@ const MusicPlayer = () => {
   const handleEnded = () => {
     handleNext();
   };
+
+  // Auto-next do cộng đồng đạt 100 PCs. Event mang songId cũ để nhiều tab admin
+  // không vô tình áp kết quả của một bài lên bài khác.
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handlePlaybackAdvanced = ({ previousSongId, currentSong: nextSong }) => {
+      if (currentSongRef.current?._id !== previousSongId) return;
+
+      ttsRef.current?.cancel(false);
+      setSpeaking(false);
+      setTtsPreparing(false);
+      setPlaying(false);
+      wasMessageSpokenRef.current = false;
+      wasPlayingRef.current = Boolean(nextSong);
+      setCurrentSong(nextSong || null);
+    };
+
+    socket.on('song_playback_advanced', handlePlaybackAdvanced);
+    return () => socket.off('song_playback_advanced', handlePlaybackAdvanced);
+  }, [socket]);
 
   useEffect(() => {
     if (currentSong && wasPlayingRef.current) {

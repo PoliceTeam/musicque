@@ -10,6 +10,7 @@ const { ensureIndexes: ensureSignupGrantIndexes } = require('./services/signupGr
 const Song = require('./models/song.model')
 const chohan = require('./services/chohan.service')
 const billiards = require('./services/billiards.service')
+const songSkip = require('./services/songSkip.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -94,6 +95,11 @@ mongoose
       // không thì PC đã trừ mà người thắng không nhận được gì.
       billiards.settlePendingGames().catch((error) => {
         console.error('[Bi-a] Chốt kèo treo lỗi:', error.message)
+      })
+
+      // Tiếp tục các lượt hoàn PC bị gián đoạn do server restart.
+      songSkip.resumePendingRefunds(io).catch((error) => {
+        console.error('[PC Next] Hoàn PC treo lỗi:', error.message)
       })
     })
   })

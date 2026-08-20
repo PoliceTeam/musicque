@@ -79,6 +79,27 @@ async function credit(userId, amount, transaction = {}) {
 }
 
 /**
+ * Credit idempotent theo operationKey. Balance và dấu vết operation nằm trên cùng
+ * User document nên một retry sau restart không thể cộng tiền lần thứ hai.
+ */
+async function creditOnce(userId, amount, transaction = {}) {
+  const operationKey = transaction.operationKey
+  if (!Number.isFinite(amount) || amount <= 0 || !operationKey) return null
+
+  const updated = await User.findOneAndUpdate(
+    { _id: userId, appliedCoinOperations: { $ne: operationKey } },
+    {
+      $inc: { polites: amount },
+      $addToSet: { appliedCoinOperations: operationKey },
+    },
+    { new: true },
+  )
+
+  if (updated) await recordTransaction(updated, amount, transaction)
+  return updated
+}
+
+/**
  * Thưởng đăng nhập ngày: +DAILY_BONUS, tối đa 1 lần/ngày lịch (giờ server).
  * Điều kiện lastDailyBonusAt < đầu ngày hôm nay nằm ngay trong câu update nên
  * hai request đồng thời chỉ một cái trúng — không cần transaction.
@@ -178,6 +199,15 @@ async function getEconomyStats(period = '30d') {
                     $cond: [{ $eq: ['$type', 'song_bid'] }, { $abs: '$amount' }, 0],
                   },
                 },
+                songSkipSpent: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$type', 'song_skip_contribution'] },
+                      { $abs: '$amount' },
+                      0,
+                    ],
+                  },
+                },
                 chohanWagered: {
                   $sum: {
                     $cond: [{ $eq: ['$type', 'chohan_bet'] }, { $abs: '$amount' }, 0],
@@ -189,7 +219,12 @@ async function getEconomyStats(period = '30d') {
                 refunded: {
                   $sum: {
                     $cond: [
-                      { $in: ['$type', ['song_bid_refund', 'chohan_refund']] },
+                      {
+                        $in: [
+                          '$type',
+                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund'],
+                        ],
+                      },
                       '$amount',
                       0,
                     ],
@@ -198,6 +233,11 @@ async function getEconomyStats(period = '30d') {
                 songBidRefund: {
                   $sum: {
                     $cond: [{ $eq: ['$type', 'song_bid_refund'] }, '$amount', 0],
+                  },
+                },
+                songSkipRefund: {
+                  $sum: {
+                    $cond: [{ $eq: ['$type', 'song_skip_refund'] }, '$amount', 0],
                   },
                 },
                 chohanRefund: {
@@ -217,10 +257,12 @@ async function getEconomyStats(period = '30d') {
                 signupGranted: 1,
                 dailyGranted: 1,
                 songBidSpent: 1,
+                songSkipSpent: 1,
                 chohanWagered: 1,
                 chohanPayout: 1,
                 refunded: 1,
                 songBidRefund: 1,
+                songSkipRefund: 1,
                 chohanRefund: 1,
               },
             },
@@ -286,10 +328,12 @@ async function getEconomyStats(period = '30d') {
     signupGranted: 0,
     dailyGranted: 0,
     songBidSpent: 0,
+    songSkipSpent: 0,
     chohanWagered: 0,
     chohanPayout: 0,
     refunded: 0,
     songBidRefund: 0,
+    songSkipRefund: 0,
     chohanRefund: 0,
   }
 
@@ -301,8 +345,10 @@ async function getEconomyStats(period = '30d') {
       ...totals,
       issued: totals.signupGranted + totals.dailyGranted,
       songBidConsumed: totals.songBidSpent - totals.songBidRefund,
+      songSkipConsumed: totals.songSkipSpent - totals.songSkipRefund,
       houseNet:
         totals.songBidSpent
+        + totals.songSkipSpent
         + totals.chohanWagered
         - totals.chohanPayout
         - totals.refunded,
@@ -328,6 +374,7 @@ module.exports = {
   DAILY_BONUS,
   debit,
   credit,
+  creditOnce,
   recordTransaction,
   claimDailyBonus,
   getLeaderboard,

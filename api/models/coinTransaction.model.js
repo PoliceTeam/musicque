@@ -5,6 +5,8 @@ const TRANSACTION_TYPES = [
   'daily_bonus',
   'song_bid',
   'song_bid_refund',
+  'song_skip_contribution',
+  'song_skip_refund',
   'chohan_bet',
   'chohan_payout',
   'chohan_refund',

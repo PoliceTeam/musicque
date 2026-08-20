@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { PlaylistContext } from '../../contexts/PlaylistContext';
 import { getYouTubeThumbnail } from '../../utils/reactions';
 import { getAvatarColor, getInitials } from '../../utils/avatar';
+import SkipNextButton from './SkipNextButton';
 
 // Ba vạch equalizer nhấp nháy — dấu hiệu "đang phát" quen thuộc của Spotify
 const Equalizer = () => (
@@ -13,7 +14,7 @@ const Equalizer = () => (
 );
 
 const NowPlayingBar = () => {
-  const { currentSong, currentSession } = useContext(PlaylistContext);
+  const { currentSong, currentSession, skipState, contributeToSkip } = useContext(PlaylistContext);
 
   if (!currentSession || !currentSong) {
     return null;
@@ -52,6 +53,12 @@ const NowPlayingBar = () => {
           )}
         </div>
       </div>
+
+      <SkipNextButton
+        songId={currentSong._id}
+        skipState={skipState}
+        onContribute={contributeToSkip}
+      />
     </div>
   );
 };

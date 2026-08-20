@@ -6,6 +6,7 @@ const { google } = require('googleapis')
 const { emitActivity } = require('../utils/activityEmitter')
 const ttsService = require('../services/tts.service')
 const coinsService = require('../services/coins.service')
+const playbackService = require('../services/playback.service')
 
 const populatePlaylistQuery = (query) =>
   query.populate('addedBy', 'username displayName').populate('votes.userId', 'username displayName')
@@ -362,6 +363,11 @@ exports.markSongAsPlayed = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy bài hát' })
     }
 
+    // Client cũ vẫn có thể gọi endpoint này trước khi xóa bài. Đóng pool và hoàn
+    // contribution trước để không làm mất PCs của user.
+    const songSkipService = require('../services/songSkip.service')
+    await songSkipService.refundPool(song._id, 'marked_played', req.app.get('io'))
+
     // Cập nhật trạng thái
     song.played = true
     await song.save()
@@ -369,6 +375,64 @@ exports.markSongAsPlayed = async (req, res) => {
     res.status(200).json({
       message: 'Đã đánh dấu bài hát đã phát',
       song,
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
+  }
+}
+
+// Chuyển bài theo một luồng server-side duy nhất để admin next và auto-next không đụng nhau.
+exports.advanceSong = async (req, res) => {
+  try {
+    const result = await playbackService.advanceCurrentSong({
+      songId: req.params.songId,
+      reason: 'admin_next',
+      io: req.app.get('io'),
+    })
+    if (!result.advanced) {
+      return res.status(409).json({ message: 'Bài hát đã được chuyển trước đó' })
+    }
+
+    res.status(200).json({
+      message: 'Đã chuyển sang bài tiếp theo',
+      currentSong: result.currentSong,
+      playlist: result.playlist,
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
+  }
+}
+
+exports.deleteSong = async (req, res) => {
+  try {
+    const song = await Song.findById(req.params.songId)
+    if (!song) return res.status(404).json({ message: 'Không tìm thấy bài hát' })
+
+    if (song.playing && !song.played) {
+      const result = await playbackService.advanceCurrentSong({
+        songId: song._id,
+        reason: 'admin_delete',
+        io: req.app.get('io'),
+      })
+      if (!result.advanced) {
+        return res.status(409).json({ message: 'Bài hát đã được chuyển trước đó' })
+      }
+      return res.status(200).json({
+        message: 'Đã xóa bài hát khỏi playlist',
+        playlist: result.playlist,
+      })
+    }
+
+    await Song.findByIdAndDelete(song._id)
+    const updatedPlaylist = await populatePlaylistQuery(
+      Song.find({ sessionId: song.sessionId, playing: false, played: false }),
+    ).sort({ rankScore: -1, addedAt: 1 })
+
+    const io = req.app.get('io')
+    if (io) io.emit('playlist_updated', updatedPlaylist)
+    res.status(200).json({
+      message: 'Đã xóa bài hát khỏi playlist',
+      playlist: updatedPlaylist,
     })
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })

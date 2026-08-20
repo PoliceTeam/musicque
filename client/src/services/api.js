@@ -99,6 +99,11 @@ export const placeChohanBet = (side, amount) =>
 export const bidSong = (songId, amount) =>
   api.post(`/api/songs/${songId}/bid`, { amount });
 
+// PC vote-next cho bài đang phát
+export const getSongSkipState = (songId) => api.get(`/api/songs/${songId}/skip`);
+export const contributeSongSkip = (songId, amount, requestKey) =>
+  api.post(`/api/songs/${songId}/skip`, { amount, requestKey });
+
 // Session API
 export const startSession = () => api.post("/api/sessions/start");
 
@@ -135,6 +140,9 @@ export const getPlaylist = () => api.get("/api/songs/playlist");
 
 export const markSongAsPlaying = (songId) =>
   api.post(`/api/songs/${songId}/playing`);
+
+export const advanceSong = (songId) =>
+  api.post(`/api/songs/${songId}/advance`);
 
 // Weather API
 export const getCurrentWeather = () => api.get("/api/weather");

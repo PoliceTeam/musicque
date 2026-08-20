@@ -37,6 +37,19 @@ describe('activityFeed utils', () => {
     expect(item.text).toContain('3 điểm');
   });
 
+  it('formats PC auto-next activity', () => {
+    const item = formatActivityItem({
+      id: 'skip-1',
+      type: 'song_skipped_by_pc',
+      timestamp: '2026-06-09T10:00:00.000Z',
+      songTitle: 'Bài cần next',
+    });
+
+    expect(item.icon).toBe('⏭️');
+    expect(item.text).toContain('100 PCs');
+    expect(item.text).toContain('Bài cần next');
+  });
+
   it('prepends activity and keeps max length', () => {
     const existing = Array.from({ length: MAX_ACTIVITY_ITEMS }, (_, index) => ({
       id: `old-${index}`,

@@ -77,6 +77,13 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Operation key đã áp dụng trực tiếp lên ví. Dùng cho các khoản hoàn cần
+  // idempotent qua cả trường hợp server restart giữa credit và cập nhật nghiệp vụ.
+  appliedCoinOperations: {
+    type: [String],
+    select: false,
+    default: undefined,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
