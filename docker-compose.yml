@@ -75,9 +75,6 @@ services:
       - "5001:5000"
     networks:
       - music-order-network
-    volumes:
-      - ./api:/usr/src/app
-      - /usr/src/app/node_modules
 
   # VieNeu-TTS v3 Turbo Service (AI Text-to-Speech)
   vieneu-tts:

@@ -15,6 +15,7 @@ services:
       context: ./api
       dockerfile: Dockerfile
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - PORT=5000
       - MONGODB_URI=mongodb://mongodb:27017/music-order-app
       - JWT_SECRET=your_jwt_secret
@@ -23,6 +24,15 @@ services:
       - CLIENT_URL=your_client_url
       - SOCKET_URL=your_socket_url
       - SONG_SKIP_PC_THRESHOLD=100
+      - XIANGQI_STAKE_PC=10
+      - XIANGQI_REWARD_EASY=15
+      - XIANGQI_REWARD_MEDIUM=38
+      - XIANGQI_REWARD_HARD=66
+      - XIANGQI_DAILY_REWARD_CAP=500
+      - XIANGQI_ENGINE_WORKERS=2
+      - XIANGQI_ENGINE_MOVE_MS=800
+      - XIANGQI_ENGINE_JOB_TIMEOUT_MS=3000
+      - XIANGQI_ENGINE_MAX_RETRIES=1
       - YOUTUBE_API_KEY=your_youtube_api_key
       - WC2026_API_KEY=your_wc2026_api_key
       - WEATHER_API_KEY=

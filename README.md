@@ -422,10 +422,14 @@ File example hiện map API/client sang `5800/3800`, khác với `5001/8080` tro
 Compose chính; kiểm tra file được chọn trước khi cấu hình reverse proxy.
 
 ```bash
-docker compose build
-docker compose up -d
+docker compose build --no-cache api
+docker compose up -d --force-recreate api client
 docker compose ps
 ```
+
+API chạy trực tiếp từ image đã build, không bind-mount `./api` hoặc một anonymous
+`node_modules` trong cấu hình deployment. Các mount này có thể giữ dependencies cũ
+và che package mới trong image, dẫn đến lỗi `Cannot find module` sau khi deploy.
 
 Lần đầu khởi động VieNeu-TTS có thể lâu do phải tải model. Chờ healthcheck của
 `vieneu-tts` healthy trước khi kết luận API lỗi.
