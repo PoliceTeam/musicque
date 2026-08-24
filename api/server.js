@@ -11,6 +11,7 @@ const Song = require('./models/song.model')
 const chohan = require('./services/chohan.service')
 const billiards = require('./services/billiards.service')
 const songSkip = require('./services/songSkip.service')
+const xiangqi = require('./services/xiangqi.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -79,6 +80,13 @@ mongoose
       console.error('[Coins] Backfill lỗi:', error.message)
     }
 
+    // Catalog/worker phải sẵn sàng trước khi nhận request chơi đầu tiên.
+    try {
+      await xiangqi.resumePendingGames()
+    } catch (error) {
+      console.error('[Cờ tướng] Khôi phục ván dở lỗi:', error.message)
+    }
+
     // Khởi động server
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`)
@@ -101,6 +109,7 @@ mongoose
       songSkip.resumePendingRefunds(io).catch((error) => {
         console.error('[PC Next] Hoàn PC treo lỗi:', error.message)
       })
+
     })
   })
   .catch((err) => {

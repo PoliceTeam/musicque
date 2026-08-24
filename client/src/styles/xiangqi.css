@@ -1,0 +1,185 @@
+/* ── CTA cờ tướng ngoài Home ─────────────────────────────────────── */
+.xiangqi-promo {
+  position: relative;
+  isolation: isolate;
+  min-height: 160px;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid rgba(255, 221, 132, 0.55);
+  border-radius: var(--sp-radius-lg);
+  color: #fff9e9;
+  background:
+    linear-gradient(125deg, rgba(45, 13, 8, 0.12), rgba(45, 13, 8, 0.88)),
+    url('/xiangqi/gmchess-wood/xiangqi_gmchess_wood.svg') center 42% / 145% auto,
+    #7b2016;
+  box-shadow: 0 14px 34px rgba(118, 31, 20, 0.34);
+}
+
+.xiangqi-promo__glow {
+  position: absolute;
+  z-index: -1;
+  inset: -80px -120px auto auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 197, 75, 0.3);
+  filter: blur(30px);
+}
+
+.xiangqi-promo__piece {
+  position: absolute;
+  right: 12px;
+  top: 33px;
+  display: grid;
+  width: 74px;
+  height: 74px;
+  place-items: center;
+  border: 7px solid #6d160f;
+  border-radius: 50%;
+  color: #b01810;
+  background: radial-gradient(circle at 35% 28%, #fff3c2, #d9a34d 68%, #955b1e);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.38), inset 0 0 0 2px #f7d985;
+  font: 900 33px serif;
+  transform: rotate(8deg);
+}
+
+.xiangqi-promo__copy { position: relative; z-index: 1; max-width: 230px; }
+.xiangqi-promo__eyebrow, .xiangqi-eyebrow { color: #ffd86c; font-size: 10px; font-weight: 900; letter-spacing: 0.16em; }
+.xiangqi-promo h2 { margin: 4px 0 2px; font-size: 21px; line-height: 1.1; }
+.xiangqi-promo__copy > p { margin: 0 0 15px; font-size: 12px; color: rgba(255,255,255,.84); }
+.xiangqi-promo__actions { display: flex; gap: 7px; }
+.xiangqi-promo__actions button { border: 0; border-radius: 999px; padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 850; }
+.xiangqi-promo__primary { color: #351600; background: linear-gradient(135deg, #ffe899, #f3b92f); box-shadow: 0 4px 12px rgba(0,0,0,.22); }
+.xiangqi-promo__secondary { color: white; background: rgba(255,255,255,.16); backdrop-filter: blur(4px); }
+.xiangqi-promo__actions button:hover { transform: translateY(-1px); }
+.xiangqi-promo__badge { position: absolute; right: 12px; bottom: 13px; padding: 3px 8px; border-radius: 999px; color: #ffe9a3; background: rgba(31,7,4,.52); font-size: 10px; font-weight: 750; }
+
+.xiangqi-promo--sticky {
+  position: fixed;
+  z-index: 70;
+  width: 238px;
+  min-height: 92px;
+  box-sizing: border-box;
+  padding: 13px 12px 10px;
+  cursor: grab;
+  touch-action: none;
+  transition: left .18s ease, top .18s ease, box-shadow .18s ease;
+}
+
+.xiangqi-promo--sticky:not([style]) { visibility: hidden; }
+.xiangqi-promo--sticky.is-dragging { cursor: grabbing; transition: none; box-shadow: 0 18px 38px rgba(80,25,12,.46); }
+.xiangqi-promo--sticky .xiangqi-promo__copy { max-width: 170px; }
+.xiangqi-promo--sticky .xiangqi-promo__piece { top: 27px; right: 10px; width: 42px; height: 42px; border-width: 4px; font-size: 21px; }
+.xiangqi-promo--sticky h2 { margin: 2px 0 1px; font-size: 15px; }
+.xiangqi-promo--sticky .xiangqi-promo__copy > p { margin-bottom: 8px; font-size: 10px; }
+.xiangqi-promo--sticky .xiangqi-promo__actions { gap: 5px; }
+.xiangqi-promo--sticky .xiangqi-promo__actions button { padding: 6px 9px; font-size: 10px; }
+.xiangqi-promo__drag { position: absolute; top: 3px; left: 7px; color: rgba(255,255,255,.6); font-size: 13px; line-height: 1; cursor: grab; }
+.xiangqi-promo__close { position: absolute; z-index: 3; top: 5px; right: 5px; display: grid; width: 20px; height: 20px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: rgba(255,255,255,.78); background: rgba(32,8,4,.48); cursor: pointer; font-size: 9px; }
+.xiangqi-promo__close:hover { color: #fff; background: rgba(32,8,4,.75); }
+
+.sp-quicktoys__btn--xiangqi {
+  color: #9c271b !important;
+  border: 2px solid #8c2519 !important;
+  background: radial-gradient(circle at 35% 28%, #fff0ba, #dba554 72%, #a36b2e) !important;
+  font-family: serif;
+  font-weight: 950;
+  box-shadow: 0 3px 7px rgba(74,34,9,.24);
+}
+
+/* ── Modal luật ───────────────────────────────────────────────────── */
+.xiangqi-modal-backdrop { position: fixed; z-index: 1400; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(8,5,3,.68); backdrop-filter: blur(5px); }
+.xiangqi-rules { width: min(660px, 100%); max-height: 92vh; overflow-y: auto; padding: 24px; border: 1px solid var(--sp-border); border-radius: 18px; color: var(--sp-text); background: var(--sp-surface); box-shadow: 0 26px 80px rgba(0,0,0,.38); }
+.xiangqi-rules__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.xiangqi-rules h2 { margin: 3px 0 0; font-size: 27px; }
+.xiangqi-icon-btn { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border: 1px solid var(--sp-border); border-radius: 50%; color: var(--sp-text); background: var(--sp-surface-2); cursor: pointer; font-weight: 800; }
+.xiangqi-rules__lead { margin: 18px 0; color: var(--sp-text-muted); line-height: 1.55; }
+.xiangqi-rules__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.xiangqi-rules__grid article { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 12px; background: var(--sp-surface-2); }
+.xiangqi-rules__grid strong { font-size: 14px; }
+.xiangqi-rules__grid span { color: var(--sp-text-muted); font-size: 13px; line-height: 1.45; }
+.xiangqi-rules__note { margin: 14px 0; padding: 12px 14px; border-left: 3px solid #c83b27; color: var(--sp-text-muted); background: rgba(200,59,39,.08); font-size: 13px; line-height: 1.5; }
+.xiangqi-rules__play { width: 100%; }
+
+/* ── Trang chơi ───────────────────────────────────────────────────── */
+.xiangqi-page { min-height: 100vh; color: var(--sp-text); background: radial-gradient(circle at 50% -10%, rgba(162,73,34,.17), transparent 38%), var(--sp-bg); }
+.xiangqi-topbar { display: grid; grid-template-columns: minmax(150px, 1fr) auto minmax(260px, 1fr); align-items: center; min-height: 68px; padding: 0 28px; border-bottom: 1px solid var(--sp-border); background: color-mix(in srgb, var(--sp-surface) 88%, transparent); backdrop-filter: blur(14px); }
+.xiangqi-topbar__account { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 10px; }
+.xiangqi-topbar__account .sp-user-chip { min-width: 0; max-width: 220px; }
+.xiangqi-topbar__account .sp-user-chip > span:not(.anticon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xiangqi-back { color: var(--sp-text-muted); font-size: 13px; font-weight: 700; text-decoration: none; }
+.xiangqi-back:hover { color: var(--sp-text); }
+.xiangqi-topbar__brand { display: flex; align-items: center; gap: 9px; font-size: 15px; white-space: nowrap; }
+.xiangqi-topbar__brand span { display: grid; width: 34px; height: 34px; place-items: center; border: 3px solid #8e2418; border-radius: 50%; color: #a62618; background: #edcb89; font: 900 18px serif; }
+.xiangqi-stage { width: min(1180px, calc(100% - 48px)); min-height: calc(100vh - 68px); margin: 0 auto; display: grid; place-items: center; padding: 30px 0 44px; box-sizing: border-box; }
+.xiangqi-loading { color: var(--sp-text-muted); }
+
+.xiangqi-lobby { width: min(780px, 100%); padding: 38px; text-align: center; border: 1px solid var(--sp-border); border-radius: 22px; background: var(--sp-surface); box-shadow: var(--sp-shadow-lg); }
+.xiangqi-lobby h1 { margin: 7px 0; font-size: clamp(30px, 4vw, 44px); letter-spacing: -.04em; }
+.xiangqi-lobby > p { margin: 0 auto 26px; color: var(--sp-text-muted); }
+.xiangqi-difficulties { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.xiangqi-level { display: flex; min-height: 155px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--sp-border); border-radius: 16px; color: var(--sp-text); background: var(--sp-surface-2); cursor: pointer; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.xiangqi-level:hover:not(:disabled) { transform: translateY(-4px); border-color: #c18a3c; box-shadow: 0 12px 28px rgba(112,62,20,.15); }
+.xiangqi-level:disabled { cursor: not-allowed; opacity: .45; }
+.xiangqi-level span { font-size: 17px; font-weight: 800; }
+.xiangqi-level strong { color: #c33a24; font-size: 25px; }
+.xiangqi-level small { color: var(--sp-text-muted); }
+.xiangqi-level--hard { background: linear-gradient(145deg, rgba(184,49,30,.11), var(--sp-surface-2)); }
+.xiangqi-warning { margin: 18px 0 0 !important; color: var(--sp-red) !important; font-size: 13px; }
+.xiangqi-link-btn { margin-top: 20px; border: 0; color: var(--sp-text-muted); background: transparent; cursor: pointer; text-decoration: underline; }
+
+.xiangqi-game-layout { width: 100%; display: grid; grid-template-columns: minmax(530px, 700px) minmax(280px, 340px); align-items: center; justify-content: center; gap: 34px; }
+.xiangqi-board-wrap { position: relative; }
+.xiangqi-board { position: relative; width: 100%; aspect-ratio: 902.383 / 1002; user-select: none; filter: drop-shadow(0 18px 25px rgba(62,30,8,.26)); }
+.xiangqi-board__wood { display: block; width: 100%; height: 100%; pointer-events: none; }
+.xiangqi-square { position: absolute; z-index: 2; left: calc(5.694% + var(--xq-col) * 11.082%); top: calc(5.09% + var(--xq-row) * 9.98%); display: grid; width: 10.8%; aspect-ratio: 1; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; cursor: pointer; transform: translate(-50%, -50%); transition: filter .12s ease, transform .12s ease; }
+.xiangqi-square img { width: 96%; height: 96%; pointer-events: none; filter: drop-shadow(0 4px 3px rgba(46,20,5,.38)); }
+.xiangqi-square:hover img { filter: drop-shadow(0 6px 4px rgba(46,20,5,.45)) brightness(1.04); }
+.xiangqi-square.is-selected { outline: 4px solid rgba(255,235,89,.92); box-shadow: 0 0 0 7px rgba(82,44,8,.25); }
+.xiangqi-square.is-target::after { content: ''; width: 23%; aspect-ratio: 1; border-radius: 50%; background: rgba(25,102,51,.72); box-shadow: 0 0 0 5px rgba(255,255,255,.26); }
+.xiangqi-square.is-target:has(img)::after { position: absolute; inset: -1px; width: auto; border: 5px solid rgba(25,102,51,.82); background: transparent; }
+.xiangqi-square.is-hint { outline: 4px solid #ffd83d; animation: xiangqi-pulse 1s ease-in-out infinite; }
+.xiangqi-square.is-answer { outline: 5px solid #25a75c; }
+.xiangqi-board.is-disabled .xiangqi-square { cursor: default; }
+.xiangqi-board__check { position: absolute; z-index: 4; left: 50%; top: 50%; padding: 9px 17px; border: 2px solid #ffd693; border-radius: 8px; color: #fff; background: rgba(162,28,18,.91); box-shadow: 0 8px 25px rgba(0,0,0,.28); transform: translate(-50%,-50%) rotate(-4deg); font-size: 22px; font-weight: 950; letter-spacing: .08em; }
+@keyframes xiangqi-pulse { 50% { filter: brightness(1.25); } }
+.xiangqi-thinking { position: absolute; left: 50%; bottom: 6%; display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; color: #fff; background: rgba(39,22,12,.84); transform: translateX(-50%); font-size: 12px; font-weight: 750; backdrop-filter: blur(5px); }
+.xiangqi-thinking span { width: 8px; height: 8px; border-radius: 50%; background: #ffd453; animation: xiangqi-blink .8s ease-in-out infinite alternate; }
+@keyframes xiangqi-blink { to { opacity: .3; } }
+
+.xiangqi-game-panel { padding: 22px; border: 1px solid var(--sp-border); border-radius: 18px; background: var(--sp-surface); box-shadow: var(--sp-shadow-lg); }
+.xiangqi-game-panel__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.xiangqi-level-tag { padding: 5px 11px; border-radius: 999px; background: var(--sp-surface-2); font-size: 12px; font-weight: 850; }
+.xiangqi-level-tag--hard { color: #d7452c; background: rgba(215,69,44,.12); }
+.xiangqi-pot { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--sp-border); color: var(--sp-text-muted); font-size: 13px; }
+.xiangqi-pot strong { color: var(--sp-text); font-size: 16px; }
+.xiangqi-pot--reward strong { color: #d8492e; }
+.xiangqi-turn { display: flex; align-items: center; gap: 9px; margin: 20px 0 14px; padding: 13px; border-radius: 10px; background: var(--sp-green-soft); font-size: 13px; font-weight: 800; }
+.xiangqi-turn.is-npc { background: rgba(196,62,38,.1); }
+.xiangqi-turn__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sp-green); box-shadow: 0 0 0 4px rgba(29,185,84,.14); }
+.xiangqi-turn.is-npc .xiangqi-turn__dot { background: #c83e26; box-shadow: 0 0 0 4px rgba(200,62,38,.14); }
+.xiangqi-practice { margin-bottom: 12px; padding: 8px 10px; border-radius: 8px; color: #936d11; background: rgba(242,191,45,.13); font-size: 11px; font-weight: 750; }
+.xiangqi-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.xiangqi-tools button, .xiangqi-resign { min-height: 38px; border: 1px solid var(--sp-border); border-radius: 9px; color: var(--sp-text); background: var(--sp-surface-2); cursor: pointer; font-size: 12px; font-weight: 700; }
+.xiangqi-tools button:disabled, .xiangqi-resign:disabled { opacity: .45; cursor: not-allowed; }
+.xiangqi-resign { width: 100%; margin-top: 9px; color: var(--sp-red); background: transparent; }
+.xiangqi-result { padding: 24px 0 10px; text-align: center; }
+.xiangqi-result__icon { font-size: 42px; }
+.xiangqi-result h2 { margin: 7px 0; }
+.xiangqi-result p { color: var(--sp-text-muted); font-size: 13px; line-height: 1.45; }
+.xiangqi-result__payout { display: block; margin: 12px 0 18px; color: var(--sp-green); font-size: 28px; }
+.xiangqi-attribution { margin-top: 20px; color: var(--sp-text-faint); font-size: 9px; line-height: 1.4; }
+.xiangqi-attribution a { color: inherit; }
+
+@media (max-width: 960px) {
+  .xiangqi-topbar { grid-template-columns: auto 1fr; gap: 14px; padding: 10px 18px; }
+  .xiangqi-topbar__brand { justify-self: start; }
+  .xiangqi-topbar__account { grid-column: 2; grid-row: 1 / span 2; }
+  .xiangqi-back { grid-column: 1; grid-row: 2; }
+  .xiangqi-game-layout { grid-template-columns: minmax(470px, 650px); }
+  .xiangqi-game-panel { width: min(520px, 100%); margin: 0 auto; box-sizing: border-box; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xiangqi-square, .xiangqi-level, .xiangqi-thinking span, .xiangqi-square.is-hint, .xiangqi-promo--sticky { animation: none; transition: none; }
+}

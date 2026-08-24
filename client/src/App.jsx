@@ -13,6 +13,7 @@ import { useTheme } from './contexts/ThemeContext'
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
+const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
 
 const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
@@ -43,6 +44,14 @@ function AppContent() {
                 <Route path='/' element={<HomePage />} />
                 <Route path='/login' element={<LoginPage initialMode='login' />} />
                 <Route path='/register' element={<LoginPage initialMode='register' />} />
+                <Route
+                  path='/xiangqi'
+                  element={
+                    <ProtectedRoute>
+                      <XiangqiPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path='/admin'
                   element={

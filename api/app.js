@@ -12,6 +12,7 @@ const coinsRoutes = require('./routes/coins.routes');
 const chohanRoutes = require('./routes/chohan.routes');
 const billiardsRoutes = require('./routes/billiards.routes');
 const chatRoutes = require('./routes/chat.routes');
+const xiangqiRoutes = require('./routes/xiangqi.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/coins', coinsRoutes);
 app.use('/api/chohan', chohanRoutes);
 app.use('/api/billiards', billiardsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/xiangqi', xiangqiRoutes);
 
 // Error handling
 app.use(errorHandler);

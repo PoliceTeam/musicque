@@ -60,6 +60,31 @@ async function debit(userId, amount, transaction = {}) {
 }
 
 /**
+ * Trừ PC idempotent theo operationKey. Dùng cho request có thể được gửi lại
+ * sau timeout/reload để một ván chỉ thu cược đúng một lần.
+ */
+async function debitOnce(userId, amount, transaction = {}) {
+  const operationKey = transaction.operationKey
+  if (!Number.isFinite(amount) || amount <= 0 || !operationKey) return null
+
+  const updated = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      polites: { $gte: amount },
+      appliedCoinOperations: { $ne: operationKey },
+    },
+    {
+      $inc: { polites: -amount },
+      $addToSet: { appliedCoinOperations: operationKey },
+    },
+    { new: true },
+  )
+
+  if (updated) await recordTransaction(updated, -amount, transaction)
+  return updated
+}
+
+/**
  * Cộng PC (thắng cược, hoàn cược khi void...). Trả về User đã cập nhật.
  */
 async function credit(userId, amount, transaction = {}) {
@@ -97,6 +122,59 @@ async function creditOnce(userId, amount, transaction = {}) {
 
   if (updated) await recordTransaction(updated, amount, transaction)
   return updated
+}
+
+/**
+ * Trả thưởng cờ tướng và khóa trần ngày ngay trên User document. Pipeline
+ * reset quota khi sang ngày mới rồi cộng tối đa phần còn lại; operationKey
+ * giữ cho retry sau restart không trả thưởng hai lần.
+ */
+async function creditXiangqiRewardOnce(userId, requestedAmount, transaction = {}) {
+  const operationKey = transaction.operationKey
+  const dailyCap = Math.max(0, Number(transaction.dailyCap) || 0)
+  const dateKey = transaction.dateKey
+  if (!Number.isFinite(requestedAmount) || requestedAmount <= 0 || !operationKey || !dateKey) {
+    return null
+  }
+
+  const updated = await User.findOneAndUpdate(
+    { _id: userId, appliedCoinOperations: { $ne: operationKey } },
+    [
+      {
+        $set: {
+          appliedCoinOperations: {
+            $concatArrays: [{ $ifNull: ['$appliedCoinOperations', []] }, [operationKey]],
+          },
+          xiangqiRewardEarned: {
+            $cond: [{ $eq: ['$xiangqiRewardDateKey', dateKey] }, { $ifNull: ['$xiangqiRewardEarned', 0] }, 0],
+          },
+          xiangqiRewardDateKey: dateKey,
+        },
+      },
+      {
+        $set: {
+          xiangqiLastRewardOperation: operationKey,
+          xiangqiLastRewardAmount: {
+            $min: [requestedAmount, { $max: [0, { $subtract: [dailyCap, '$xiangqiRewardEarned'] }] }],
+          },
+        },
+      },
+      {
+        $set: {
+          xiangqiRewardEarned: { $add: ['$xiangqiRewardEarned', '$xiangqiLastRewardAmount'] },
+          polites: { $add: ['$polites', '$xiangqiLastRewardAmount'] },
+        },
+      },
+    ],
+    { new: true },
+  )
+
+  if (!updated) return null
+  const credited = updated.xiangqiLastRewardOperation === operationKey
+    ? updated.xiangqiLastRewardAmount
+    : 0
+  if (credited > 0) await recordTransaction(updated, credited, transaction)
+  return { user: updated, credited }
 }
 
 /**
@@ -216,13 +294,19 @@ async function getEconomyStats(period = '30d') {
                 chohanPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'chohan_payout'] }, '$amount', 0] },
                 },
+                xiangqiWagered: {
+                  $sum: { $cond: [{ $eq: ['$type', 'xiangqi_bet'] }, { $abs: '$amount' }, 0] },
+                },
+                xiangqiPayout: {
+                  $sum: { $cond: [{ $eq: ['$type', 'xiangqi_payout'] }, '$amount', 0] },
+                },
                 refunded: {
                   $sum: {
                     $cond: [
                       {
                         $in: [
                           '$type',
-                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund'],
+                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund', 'xiangqi_refund'],
                         ],
                       },
                       '$amount',
@@ -245,6 +329,9 @@ async function getEconomyStats(period = '30d') {
                     $cond: [{ $eq: ['$type', 'chohan_refund'] }, '$amount', 0],
                   },
                 },
+                xiangqiRefund: {
+                  $sum: { $cond: [{ $eq: ['$type', 'xiangqi_refund'] }, '$amount', 0] },
+                },
               },
             },
             {
@@ -260,10 +347,13 @@ async function getEconomyStats(period = '30d') {
                 songSkipSpent: 1,
                 chohanWagered: 1,
                 chohanPayout: 1,
+                xiangqiWagered: 1,
+                xiangqiPayout: 1,
                 refunded: 1,
                 songBidRefund: 1,
                 songSkipRefund: 1,
                 chohanRefund: 1,
+                xiangqiRefund: 1,
               },
             },
           ],
@@ -335,6 +425,9 @@ async function getEconomyStats(period = '30d') {
     songBidRefund: 0,
     songSkipRefund: 0,
     chohanRefund: 0,
+    xiangqiWagered: 0,
+    xiangqiPayout: 0,
+    xiangqiRefund: 0,
   }
 
   return {
@@ -350,9 +443,11 @@ async function getEconomyStats(period = '30d') {
         totals.songBidSpent
         + totals.songSkipSpent
         + totals.chohanWagered
+        + totals.xiangqiWagered
         - totals.chohanPayout
+        - totals.xiangqiPayout
         - totals.refunded,
-      playerWinProfit: totals.chohanPayout / 2,
+      playerWinProfit: totals.chohanPayout / 2 + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered),
     },
     topUsers: transactionStats[0]?.topUsers || [],
   }
@@ -373,8 +468,10 @@ async function backfillBalances(startBalance = 100) {
 module.exports = {
   DAILY_BONUS,
   debit,
+  debitOnce,
   credit,
   creditOnce,
+  creditXiangqiRewardOnce,
   recordTransaction,
   claimDailyBonus,
   getLeaderboard,

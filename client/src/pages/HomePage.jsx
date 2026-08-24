@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useContext, useState, useEffect, useRef } from 'react';
 import { Tabs, Tooltip } from 'antd';
 import { MoonOutlined, SunOutlined, TrophyOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
@@ -10,6 +11,7 @@ import UserMenu from '../components/Auth/UserMenu';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
+import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
@@ -27,7 +29,6 @@ const WealthLeaderboardModal = lazy(
   () => import('../components/WealthLeaderboard/WealthLeaderboardModal'),
 )
 const NewsReaderModal = lazy(() => import('../components/News/NewsReaderModal'))
-
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 11) return 'Chào buổi sáng';
@@ -37,6 +38,7 @@ const getGreeting = () => {
 };
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const { currentSession, currentSong } = useContext(PlaylistContext);
   const { displayName } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -47,8 +49,13 @@ const HomePage = () => {
   const [showWealthLeaderboard, setShowWealthLeaderboard] = useState(false);
   const [newsTab, setNewsTab] = useState('1');
   const [showNewsReader, setShowNewsReader] = useState(false);
+  const [xiangqiPromoDismissed, setXiangqiPromoDismissed] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
+
+  const dismissXiangqiPromo = () => {
+    setXiangqiPromoDismissed(true);
+  };
 
   const handlePlayNesGame = (gameFile, gameName) => {
     setCurrentGame({ file: gameFile, name: gameName });
@@ -245,6 +252,18 @@ const HomePage = () => {
                   🍄
                 </button>
               </Tooltip>
+              {xiangqiPromoDismissed && (
+                <Tooltip title="Chiến cờ chiếm PCs">
+                  <button
+                    type="button"
+                    className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
+                    aria-label="Chơi cờ tướng"
+                    onClick={() => navigate('/xiangqi')}
+                  >
+                    帥
+                  </button>
+                </Tooltip>
+              )}
               <Tooltip title={showSnowEffect ? 'Tắt tuyết' : 'Bật tuyết'}>
                 <button
                   type="button"
@@ -363,6 +382,10 @@ const HomePage = () => {
             </div>
           </section>
         </aside>
+
+        {!xiangqiPromoDismissed && (
+          <XiangqiPromo onDismiss={dismissXiangqiPromo} bottomInset={hasPlayer ? 96 : 12} />
+        )}
 
         {/* ── Thanh phát nhạc ─────────────────────────────────────── */}
         {hasPlayer && (

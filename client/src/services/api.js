@@ -173,6 +173,18 @@ export const placeBilliardsBet = (payload) => api.post("/api/billiards/bet", pay
 export const getBilliardsMyBets = (gameId) =>
   api.get("/api/billiards/my-bets", { params: { gameId } });
 
+// Cờ tướng giải thế — mọi nước đi và giao dịch PC đều do server xác nhận
+export const getXiangqiConfig = () => api.get("/api/xiangqi/config");
+export const getActiveXiangqiGame = () => api.get("/api/xiangqi/games/active");
+export const getXiangqiGame = (gameId) => api.get(`/api/xiangqi/games/${gameId}`);
+export const startXiangqiGame = (difficulty, requestKey) =>
+  api.post("/api/xiangqi/games", { difficulty, requestKey });
+export const playXiangqiMove = (gameId, from, to, expectedPlyVersion) =>
+  api.post(`/api/xiangqi/games/${gameId}/moves`, { from, to, expectedPlyVersion });
+export const getXiangqiHint = (gameId) => api.post(`/api/xiangqi/games/${gameId}/hint`);
+export const getXiangqiAnswer = (gameId) => api.post(`/api/xiangqi/games/${gameId}/answer`);
+export const resignXiangqiGame = (gameId) => api.post(`/api/xiangqi/games/${gameId}/resign`);
+
 // TTS API (VieNeu-TTS)
 export const generateTTS = (songId, config = {}) =>
   api.post(`/api/tts/generate/${songId}`, {}, config);

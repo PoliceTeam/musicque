@@ -1,0 +1,5402 @@
+[
+  {
+    "puzzleKey": "egt-4f64364d8ef7c644",
+    "difficulty": "easy",
+    "fen": "7R1/5kc2/9/9/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "h9h8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-cf05a427e3276958",
+    "difficulty": "easy",
+    "fen": "2bk5/9/9/4N4/9/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "e6f8",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-73a8df0799f6676e",
+    "difficulty": "easy",
+    "fen": "4k4/9/2c6/9/9/9/9/2R6/5K3/9 w - - 0 1",
+    "bestMove": "c2c7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b7e8ec43d39e6b1f",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/9/9/9/4K4/8c/8R w - - 0 1",
+    "bestMove": "i0i1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-0f8cc93df32aeac5",
+    "difficulty": "easy",
+    "fen": "3k5/9/5a3/5N3/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "f6d5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-f8944b89261c6000",
+    "difficulty": "easy",
+    "fen": "5a3/4k4/9/9/9/9/9/9/5K2N/9 w - - 0 1",
+    "bestMove": "i1g2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-78f411d3aa49db82",
+    "difficulty": "easy",
+    "fen": "3c5/9/4k4/2R6/9/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "c6e6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-d7195c804b4a6631",
+    "difficulty": "easy",
+    "fen": "3c1k3/9/1R7/9/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "b7f7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f4495861a8e216f3",
+    "difficulty": "easy",
+    "fen": "3k1a1N1/9/9/9/9/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "h9g7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-b05e8db4d02d7ddf",
+    "difficulty": "easy",
+    "fen": "N4a3/9/3k5/9/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "a9b7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-b91b682f1a781f5e",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/2R6/9/9/9/1n1K5/9/9 w - - 0 1",
+    "bestMove": "c6e6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-9fe0c796048ec5a6",
+    "difficulty": "easy",
+    "fen": "9/4k4/4n4/9/9/9/9/5K3/9/4R4 w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-b0a1a81246c1a1ad",
+    "difficulty": "easy",
+    "fen": "4k4/9/3R5/2n6/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d7d5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-f791c8622f3d26ef",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/9/9/2n6/5K1R1/9/9 w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-76e0b94096a223f8",
+    "difficulty": "easy",
+    "fen": "5k3/9/5a3/9/N8/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "a5b7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-2b578669981be408",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/8n/9/9/3K5/4R4/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-e802c3e6afecaf4f",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/9/9/9/c8/4KR3 w - - 0 1",
+    "bestMove": "f0f6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-5e3fe6c447fa155e",
+    "difficulty": "easy",
+    "fen": "9/4a4/4k4/3N5/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-1636d60993a9b588",
+    "difficulty": "easy",
+    "fen": "3k5/9/b8/8N/9/9/9/9/4K4/9 w - - 0 1",
+    "bestMove": "i6h4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-89ce4c5fbbe50c85",
+    "difficulty": "easy",
+    "fen": "9/9/5k3/8n/9/2R6/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d4dafd43754dd9aa",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/R8/9/9/5n3/4K4/9 w - - 0 1",
+    "bestMove": "a5d5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d919a404ad067024",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/4p4/9/8N/9/9/4K4/9 w - - 0 1",
+    "bestMove": "i4g5",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-8952bcd318c9324a",
+    "difficulty": "easy",
+    "fen": "9/4a4/3k5/9/9/9/9/9/N8/4K4 w - - 0 1",
+    "bestMove": "a1b3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-81a07f90d763e00f",
+    "difficulty": "easy",
+    "fen": "3k1a3/9/9/9/9/9/9/9/4K4/6N2 w - - 0 1",
+    "bestMove": "g0f2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-a9327c2544fbcbc2",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/4R4/9/1c7/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-c6ec95e66f019ae9",
+    "difficulty": "easy",
+    "fen": "5k3/1c7/9/9/9/9/9/1R7/9/4K4 w - - 0 1",
+    "bestMove": "b2b8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-aba8755695b30afa",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/6c2/9/9/3K2R2/9 w - - 0 1",
+    "bestMove": "g1g4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-37a2081b88b2e239",
+    "difficulty": "easy",
+    "fen": "3k5/4a4/9/9/9/9/9/9/5K3/6N2 w - - 0 1",
+    "bestMove": "g0h2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-2e4b8870630d27b7",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/9/5n3/2R6/9/9/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-30daa5f4bcdc024b",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/6c2/6R2/3K5/9/9 w - - 0 1",
+    "bestMove": "g3g4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-9f3ddc1f182e9843",
+    "difficulty": "easy",
+    "fen": "7R1/5k3/9/9/9/9/5n3/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-ff430e43b7dcded9",
+    "difficulty": "easy",
+    "fen": "9/5k2n/3R5/9/9/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "d7d8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-a5e805d72f944af7",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/9/6N2/3p5/3K5/9 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-4a5348edb1f2a31a",
+    "difficulty": "easy",
+    "fen": "2n6/9/4k4/9/7R1/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "h5h3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-968750472732eae3",
+    "difficulty": "easy",
+    "fen": "7R1/3k5/9/9/9/9/9/7n1/9/4K4 w - - 0 1",
+    "bestMove": "h9h2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-cd3986ecc05c5068",
+    "difficulty": "easy",
+    "fen": "4k4/9/3c5/9/9/9/R8/3K5/9/9 w - - 0 1",
+    "bestMove": "a3e3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-707799e32a3a2102",
+    "difficulty": "easy",
+    "fen": "9/3k5/3a5/9/9/9/9/1N1K5/9/9 w - - 0 1",
+    "bestMove": "b2c4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-bfd86abbd91c75f9",
+    "difficulty": "easy",
+    "fen": "5a3/5k3/9/9/9/5N3/9/9/5K3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-10375e570b44a376",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/9/9/4c4/5K3/9/4R4 w - - 0 1",
+    "bestMove": "e0e3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-fef97525576dac34",
+    "difficulty": "easy",
+    "fen": "8R/9/5k3/9/9/3n5/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-8738a2f4daba6f12",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/9/8n/1R2K4/9/9 w - - 0 1",
+    "bestMove": "b2d2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-9a14bc9a1b812807",
+    "difficulty": "easy",
+    "fen": "9/3k5/6R2/9/9/9/9/5n3/9/5K3 w - - 0 1",
+    "bestMove": "g7g2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-632dd760eb9d2edf",
+    "difficulty": "easy",
+    "fen": "6b2/5k3/9/9/8N/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "i5g6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-931bae21566f46f1",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/1N7/2b6/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "b6c8",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-e327c5fac2b56b0f",
+    "difficulty": "easy",
+    "fen": "5k3/4a1N2/9/9/9/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "g8e7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-3ca70694774920d0",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/9/N8/9/9/9/4pK3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-30028fc21cf453b4",
+    "difficulty": "easy",
+    "fen": "4n4/9/4k4/9/9/7R1/9/9/9/3K5 w - - 0 1",
+    "bestMove": "h4e4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-0e8e372ee9afc8d9",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/6p2/4N4/9/5K3/9/9 w - - 0 1",
+    "bestMove": "e4g5",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-3cbce8c5e50ef23b",
+    "difficulty": "easy",
+    "fen": "3k5/9/8N/6p2/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "i7g6",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-0381076aa2babb12",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/9/3p5/9/3KN4/9 w - - 0 1",
+    "bestMove": "e1d3",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-5b5c8b4b149a9f95",
+    "difficulty": "easy",
+    "fen": "5a3/9/4k4/1N7/9/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "b6a8",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-98d26b5f730cb50d",
+    "difficulty": "easy",
+    "fen": "3k5/9/1R7/9/9/9/9/9/3c5/4K4 w - - 0 1",
+    "bestMove": "b7d7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-4c2def4dc99feea0",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/7R1/9/9/4K4/9/5n3 w - - 0 1",
+    "bestMove": "e2e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-4aa86fa9c276b6e9",
+    "difficulty": "easy",
+    "fen": "3k1a3/9/9/9/9/2N6/9/9/5K3/9 w - - 0 1",
+    "bestMove": "c4a5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-f20dff929e6bf70e",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/9/9/9/4p3N/4K4 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-cb2413493c6c0bf2",
+    "difficulty": "easy",
+    "fen": "5a3/9/4k4/9/9/9/9/3K4N/9/9 w - - 0 1",
+    "bestMove": "i2g3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-e1c689ded9d8d105",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/8n/3R5/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d5d2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-4e3b4e75dd04b45a",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/8p/5N3/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "f5g7",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-808147b08f90e14f",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/R8/9/9/9/5Kc2/9 w - - 0 1",
+    "bestMove": "a5e5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-aff01e2de43dc67b",
+    "difficulty": "easy",
+    "fen": "4k4/4a4/9/9/9/9/9/4K4/9/1N7 w - - 0 1",
+    "bestMove": "b0c2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-1e52b8a759324976",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/4p4/9/9/9/N8/9/5K3 w - - 0 1",
+    "bestMove": "a2b4",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-102863f35d4d9cf2",
+    "difficulty": "easy",
+    "fen": "3k5/9/5a3/9/9/9/9/9/9/4KN3 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-803b9e4c215758cc",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/3n5/9/9/9/3K5/7R1 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-597dac65737a5c2b",
+    "difficulty": "easy",
+    "fen": "9/5k3/5a3/7N1/9/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "h6f7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-15a06b58f325f566",
+    "difficulty": "easy",
+    "fen": "9/5k3/3R5/9/9/4n4/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-743438a471e2896d",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/5n3/9/9/9/3RK4 w - - 0 1",
+    "bestMove": "d0d2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-6f9813886434560d",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/3n5/9/9/9/9/3K1R3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-79767716a3503358",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/9/9/1N3K3/9/9 w - - 0 1",
+    "bestMove": "b2d3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-56a322038f551cba",
+    "difficulty": "easy",
+    "fen": "9/4a4/4k4/7N1/9/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "h6f5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-ba6a73accf4d2351",
+    "difficulty": "easy",
+    "fen": "9/1n1k5/9/9/9/9/4R4/9/5K3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-6fd9a73fefe2c1dd",
+    "difficulty": "easy",
+    "fen": "3a5/3k5/9/9/9/9/9/7N1/5K3/9 w - - 0 1",
+    "bestMove": "h2i4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-aad13c06b3205493",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/9/9/3N1K3/9/9 w - - 0 1",
+    "bestMove": "d2b3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-dc921597135d472e",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/9/5c3/5K3/9/8R w - - 0 1",
+    "bestMove": "i0i5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-eb7155f2abccc692",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/4N4/9/9/5K3/9 w - - 0 1",
+    "bestMove": "e4f6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-fb4df10f5aad01fb",
+    "difficulty": "easy",
+    "fen": "9/2nk5/9/9/9/9/7R1/5K3/9/9 w - - 0 1",
+    "bestMove": "h3h8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d5dce2a65218b4bb",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/9/9/3K5/9/R2n5 w - - 0 1",
+    "bestMove": "a0d0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-107990c6468136a0",
+    "difficulty": "easy",
+    "fen": "2bk5/4N4/9/9/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "e8c9",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-cd147b4f090a1214",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/9/9/3K5/9/2N6 w - - 0 1",
+    "bestMove": "c0e1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-defe5b8fcb6ce0b1",
+    "difficulty": "easy",
+    "fen": "9/4R4/5k3/9/9/9/8c/4K4/9/9 w - - 0 1",
+    "bestMove": "e8e3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-47bc36c51bbe42a1",
+    "difficulty": "easy",
+    "fen": "5a3/3k5/4N4/9/9/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "e7f9",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-3f4aa7c9960d931e",
+    "difficulty": "easy",
+    "fen": "5a3/5k3/9/1N7/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "b6d5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-1a2818ab2afe5be8",
+    "difficulty": "easy",
+    "fen": "3k5/9/7c1/9/9/9/9/9/2R6/4K4 w - - 0 1",
+    "bestMove": "c1d1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-83cd56f086bd52ef",
+    "difficulty": "easy",
+    "fen": "9/9/4k1c2/9/9/7R1/9/9/9/5K3 w - - 0 1",
+    "bestMove": "h4h7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-e2560aa43103780c",
+    "difficulty": "easy",
+    "fen": "2N6/9/3a1k3/9/9/9/9/9/4K4/9 w - - 0 1",
+    "bestMove": "c9d7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-6d5505c94e6bc6cb",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/9/9/1c3K3/9/5R3 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-0a80103b3dff4771",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/2c6/9/9/9/9/4K1R2/9 w - - 0 1",
+    "bestMove": "g1f1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f62b24fb0927b12c",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/8n/9/9/3R5/9/5K3/9 w - - 0 1",
+    "bestMove": "d3e3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-24ccb7795c0dcb37",
+    "difficulty": "easy",
+    "fen": "R8/9/4kn3/9/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "a9a7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-2d4d28d322d37e24",
+    "difficulty": "easy",
+    "fen": "3k1n3/9/9/9/9/9/7R1/9/4K4/9 w - - 0 1",
+    "bestMove": "h3d3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-b5dc96be3c110c2e",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/7N1/9/9/3K5/9 w - - 0 1",
+    "bestMove": "h4i6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-4e4e1af076f47119",
+    "difficulty": "easy",
+    "fen": "9/6R2/3k5/9/9/9/9/6n2/4K4/9 w - - 0 1",
+    "bestMove": "g8g2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-6ef7b2b441b04919",
+    "difficulty": "easy",
+    "fen": "3k5/9/n8/9/9/R8/9/9/4K4/9 w - - 0 1",
+    "bestMove": "a4d4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-bf040cdd881774f4",
+    "difficulty": "easy",
+    "fen": "4k4/9/8b/9/7N1/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "h5i7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-2968999b1977959e",
+    "difficulty": "easy",
+    "fen": "9/9/3ak4/8N/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "i6g7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-599ffef5f9dfa458",
+    "difficulty": "easy",
+    "fen": "5k3/9/4R4/9/9/9/9/1n7/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-eeb4e669135cdc9a",
+    "difficulty": "easy",
+    "fen": "4k4/3N5/5a3/9/9/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "d8f7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-e93b893b4d28d5f4",
+    "difficulty": "easy",
+    "fen": "3a5/4k4/9/9/9/9/9/5K3/9/1N7 w - - 0 1",
+    "bestMove": "b0d1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-5fca620475843968",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/9/1c7/8R/9/4K4/9 w - - 0 1",
+    "bestMove": "i3f3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f870326b3e97c854",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/4n4/R8/9/5K3/9/9 w - - 0 1",
+    "bestMove": "a4d4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-78db14d5980f8335",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/3c5/9/3K5/9/8R w - - 0 1",
+    "bestMove": "i0i6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-55e0b934d3155b73",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/9/2n2R3/9/9/9/3K5 w - - 0 1",
+    "bestMove": "f4c4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-022e575f5c93769c",
+    "difficulty": "easy",
+    "fen": "3k5/9/c8/6R2/9/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "g6e6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-0a60aa88c58605ea",
+    "difficulty": "easy",
+    "fen": "3k5/6R2/9/9/9/9/9/9/4K4/3n5 w - - 0 1",
+    "bestMove": "g8c8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-2bbd687a232122dd",
+    "difficulty": "easy",
+    "fen": "3k5/9/5a3/9/9/9/3N5/9/4K4/9 w - - 0 1",
+    "bestMove": "d3f4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-25100941b990ccb1",
+    "difficulty": "easy",
+    "fen": "9/6R2/4k4/9/9/9/9/8c/5K3/9 w - - 0 1",
+    "bestMove": "g8g3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-e3974b1d65c544ca",
+    "difficulty": "easy",
+    "fen": "3k5/4a4/9/8N/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "i6h8",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-6cf80c53da92743d",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/7R1/9/9/4K4/4c4/9 w - - 0 1",
+    "bestMove": "h5d5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-90e31247f7d0f800",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/8R/7n1/9/5K3/9 w - - 0 1",
+    "bestMove": "i4e4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-091a76e0b4a4bc61",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/4n4/9/3R5/9/5K3/9 w - - 0 1",
+    "bestMove": "d3e3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-b1a5eb60f5a6a38c",
+    "difficulty": "easy",
+    "fen": "3k5/9/5N3/9/2b6/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "f7d6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-ca89c2983097cc68",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/8c/2R6/9/9/4K4/9 w - - 0 1",
+    "bestMove": "c4f4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-42c59ed43d0dd3a8",
+    "difficulty": "easy",
+    "fen": "5k3/2n6/9/9/9/9/9/9/3K5/1R7 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-2ac14fd2ec7e9ac9",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/9/6n2/9/9/4K4/1R7 w - - 0 1",
+    "bestMove": "b0f0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-442819e105041fd9",
+    "difficulty": "easy",
+    "fen": "9/5k3/3a5/9/9/9/1N7/9/3K5/9 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-ce168114bcf4777f",
+    "difficulty": "easy",
+    "fen": "9/N3a4/4k4/9/9/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "a8c7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-039f8151265566ae",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/9/2R6/5K3/9/5c3 w - - 0 1",
+    "bestMove": "c3c0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-dd60cdd05ab67a04",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/7R1/8n/9/9/3K5/9 w - - 0 1",
+    "bestMove": "h5h4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-875c1a5616b3ae17",
+    "difficulty": "easy",
+    "fen": "5k3/6N2/4b4/9/9/9/9/9/4K4/9 w - - 0 1",
+    "bestMove": "g8e7",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-71f1c2eea1933848",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/2R6/9/9/3K4n/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-f5991b9f3eaf9e8b",
+    "difficulty": "easy",
+    "fen": "9/3k5/3a5/9/9/9/9/3N1K3/9/9 w - - 0 1",
+    "bestMove": "d2e4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-4dd09b12d92afeb8",
+    "difficulty": "easy",
+    "fen": "3k5/9/7n1/9/9/9/9/9/9/2R1K4 w - - 0 1",
+    "bestMove": "c0d0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-b95874a3390bcb9a",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/9/9/5K3/5R3/3c5 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-2c922e2fd3e1e96a",
+    "difficulty": "easy",
+    "fen": "3a5/9/4k4/9/9/9/7N1/9/3K5/9 w - - 0 1",
+    "bestMove": "h3f4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-f7a9765eb7f4aaf8",
+    "difficulty": "easy",
+    "fen": "5a3/9/4k4/9/9/9/9/9/7N1/5K3 w - - 0 1",
+    "bestMove": "h1i3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-0f0f4ad19dc3e891",
+    "difficulty": "easy",
+    "fen": "7c1/4k4/9/6R2/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "g6e6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-a36ad864e18e30e1",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/2R6/9/9/8n/9/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-abe6614d6649863b",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/9/9/3c5/9/6R2/3K5 w - - 0 1",
+    "bestMove": "g1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-42ea86f51730af65",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/5R3/8c/9/3K5/9/9 w - - 0 1",
+    "bestMove": "f5e5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-4fc6f5100290b823",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/9/1n7/9/9/3K5/1R7 w - - 0 1",
+    "bestMove": "b0b4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-ac384b6135f8c710",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/5n3/9/9/9/8R/9/5K3 w - - 0 1",
+    "bestMove": "i2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-9f2e31b78b129f9c",
+    "difficulty": "easy",
+    "fen": "9/9/b1Nk5/9/9/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-fcd4edfa1646b202",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/5n3/2R6/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "c5c2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-60c0b0eae19b0942",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/4p2N1/9/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "h6g8",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-eaac1b2554f994d8",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/9/9/9/5n3/R8/5K3 w - - 0 1",
+    "bestMove": "a1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-ff89cd708ce60fa7",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/9/6R2/9/3c5/9/3K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b57c5bcf9688fd14",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/9/9/9/9/4R4/4cK3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-226c2b5554655f00",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/4R4/9/9/n8/9/9/5K3 w - - 0 1",
+    "bestMove": "e6e4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-3f920cf85d115c21",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/2b6/4N4/9/9/4K4/9 w - - 0 1",
+    "bestMove": "e1f1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-e9d5422fa121190b",
+    "difficulty": "easy",
+    "fen": "5a3/1N2k4/9/9/9/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "b8d9",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-0561d2e602e54bd6",
+    "difficulty": "easy",
+    "fen": "9/N4k3/9/9/9/9/9/9/3Kp4/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-40d5b6cb58af912b",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/c8/8R/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "i5e5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b45bb4125640e417",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/6N2/5p3/9/5K3/9/9 w - - 0 1",
+    "bestMove": "g5e6",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-1ed66614f869b3ef",
+    "difficulty": "easy",
+    "fen": "3a5/9/4k4/9/9/4N4/9/9/3K5/9 w - - 0 1",
+    "bestMove": "e4c3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-26b82626773b990c",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/4p4/9/9/9/N8/5K3/9 w - - 0 1",
+    "bestMove": "a2b4",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-1754f7c54834d40b",
+    "difficulty": "easy",
+    "fen": "3k5/4R4/9/9/9/9/9/9/5K3/3c5 w - - 0 1",
+    "bestMove": "e8e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-27fb07425c89b5cf",
+    "difficulty": "easy",
+    "fen": "9/5k3/3a5/2N6/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "c6d8",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-155ac058aa529889",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/9/9/1c7/3K5/R8/9 w - - 0 1",
+    "bestMove": "a1a9",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-161ac56acba3d06f",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/2c6/9/9/4R4/9/4K4/9 w - - 0 1",
+    "bestMove": "e3d3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-defc3bfc181af122",
+    "difficulty": "easy",
+    "fen": "3k5/9/1N3a3/9/9/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "b7d6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-8dd86eb287774d8d",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/1R7/9/9/3n5/3K5/9 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-7d1a20dd9254218f",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/9/8n/9/3K5/9/5R3 w - - 0 1",
+    "bestMove": "f0g0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-c444d03db50e1bfa",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/9/9/9/8n/9/3RK4 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-383fb0505ee0611a",
+    "difficulty": "easy",
+    "fen": "3a5/9/4k4/9/9/9/7N1/9/9/3K5 w - - 0 1",
+    "bestMove": "h3f4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-5976d2ac4fa2a8a8",
+    "difficulty": "easy",
+    "fen": "9/3k5/8R/9/9/9/9/4c4/9/4K4 w - - 0 1",
+    "bestMove": "i7e7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-c85394927a2b9a4c",
+    "difficulty": "easy",
+    "fen": "3k1a3/9/9/2N6/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "c6d4",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-4cf3bd5491f70a90",
+    "difficulty": "easy",
+    "fen": "9/5k3/5a3/9/9/9/9/9/5K2N/9 w - - 0 1",
+    "bestMove": "i1h3",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-afe05c5143b7cdab",
+    "difficulty": "easy",
+    "fen": "9/3k5/3n5/9/9/9/9/R8/9/4K4 w - - 0 1",
+    "bestMove": "a2d2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-1251115c324fb3ca",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/8R/9/9/9/5K1n1/9/9 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-4eafda01f3ab6b00",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/2b6/7N1/9/4K4/9/9 w - - 0 1",
+    "bestMove": "h4f5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-2c4e603d33a34567",
+    "difficulty": "easy",
+    "fen": "R4n3/9/4k4/9/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "a9f9",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-a3b82e2f2af6ef32",
+    "difficulty": "easy",
+    "fen": "3k1a3/9/9/9/9/6N2/9/9/5K3/9 w - - 0 1",
+    "bestMove": "f1f2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-0b3f2d382c3cf0aa",
+    "difficulty": "easy",
+    "fen": "9/9/5k3/5n3/9/1R7/9/9/4K4/9 w - - 0 1",
+    "bestMove": "b4f4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-34337caa93d8b59a",
+    "difficulty": "easy",
+    "fen": "9/9/3ak4/9/9/9/9/9/9/2NK5 w - - 0 1",
+    "bestMove": "d0d1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-cad046ae52561ad2",
+    "difficulty": "easy",
+    "fen": "4k4/9/9/9/9/3R5/9/5K3/9/5c3 w - - 0 1",
+    "bestMove": "d4d0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-79b25a324ae0cfe0",
+    "difficulty": "easy",
+    "fen": "3k5/4a4/9/9/9/9/9/9/4K4/4N4 w - - 0 1",
+    "bestMove": "e1e2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-b3b8dea014479691",
+    "difficulty": "easy",
+    "fen": "3N1k3/9/3a5/9/9/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-4888ed154c24b0ff",
+    "difficulty": "easy",
+    "fen": "3a1k3/9/9/9/9/9/9/3K5/9/2N6 w - - 0 1",
+    "bestMove": "c0e1",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-f23adb0a4c084d65",
+    "difficulty": "easy",
+    "fen": "1R7/9/4k4/9/7n1/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "b9g9",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d69bdfafdad519df",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/9/9/5R3/9/9/9/5K2c w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f4953f66135828d3",
+    "difficulty": "easy",
+    "fen": "5a3/3k5/8N/9/9/9/9/9/9/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-90b4030c50d5e39c",
+    "difficulty": "easy",
+    "fen": "9/9/c4k3/9/4R4/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "e5f5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-0a3b2ff4be5a124e",
+    "difficulty": "easy",
+    "fen": "4k4/7N1/9/9/6p2/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "h8f7",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-5a29b42ddfa79fbc",
+    "difficulty": "easy",
+    "fen": "9/4k4/9/9/9/9/9/9/5K1c1/8R w - - 0 1",
+    "bestMove": "i0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-c3e6be4f7d815352",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/4p4/6N2/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "g5e6",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-bb5b9639c5300224",
+    "difficulty": "easy",
+    "fen": "3k5/9/3a5/9/9/9/N8/9/4K4/9 w - - 0 1",
+    "bestMove": "a3b5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-e8db1f3970cced0b",
+    "difficulty": "easy",
+    "fen": "3k5/4a4/9/9/3N5/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-7a9fb38788ddc6ea",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/1n7/9/1R7/9/9/4K4 w - - 0 1",
+    "bestMove": "b3f3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-c3ac7135df576e03",
+    "difficulty": "easy",
+    "fen": "3ak4/9/9/9/6N2/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "g5e6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-17781a1d8e6e4784",
+    "difficulty": "easy",
+    "fen": "9/3k5/9/5Rn2/9/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "f6d6",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-972dc30333bdf9fc",
+    "difficulty": "easy",
+    "fen": "9/9/5k3/9/9/9/9/3K5/3pN4/9 w - - 0 1",
+    "bestMove": "d2d1",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-3a795a4d2ab8e361",
+    "difficulty": "easy",
+    "fen": "3k5/9/3c5/9/9/4R4/9/9/9/4K4 w - - 0 1",
+    "bestMove": "e4d4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b36c95a918fa5a6b",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/9/9/n4R3/9/9/3K5 w - - 0 1",
+    "bestMove": "f3a3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-649aec8242bc16e8",
+    "difficulty": "easy",
+    "fen": "5a3/9/4k4/9/9/9/9/9/4N4/4K4 w - - 0 1",
+    "bestMove": "e0f0",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-dca9757495b98f79",
+    "difficulty": "easy",
+    "fen": "3k5/9/9/9/9/9/4R4/9/9/5K1n1 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-824fc9d29f230a9f",
+    "difficulty": "easy",
+    "fen": "9/9/5k3/9/7c1/9/6R2/4K4/9/9 w - - 0 1",
+    "bestMove": "g3f3",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-701ae94599ef42aa",
+    "difficulty": "easy",
+    "fen": "9/9/4k4/9/9/9/9/9/4c2R1/4K4 w - - 0 1",
+    "bestMove": "h1e1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-a5a7ad262feefb36",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/6n2/6R2/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "g5d5",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-218243e63f48d446",
+    "difficulty": "easy",
+    "fen": "2bk5/9/9/9/9/9/2N6/4K4/9/9 w - - 0 1",
+    "bestMove": "c3d5",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-3eb4ae0d340a286d",
+    "difficulty": "easy",
+    "fen": "3k5/9/4n4/9/7R1/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "h5h7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-3f91be85d416aa7e",
+    "difficulty": "easy",
+    "fen": "9/5k3/9/9/9/8R/9/9/9/2n1K4 w - - 0 1",
+    "bestMove": "i4f4",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-3369195509d09895",
+    "difficulty": "easy",
+    "fen": "5k3/9/5a3/9/9/9/9/9/9/1N3K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-13acae81f1679488",
+    "difficulty": "easy",
+    "fen": "9/9/3k5/9/9/8N/6p2/5K3/9/9 w - - 0 1",
+    "bestMove": "i4g3",
+    "pieceCount": 4,
+    "redAdvantage": 3,
+    "sourceType": "單馬 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-320d57a752c65b30",
+    "difficulty": "easy",
+    "fen": "5k3/9/3a5/9/1N7/9/9/9/4K4/9 w - - 0 1",
+    "bestMove": "b5d6",
+    "pieceCount": 4,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-24b35a59efb91c77",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/R8/9/9/9/9/9/c2K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-636054b17f793908",
+    "difficulty": "easy",
+    "fen": "9/1cR6/4k4/9/9/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "c8b8",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-dc6e78ff4d378ea4",
+    "difficulty": "easy",
+    "fen": "3n5/4k4/9/9/9/9/9/3K5/R8/9 w - - 0 1",
+    "bestMove": "a1a7",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-4e291e22e74e2f1d",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/4n4/7R1/9/9/9/4K4 w - - 0 1",
+    "bestMove": "h4h1",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d22e304465c543f6",
+    "difficulty": "easy",
+    "fen": "5k3/9/9/9/9/9/9/3K5/9/n2R5 w - - 0 1",
+    "bestMove": "d0a0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-1df48657b59b4dc5",
+    "difficulty": "easy",
+    "fen": "9/9/5k3/9/9/9/1c7/9/9/3K4R w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-aaf7b37437ea0ff7",
+    "difficulty": "easy",
+    "fen": "1R5c1/9/4k4/9/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "b9h9",
+    "pieceCount": 4,
+    "redAdvantage": 4.5,
+    "sourceType": "單車 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-a8ab8a20918fa41c",
+    "difficulty": "medium",
+    "fen": "9/3k5/1P1n5/9/9/6B2/9/5K3/9/N8 w - - 0 1",
+    "bestMove": "a0b2",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單馬單相單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-a6d15e55ed0aa4b4",
+    "difficulty": "medium",
+    "fen": "3k4C/4r4/7R1/9/3P5/9/9/9/5K3/9 w - - 0 1",
+    "bestMove": "i9i2",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單車單炮單兵 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-82a00c11b57266ef",
+    "difficulty": "medium",
+    "fen": "6n2/2Nk5/9/8N/9/9/9/9/4K4/9 w - - 0 1",
+    "bestMove": "i6h8",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-97704f67d17109d6",
+    "difficulty": "medium",
+    "fen": "5k3/9/8C/1P7/9/2B6/8p/9/4K4/9 w - - 0 1",
+    "bestMove": "e1d1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單炮單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-f818ca599b3b143d",
+    "difficulty": "medium",
+    "fen": "9/9/5k3/9/9/7N1/9/9/3K1C3/4c4 w - - 0 1",
+    "bestMove": "h4f5",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-65d6fa799998e685",
+    "difficulty": "medium",
+    "fen": "9/2n1k4/8P/9/1C7/9/9/9/3N5/3K5 w - - 0 1",
+    "bestMove": "d1e3",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單炮單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-d2629e468abe04f4",
+    "difficulty": "medium",
+    "fen": "9/9/b2kb4/9/9/4R4/9/4K4/9/9 w - - 0 1",
+    "bestMove": "e4d4",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 2象"
+  },
+  {
+    "puzzleKey": "egt-6776f77c4f0f3614",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/9/9/4p4/3K1A3/9/5A3 w - - 0 1",
+    "bestMove": "f0e1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "2仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-734f8182bc6613a7",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/5C3/2P6/3p5/3A5/9/5K3 w - - 0 1",
+    "bestMove": "d2e1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單仕單炮單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-233d98e87b12fc4b",
+    "difficulty": "medium",
+    "fen": "7C1/5k3/3a5/9/9/9/9/9/4K4/3A5 w - - 0 1",
+    "bestMove": "h9h0",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-d27d290e806a37fe",
+    "difficulty": "medium",
+    "fen": "4k4/9/6P2/9/9/9/9/5p3/C2K5/9 w - - 0 1",
+    "bestMove": "a1a5",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單炮單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-6549af7128f2498d",
+    "difficulty": "medium",
+    "fen": "2n3N2/5k3/9/1P5P1/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "g9h7",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單馬2兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-253d2148b8624bee",
+    "difficulty": "medium",
+    "fen": "9/3k5/N8/3P5/9/2p6/9/4K4/9/9 w - - 0 1",
+    "bestMove": "a7c6",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-48d2bf12d03e4208",
+    "difficulty": "medium",
+    "fen": "2b1k4/1R7/9/9/9/9/9/9/3K5/4c4 w - - 0 1",
+    "bestMove": "b8b9",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-471d02c14673ff0e",
+    "difficulty": "medium",
+    "fen": "9/4a4/3k5/5c3/9/9/9/1R7/9/4K4 w - - 0 1",
+    "bestMove": "b2d2",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-53e2d2c77e8d8cd0",
+    "difficulty": "medium",
+    "fen": "9/9/3ak4/9/5C3/2P6/9/5K3/9/9 w - - 0 1",
+    "bestMove": "f5e5",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單炮單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-f75c01187dded4c9",
+    "difficulty": "medium",
+    "fen": "5a3/3k5/9/9/9/C8/9/3A5/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-955db551efa3d604",
+    "difficulty": "medium",
+    "fen": "5a1R1/9/3ak4/9/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "h9f9",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 2士"
+  },
+  {
+    "puzzleKey": "egt-715bad3bdedffacc",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/9/9/9/2p2A3/4A4/4K4 w - - 0 1",
+    "bestMove": "e0f0",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "2仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-a8f630326a3e0e82",
+    "difficulty": "medium",
+    "fen": "3k1N3/8r/9/9/9/9/9/2C6/9/2B1K4 w - - 0 1",
+    "bestMove": "f9g7",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單馬單相單炮 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-f4ed637d561e4653",
+    "difficulty": "medium",
+    "fen": "5k3/9/9/9/9/9/9/p3K4/1CC6/3n5 w - - 0 1",
+    "bestMove": "c1d1",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "2炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-2ab475cf31db9731",
+    "difficulty": "medium",
+    "fen": "9/3kN4/9/9/9/9/6C2/4K4/9/5n3 w - - 0 1",
+    "bestMove": "e2e1",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-58efc9f3f2924310",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/5R3/9/9/8n/4K4/9/3A5 w - - 0 1",
+    "bestMove": "f6d6",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-2ce6125cf71247b0",
+    "difficulty": "medium",
+    "fen": "3k1a3/9/9/9/6R2/9/9/5K3/9/2n6 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-7189ae540252a119",
+    "difficulty": "medium",
+    "fen": "3k5/1P7/9/9/2b6/7N1/9/9/4A4/4K4 w - - 0 1",
+    "bestMove": "e1f2",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單仕單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-0cda500a28cd4c74",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/9/9/3K5/1r1N5/3R5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-15d0cabc3acc344a",
+    "difficulty": "medium",
+    "fen": "9/4k4/8b/6N2/9/P8/9/9/9/3K5 w - - 0 1",
+    "bestMove": "g6i7",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-8da0b32fad37ac3c",
+    "difficulty": "medium",
+    "fen": "9/3k5/6PP1/9/9/5p3/9/9/3C5/4K4 w - - 0 1",
+    "bestMove": "g7g8",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單炮2兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-56108da105bfd8cf",
+    "difficulty": "medium",
+    "fen": "9/9/3k5/9/9/9/5n3/6R2/4n4/4K2N1 w - - 0 1",
+    "bestMove": "g2f2",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-4d0e3bec3b3cc72f",
+    "difficulty": "medium",
+    "fen": "9/3k5/3c5/9/9/3R5/9/9/9/4K2p1 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 5,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-f5e5554f4a0cd25e",
+    "difficulty": "medium",
+    "fen": "3k2b2/9/9/9/6n2/9/9/4B4/9/5K2R w - - 0 1",
+    "bestMove": "e2c0",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單相 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-48750b452d70fbeb",
+    "difficulty": "medium",
+    "fen": "9/4ak3/9/9/pC7/9/9/7C1/3K5/9 w - - 0 1",
+    "bestMove": "b5b0",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "2炮 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-3625e3601d43f595",
+    "difficulty": "medium",
+    "fen": "4N4/3k5/9/9/N8/9/8c/4K4/9/p8 w - - 0 1",
+    "bestMove": "a5c6",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "2馬 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-03c871db4a937be7",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/1P1N5/6b2/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "d6f7",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-193e0aef2e4d6919",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/1r7/3N5/9/1N7/B2K5/9/9 w - - 0 1",
+    "bestMove": "d2d1",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "2馬單相 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-b96682e249be2848",
+    "difficulty": "medium",
+    "fen": "4k4/9/8c/9/3C5/9/9/9/N2K5/2B6 w - - 0 1",
+    "bestMove": "a1b3",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單相單炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f809589c3305f360",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/9/9/1R7/9/4N4/9/3rKA3 w - - 0 1",
+    "bestMove": "e2d0",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單仕 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-3a9eb8d80c6ca8c3",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/7r1/7R1/2B6/9/4K4/9/9 w - - 0 1",
+    "bestMove": "h5h6",
+    "pieceCount": 5,
+    "redAdvantage": 2,
+    "sourceType": "單車單相 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-e7b4301f06efb656",
+    "difficulty": "medium",
+    "fen": "4k4/9/9/9/9/9/9/Bp7/5K3/3A5 w - - 0 1",
+    "bestMove": "f1f0",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-edb4af1a146b6e23",
+    "difficulty": "medium",
+    "fen": "9/5k3/5a3/2R6/9/3n5/9/9/3K5/9 w - - 0 1",
+    "bestMove": "c6f6",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-ebae73d6f5679e7a",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/9/8c/8c/9/B8/3R5/4K4 w - - 0 1",
+    "bestMove": "d1f1",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單車單相 vs 2砲"
+  },
+  {
+    "puzzleKey": "egt-62764fc61708c32b",
+    "difficulty": "medium",
+    "fen": "9/4a4/4k4/9/1N7/9/5p3/9/9/3K1N3 w - - 0 1",
+    "bestMove": "f0e2",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "2馬 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-7f11dd486f771235",
+    "difficulty": "medium",
+    "fen": "4k4/R8/9/9/9/6p2/9/3K1A3/9/5c3 w - - 0 1",
+    "bestMove": "a8a6",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "單車單仕 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-c775b34083cb9e38",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/9/9/C8/9/3AK4/9/p8 w - - 0 1",
+    "bestMove": "a4a1",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單仕單炮 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-f71b1adda4d41c47",
+    "difficulty": "medium",
+    "fen": "3k5/4a4/9/4C4/9/9/9/9/9/3AK4 w - - 0 1",
+    "bestMove": "e6f6",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-5d664484c98885a8",
+    "difficulty": "medium",
+    "fen": "9/5k3/2N6/9/9/7p1/9/9/5c3/3NK4 w - - 0 1",
+    "bestMove": "d0e2",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "2馬 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-2602d4bbb8e7493c",
+    "difficulty": "medium",
+    "fen": "2c6/9/4k4/9/9/9/4P4/9/3K5/2R6 w - - 0 1",
+    "bestMove": "c0c9",
+    "pieceCount": 5,
+    "redAdvantage": 6,
+    "sourceType": "單車單兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-44390028c343e000",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/n8/9/3R5/3K5/4A4/9 w - - 0 1",
+    "bestMove": "d3e3",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-71ac172901b2046c",
+    "difficulty": "medium",
+    "fen": "9/9/3k5/4R4/9/9/8c/4K4/9/3A5 w - - 0 1",
+    "bestMove": "e6d6",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-bf3678278458d3e1",
+    "difficulty": "medium",
+    "fen": "5k3/9/5a3/9/4CP3/9/9/3K5/9/5A3 w - - 0 1",
+    "bestMove": "e5e4",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單仕單炮單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-8db5f197db6f7edf",
+    "difficulty": "medium",
+    "fen": "6b2/5k3/9/9/9/9/9/4K4/5N3/6B2 w - - 0 1",
+    "bestMove": "f1g3",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-372c2fccb217ed91",
+    "difficulty": "medium",
+    "fen": "5k3/9/6R2/9/6b2/9/9/9/r2K4C/9 w - - 0 1",
+    "bestMove": "i1a1",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單炮 vs 單車單象"
+  },
+  {
+    "puzzleKey": "egt-0238405705b625e6",
+    "difficulty": "medium",
+    "fen": "5a3/4P4/1N2k4/2P6/9/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "e8f8",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬2兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-889cedcc317fad30",
+    "difficulty": "medium",
+    "fen": "9/9/3Nk4/9/9/9/3C5/5K3/9/5c3 w - - 0 1",
+    "bestMove": "d7e9",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b1ca7e51f51f78c2",
+    "difficulty": "medium",
+    "fen": "9/3P1k3/9/1R7/6r2/9/9/9/9/2BK5 w - - 0 1",
+    "bestMove": "b6f6",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單相單兵 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-139d45c472eff8f5",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/n8/6b2/8R/9/9/9/4K4 w - - 0 1",
+    "bestMove": "i4d4",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-0b77973a5d928d9a",
+    "difficulty": "medium",
+    "fen": "4k4/9/9/7c1/2R6/9/9/1n1C5/9/3K5 w - - 0 1",
+    "bestMove": "c5e5",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單炮 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-44d6e2f3ac61d801",
+    "difficulty": "medium",
+    "fen": "1N1k5/9/c8/9/9/9/9/9/5K3/5A3 w - - 0 1",
+    "bestMove": "b9a7",
+    "pieceCount": 5,
+    "redAdvantage": 2,
+    "sourceType": "單馬單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-c8e54c99bd7d2a54",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/9/9/9/5p3/9/4A4/2B2K3 w - - 0 1",
+    "bestMove": "f0f1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-4e22200a8f8a986c",
+    "difficulty": "medium",
+    "fen": "5k3/9/5a3/9/9/2P6/9/9/4K2N1/9 w - - 0 1",
+    "bestMove": "h1g3",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-6e21576d16abf2a6",
+    "difficulty": "medium",
+    "fen": "9/9/3P1k3/9/9/4p4/9/3K4N/9/2B6 w - - 0 1",
+    "bestMove": "i2g3",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單相單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-41cd8b9dd2587a97",
+    "difficulty": "medium",
+    "fen": "4kaN2/9/9/9/9/9/6P2/9/5K3/3A5 w - - 0 1",
+    "bestMove": "g3g4",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單仕單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-df4074b9557516df",
+    "difficulty": "medium",
+    "fen": "R8/5k3/9/9/9/9/6n2/9/3K5/6B2 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-4e0736bffee0d53a",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/1n7/4P4/6R2/9/3p5/3K5 w - - 0 1",
+    "bestMove": "d0d1",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單兵 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-5d671425f764038f",
+    "difficulty": "medium",
+    "fen": "4k4/9/9/9/9/1C7/9/1c7/3K2N2/9 w - - 0 1",
+    "bestMove": "g1f3",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-de25f929942aa1ae",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/9/2b6/9/6Rr1/N3K4/9/9 w - - 0 1",
+    "bestMove": "g3h3",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬 vs 單車單象"
+  },
+  {
+    "puzzleKey": "egt-31e5689b03597764",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/1P7/9/9/5C2B/3K2p2/9 w - - 0 1",
+    "bestMove": "f2b2",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單炮單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-bbd660a68b8805ec",
+    "difficulty": "medium",
+    "fen": "3k5/9/3a5/n8/9/9/9/9/6R2/5K3 w - - 0 1",
+    "bestMove": "g1c1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-de4155a75a40f765",
+    "difficulty": "medium",
+    "fen": "3k2b2/9/8c/9/9/9/9/N8/5K3/7C1 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單炮 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-b45bcaa0ad510dfe",
+    "difficulty": "medium",
+    "fen": "2b6/2C6/3k5/9/9/9/9/5K3/4A4/6B2 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單仕單炮 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-67aeab47640cb5ff",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/9/P4R3/1n7/9/9/5K3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 5,
+    "redAdvantage": 6,
+    "sourceType": "單車單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-65c75bcc6cf81b57",
+    "difficulty": "medium",
+    "fen": "3n1R3/9/4k4/9/8n/9/9/3K5/9/5A3 w - - 0 1",
+    "bestMove": "f9d9",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單車單仕 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-d249c0344d3cf087",
+    "difficulty": "medium",
+    "fen": "9/3Na4/4k1C2/9/1c7/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "g7g1",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單炮 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-8f7b95f7f370461b",
+    "difficulty": "medium",
+    "fen": "3k5/9/4P4/n8/9/9/9/9/6R2/4K4 w - - 0 1",
+    "bestMove": "e7e8",
+    "pieceCount": 5,
+    "redAdvantage": 6,
+    "sourceType": "單車單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-98bbd4779405291f",
+    "difficulty": "medium",
+    "fen": "3P5/5kc2/b8/9/6R2/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "g5g8",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-bd0536235ef3cdc2",
+    "difficulty": "medium",
+    "fen": "9/7n1/3k2C2/9/9/9/9/3ANK3/9/9 w - - 0 1",
+    "bestMove": "e2f4",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單仕單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-cf8028c59a9c2bdc",
+    "difficulty": "medium",
+    "fen": "3a1k3/9/9/9/9/9/9/pR2K4/9/9 w - - 0 1",
+    "bestMove": "b2a2",
+    "pieceCount": 5,
+    "redAdvantage": 5.5,
+    "sourceType": "單車 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-a7bfc6d3117ec1de",
+    "difficulty": "medium",
+    "fen": "9/3k5/3a5/9/9/8N/9/3K5/9/2B6 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-817d089e724727dd",
+    "difficulty": "medium",
+    "fen": "1R7/3k5/9/9/9/9/9/3r5/4A4/4K4 w - - 0 1",
+    "bestMove": "e1d2",
+    "pieceCount": 5,
+    "redAdvantage": 2,
+    "sourceType": "單車單仕 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-c90472ffd75c1201",
+    "difficulty": "medium",
+    "fen": "4P4/4k4/b8/9/9/4P4/9/C8/9/3K5 w - - 0 1",
+    "bestMove": "e9d9",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "單炮2兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-10bd519543baadb1",
+    "difficulty": "medium",
+    "fen": "3k5/4N4/9/4P4/6b2/2B6/9/9/4K4/9 w - - 0 1",
+    "bestMove": "e8g9",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單相單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-9f71efe0f61894e0",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/p8/9/9/9/3AB4/3K5/9 w - - 0 1",
+    "bestMove": "e2g4",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-81d68bffb123f8f1",
+    "difficulty": "medium",
+    "fen": "2b2k3/9/9/9/9/2B6/R8/3K5/4c4/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單相 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-4310b769339dd5cd",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/9/9/9/R8/9/8c/3AK4 w - - 0 1",
+    "bestMove": "a3f3",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-613b7673aef6b0b7",
+    "difficulty": "medium",
+    "fen": "9/5n3/4k4/9/2R6/9/9/3p1K3/9/9 w - - 0 1",
+    "bestMove": "c5e5",
+    "pieceCount": 5,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-f607336bb4316df1",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/9/9/2p6/2P6/5A3/3K5/9 w - - 0 1",
+    "bestMove": "c3c4",
+    "pieceCount": 5,
+    "redAdvantage": 2,
+    "sourceType": "單仕單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-df748f12183ea274",
+    "difficulty": "medium",
+    "fen": "2P6/3k5/9/9/2bn5/9/9/9/2R6/5K3 w - - 0 1",
+    "bestMove": "c1d1",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車單兵 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-9ccc684ea5f4ca36",
+    "difficulty": "medium",
+    "fen": "8n/3k5/3a5/9/9/9/9/5K3/5R3/9 w - - 0 1",
+    "bestMove": "f1h1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-cf945ac77d4b3778",
+    "difficulty": "medium",
+    "fen": "3k5/4a4/8P/9/9/9/8p/4K4/9/4N4 w - - 0 1",
+    "bestMove": "i7h7",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單兵 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-494061cf9637125e",
+    "difficulty": "medium",
+    "fen": "9/9/5k3/6n2/9/9/5N3/2C6/9/3K1A3 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單仕單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-8055f6f80c08bbe4",
+    "difficulty": "medium",
+    "fen": "3k5/9/3a5/9/1P6c/9/9/3K5/5R3/9 w - - 0 1",
+    "bestMove": "f1f7",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車單兵 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-c4d027a6e472d503",
+    "difficulty": "medium",
+    "fen": "2b2k3/4N4/9/9/9/9/9/5A3/9/5K3 w - - 0 1",
+    "bestMove": "e8c9",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單仕 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-3054ce8609fdf5ae",
+    "difficulty": "medium",
+    "fen": "3k5/9/5P3/9/9/3C5/9/2p2K3/9/9 w - - 0 1",
+    "bestMove": "d4h4",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單炮單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-02e8780b272ada37",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/9/3r5/5K1N1/2C6/6B2 w - - 0 1",
+    "bestMove": "c1e1",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單馬單相單炮 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-e270b42d5b4731e6",
+    "difficulty": "medium",
+    "fen": "7R1/5k3/9/9/6c2/9/9/2p2A3/4K4/9 w - - 0 1",
+    "bestMove": "h9h8",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "單車單仕 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-d101393d80df1eb9",
+    "difficulty": "medium",
+    "fen": "3k5/9/3a5/9/9/9/9/B3K4/9/5A1N1 w - - 0 1",
+    "bestMove": "h0g2",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單相單仕 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-7eb79d87c3464762",
+    "difficulty": "medium",
+    "fen": "9/9/3kN4/1c7/9/9/9/9/6N2/5K3 w - - 0 1",
+    "bestMove": "e7f9",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-2d89c403a673629d",
+    "difficulty": "medium",
+    "fen": "4kaR2/9/5a2b/9/9/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "g9g7",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-31a6676e17d3bb1f",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/c8/9/6R2/9/9/4A4/4K4 w - - 0 1",
+    "bestMove": "g4e4",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-c07095129b32ed32",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/9/9/9/p2K5/2B3B2 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "2相 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-7ba1595412b36f7e",
+    "difficulty": "medium",
+    "fen": "9/3k5/3a4N/9/8C/9/9/9/3K5/8p w - - 0 1",
+    "bestMove": "i7h5",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單炮 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-fe6a1475f9a87ef8",
+    "difficulty": "medium",
+    "fen": "5k3/9/9/8c/9/4R4/9/B8/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-d6c41558797c214c",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/9/9/p8/5K3/9/2B2A3 w - - 0 1",
+    "bestMove": "f0e1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-bececb9ea6702698",
+    "difficulty": "medium",
+    "fen": "9/3k5/3a5/9/9/7p1/9/1R7/3K5/2p6 w - - 0 1",
+    "bestMove": "b2d2",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-bd27e5345057b5df",
+    "difficulty": "medium",
+    "fen": "5k3/9/9/9/9/9/r5N2/2R6/9/3K3p1 w - - 0 1",
+    "bestMove": "g3f5",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單車單馬 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-c4329e6d4f22f20a",
+    "difficulty": "medium",
+    "fen": "9/9/3k4b/9/2b6/9/2R6/5K3/9/9 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 2象"
+  },
+  {
+    "puzzleKey": "egt-1d1ab4d167810c07",
+    "difficulty": "medium",
+    "fen": "3k2b2/9/9/9/2P6/9/3c5/R8/9/5K3 w - - 0 1",
+    "bestMove": "a2d2",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-92bc22f1e7d65f7b",
+    "difficulty": "medium",
+    "fen": "2b6/n8/4k4/9/9/5R3/9/9/5K3/9 w - - 0 1",
+    "bestMove": "f4e4",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-970bdd1ab7ff623a",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/8R/9/9/5K3/5p3/7n1 w - - 0 1",
+    "bestMove": "i5e5",
+    "pieceCount": 5,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-78222f4e11635ee5",
+    "difficulty": "medium",
+    "fen": "3k5/6P2/3a5/9/9/9/9/3N5/9/4K4 w - - 0 1",
+    "bestMove": "d2f3",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-860610faff1449d0",
+    "difficulty": "medium",
+    "fen": "2bk5/9/9/7C1/3P5/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單炮單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-8fa955f6d37b6e59",
+    "difficulty": "medium",
+    "fen": "1c1k5/9/9/9/9/9/4C4/9/1R2cK3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單炮 vs 2砲"
+  },
+  {
+    "puzzleKey": "egt-e16d1be287594cbe",
+    "difficulty": "medium",
+    "fen": "8N/4a4/3k5/9/6b2/9/9/9/8N/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "2馬 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-31254728e4dfd11d",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/9/9/6B2/p8/3A5/9/4K4 w - - 0 1",
+    "bestMove": "d2e1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-7d2564a1217368ad",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/9/9/4n4/9/9/9/1CN2K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-1a54cdfd45974faa",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/9/9/9/9/3AB4/4K1p2/9 w - - 0 1",
+    "bestMove": "e1e0",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單相單仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-dee66c2316428b24",
+    "difficulty": "medium",
+    "fen": "9/4k4/3R5/9/9/9/9/B8/5K3/1c7 w - - 0 1",
+    "bestMove": "d7d2",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-ce4e1db7cb1a436f",
+    "difficulty": "medium",
+    "fen": "9/3R5/4k4/9/9/4p2p1/9/4K4/9/9 w - - 0 1",
+    "bestMove": "d8d5",
+    "pieceCount": 5,
+    "redAdvantage": 6,
+    "sourceType": "單車 vs 2卒"
+  },
+  {
+    "puzzleKey": "egt-6a381d21ef0ee3fa",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/5p2n/9/3K3R1/9/9 w - - 0 1",
+    "bestMove": "h2h4",
+    "pieceCount": 5,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-14e9715bf61b9938",
+    "difficulty": "medium",
+    "fen": "5k3/7P1/9/8C/9/1c7/9/3K5/6C2/9 w - - 0 1",
+    "bestMove": "h8g8",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "2炮單兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-7c8ae795bafa89dc",
+    "difficulty": "medium",
+    "fen": "2Ck1a3/9/8b/9/9/9/9/3A5/3K5/9 w - - 0 1",
+    "bestMove": "c9f9",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單仕單炮 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-781b01445cab4e45",
+    "difficulty": "medium",
+    "fen": "C8/9/3k5/9/6b2/9/9/3A5/3K5/2B6 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單仕單炮 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-2acd10102669da69",
+    "difficulty": "medium",
+    "fen": "4k4/9/8b/9/9/9/8P/9/7N1/5K3 w - - 0 1",
+    "bestMove": "h1g3",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-da79ceb6d5742251",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/3n3R1/9/9/9/9/9/2B2K3 w - - 0 1",
+    "bestMove": "h6d6",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-aed572ac5219a749",
+    "difficulty": "medium",
+    "fen": "3k5/9/5N3/8P/9/6P2/9/7p1/5K3/9 w - - 0 1",
+    "bestMove": "g4g5",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬2兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-f7f6cfb7bb7843bb",
+    "difficulty": "medium",
+    "fen": "3k5/4a4/2R6/9/2b4P1/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "c7c5",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單兵 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-056a05ff150daa67",
+    "difficulty": "medium",
+    "fen": "3k5/2P6/3a5/9/7C1/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "c8c9",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單炮單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-727bc1542ab0a467",
+    "difficulty": "medium",
+    "fen": "9/8R/3k5/7n1/9/9/9/4p4/4A4/4K4 w - - 0 1",
+    "bestMove": "i8e8",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "單車單仕 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-5b0fd1fcb174823d",
+    "difficulty": "medium",
+    "fen": "9/1P7/3k5/9/6bC1/9/P8/9/9/4K4 w - - 0 1",
+    "bestMove": "b8c8",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "單炮2兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-cc9362efa2503445",
+    "difficulty": "medium",
+    "fen": "5k3/9/b8/9/9/9/9/3K5/4A4/3C5 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-98c88bb275aa13d5",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/7c1/9/4R4/9/5A3/5K3/5n3 w - - 0 1",
+    "bestMove": "f1f0",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單車單仕 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-af18457458768af4",
+    "difficulty": "medium",
+    "fen": "9/9/C2k5/9/4R4/5rB2/9/9/9/4K4 w - - 0 1",
+    "bestMove": "e5d5",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單炮 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-cce373eb92c42d79",
+    "difficulty": "medium",
+    "fen": "9/3ka4/9/9/9/C8/9/3A5/9/4K4 w - - 0 1",
+    "bestMove": "a4a1",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-06339a315856c9fc",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/6B2/9/1N1K1n3/9/3C5 w - - 0 1",
+    "bestMove": "b2c4",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單相單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-cb1e1afbfa11e498",
+    "difficulty": "medium",
+    "fen": "9/5k3/b8/8C/9/9/9/1C7/5c3/4K4 w - - 0 1",
+    "bestMove": "b2f2",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "2炮 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-268af7fbe5147c6c",
+    "difficulty": "medium",
+    "fen": "5k3/7R1/9/4r1N2/9/9/9/4B4/9/4K4 w - - 0 1",
+    "bestMove": "h8h9",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單相 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-51810c570e0fe39d",
+    "difficulty": "medium",
+    "fen": "5k3/4R4/9/9/9/1c7/4p4/B3K4/9/9 w - - 0 1",
+    "bestMove": "e8e3",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "單車單相 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-df5bcba0d2a1a241",
+    "difficulty": "medium",
+    "fen": "9/9/4k3b/9/6b2/9/9/9/9/1R3K3 w - - 0 1",
+    "bestMove": "b0b8",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 2象"
+  },
+  {
+    "puzzleKey": "egt-59727d54eb4f6d88",
+    "difficulty": "medium",
+    "fen": "9/3k3C1/9/9/3N5/9/9/3K5/9/4n4 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-c67a4ad9e1b95dd1",
+    "difficulty": "medium",
+    "fen": "9/3k5/3a5/8p/2R6/8p/9/9/9/3K5 w - - 0 1",
+    "bestMove": "c5d5",
+    "pieceCount": 6,
+    "redAdvantage": 4,
+    "sourceType": "單車 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-2fd7bf93030b80de",
+    "difficulty": "medium",
+    "fen": "5k3/3C2c2/9/9/9/9/9/9/4C4/4K4 w - - 0 1",
+    "bestMove": "e1g1",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "2炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-85d484e736311c12",
+    "difficulty": "medium",
+    "fen": "2b6/3k5/5a3/9/2b3R2/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "g5d5",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單車 vs 2象單士"
+  },
+  {
+    "puzzleKey": "egt-792c230040cee8ac",
+    "difficulty": "medium",
+    "fen": "9/9/3k5/9/7r1/9/9/7R1/2N1K4/9 w - - 0 1",
+    "bestMove": "h2h5",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-03af317f9bde8989",
+    "difficulty": "medium",
+    "fen": "2b3b2/9/3k5/9/9/9/R8/9/9/4K4 w - - 0 1",
+    "bestMove": "a3d3",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 2象"
+  },
+  {
+    "puzzleKey": "egt-a93161bd4951fdf6",
+    "difficulty": "medium",
+    "fen": "3a5/5k3/R8/9/9/9/9/2p6/3K5/9 w - - 0 1",
+    "bestMove": "a7a6",
+    "pieceCount": 5,
+    "redAdvantage": 5.5,
+    "sourceType": "單車 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-1397fa6c7529a5ca",
+    "difficulty": "medium",
+    "fen": "3k5/9/3P1a3/9/P8/9/9/5A3/9/3K5 w - - 0 1",
+    "bestMove": "d0d1",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單仕2兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-721da6edf346752e",
+    "difficulty": "medium",
+    "fen": "3a5/9/4k4/9/9/9/9/9/N2K5/6B2 w - - 0 1",
+    "bestMove": "a1b3",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-d4380b65ed93aea5",
+    "difficulty": "medium",
+    "fen": "9/3P5/3k5/9/9/9/4p3p/9/9/N3K4 w - - 0 1",
+    "bestMove": "d8c8",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單馬單兵 vs 2卒"
+  },
+  {
+    "puzzleKey": "egt-0466a899bb5c23fe",
+    "difficulty": "medium",
+    "fen": "9/9/5k3/N8/9/5C3/6n2/3A5/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單仕單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-21bc59df189e6122",
+    "difficulty": "medium",
+    "fen": "9/9/3k5/9/3P5/2n6/9/9/3K4C/6B2 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單相單炮單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-c83ca7d1e8f26f34",
+    "difficulty": "medium",
+    "fen": "3k5/9/9/N8/9/9/5C3/9/4K1n2/9 w - - 0 1",
+    "bestMove": "a6b8",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-dffaf86d8c715f7a",
+    "difficulty": "medium",
+    "fen": "9/4k4/9/9/9/1N7/5p3/5R3/5r3/3K5 w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單車單馬 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-e8b2e45635c988cb",
+    "difficulty": "medium",
+    "fen": "7N1/4k4/9/9/9/9/9/4N4/3K3c1/7p1 w - - 0 1",
+    "bestMove": "e2g3",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "2馬 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-6f70a21af408c762",
+    "difficulty": "medium",
+    "fen": "5N3/5k3/9/1P7/6b2/2B6/9/9/9/3K5 w - - 0 1",
+    "bestMove": "f9h8",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單相單兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-07a82021cf110b28",
+    "difficulty": "medium",
+    "fen": "1C7/9/5k1r1/9/9/9/N8/4K1N2/9/9 w - - 0 1",
+    "bestMove": "a3c4",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬單炮 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-7ca2dc92aa4f3df1",
+    "difficulty": "medium",
+    "fen": "9/1N1k5/9/9/9/7R1/9/9/5K3/1r4B2 w - - 0 1",
+    "bestMove": "h4h8",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單相 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-7e927f40aab63b6c",
+    "difficulty": "medium",
+    "fen": "5k3/9/b8/2C6/9/9/9/5A3/5K3/3A5 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "2仕單炮 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-ef1df7a0df995544",
+    "difficulty": "medium",
+    "fen": "9/9/5k3/4R4/6b2/9/9/4Kp3/9/9 w - - 0 1",
+    "bestMove": "e2e1",
+    "pieceCount": 5,
+    "redAdvantage": 5.5,
+    "sourceType": "單車 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-07be141044b4ecd6",
+    "difficulty": "medium",
+    "fen": "5k3/9/4b4/9/9/9/2n6/3K5/3R5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-3479a7e74a852ba4",
+    "difficulty": "medium",
+    "fen": "9/4k1CN1/9/9/6c2/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "h8i6",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-b367076468103b2a",
+    "difficulty": "medium",
+    "fen": "5C3/9/3k1a3/9/9/9/9/9/9/2BAK4 w - - 0 1",
+    "bestMove": "f9c9",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-e3bae75c9a59b071",
+    "difficulty": "medium",
+    "fen": "2n6/9/4k4/9/9/9/7R1/3K5/9/6B2 w - - 0 1",
+    "bestMove": "h3e3",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-2821201e37769447",
+    "difficulty": "medium",
+    "fen": "4R4/9/5k3/9/9/2B4c1/9/4K4/9/9 w - - 0 1",
+    "bestMove": "e9f9",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-2eb9bd663b693561",
+    "difficulty": "medium",
+    "fen": "9/5k3/3a5/9/6b2/1C7/9/5C3/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "2炮 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-d37ff9fda15346af",
+    "difficulty": "medium",
+    "fen": "9/4k4/5a3/4P4/9/9/9/N8/5K3/9 w - - 0 1",
+    "bestMove": "e6f6",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-cb7461ee5244e44c",
+    "difficulty": "medium",
+    "fen": "3k1a3/9/9/9/2n6/9/9/N8/9/4KN3 w - - 0 1",
+    "bestMove": "a2c3",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "2馬 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-7893244cfd5f1c03",
+    "difficulty": "medium",
+    "fen": "3a5/6R2/3kb4/9/9/9/2p6/9/9/5K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單車 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-20d74359da33997c",
+    "difficulty": "medium",
+    "fen": "3a5/9/3k5/6p2/1R7/9/9/4K4/9/9 w - - 0 1",
+    "bestMove": "b5d5",
+    "pieceCount": 5,
+    "redAdvantage": 5.5,
+    "sourceType": "單車 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-5d676e6457e56d62",
+    "difficulty": "medium",
+    "fen": "3k5/1R3c3/9/9/9/9/9/9/4K4/2B6 w - - 0 1",
+    "bestMove": "b8f8",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-10888354836cad48",
+    "difficulty": "medium",
+    "fen": "3k5/9/3a5/7P1/8C/9/9/9/9/5KB2 w - - 0 1",
+    "bestMove": "h6h7",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單相單炮單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-5e9df0ae809b56ee",
+    "difficulty": "medium",
+    "fen": "9/5P3/4k4/4c4/4P4/9/9/9/4K4/3N5 w - - 0 1",
+    "bestMove": "e5e6",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單馬2兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-555e2fde5d209207",
+    "difficulty": "medium",
+    "fen": "1P7/7P1/3k5/9/1P7/3p5/9/9/9/3K5 w - - 0 1",
+    "bestMove": "b5c5",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "3兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-41b3876a5e7d2678",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/9/8N/9/B7c/3K5/6N2 w - - 0 1",
+    "bestMove": "g0h2",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "2馬單相 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-8fea015c2445d577",
+    "difficulty": "medium",
+    "fen": "9/9/4k4/9/2p6/1p3R3/9/5K3/9/9 w - - 0 1",
+    "bestMove": "f4f5",
+    "pieceCount": 5,
+    "redAdvantage": 6,
+    "sourceType": "單車 vs 2卒"
+  },
+  {
+    "puzzleKey": "egt-a108ea05f9ae19b8",
+    "difficulty": "medium",
+    "fen": "5k1c1/N8/5N3/9/9/9/9/5A3/5K3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "2馬單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-659ee523d9590ca6",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/9/9/5p3/9/3AB4/9/3AK4 w - - 0 1",
+    "bestMove": "e2c0",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單相2仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-f42b295f747fbbe9",
+    "difficulty": "medium",
+    "fen": "4k1b2/9/3a5/9/9/2R6/9/9/3K5/9 w - - 0 1",
+    "bestMove": "c4c7",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單車 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-d4b9acccafaab8e4",
+    "difficulty": "medium",
+    "fen": "4ka3/8N/9/9/9/9/9/4c4/6N2/5K3 w - - 0 1",
+    "bestMove": "g1e2",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "2馬 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-bf59f370e2241dd4",
+    "difficulty": "medium",
+    "fen": "5k3/9/9/9/9/9/7C1/3K1p3/9/5A3 w - - 0 1",
+    "bestMove": "f0e1",
+    "pieceCount": 5,
+    "redAdvantage": 5,
+    "sourceType": "單仕單炮 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-b4538fc7215354c7",
+    "difficulty": "medium",
+    "fen": "3k5/9/1P7/9/9/9/9/8n/9/1C3KB2 w - - 0 1",
+    "bestMove": "g0i2",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單相單炮單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-667affaf6102d29c",
+    "difficulty": "medium",
+    "fen": "3k5/9/8c/9/9/9/9/3A4c/3K2R2/9 w - - 0 1",
+    "bestMove": "g1g7",
+    "pieceCount": 6,
+    "redAdvantage": 2,
+    "sourceType": "單車單仕 vs 2砲"
+  },
+  {
+    "puzzleKey": "egt-a86e760ef095c6fc",
+    "difficulty": "medium",
+    "fen": "3n1k3/9/9/9/9/9/9/9/9/3RKA3 w - - 0 1",
+    "bestMove": "d0d9",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-fff3ef9806b111ac",
+    "difficulty": "medium",
+    "fen": "9/5k3/9/9/9/2p6/9/9/3KA4/5A3 w - - 0 1",
+    "bestMove": "e1f2",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "2仕 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-c477bb41c95efbd7",
+    "difficulty": "medium",
+    "fen": "5k2n/9/1R7/9/2b6/9/9/9/9/3K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 5,
+    "redAdvantage": 2.5,
+    "sourceType": "單車 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-582b78dd177d2c5f",
+    "difficulty": "medium",
+    "fen": "3n5/5k3/9/9/6P2/6B2/1C7/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單相單炮單兵 vs 單馬"
+  },
+  {
+    "puzzleKey": "egt-8e6a07e0a3bd9eb1",
+    "difficulty": "medium",
+    "fen": "9/3k5/2P6/9/9/2BN3c1/9/3K5/9/9 w - - 0 1",
+    "bestMove": "c4a2",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單馬單相單兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-f54bb0c58065cc79",
+    "difficulty": "medium",
+    "fen": "9/3k5/3a1a3/5N3/4N4/9/9/9/3K5/9 w - - 0 1",
+    "bestMove": "e5f7",
+    "pieceCount": 6,
+    "redAdvantage": 5,
+    "sourceType": "2馬 vs 2士"
+  },
+  {
+    "puzzleKey": "egt-de85aa819cf5c776",
+    "difficulty": "medium",
+    "fen": "5k3/2N6/9/9/6n2/9/9/1Rn6/9/4K4 w - - 0 1",
+    "bestMove": "b2c2",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-c048fd78f61b7bcf",
+    "difficulty": "medium",
+    "fen": "4k4/9/4b4/9/9/9/6N2/4KA3/9/9 w - - 0 1",
+    "bestMove": "g3f5",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單仕 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-5146cb3d38776ab5",
+    "difficulty": "medium",
+    "fen": "9/9/3k5/9/2bc5/9/C6N1/9/3K5/9 w - - 0 1",
+    "bestMove": "h3f4",
+    "pieceCount": 6,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單炮 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-880945d52e557cb2",
+    "difficulty": "medium",
+    "fen": "5c3/9/4k4/9/9/9/9/7R1/3KA4/9 w - - 0 1",
+    "bestMove": "h2e2",
+    "pieceCount": 5,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-6ecff4f98e557eb3",
+    "difficulty": "medium",
+    "fen": "3a5/9/3k5/9/9/9/3C5/B2A5/3K5/9 w - - 0 1",
+    "bestMove": "d3d9",
+    "pieceCount": 6,
+    "redAdvantage": 6.5,
+    "sourceType": "單相單仕單炮 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-83f2b6dfd9b01b85",
+    "difficulty": "medium",
+    "fen": "9/P2k5/9/9/9/3c5/7N1/3K5/9/5C3 w - - 0 1",
+    "bestMove": "f0d0",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單炮單兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-7c2a0cb09afaaea3",
+    "difficulty": "medium",
+    "fen": "2b6/4k3P/9/9/P3N4/9/9/5K3/9/9 w - - 0 1",
+    "bestMove": "i8h8",
+    "pieceCount": 6,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬2兵 vs 單象"
+  },
+  {
+    "puzzleKey": "egt-785f8d419c3181eb",
+    "difficulty": "medium",
+    "fen": "9/9/3k4c/P8/9/9/2P6/6N2/9/4K4 w - - 0 1",
+    "bestMove": "g2f4",
+    "pieceCount": 6,
+    "redAdvantage": 3,
+    "sourceType": "單馬2兵 vs 單砲"
+  },
+  {
+    "puzzleKey": "egt-26d332cf1b1d6250",
+    "difficulty": "medium",
+    "fen": "9/3k5/9/P8/4R4/9/9/8B/4K4/6r2 w - - 0 1",
+    "bestMove": "e5d5",
+    "pieceCount": 6,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單相單兵 vs 單車"
+  },
+  {
+    "puzzleKey": "egt-088ebd5ff441a177",
+    "difficulty": "medium",
+    "fen": "3P5/3k5/N2a5/9/9/9/9/9/9/3A1K3 w - - 0 1",
+    "bestMove": "f0e0",
+    "pieceCount": 6,
+    "redAdvantage": 6,
+    "sourceType": "單馬單仕單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-0f0b4b4e36895116",
+    "difficulty": "medium",
+    "fen": "9/2N1k4/9/2p5P/9/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "d2d1",
+    "pieceCount": 5,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單兵 vs 單卒"
+  },
+  {
+    "puzzleKey": "egt-efde82f1c12cc5c5",
+    "difficulty": "medium",
+    "fen": "2n6/3k5/9/9/4n4/9/3N5/9/9/4K1R2 w - - 0 1",
+    "bestMove": "d3e5",
+    "pieceCount": 6,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-4d869e64ef588cd0",
+    "difficulty": "medium",
+    "fen": "8N/3k5/3a5/9/9/9/P8/5K3/9/9 w - - 0 1",
+    "bestMove": "i9h7",
+    "pieceCount": 5,
+    "redAdvantage": 4,
+    "sourceType": "單馬單兵 vs 單士"
+  },
+  {
+    "puzzleKey": "egt-23c026263e25ada1",
+    "difficulty": "hard",
+    "fen": "P2r5/3k5/9/9/9/6p2/7R1/4K4/9/2B6 w - - 0 1",
+    "bestMove": "h3d3",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單相單兵 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-7b702f8223cafd67",
+    "difficulty": "hard",
+    "fen": "3a2b2/9/b4k3/R8/9/2B6/9/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單相 vs 2象單士"
+  },
+  {
+    "puzzleKey": "egt-b1772ec0bffeee62",
+    "difficulty": "hard",
+    "fen": "9/7Pn/3kb4/9/9/9/3p5/5A2R/5K3/9 w - - 0 1",
+    "bestMove": "i2i8",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單仕單兵 vs 單馬單象單卒"
+  },
+  {
+    "puzzleKey": "egt-f7ae9efb501344cc",
+    "difficulty": "hard",
+    "fen": "9/4k4/9/9/1nC6/6R2/9/3K1A3/6c2/9 w - - 0 1",
+    "bestMove": "g4g1",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單炮 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-3bb5ab60953357bd",
+    "difficulty": "hard",
+    "fen": "8n/4k2C1/9/6R2/9/9/9/3K5/4A4/3n5 w - - 0 1",
+    "bestMove": "e1d0",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單炮 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-5b6b3abb32dbfe2c",
+    "difficulty": "hard",
+    "fen": "9/1N1k5/9/9/9/2C6/9/5A3/p3K4/8n w - - 0 1",
+    "bestMove": "c4a4",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單仕單炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-93323ce48d81c784",
+    "difficulty": "hard",
+    "fen": "5k3/2N1a4/9/9/5r3/4p4/9/6R2/3K5/3A5 w - - 0 1",
+    "bestMove": "g2g9",
+    "pieceCount": 8,
+    "redAdvantage": 3,
+    "sourceType": "單車單馬單仕 vs 單車單士單卒"
+  },
+  {
+    "puzzleKey": "egt-ead177268b87fa58",
+    "difficulty": "hard",
+    "fen": "4k4/9/P4a3/8n/9/6p2/9/B2K5/5R3/9 w - - 0 1",
+    "bestMove": "f1f7",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單相單兵 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-d1e1955ee527d174",
+    "difficulty": "hard",
+    "fen": "2bk1a3/9/3n5/9/4P4/9/4R4/9/4A4/3K5 w - - 0 1",
+    "bestMove": "e5e6",
+    "pieceCount": 8,
+    "redAdvantage": 4,
+    "sourceType": "單車單仕單兵 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-2d1e519744902d4a",
+    "difficulty": "hard",
+    "fen": "3k5/9/5a3/9/4N4/9/8N/5A3/9/3cK4 w - - 0 1",
+    "bestMove": "e5f7",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬單仕 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-c01eb8e0cadc52bd",
+    "difficulty": "hard",
+    "fen": "9/1c3n3/3k5/9/9/R8/9/B3B4/9/4K4 w - - 0 1",
+    "bestMove": "a4a8",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單車2相 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-95eae3aadcd9f297",
+    "difficulty": "hard",
+    "fen": "4k4/r8/9/9/9/6R2/9/4B4/3K5/5C2n w - - 0 1",
+    "bestMove": "g4g9",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單相單炮 vs 單車單馬"
+  },
+  {
+    "puzzleKey": "egt-3ae46d239e7b1a1f",
+    "difficulty": "hard",
+    "fen": "3k5/5n3/2R3P2/9/9/9/9/8B/4K4/1n7 w - - 0 1",
+    "bestMove": "g7g8",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單相單兵 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-a270a22ad349a180",
+    "difficulty": "hard",
+    "fen": "8c/2P2k3/4b4/9/9/1R7/9/B8/9/3K5 w - - 0 1",
+    "bestMove": "b4f4",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-98de6a320d686720",
+    "difficulty": "hard",
+    "fen": "5a3/3ka4/4R4/9/9/9/9/9/4A4/2p2K3 w - - 0 1",
+    "bestMove": "e7b7",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單仕 vs 2士單卒"
+  },
+  {
+    "puzzleKey": "egt-fedc352b2e7d30e7",
+    "difficulty": "hard",
+    "fen": "2b1C4/9/4k4/9/8C/8p/4p4/9/9/2B1K4 w - - 0 1",
+    "bestMove": "e9e3",
+    "pieceCount": 8,
+    "redAdvantage": 6,
+    "sourceType": "單相2炮 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-ad34e52a43cd0fbd",
+    "difficulty": "hard",
+    "fen": "9/4k3n/b8/9/9/9/6n2/3R5/5K3/5N3 w - - 0 1",
+    "bestMove": "d2g2",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬 vs 2馬單象"
+  },
+  {
+    "puzzleKey": "egt-8d64971ea7f5d12f",
+    "difficulty": "hard",
+    "fen": "2b4R1/9/3k5/9/9/9/9/8B/9/3nKA3 w - - 0 1",
+    "bestMove": "h9d9",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單仕 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-5500783731bdf413",
+    "difficulty": "hard",
+    "fen": "6b2/3k2N2/9/9/4N4/9/2c6/9/5K3/3A3p1 w - - 0 1",
+    "bestMove": "e5f7",
+    "pieceCount": 8,
+    "redAdvantage": 3,
+    "sourceType": "2馬單仕 vs 單象單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-2771f39ab8a0d2f9",
+    "difficulty": "hard",
+    "fen": "3k5/9/4b4/4c4/4R4/9/9/5K3/8p/6B2 w - - 0 1",
+    "bestMove": "e5e6",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單相 vs 單象單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-c002c8d2cf60620f",
+    "difficulty": "hard",
+    "fen": "9/5kC2/3a4b/9/9/8p/9/9/2N6/2BK5 w - - 0 1",
+    "bestMove": "c1d3",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單相單炮 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-794ac106d55322cd",
+    "difficulty": "hard",
+    "fen": "3a1k3/9/b8/9/9/2B3P2/6C2/9/9/3K5 w - - 0 1",
+    "bestMove": "g3i3",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單相單炮單兵 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-d4ad67c701789e55",
+    "difficulty": "hard",
+    "fen": "4k4/9/3aP4/9/6P2/9/7C1/3K5/9/5p3 w - - 0 1",
+    "bestMove": "g5f5",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單炮2兵 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-3f83c82e4bf47ce3",
+    "difficulty": "hard",
+    "fen": "6b2/2Nk5/2PN5/9/9/9/1c7/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "2馬單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-9e233255d0df193d",
+    "difficulty": "hard",
+    "fen": "9/5k3/3a3R1/6rN1/9/9/9/9/3K5/2B6 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬單相 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-0439afd5f03cdcac",
+    "difficulty": "hard",
+    "fen": "9/9/5k2b/9/9/p8/9/2R5B/4K4/7p1 w - - 0 1",
+    "bestMove": "c2f2",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-6605c38b61b778c4",
+    "difficulty": "hard",
+    "fen": "9/2n6/5k3/N8/9/9/N8/2nK4B/9/9 w - - 0 1",
+    "bestMove": "a3c2",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "2馬單相 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-5fd3ed03889ba088",
+    "difficulty": "hard",
+    "fen": "5k3/9/4ba3/9/9/9/9/2p2K3/2R1A4/9 w - - 0 1",
+    "bestMove": "c1c2",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單仕 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-b9a250b72cf25698",
+    "difficulty": "hard",
+    "fen": "9/9/1P3k3/7c1/9/8P/2R4p1/9/3K5/9 w - - 0 1",
+    "bestMove": "c3f3",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車2兵 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-b7e915928f5eaebe",
+    "difficulty": "hard",
+    "fen": "9/9/4kaR2/9/1n5P1/9/9/9/5K3/4p4 w - - 0 1",
+    "bestMove": "g7f7",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單兵 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-392bf3e9dfe887b1",
+    "difficulty": "hard",
+    "fen": "3a5/3k5/9/9/9/9/3c5/R2K1A3/9/1p7 w - - 0 1",
+    "bestMove": "a2a8",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單仕 vs 單士單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-7299111734398a50",
+    "difficulty": "hard",
+    "fen": "2bc1k3/9/9/9/9/1p7/9/R7B/3K5/5A3 w - - 0 1",
+    "bestMove": "a2f2",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單車單相單仕 vs 單象單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-b1c0267813d8a96b",
+    "difficulty": "hard",
+    "fen": "5k3/9/N8/9/9/8r/9/3KB4/3n5/6R2 w - - 0 1",
+    "bestMove": "d2d1",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單馬單相 vs 單車單馬"
+  },
+  {
+    "puzzleKey": "egt-baf30213a841d5b6",
+    "difficulty": "hard",
+    "fen": "8N/3k5/4b4/9/9/1c7/9/B8/4NK3/9 w - - 0 1",
+    "bestMove": "e1c2",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬單相 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-e06d68e46773abfa",
+    "difficulty": "hard",
+    "fen": "9/9/4k2P1/9/9/2P1p3p/9/9/4K4/3A5 w - - 0 1",
+    "bestMove": "h7g7",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單仕2兵 vs 2卒"
+  },
+  {
+    "puzzleKey": "egt-c617c23bd150d382",
+    "difficulty": "hard",
+    "fen": "3a2b2/2Ck5/3a5/9/9/9/9/3K2N2/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單馬單炮 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-13930810deb5592d",
+    "difficulty": "hard",
+    "fen": "3k1a3/9/3a5/9/9/7R1/9/5K3/9/4cA3 w - - 0 1",
+    "bestMove": "h4e4",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單仕 vs 2士單砲"
+  },
+  {
+    "puzzleKey": "egt-3ef2fbb0e32fcf39",
+    "difficulty": "hard",
+    "fen": "3a5/9/3r1k3/9/6C2/5N3/1N7/9/5K3/9 w - - 0 1",
+    "bestMove": "g5g2",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2馬單炮 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-c3d29b319730ea17",
+    "difficulty": "hard",
+    "fen": "3a1c3/9/5k3/4N4/9/C8/9/4K4/9/3A5 w - - 0 1",
+    "bestMove": "e6g5",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單仕單炮 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-4cca284edf94d1f3",
+    "difficulty": "hard",
+    "fen": "9/5k3/9/p8/4p4/9/9/R7p/4K4/6B2 w - - 0 1",
+    "bestMove": "a2e2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相 vs 3卒"
+  },
+  {
+    "puzzleKey": "egt-434fe865d8c414e7",
+    "difficulty": "hard",
+    "fen": "9/8r/3k5/5R3/9/9/3N5/5A3/3K1p3/9 w - - 0 1",
+    "bestMove": "f6d6",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單馬單仕 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-e62c1d8638250bfa",
+    "difficulty": "hard",
+    "fen": "5kb2/9/b8/9/7n1/5N3/2C6/9/9/3AK4 w - - 0 1",
+    "bestMove": "f4h5",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單仕單炮 vs 單馬2象"
+  },
+  {
+    "puzzleKey": "egt-2832a030d1d34c61",
+    "difficulty": "hard",
+    "fen": "9/3k5/3a5/9/6b2/9/C2N5/3K5/4A4/6p2 w - - 0 1",
+    "bestMove": "d3e5",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單仕單炮 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-1efe214437640e55",
+    "difficulty": "hard",
+    "fen": "3P1k3/4a4/9/9/2p3p2/9/7R1/3K5/9/9 w - - 0 1",
+    "bestMove": "h3f3",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單兵 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-cdaa889f18d403b4",
+    "difficulty": "hard",
+    "fen": "N8/7n1/3k5/9/9/3C5/9/B2K5/8p/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-074dd8a1a1a753b0",
+    "difficulty": "hard",
+    "fen": "2bk5/9/9/6P2/9/9/3c5/3R1A3/9/3K5 w - - 0 1",
+    "bestMove": "d2d3",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單仕單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-d6781f24e374eb97",
+    "difficulty": "hard",
+    "fen": "2b2a3/r8/4k4/9/9/6N2/9/9/5K3/3R1A3 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬單仕 vs 單車單象單士"
+  },
+  {
+    "puzzleKey": "egt-c5ce847a656a5377",
+    "difficulty": "hard",
+    "fen": "9/3k5/3aP4/9/9/p8/2R6/3K5/9/4p4 w - - 0 1",
+    "bestMove": "e7d7",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單兵 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-498509ac50c2e14b",
+    "difficulty": "hard",
+    "fen": "5kb2/9/9/2R6/6c1p/9/9/3K1A3/9/6B2 w - - 0 1",
+    "bestMove": "c6c9",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單車單相單仕 vs 單象單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-ee780d0140000125",
+    "difficulty": "hard",
+    "fen": "3k5/9/7n1/9/2bN5/9/9/R8/8n/3K1A3 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬單仕 vs 2馬單象"
+  },
+  {
+    "puzzleKey": "egt-d0bd9c0476206798",
+    "difficulty": "hard",
+    "fen": "3a5/3k5/3a5/1N7/1P7/6p2/9/5A3/9/3K5 w - - 0 1",
+    "bestMove": "b5c5",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單仕單兵 vs 2士單卒"
+  },
+  {
+    "puzzleKey": "egt-6b9834454a185341",
+    "difficulty": "hard",
+    "fen": "2b1ka3/9/9/2P3p2/9/9/4N4/3K1A3/9/9 w - - 0 1",
+    "bestMove": "e3d5",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單仕單兵 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-f1e823df9f662988",
+    "difficulty": "hard",
+    "fen": "3k5/2P6/4b4/3C4N/9/9/6n2/9/9/4K4 w - - 0 1",
+    "bestMove": "i6g7",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單炮單兵 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-f6c985aa220f24b6",
+    "difficulty": "hard",
+    "fen": "9/5k3/5a3/9/9/6B2/9/3K5/R8/1n3A3 w - - 0 1",
+    "bestMove": "a1b1",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單仕 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-596080f152e69a8b",
+    "difficulty": "hard",
+    "fen": "2b6/9/4k3C/9/6b1p/9/N8/5A3/3K5/9 w - - 0 1",
+    "bestMove": "i7i6",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單仕單炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-af307fcfe409786d",
+    "difficulty": "hard",
+    "fen": "9/9/4k4/9/6b2/9/4p4/B3BA3/9/5K3 w - - 0 1",
+    "bestMove": "a2c4",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2相單仕 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-fdd53cba1a3d8653",
+    "difficulty": "hard",
+    "fen": "3k5/9/b8/2R6/6c2/3r5/9/4K4/2R6/9 w - - 0 1",
+    "bestMove": "c6e6",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2車 vs 單車單象單砲"
+  },
+  {
+    "puzzleKey": "egt-5ccc83578c2c3147",
+    "difficulty": "hard",
+    "fen": "9/4k3c/5a3/9/9/7R1/9/B8/4A4/4K4 w - - 0 1",
+    "bestMove": "h4h8",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單仕 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-976f92a6a4923368",
+    "difficulty": "hard",
+    "fen": "8C/3k5/9/5c3/9/2B3c2/R8/4K4/9/9 w - - 0 1",
+    "bestMove": "a3d3",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單炮 vs 2砲"
+  },
+  {
+    "puzzleKey": "egt-b5d0694aed79ee77",
+    "difficulty": "hard",
+    "fen": "3a1k3/9/3ab4/9/4C4/8C/9/9/3K5/9 w - - 0 1",
+    "bestMove": "e5f5",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "2炮 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-3acca3791a00fffd",
+    "difficulty": "hard",
+    "fen": "3k5/9/9/6p2/2c5R/8P/9/5A3/9/5K3 w - - 0 1",
+    "bestMove": "i5c5",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單兵 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-fc2cb2900cd1db96",
+    "difficulty": "hard",
+    "fen": "5k3/1P7/9/2n6/2b5P/9/9/9/3K5/4R4 w - - 0 1",
+    "bestMove": "e0e8",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車2兵 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-232aa9b157daab53",
+    "difficulty": "hard",
+    "fen": "3a5/9/3k1a3/9/9/6P2/9/5K3/n4R3/9 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單兵 vs 單馬2士"
+  },
+  {
+    "puzzleKey": "egt-ad128b35b987ce1f",
+    "difficulty": "hard",
+    "fen": "3a5/9/4k2P1/9/2p6/9/9/4CA3/3K5/9 w - - 0 1",
+    "bestMove": "e2e0",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮單兵 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-c220258db0a2c643",
+    "difficulty": "hard",
+    "fen": "9/1P3k3/2R6/9/2n6/9/7p1/5A3/5K3/9 w - - 0 1",
+    "bestMove": "c7c5",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單兵 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-b43d009277674b49",
+    "difficulty": "hard",
+    "fen": "9/9/4bk3/9/9/6C1c/9/2N1B4/4K4/9 w - - 0 1",
+    "bestMove": "c2e3",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相單炮 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-d5d8ec5eebc7fd4f",
+    "difficulty": "hard",
+    "fen": "9/3N5/4k4/4c4/9/9/9/8B/3c1K3/N8 w - - 0 1",
+    "bestMove": "d8e6",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "2馬單相 vs 2砲"
+  },
+  {
+    "puzzleKey": "egt-efb7dbb50bad5da7",
+    "difficulty": "hard",
+    "fen": "3a1C3/4k4/5aP2/9/9/9/9/3K5/4A4/9 w - - 0 1",
+    "bestMove": "g7f7",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單仕單炮單兵 vs 2士"
+  },
+  {
+    "puzzleKey": "egt-2ede3539231a07a4",
+    "difficulty": "hard",
+    "fen": "2b6/3k2N2/9/9/9/7c1/9/9/3c5/2R2K3 w - - 0 1",
+    "bestMove": "c0c9",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬 vs 單象2砲"
+  },
+  {
+    "puzzleKey": "egt-0e5666b9804205b3",
+    "difficulty": "hard",
+    "fen": "3k5/3C5/b8/9/6b2/1p7/4N4/3K5/9/9 w - - 0 1",
+    "bestMove": "d8d4",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單馬單炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-24d269abd636cdc2",
+    "difficulty": "hard",
+    "fen": "3k5/9/9/9/6b2/9/6N1C/B2n5/9/5K3 w - - 0 1",
+    "bestMove": "g3f5",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相單炮 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-892366ff9a74b0b6",
+    "difficulty": "hard",
+    "fen": "5a3/5k3/9/9/1n5C1/9/1N7/5A3/4K4/9 w - - 0 1",
+    "bestMove": "b3c5",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單仕單炮 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-cbc30b4fe928d585",
+    "difficulty": "hard",
+    "fen": "3ar3R/5P3/4k4/9/9/9/9/1C1K5/9/9 w - - 0 1",
+    "bestMove": "i9i7",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單車單炮單兵 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-6d2a3e7583e1b5ba",
+    "difficulty": "hard",
+    "fen": "8c/R8/5k3/9/9/3p5/9/3K1A3/9/1p7 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單仕 vs 單砲2卒"
+  },
+  {
+    "puzzleKey": "egt-3671cbc90dacba30",
+    "difficulty": "hard",
+    "fen": "n2a5/4P4/3k5/9/9/9/9/7p1/2R2K3/9 w - - 0 1",
+    "bestMove": "c1c7",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單兵 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-ba53fd91cee84aa6",
+    "difficulty": "hard",
+    "fen": "9/4a2P1/5k3/9/9/2B1p4/7n1/9/3K5/R8 w - - 0 1",
+    "bestMove": "a0a7",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單相單兵 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-0c20e4f1785e8a7e",
+    "difficulty": "hard",
+    "fen": "5k3/9/3a5/3c5/9/7R1/4p4/3A5/9/3K5 w - - 0 1",
+    "bestMove": "h4d4",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單仕 vs 單士單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-dba616339b11a4a3",
+    "difficulty": "hard",
+    "fen": "3k5/4a4/3a1P3/9/9/5C3/5N3/9/5K3/9 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單炮單兵 vs 2士"
+  },
+  {
+    "puzzleKey": "egt-0a9ca3ac0456120d",
+    "difficulty": "hard",
+    "fen": "6b2/4a4/4kC3/9/9/3n5/6C2/5A3/3K5/9 w - - 0 1",
+    "bestMove": "f7h7",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單仕2炮 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-c68667c0ae5345ce",
+    "difficulty": "hard",
+    "fen": "9/9/b2k1a3/9/7C1/2B6/9/9/5K3/3A5 w - - 0 1",
+    "bestMove": "h5h7",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單相單仕單炮 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-6c3c348f37edc0c0",
+    "difficulty": "hard",
+    "fen": "9/3k5/3a5/9/6p2/9/6p2/B4K3/7R1/9 w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-2032a21eceab3716",
+    "difficulty": "hard",
+    "fen": "3k5/9/5a3/9/6b2/9/9/1N7/7C1/2p2K3 w - - 0 1",
+    "bestMove": "b2c0",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單馬單炮 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-d68306aaa127998a",
+    "difficulty": "hard",
+    "fen": "1N2k1b2/9/3a2N2/9/9/3p5/9/3A5/9/3K5 w - - 0 1",
+    "bestMove": "b9d8",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "2馬單仕 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-4a3c282b60e08dc1",
+    "difficulty": "hard",
+    "fen": "2b6/3n4R/3k5/9/9/9/9/3A5/5p3/3K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單仕 vs 單馬單象單卒"
+  },
+  {
+    "puzzleKey": "egt-019d915cb7ab03bb",
+    "difficulty": "hard",
+    "fen": "3P4R/5k3/9/9/2b6/9/9/1c6B/9/3K5 w - - 0 1",
+    "bestMove": "i9i5",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-917cf92e1c23ed26",
+    "difficulty": "hard",
+    "fen": "1R7/3k5/9/3n5/9/9/9/3KN3B/9/4c4 w - - 0 1",
+    "bestMove": "b9b6",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單相 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-be46a43600c5700e",
+    "difficulty": "hard",
+    "fen": "3a5/5k3/3a1N3/5R3/9/2r6/9/9/3K5/5A3 w - - 0 1",
+    "bestMove": "f7d6",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬單仕 vs 單車2士"
+  },
+  {
+    "puzzleKey": "egt-b8d411260091cdfa",
+    "difficulty": "hard",
+    "fen": "5k3/9/3a5/9/9/9/9/8p/6N2/3AK1B2 w - - 0 1",
+    "bestMove": "g0i2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單仕 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-b1942f88fa2d0087",
+    "difficulty": "hard",
+    "fen": "5a3/P3a4/4k4/7R1/8c/9/9/3K5/9/3A5 w - - 0 1",
+    "bestMove": "h6h7",
+    "pieceCount": 8,
+    "redAdvantage": 4,
+    "sourceType": "單車單仕單兵 vs 2士單砲"
+  },
+  {
+    "puzzleKey": "egt-4adb89731398046f",
+    "difficulty": "hard",
+    "fen": "1R7/2n3n2/4k4/9/6N2/9/9/4B4/9/4K4 w - - 0 1",
+    "bestMove": "b9b1",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單相 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-b02b76a8f3a55cad",
+    "difficulty": "hard",
+    "fen": "1N1k5/9/2n1b4/6R2/9/9/9/3n5/3K5/9 w - - 0 1",
+    "bestMove": "b9c7",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬 vs 2馬單象"
+  },
+  {
+    "puzzleKey": "egt-19b9f12027b60678",
+    "difficulty": "hard",
+    "fen": "1n7/4a4/3k1aR2/8C/9/9/9/9/9/4K4 w - - 0 1",
+    "bestMove": "i6i8",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單炮 vs 單馬2士"
+  },
+  {
+    "puzzleKey": "egt-16f2e428fe4e65c9",
+    "difficulty": "hard",
+    "fen": "9/3k5/9/5P3/1P6p/9/6p2/B8/5K3/9 w - - 0 1",
+    "bestMove": "f6e6",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單相2兵 vs 2卒"
+  },
+  {
+    "puzzleKey": "egt-b1ef4d1824c4c0f3",
+    "difficulty": "hard",
+    "fen": "1N7/C6P1/3a1k3/9/2b6/9/9/3K5/9/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單馬單炮單兵 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-f55b79175c053fb6",
+    "difficulty": "hard",
+    "fen": "9/5k3/5a3/1R6p/9/5n3/9/9/3KA4/5A3 w - - 0 1",
+    "bestMove": "b6i6",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單車2仕 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-a9e3ea81e14809a8",
+    "difficulty": "hard",
+    "fen": "5a3/5k3/9/9/9/9/9/3K1N3/1r7/1R1A5 w - - 0 1",
+    "bestMove": "b0b1",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬單仕 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-4d9e772b7011f298",
+    "difficulty": "hard",
+    "fen": "5k3/9/3a4P/2P6/9/9/9/1R7/4c4/4K4 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車2兵 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-9d0f850d54412109",
+    "difficulty": "hard",
+    "fen": "2n2a3/5k3/5N3/N8/9/9/9/9/4A4/3K5 w - - 0 1",
+    "bestMove": "f7h8",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "2馬單仕 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-1cca75815ba0e736",
+    "difficulty": "hard",
+    "fen": "9/9/4bk3/2p6/9/5C3/9/3A3p1/3K5/6B2 w - - 0 1",
+    "bestMove": "g0e2",
+    "pieceCount": 8,
+    "redAdvantage": 3.5,
+    "sourceType": "單相單仕單炮 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-a54236d9d6e1579b",
+    "difficulty": "hard",
+    "fen": "3k5/9/9/9/9/5n3/6p2/5K3/3p5/2B5R w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單相 vs 單馬2卒"
+  },
+  {
+    "puzzleKey": "egt-d737a9cf4890f8dd",
+    "difficulty": "hard",
+    "fen": "5a3/4a4/3k5/9/9/9/1c2R4/3A4B/4K4/9 w - - 0 1",
+    "bestMove": "e3d3",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單相單仕 vs 2士單砲"
+  },
+  {
+    "puzzleKey": "egt-90ab814a78d31315",
+    "difficulty": "hard",
+    "fen": "9/4k4/R7b/9/2b6/9/3N1N3/2r6/5K3/9 w - - 0 1",
+    "bestMove": "a7i7",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單車2馬 vs 單車2象"
+  },
+  {
+    "puzzleKey": "egt-cb4455d4493922fb",
+    "difficulty": "hard",
+    "fen": "6b2/5k3/b3R4/9/9/6B2/9/n2K5/9/9 w - - 0 1",
+    "bestMove": "e7a7",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單相 vs 單馬2象"
+  },
+  {
+    "puzzleKey": "egt-c5ab33bb0990aae7",
+    "difficulty": "hard",
+    "fen": "9/5k3/b3Na3/6P2/9/9/9/3K1A3/9/9 w - - 0 1",
+    "bestMove": "g6g7",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單仕單兵 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-bcd9e1c216b6f067",
+    "difficulty": "hard",
+    "fen": "3k5/9/3a1a3/9/2b6/4C1B2/9/9/3K5/8N w - - 0 1",
+    "bestMove": "i0h2",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單炮 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-7b884b5e583e2af2",
+    "difficulty": "hard",
+    "fen": "5k3/8r/9/2c6/9/6B2/9/N2KR4/9/9 w - - 0 1",
+    "bestMove": "e2e6",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單馬單相 vs 單車單砲"
+  },
+  {
+    "puzzleKey": "egt-3d935208ae1f4d18",
+    "difficulty": "hard",
+    "fen": "5a3/n4k3/9/9/9/5N3/1R4p2/3K5/9/9 w - - 0 1",
+    "bestMove": "f4g6",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單馬 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-f8794987d2c25b5c",
+    "difficulty": "hard",
+    "fen": "5a3/4k4/9/8R/9/9/9/3K5/9/2pAp4 w - - 0 1",
+    "bestMove": "i6e6",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單仕 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-5c3f5dfb5662561a",
+    "difficulty": "hard",
+    "fen": "5C3/3k5/3r5/9/9/9/5C2c/6R2/9/3K5 w - - 0 1",
+    "bestMove": "d0e0",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車2炮 vs 單車單砲"
+  },
+  {
+    "puzzleKey": "egt-8a66a6018c4026d5",
+    "difficulty": "hard",
+    "fen": "3k1a3/9/5aP2/9/9/9/9/9/1R2K4/7c1 w - - 0 1",
+    "bestMove": "b1d1",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單兵 vs 2士單砲"
+  },
+  {
+    "puzzleKey": "egt-92efa0f5a5854e81",
+    "difficulty": "hard",
+    "fen": "5c3/9/3k4b/1C7/3N5/8P/9/9/9/4K4 w - - 0 1",
+    "bestMove": "b6b1",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單炮單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-44103bb33d01d17c",
+    "difficulty": "hard",
+    "fen": "5ab2/5kc2/1N7/9/4C4/9/9/9/4A4/3K5 w - - 0 1",
+    "bestMove": "b7c5",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單仕單炮 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-da052bf5cbd25cef",
+    "difficulty": "hard",
+    "fen": "9/9/5k3/9/2b3b2/2p2C3/9/5K3/9/6C2 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "2炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-98750683e71936de",
+    "difficulty": "hard",
+    "fen": "9/3k5/6N2/P8/2b6/6p2/9/B8/4K4/9 w - - 0 1",
+    "bestMove": "a6b6",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單相單兵 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-4e0b87e0c5e1cc0b",
+    "difficulty": "hard",
+    "fen": "5a3/7R1/5k3/9/2b2c3/6B2/9/8B/4K4/9 w - - 0 1",
+    "bestMove": "h8h5",
+    "pieceCount": 8,
+    "redAdvantage": 4.5,
+    "sourceType": "單車2相 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-511df50f5d271434",
+    "difficulty": "hard",
+    "fen": "6C2/9/5k3/9/c8/6B2/9/3K1C3/3p5/9 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單相2炮 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-45a1e9f7dcdfff10",
+    "difficulty": "hard",
+    "fen": "3k5/9/9/3r5/3R5/9/9/4BK3/2n6/5R3 w - - 0 1",
+    "bestMove": "d5d6",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "2車單相 vs 單車單馬"
+  },
+  {
+    "puzzleKey": "egt-4c4ac36741baa112",
+    "difficulty": "hard",
+    "fen": "3a5/9/3k1a1NP/9/6b2/9/9/4B4/9/4K4 w - - 0 1",
+    "bestMove": "h7g5",
+    "pieceCount": 8,
+    "redAdvantage": 2,
+    "sourceType": "單馬單相單兵 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-4344f7a9817d32a8",
+    "difficulty": "hard",
+    "fen": "9/9/5k3/8P/6b2/9/9/7p1/R2K5/3p5 w - - 0 1",
+    "bestMove": "a1a5",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單兵 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-f8aefdac98d5e7aa",
+    "difficulty": "hard",
+    "fen": "3ak4/9/4b2P1/5R3/9/9/9/3K4B/6n2/9 w - - 0 1",
+    "bestMove": "h7h8",
+    "pieceCount": 8,
+    "redAdvantage": 4,
+    "sourceType": "單車單相單兵 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-07acd76a98da2db4",
+    "difficulty": "hard",
+    "fen": "3k5/9/CN7/9/6c2/9/9/3A5/3K5/3n5 w - - 0 1",
+    "bestMove": "d1d0",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單馬單仕單炮 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-3d342e66fe5c7334",
+    "difficulty": "hard",
+    "fen": "3k5/2P6/4R4/9/p8/8c/9/5K3/9/2B6 w - - 0 1",
+    "bestMove": "e7e8",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單兵 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-9f1d10cdb1a00b6c",
+    "difficulty": "hard",
+    "fen": "4k4/8R/9/9/2Pnn4/9/9/5A3/3K5/9 w - - 0 1",
+    "bestMove": "c5d5",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單仕單兵 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-39f4ceeb596fe3e6",
+    "difficulty": "hard",
+    "fen": "6rR1/3k5/5a3/9/9/1N7/9/3AK4/9/9 w - - 0 1",
+    "bestMove": "h9g9",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬單仕 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-768dd682483d1d57",
+    "difficulty": "hard",
+    "fen": "9/3k5/9/4p1p2/9/9/9/5p3/4N4/1C2K4 w - - 0 1",
+    "bestMove": "e1d3",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單炮 vs 3卒"
+  },
+  {
+    "puzzleKey": "egt-9aff7fba75fbd16d",
+    "difficulty": "hard",
+    "fen": "9/3ka4/9/9/2b6/6R2/6c2/5A3/4K4/9 w - - 0 1",
+    "bestMove": "g4g3",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單仕 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-09e7a4b149ed48d9",
+    "difficulty": "hard",
+    "fen": "5k3/9/5a3/4n4/2pR5/9/9/1C7/3K5/9 w - - 0 1",
+    "bestMove": "d5e5",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單炮 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-2ac60b39e1ff49f1",
+    "difficulty": "hard",
+    "fen": "9/9/4k2C1/9/2p6/9/2R5r/9/5K3/5A3 w - - 0 1",
+    "bestMove": "c3i3",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單仕單炮 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-dd311ffd221da7cf",
+    "difficulty": "hard",
+    "fen": "4k4/9/8b/2P6/9/6B2/6C2/6p2/5K3/9 w - - 0 1",
+    "bestMove": "c6c7",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單相單炮單兵 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-3b08e5b4c4f8d21f",
+    "difficulty": "hard",
+    "fen": "1R7/7P1/4k4/9/2p1c4/9/9/3A5/3K5/9 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單兵 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-59f199cad44b4673",
+    "difficulty": "hard",
+    "fen": "9/3r5/1N1k5/1R7/6p2/9/9/B8/9/4K4 w - - 0 1",
+    "bestMove": "b6d6",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單馬單相 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-24aeb4061c6067e8",
+    "difficulty": "hard",
+    "fen": "2b6/4k4/3a5/9/4P4/3p2R2/9/3K5/9/9 w - - 0 1",
+    "bestMove": "g4d4",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單車單兵 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-7ba5663ec0655999",
+    "difficulty": "hard",
+    "fen": "3a5/4k4/5a3/9/9/9/9/3K3p1/7R1/5A3 w - - 0 1",
+    "bestMove": "h1h2",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單仕 vs 2士單卒"
+  },
+  {
+    "puzzleKey": "egt-e66cdab2e8a77df9",
+    "difficulty": "hard",
+    "fen": "3P5/4a4/4k4/9/9/9/9/2RK5/9/3n2p2 w - - 0 1",
+    "bestMove": "d2d1",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單兵 vs 單馬單士單卒"
+  },
+  {
+    "puzzleKey": "egt-9c61e3dd49e974e6",
+    "difficulty": "hard",
+    "fen": "9/4k4/3a5/9/3P5/2c6/1R7/9/5K3/6B2 w - - 0 1",
+    "bestMove": "d5d6",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相單兵 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-9a3c4e046bab7d83",
+    "difficulty": "hard",
+    "fen": "6b2/9/5k3/9/8c/6B2/9/3K5/4R4/5A3 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單仕 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-d2462eefdeba328e",
+    "difficulty": "hard",
+    "fen": "9/9/3k1a3/P8/2b6/9/9/4K4/9/2NN5 w - - 0 1",
+    "bestMove": "d0c2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "2馬單兵 vs 單象單士"
+  },
+  {
+    "puzzleKey": "egt-c3694632a2142cac",
+    "difficulty": "hard",
+    "fen": "3k2b2/9/3a5/4R4/9/2Bn5/9/9/3K5/9 w - - 0 1",
+    "bestMove": "e6d6",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單相 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-d021cfad815df16f",
+    "difficulty": "hard",
+    "fen": "3k5/9/4b4/9/6b2/3N5/9/8p/3K5/2B4C1 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單相單炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-dd8c0ddfb2f2f267",
+    "difficulty": "hard",
+    "fen": "5k3/9/9/6R2/9/6c1n/9/9/3KA4/C8 w - - 0 1",
+    "bestMove": "g6g4",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單仕單炮 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-346852897d86af31",
+    "difficulty": "hard",
+    "fen": "4k4/N8/b2a5/9/9/6c2/9/9/2N1A4/5K3 w - - 0 1",
+    "bestMove": "a8c7",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "2馬單仕 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-7c2f951d929bc402",
+    "difficulty": "hard",
+    "fen": "3k2b2/9/N2a5/9/9/9/9/3K5/4A1c2/2N6 w - - 0 1",
+    "bestMove": "c0b2",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "2馬單仕 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-3eda096b4ba89fe1",
+    "difficulty": "hard",
+    "fen": "2n1k4/9/b8/9/6b2/9/8N/3A5/3K1C3/9 w - - 0 1",
+    "bestMove": "i3g4",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單仕單炮 vs 單馬2象"
+  },
+  {
+    "puzzleKey": "egt-511f504ae50df095",
+    "difficulty": "hard",
+    "fen": "3k4N/9/9/7c1/3C5/9/9/9/3K4p/6B2 w - - 0 1",
+    "bestMove": "d1e1",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單炮 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-e1c30a653e825be9",
+    "difficulty": "hard",
+    "fen": "9/N2k5/9/9/9/6B2/4n4/9/4cK3/6C2 w - - 0 1",
+    "bestMove": "f1e1",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單馬單相單炮 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-d254a776b6274739",
+    "difficulty": "hard",
+    "fen": "5N3/4k4/4b4/9/6P2/3C5/9/7c1/3K5/9 w - - 0 1",
+    "bestMove": "g5f5",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單炮單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-6c1b5d813fc6e8ed",
+    "difficulty": "hard",
+    "fen": "9/9/3n1k3/9/6b2/3R3p1/9/9/9/3KN4 w - - 0 1",
+    "bestMove": "d4d7",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單馬 vs 單馬單象單卒"
+  },
+  {
+    "puzzleKey": "egt-6672a75be627681c",
+    "difficulty": "hard",
+    "fen": "6b2/4a4/4k4/9/9/9/5C3/1p7/8C/3K5 w - - 0 1",
+    "bestMove": "i1e1",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "2炮 vs 單象單士單卒"
+  },
+  {
+    "puzzleKey": "egt-891919272c0e47cd",
+    "difficulty": "hard",
+    "fen": "7C1/n4k3/9/9/9/9/n8/3K5/7R1/2B6 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單炮 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-b9f69ff8930a526b",
+    "difficulty": "hard",
+    "fen": "9/9/5k3/9/1C4b2/9/3N5/B1p6/4p4/4K4 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 8,
+    "redAdvantage": 6,
+    "sourceType": "單馬單相單炮 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-a0bba2bb4bbc2b8d",
+    "difficulty": "hard",
+    "fen": "2b2k3/9/4b4/6p2/9/8C/4C4/5A3/9/5K3 w - - 0 1",
+    "bestMove": "i4g4",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單仕2炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-4d4f988ce89b5875",
+    "difficulty": "hard",
+    "fen": "6r2/9/R2ak4/9/9/9/9/2R6/3K3n1/9 w - - 0 1",
+    "bestMove": "a7d7",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2車 vs 單車單馬單士"
+  },
+  {
+    "puzzleKey": "egt-d91f764a582cec94",
+    "difficulty": "hard",
+    "fen": "9/2R1n4/3k5/9/1C7/9/2n6/8B/9/4K4 w - - 0 1",
+    "bestMove": "c8c3",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單炮 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-009d9fd6629b1601",
+    "difficulty": "hard",
+    "fen": "5R3/9/4k4/9/6P2/6B2/2r6/3K5/9/5p3 w - - 0 1",
+    "bestMove": "f9e9",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單相單兵 vs 單車單卒"
+  },
+  {
+    "puzzleKey": "egt-a40f6d45d4a8dbad",
+    "difficulty": "hard",
+    "fen": "4k4/n7P/4b4/9/2P6/1R7/9/3K5/9/9 w - - 0 1",
+    "bestMove": "b4e4",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車2兵 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-8da59b3026cf234b",
+    "difficulty": "hard",
+    "fen": "c2a5/9/4k4/1PR6/9/9/9/3K5/4A4/9 w - - 0 1",
+    "bestMove": "c6e6",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單仕單兵 vs 單士單砲"
+  },
+  {
+    "puzzleKey": "egt-f314ceb5482ff578",
+    "difficulty": "hard",
+    "fen": "3k1a3/9/9/3r5/9/5R3/9/3K1A3/9/3A5 w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車2仕 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-698117c2e0fdbbbe",
+    "difficulty": "hard",
+    "fen": "5kb2/2R6/2n6/9/9/7p1/9/B8/9/4K4 w - - 0 1",
+    "bestMove": "c8c7",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單相 vs 單馬單象單卒"
+  },
+  {
+    "puzzleKey": "egt-48b8433337eb2792",
+    "difficulty": "hard",
+    "fen": "3k1a3/9/4b4/9/9/7R1/Pn7/9/9/4K4 w - - 0 1",
+    "bestMove": "h4h7",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單兵 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-7556fb66e462e11d",
+    "difficulty": "hard",
+    "fen": "1R1a1k3/4a4/9/9/9/8n/9/9/9/4KA3 w - - 0 1",
+    "bestMove": "b9b6",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單仕 vs 單馬2士"
+  },
+  {
+    "puzzleKey": "egt-290bbbe5f88ebf78",
+    "difficulty": "hard",
+    "fen": "5a2R/n4k3/9/9/9/9/7R1/9/3r5/4K4 w - - 0 1",
+    "bestMove": "h3f3",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2車 vs 單車單馬單士"
+  },
+  {
+    "puzzleKey": "egt-9babeb2ef859f38c",
+    "difficulty": "hard",
+    "fen": "4k1b2/9/9/9/9/2B6/9/B8/3K1p3/3A5 w - - 0 1",
+    "bestMove": "d0e1",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "2相單仕 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-81c59ea57015974a",
+    "difficulty": "hard",
+    "fen": "3a5/4k4/9/9/2R6/8n/9/9/3KNn3/9 w - - 0 1",
+    "bestMove": "e1d3",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單馬 vs 2馬單士"
+  },
+  {
+    "puzzleKey": "egt-ca8f128bb8f7068b",
+    "difficulty": "hard",
+    "fen": "1C7/3ka4/3a5/9/2b6/N8/9/3A5/9/3K5 w - - 0 1",
+    "bestMove": "a4c5",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "單馬單仕單炮 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-36cebce43368d870",
+    "difficulty": "hard",
+    "fen": "n8/9/4k4/9/9/6r1R/N8/5K3/9/5A3 w - - 0 1",
+    "bestMove": "i4g4",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單馬單仕 vs 單車單馬"
+  },
+  {
+    "puzzleKey": "egt-dfa263775736a692",
+    "difficulty": "hard",
+    "fen": "9/4ak3/1N7/9/7Pp/9/9/4K4/9/3A5 w - - 0 1",
+    "bestMove": "h5i5",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單馬單仕單兵 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-ad11ed7986e83eff",
+    "difficulty": "hard",
+    "fen": "9/9/4k1N2/2p6/1n7/2B1C4/9/9/3K5/9 w - - 0 1",
+    "bestMove": "e4h4",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-a40d4979594756ca",
+    "difficulty": "hard",
+    "fen": "9/4k4/9/4p4/9/n8/9/5Ap2/3RA4/4K4 w - - 0 1",
+    "bestMove": "e1d0",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單車2仕 vs 單馬2卒"
+  },
+  {
+    "puzzleKey": "egt-66ecc78b9ead9a43",
+    "difficulty": "hard",
+    "fen": "9/9/3k5/9/9/9/1N1N5/3n5/4K2p1/3A5 w - - 0 1",
+    "bestMove": "b3d2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "2馬單仕 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-300140c3d4edc922",
+    "difficulty": "hard",
+    "fen": "2bk2C2/9/9/9/9/9/2p1N4/4Kp3/9/9 w - - 0 1",
+    "bestMove": "e2f2",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單炮 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-0c9c1a4ebb527edf",
+    "difficulty": "hard",
+    "fen": "1C3k3/9/9/9/9/6Pc1/9/3K5/9/1C3p3 w - - 0 1",
+    "bestMove": "g4g5",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "2炮單兵 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-207514109bdb1cf8",
+    "difficulty": "hard",
+    "fen": "5a3/9/4k4/4r4/8R/9/9/B8/3K5/4N4 w - - 0 1",
+    "bestMove": "e0d2",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單馬單相 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-15a6c9ac5d21e929",
+    "difficulty": "hard",
+    "fen": "3a1k3/n8/9/9/2P6/8R/9/9/4K4/2B6 w - - 0 1",
+    "bestMove": "i4f4",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相單兵 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-b9c501793b7771bb",
+    "difficulty": "hard",
+    "fen": "5k3/4a4/8b/2P4n1/9/9/9/9/3KR4/9 w - - 0 1",
+    "bestMove": "e1e8",
+    "pieceCount": 7,
+    "redAdvantage": 2,
+    "sourceType": "單車單兵 vs 單馬單象單士"
+  },
+  {
+    "puzzleKey": "egt-012998f94e454925",
+    "difficulty": "hard",
+    "fen": "P4k3/9/3a5/9/p8/9/9/4R4/3p5/3K5 w - - 0 1",
+    "bestMove": "d0d1",
+    "pieceCount": 7,
+    "redAdvantage": 5.5,
+    "sourceType": "單車單兵 vs 單士2卒"
+  },
+  {
+    "puzzleKey": "egt-c4c183bd9b81000c",
+    "difficulty": "hard",
+    "fen": "9/3N5/4k4/2C6/2c6/p8/9/B8/9/3K5 w - - 0 1",
+    "bestMove": "d8e6",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單相單炮 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-b4131642b944b3f2",
+    "difficulty": "hard",
+    "fen": "4k4/9/4b4/P6R1/6b2/9/9/1n7/9/3AK4 w - - 0 1",
+    "bestMove": "a6a7",
+    "pieceCount": 8,
+    "redAdvantage": 4,
+    "sourceType": "單車單仕單兵 vs 單馬2象"
+  },
+  {
+    "puzzleKey": "egt-4b081a752c89d928",
+    "difficulty": "hard",
+    "fen": "6b2/3c5/4k4/9/9/P7R/9/9/3KA4/9 w - - 0 1",
+    "bestMove": "e1f0",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單仕單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-65ec3e1fb645cd71",
+    "difficulty": "hard",
+    "fen": "C8/9/3ak4/C8/8n/9/9/9/3K5/2B6 w - - 0 1",
+    "bestMove": "d1d2",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單相2炮 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-939df4b3e65b96b0",
+    "difficulty": "hard",
+    "fen": "9/3k3P1/2n5b/9/9/2B6/9/4K4/9/5R3 w - - 0 1",
+    "bestMove": "f0d0",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單相單兵 vs 單馬單象"
+  },
+  {
+    "puzzleKey": "egt-25929ce8a7162f7b",
+    "difficulty": "hard",
+    "fen": "3R1a3/9/4k4/7c1/8P/9/1p7/3K5/9/9 w - - 0 1",
+    "bestMove": "d9f9",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單兵 vs 單士單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-6037301c8585dfc4",
+    "difficulty": "hard",
+    "fen": "3k5/9/4b1P2/9/9/9/9/9/4c4/4KAR2 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 7,
+    "redAdvantage": 6,
+    "sourceType": "單車單仕單兵 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-779002cc21eb0497",
+    "difficulty": "hard",
+    "fen": "6b2/3k5/6Rc1/9/9/9/9/3A5/4A4/5K3 w - - 0 1",
+    "bestMove": "g7h7",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車2仕 vs 單象單砲"
+  },
+  {
+    "puzzleKey": "egt-3c5d9ba0e75ea3fe",
+    "difficulty": "hard",
+    "fen": "3k4N/9/9/9/R8/n5B2/9/4cK3/9/9 w - - 0 1",
+    "bestMove": "f2e2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單馬單相 vs 單馬單砲"
+  },
+  {
+    "puzzleKey": "egt-7fc8a0a3275a507a",
+    "difficulty": "hard",
+    "fen": "3k5/9/9/1R7/9/2B6/1c7/p3B4/4p4/4K4 w - - 0 1",
+    "bestMove": "e0e1",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單車2相 vs 單砲2卒"
+  },
+  {
+    "puzzleKey": "egt-a5d2f33d644ef381",
+    "difficulty": "hard",
+    "fen": "9/3k5/9/8C/2N6/3c5/9/2p6/9/3A1K3 w - - 0 1",
+    "bestMove": "c5e6",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單仕單炮 vs 單砲單卒"
+  },
+  {
+    "puzzleKey": "egt-b21dbb2fb267c966",
+    "difficulty": "hard",
+    "fen": "9/3N1k3/9/9/6b2/9/9/2p2A3/p1NK5/9 w - - 0 1",
+    "bestMove": "c1a2",
+    "pieceCount": 8,
+    "redAdvantage": 6,
+    "sourceType": "2馬單仕 vs 單象2卒"
+  },
+  {
+    "puzzleKey": "egt-dcf58382177b7c56",
+    "difficulty": "hard",
+    "fen": "3a5/3k3P1/9/9/4C4/p8/9/3A1K3/9/9 w - - 0 1",
+    "bestMove": "h8g8",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單仕單炮單兵 vs 單士單卒"
+  },
+  {
+    "puzzleKey": "egt-78106eefcb353708",
+    "difficulty": "hard",
+    "fen": "5a3/4a4/3k5/6p2/9/N8/8P/5K3/9/2B6 w - - 0 1",
+    "bestMove": "c0e2",
+    "pieceCount": 8,
+    "redAdvantage": 2.5,
+    "sourceType": "單馬單相單兵 vs 2士單卒"
+  },
+  {
+    "puzzleKey": "egt-f5cccda5300ecb6b",
+    "difficulty": "hard",
+    "fen": "9/3k5/1R7/8p/2b6/6n2/9/9/9/3AK4 w - - 0 1",
+    "bestMove": "b7b8",
+    "pieceCount": 7,
+    "redAdvantage": 3,
+    "sourceType": "單車單仕 vs 單馬單象單卒"
+  },
+  {
+    "puzzleKey": "egt-12754395e0891229",
+    "difficulty": "hard",
+    "fen": "9/6n2/5k3/9/2P1R4/9/9/5A3/4K4/2n6 w - - 0 1",
+    "bestMove": "e1e2",
+    "pieceCount": 7,
+    "redAdvantage": 3.5,
+    "sourceType": "單車單仕單兵 vs 2馬"
+  },
+  {
+    "puzzleKey": "egt-1088848f81489303",
+    "difficulty": "hard",
+    "fen": "9/9/3k4b/9/2b6/1p7/9/1N7/3CA4/4K4 w - - 0 1",
+    "bestMove": "e1d2",
+    "pieceCount": 8,
+    "redAdvantage": 5.5,
+    "sourceType": "單馬單仕單炮 vs 2象單卒"
+  },
+  {
+    "puzzleKey": "egt-7209e476f270d817",
+    "difficulty": "hard",
+    "fen": "3k5/9/b8/9/9/1p7/9/B4K3/4A4/3A5 w - - 0 1",
+    "bestMove": "f2f1",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單相2仕 vs 單象單卒"
+  },
+  {
+    "puzzleKey": "egt-aa00777a5ff483cd",
+    "difficulty": "hard",
+    "fen": "5a3/4k4/3a5/9/6b2/8N/2N6/4B4/9/5K3 w - - 0 1",
+    "bestMove": "i4g5",
+    "pieceCount": 8,
+    "redAdvantage": 5,
+    "sourceType": "2馬單相 vs 單象2士"
+  },
+  {
+    "puzzleKey": "egt-3ed56d1a27c4eb18",
+    "difficulty": "hard",
+    "fen": "3k5/8R/3ab4/9/9/9/9/9/4K4/2B5c w - - 0 1",
+    "bestMove": "i8i0",
+    "pieceCount": 7,
+    "redAdvantage": 2.5,
+    "sourceType": "單車單相 vs 單象單士單砲"
+  },
+  {
+    "puzzleKey": "egt-d8449fdd4288d96b",
+    "difficulty": "hard",
+    "fen": "3a5/3k5/9/9/9/9/6R2/4B1n2/9/3AK4 w - - 0 1",
+    "bestMove": "g3g2",
+    "pieceCount": 7,
+    "redAdvantage": 6.5,
+    "sourceType": "單車單相單仕 vs 單馬單士"
+  },
+  {
+    "puzzleKey": "egt-0b3557e08ee901c8",
+    "difficulty": "hard",
+    "fen": "3k5/3n5/9/7C1/9/9/9/3K5/4A1C2/8p w - - 0 1",
+    "bestMove": "d2e2",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單仕2炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-c1dd0299d050e170",
+    "difficulty": "hard",
+    "fen": "9/9/1NC1k4/9/5n3/9/7p1/9/4A4/3K5 w - - 0 1",
+    "bestMove": "c7c0",
+    "pieceCount": 7,
+    "redAdvantage": 5,
+    "sourceType": "單馬單仕單炮 vs 單馬單卒"
+  },
+  {
+    "puzzleKey": "egt-48fa01123c30d262",
+    "difficulty": "hard",
+    "fen": "9/3R5/3ak4/6r2/9/9/1C7/3K5/4A4/9 w - - 0 1",
+    "bestMove": "b3b7",
+    "pieceCount": 7,
+    "redAdvantage": 4.5,
+    "sourceType": "單車單仕單炮 vs 單車單士"
+  },
+  {
+    "puzzleKey": "egt-2445087e795e0d49",
+    "difficulty": "hard",
+    "fen": "3k5/9/8b/9/9/9/4P1C2/1c3K3/9/3N5 w - - 0 1",
+    "bestMove": "e3e4",
+    "pieceCount": 7,
+    "redAdvantage": 4,
+    "sourceType": "單馬單炮單兵 vs 單象單砲"
+  }
+]

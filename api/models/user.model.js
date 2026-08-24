@@ -84,6 +84,19 @@ const userSchema = new mongoose.Schema({
     select: false,
     default: undefined,
   },
+  // Tổng thưởng cờ tướng đã nhận trong ngày lịch của server. Hai field này
+  // nằm cùng ví để cập nhật số dư + quota trong đúng một atomic operation.
+  xiangqiRewardDateKey: {
+    type: String,
+    default: null,
+  },
+  xiangqiRewardEarned: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  xiangqiLastRewardOperation: String,
+  xiangqiLastRewardAmount: { type: Number, default: 0 },
   createdAt: {
     type: Date,
     default: Date.now,
