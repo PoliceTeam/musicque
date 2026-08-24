@@ -71,6 +71,8 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 - Chỉ user đã đăng nhập mới được chơi; guest được dẫn tới luồng đăng ký/đăng nhập.
 - Mỗi ván cược `10 PC`. Thắng mức dễ nhận `15 PC`, trung bình `38 PC`, khó `66 PC`.
 - Xem gợi ý hoặc đáp án vẫn có thể tiếp tục chơi nhưng ván đó không nhận thưởng.
+- Thời gian giữ quyền nhận thưởng là 40 giây ở mức dễ, 60 giây ở mức trung bình
+  và 90 giây ở mức khó. Đồng hồ chỉ chạy trong lượt user; hết giờ vẫn chơi tiếp.
 - Một nước đi sai không kết thúc ngay ván: user tiếp tục đấu với bot cho tới trạng
   thái kết thúc hợp lệ như chiếu bí, mất tướng hoặc xin thua.
 - Tổng thưởng được server giới hạn `500 PC/user/ngày`; giao dịch cược, thưởng và
@@ -79,6 +81,8 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
   bộ tự động vào MongoDB.
 - Engine có hàng đợi in-process và mặc định chạy 2 JS worker, phù hợp tải khoảng
   5-10 CCU. Có thể cấu hình binary Pikafish riêng nếu cần nâng chất lượng bot.
+- Mỗi thế cờ có thể được lật trái-phải ngẫu nhiên và server tránh cấp lại 20 thế
+  gần nhất theo từng độ khó cho cùng user.
 - UI dùng bộ bàn và quân `gmchess wood`; thông tin giấy phép được ghi trong
   `THIRD_PARTY_NOTICES.md`.
 
@@ -213,6 +217,10 @@ XIANGQI_REWARD_EASY=15
 XIANGQI_REWARD_MEDIUM=38
 XIANGQI_REWARD_HARD=66
 XIANGQI_DAILY_REWARD_CAP=500
+XIANGQI_TIME_EASY_SECONDS=40
+XIANGQI_TIME_MEDIUM_SECONDS=60
+XIANGQI_TIME_HARD_SECONDS=90
+XIANGQI_RECENT_PUZZLES=20
 XIANGQI_ENGINE_WORKERS=2
 ```
 
@@ -325,6 +333,10 @@ toàn bộ pipeline bằng Docker Compose.
 | `XIANGQI_REWARD_MEDIUM` | Thưởng thắng mức trung bình | `38` |
 | `XIANGQI_REWARD_HARD` | Thưởng thắng mức khó | `66` |
 | `XIANGQI_DAILY_REWARD_CAP` | Tổng thưởng cờ tướng tối đa mỗi user/ngày | `500` |
+| `XIANGQI_TIME_EASY_SECONDS` | Thời gian nhận thưởng mức dễ | `40` |
+| `XIANGQI_TIME_MEDIUM_SECONDS` | Thời gian nhận thưởng mức trung bình | `60` |
+| `XIANGQI_TIME_HARD_SECONDS` | Thời gian nhận thưởng mức khó | `90` |
+| `XIANGQI_RECENT_PUZZLES` | Số thế gần nhất không cấp lại theo độ khó/user | `20` |
 | `XIANGQI_ENGINE_WORKERS` | Số worker xử lý nước đi của bot | `2` |
 | `XIANGQI_ENGINE_MOVE_MS` | Ngân sách thời gian tìm nước đi | `800` |
 | `XIANGQI_ENGINE_JOB_TIMEOUT_MS` | Timeout toàn bộ job engine | `3000` |

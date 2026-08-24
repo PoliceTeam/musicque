@@ -23,6 +23,7 @@ const xiangqiGameSchema = new mongoose.Schema(
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], required: true },
     initialFen: { type: String, required: true },
     currentFen: { type: String, required: true },
+    mirrored: { type: Boolean, default: false },
     suggestedMove: { type: String, required: true, select: false },
     stake: { type: Number, required: true },
     advertisedReward: { type: Number, required: true },
@@ -39,6 +40,11 @@ const xiangqiGameSchema = new mongoose.Schema(
     hintViewed: { type: Boolean, default: false },
     answerViewed: { type: Boolean, default: false },
     rewardEligible: { type: Boolean, default: true },
+    rewardIneligibleReason: { type: String, enum: ['hint', 'answer', 'timeout'], default: undefined },
+    rewardTimeLimitMs: { type: Number, required: true },
+    rewardTimeRemainingMs: { type: Number, required: true },
+    rewardClockStartedAt: Date,
+    rewardExpiredAt: Date,
     resultReason: String,
     settlementPending: { type: Boolean, default: false },
     settlementOperationKey: String,
@@ -58,6 +64,7 @@ xiangqiGameSchema.index(
   { unique: true, partialFilterExpression: { open: true } },
 )
 xiangqiGameSchema.index({ status: 1, npcQueuedAt: 1 })
+xiangqiGameSchema.index({ userId: 1, difficulty: 1, createdAt: -1 })
 xiangqiGameSchema.index({ settlementPending: 1 })
 xiangqiGameSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 

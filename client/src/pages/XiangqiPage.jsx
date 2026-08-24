@@ -15,13 +15,16 @@ import {
   resignXiangqiGame,
   startXiangqiGame,
 } from '../services/api'
+import { formatXiangqiTime, getXiangqiRemainingMs, syncXiangqiTimer } from '../utils/xiangqiTimer'
+
+const monotonicNow = () => window.performance?.now?.() ?? Date.now()
 
 const DEFAULT_CONFIG = {
   stake: 10,
   difficulties: [
-    { key: 'easy', label: 'Dễ', reward: 15 },
-    { key: 'medium', label: 'Trung bình', reward: 38 },
-    { key: 'hard', label: 'Khó', reward: 66 },
+    { key: 'easy', label: 'Dễ', reward: 15, timeLimitSeconds: 40 },
+    { key: 'medium', label: 'Trung bình', reward: 38, timeLimitSeconds: 60 },
+    { key: 'hard', label: 'Khó', reward: 66, timeLimitSeconds: 90 },
   ],
 }
 
@@ -44,9 +47,16 @@ const XiangqiPage = () => {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [hint, setHint] = useState(null)
   const [answer, setAnswer] = useState(null)
+  const [timerSync, setTimerSync] = useState(null)
+  const [timerNow, setTimerNow] = useState(monotonicNow)
   const gameStatus = game?.status
 
-  const acceptGame = useCallback((nextGame) => setGame(nextGame), [])
+  const acceptGame = useCallback((nextGame) => {
+    const now = monotonicNow()
+    setGame(nextGame)
+    setTimerSync(nextGame ? syncXiangqiTimer(nextGame, now) : null)
+    setTimerNow(now)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -70,6 +80,12 @@ const XiangqiPage = () => {
     }, 800)
     return () => window.clearInterval(timer)
   }, [game?.id, game?.status, acceptGame])
+
+  useEffect(() => {
+    if (!game || RESULT_COPY[game.status] || !timerSync?.running) return undefined
+    const timer = window.setInterval(() => setTimerNow(monotonicNow()), 250)
+    return () => window.clearInterval(timer)
+  }, [game, timerSync?.running])
 
   useEffect(() => {
     if (gameStatus && !gameStatus.endsWith('_turn') && gameStatus !== 'npc_pending') refreshBalance()
@@ -138,6 +154,11 @@ const XiangqiPage = () => {
   }
 
   const finished = game && RESULT_COPY[game.status]
+  const remainingMs = getXiangqiRemainingMs(timerSync, timerNow)
+  const hasRewardTimer = Number.isFinite(game?.rewardTimeRemainingMs)
+  const timerExpired = Boolean(hasRewardTimer && game?.rewardEligible && remainingMs <= 0)
+  const effectiveRewardEligible = Boolean(game?.rewardEligible && !timerExpired)
+  const ineligibleReason = timerExpired ? 'timeout' : game?.rewardIneligibleReason
 
   return (
     <div className='xiangqi-page'>
@@ -162,7 +183,7 @@ const XiangqiPage = () => {
                 <button key={level.key} type='button' className={`xiangqi-level xiangqi-level--${level.key}`} disabled={busy || balance < config.stake} onClick={() => start(level.key)}>
                   <span>{level.label}</span>
                   <strong>+{level.reward} PC</strong>
-                  <small>Cược {config.stake} PC</small>
+                  <small>Cược {config.stake} PC · {level.timeLimitSeconds}s</small>
                 </button>
               ))}
             </div>
@@ -186,11 +207,22 @@ const XiangqiPage = () => {
 
               {!finished ? (
                 <>
+                  <div className={`xiangqi-timer${remainingMs <= 10_000 ? ' is-urgent' : ''}${!effectiveRewardEligible ? ' is-expired' : ''}`}>
+                    <span>{effectiveRewardEligible ? 'Thời gian nhận thưởng' : 'Đã mất quyền nhận thưởng'}</span>
+                    <strong>{formatXiangqiTime(remainingMs)}</strong>
+                    {game.status === 'npc_pending' && effectiveRewardEligible && <small>Tạm dừng khi NPC tính nước</small>}
+                  </div>
                   <div className={`xiangqi-turn ${game.status === 'npc_pending' ? 'is-npc' : ''}`}>
                     <span className='xiangqi-turn__dot' />
                     {game.status === 'npc_pending' ? 'Đến lượt NPC' : game.inCheck ? 'Bạn đang bị chiếu' : 'Đến lượt bạn'}
                   </div>
-                  {!game.rewardEligible && <div className='xiangqi-practice'>Chế độ luyện tập · không nhận PC</div>}
+                  {!effectiveRewardEligible && (
+                    <div className='xiangqi-practice'>
+                      {ineligibleReason === 'timeout'
+                        ? 'Hết thời gian nhận thưởng · bạn vẫn có thể chơi tiếp'
+                        : 'Chế độ luyện tập · không nhận PC'}
+                    </div>
+                  )}
                   <div className='xiangqi-tools'>
                     <button type='button' disabled={busy || game.hintViewed} onClick={() => reveal('hint')}>💡 Gợi ý</button>
                     <button type='button' disabled={busy || game.answerViewed} onClick={() => reveal('answer')}>👁 Xem đáp án</button>
@@ -202,8 +234,8 @@ const XiangqiPage = () => {
                   <span className='xiangqi-result__icon'>{game.status === 'user_won' ? '🏆' : game.status === 'voided' ? '↩️' : '🏳️'}</span>
                   <h2>{RESULT_COPY[game.status][0]}</h2>
                   <p>{RESULT_COPY[game.status][1]}</p>
-                  {game.status === 'user_won' && game.rewardEligible && <strong className='xiangqi-result__payout'>+{game.payout} PC</strong>}
-                  <button type='button' className='sp-btn sp-btn--primary' onClick={() => { setGame(null); setHint(null); setAnswer(null) }}>Chọn ván mới</button>
+                  {game.status === 'user_won' && effectiveRewardEligible && <strong className='xiangqi-result__payout'>+{game.payout} PC</strong>}
+                  <button type='button' className='sp-btn sp-btn--primary' onClick={() => { acceptGame(null); setHint(null); setAnswer(null) }}>Chọn ván mới</button>
                 </div>
               )}
 

@@ -46,6 +46,8 @@ describe('XiangqiRulesModal', () => {
     render(<XiangqiRulesModal open onClose={() => {}} />)
     expect(screen.getByText(/cược 10 PC/i)).toBeInTheDocument()
     expect(screen.getByText(/Khó \+66 PC/i)).toBeInTheDocument()
+    expect(screen.getByText(/Dễ 40 giây.*Trung bình 60 giây.*Khó 90 giây/i)).toBeInTheDocument()
+    expect(screen.getByText(/Hết giờ vẫn được chơi tiếp/i)).toBeInTheDocument()
     expect(screen.queryByText(/500 PC/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/tối đa/i)).not.toBeInTheDocument()
   })
