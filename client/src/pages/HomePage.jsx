@@ -14,6 +14,7 @@ import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
+import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
 import DailyIdiom from '../components/DailyIdiom/DailyIdiom';
 import { PlaylistContext } from '../contexts/PlaylistContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -312,6 +313,7 @@ const HomePage = () => {
           </header>
 
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <NationalDayBanner />
             <TetCountdown />
             <DailyIdiom />
             <section className="sp-panel sp-main-add">

@@ -1,0 +1,283 @@
+/* ── Banner Quốc khánh 2/9 ─────────────────────────────────────────────
+ * Dải mảnh nằm trên cùng cột giữa HomePage. Mọi hiệu ứng chỉ chạy bằng
+ * transform/opacity nên không gây reflow — trang này còn có vòng
+ * requestAnimationFrame 60fps của Billiards, không được giành layout.
+ * Cờ đỏ sao vàng: sao vàng LUÔN nằm trên nền đỏ, không có khối vàng nào.
+ */
+
+.nd-banner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 14px 20px;
+  min-height: 88px;
+  border-radius: var(--sp-radius-lg);
+  background: #da251d;
+  border: 1px solid rgba(255, 205, 0, 0.28);
+  box-shadow: var(--sp-shadow);
+}
+
+:root[data-theme='dark'] .nd-banner {
+  background: #b31217;
+  border-color: rgba(255, 205, 0, 0.22);
+}
+
+/* ── Lớp 1: đường chân trời Ba Đình, parallax theo con trỏ ───────────── */
+.nd-banner__skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 62px;
+  pointer-events: none;
+  opacity: 0.16;
+  transform: translate3d(var(--nd-parallax, 0px), 0, 0);
+  transition: transform 600ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.nd-banner__skyline svg {
+  display: block;
+  width: 108%;
+  height: 100%;
+  margin-left: -4%;
+}
+
+:root[data-theme='dark'] .nd-banner__skyline {
+  opacity: 0.2;
+}
+
+/* ── Lớp 2: sao vàng là nguồn sáng duy nhất ──────────────────────────── */
+.nd-banner__glow {
+  position: absolute;
+  left: 44px;
+  top: 50%;
+  width: 240px;
+  height: 240px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 205, 0, 0.26) 0%, rgba(255, 205, 0, 0) 62%);
+  animation: nd-pulse 4.5s ease-in-out infinite;
+}
+
+:root[data-theme='dark'] .nd-banner__glow {
+  background: radial-gradient(circle, rgba(255, 205, 0, 0.36) 0%, rgba(255, 205, 0, 0) 62%);
+}
+
+@keyframes nd-pulse {
+  0%, 100% { opacity: 0.55; transform: translateY(-50%) scale(0.92); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.06); }
+}
+
+/* ── Lớp 3: vệt sáng quét ngang mặt lụa ──────────────────────────────── */
+.nd-banner__sweep {
+  position: absolute;
+  inset: -40% -12%;
+  pointer-events: none;
+  background: linear-gradient(76deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%);
+  animation: nd-sweep 7s linear infinite;
+}
+
+@keyframes nd-sweep {
+  0% { transform: translateX(-70%); }
+  55%, 100% { transform: translateX(70%); }
+}
+
+/* ── Lớp 4: bụi sao bay lên, gói trong lòng banner ───────────────────── */
+.nd-banner__dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nd-banner__dust span {
+  position: absolute;
+  bottom: -10px;
+  color: #ffcd00;
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0;
+  animation: nd-rise linear infinite;
+}
+
+@keyframes nd-rise {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  18% { opacity: 0.9; }
+  70% { opacity: 0.45; }
+  100% { opacity: 0; transform: translateY(-78px) scale(1) rotate(70deg); }
+}
+
+/* ── Lá cờ lụa bay ───────────────────────────────────────────────────── */
+.nd-banner__flag {
+  position: relative;
+  flex-shrink: 0;
+  width: 66px;
+  height: 44px;
+  perspective: 220px;
+}
+
+.nd-banner__flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  transform-origin: left center;
+  animation: nd-wave 3.6s ease-in-out infinite;
+}
+
+@keyframes nd-wave {
+  0%, 100% { transform: rotateY(-11deg) skewY(1.1deg); }
+  50% { transform: rotateY(9deg) skewY(-1.1deg); }
+}
+
+.nd-banner__silk {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0.22) 8%,
+    rgba(255, 255, 255, 0.14) 30%,
+    rgba(0, 0, 0, 0.2) 55%,
+    rgba(255, 255, 255, 0.12) 78%,
+    rgba(0, 0, 0, 0.18) 96%
+  );
+  background-size: 200% 100%;
+  animation: nd-silk 3.6s ease-in-out infinite;
+}
+
+@keyframes nd-silk {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+
+/* ── Nội dung ────────────────────────────────────────────────────────── */
+.nd-banner__body {
+  position: relative;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.nd-banner__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+  letter-spacing: 0.1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.nd-banner__subtitle {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.nd-banner__countdown {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.nd-banner__cell {
+  min-width: 46px;
+  text-align: center;
+  padding: 5px 6px 4px;
+  border-radius: var(--sp-radius);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 205, 0, 0.34);
+}
+
+.nd-banner__num {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #ffcd00;
+  font-variant-numeric: tabular-nums;
+}
+
+.nd-banner__unit {
+  display: block;
+  margin-top: 1px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.nd-banner__num--tick {
+  animation: nd-tick 450ms ease;
+}
+
+@keyframes nd-tick {
+  0% { transform: translateY(-4px); opacity: 0.35; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.nd-banner__cta {
+  position: relative;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: var(--sp-radius-pill);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 205, 0, 0.55);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.nd-banner__cta:hover {
+  background: rgba(255, 205, 0, 0.2);
+}
+
+.nd-banner__cta:active {
+  transform: scale(0.97);
+}
+
+/* ── Pháo hoa sao vàng: chỉ bung khi bấm, gói trong banner ───────────── */
+.nd-banner__spark {
+  position: absolute;
+  left: var(--nd-spark-x, 50%);
+  top: 50%;
+  color: #ffcd00;
+  font-size: var(--nd-spark-size, 10px);
+  line-height: 1;
+  pointer-events: none;
+  animation: nd-burst var(--nd-spark-dur, 1200ms) cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes nd-burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.4); }
+  100% {
+    opacity: 0;
+    transform: translate(var(--nd-spark-dx, 0px), var(--nd-spark-dy, -60px)) scale(1.1) rotate(140deg);
+  }
+}
+
+/* Tôn trọng thiết lập giảm chuyển động của hệ thống. */
+@media (prefers-reduced-motion: reduce) {
+  .nd-banner__glow,
+  .nd-banner__sweep,
+  .nd-banner__flag svg,
+  .nd-banner__silk,
+  .nd-banner__num--tick {
+    animation: none;
+  }
+
+  .nd-banner__dust,
+  .nd-banner__spark {
+    display: none;
+  }
+
+  .nd-banner__skyline {
+    transition: none;
+  }
+}
