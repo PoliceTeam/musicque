@@ -66,6 +66,22 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 - Server là nguồn sự thật cho kết quả và thanh toán; các khoản thắng được làm tròn
   xuống vì Polite Coins chỉ dùng số nguyên.
 
+### Cờ tướng — Chiến cờ chiếm PCs
+
+- Chỉ user đã đăng nhập mới được chơi; guest được dẫn tới luồng đăng ký/đăng nhập.
+- Mỗi ván cược `10 PC`. Thắng mức dễ nhận `15 PC`, trung bình `38 PC`, khó `66 PC`.
+- Xem gợi ý hoặc đáp án vẫn có thể tiếp tục chơi nhưng ván đó không nhận thưởng.
+- Một nước đi sai không kết thúc ngay ván: user tiếp tục đấu với bot cho tới trạng
+  thái kết thúc hợp lệ như chiếu bí, mất tướng hoặc xin thua.
+- Tổng thưởng được server giới hạn `500 PC/user/ngày`; giao dịch cược, thưởng và
+  hoàn tiền đều dùng MongoDB atomic update/idempotency để chống gửi request trùng.
+- Catalog gồm 600 thế cờ, chia đều ba độ khó. Khi API khởi động, catalog được đồng
+  bộ tự động vào MongoDB.
+- Engine có hàng đợi in-process và mặc định chạy 2 JS worker, phù hợp tải khoảng
+  5-10 CCU. Có thể cấu hình binary Pikafish riêng nếu cần nâng chất lượng bot.
+- UI dùng bộ bàn và quân `gmchess wood`; thông tin giấy phép được ghi trong
+  `THIRD_PARTY_NOTICES.md`.
+
 ### Tiện ích cộng tác và nội dung
 
 - Lunch Vote: tạo đội, thêm lựa chọn, vote và quay roulette chọn bữa trưa.
@@ -108,7 +124,7 @@ Không tạo thêm một socket riêng trong remote.
 ### Dữ liệu và real-time
 
 - MongoDB lưu user, session, song, vote, bid, quỹ PC vote-next, ledger, chat, lịch sử
-  Cho-Han/billiards, lunch vote, thành ngữ và cache dữ liệu giá.
+  Cho-Han/billiards/cờ tướng, catalog thế cờ, lunch vote, thành ngữ và cache dữ liệu giá.
 - Redis chỉ dùng cho stroke của PoliBoard. Redis là tùy chọn; khi thiếu module hoặc
   mất kết nối, API fallback sang `Map` trong process. Dữ liệu bảng khi đó mất sau
   restart và không chia sẻ được giữa nhiều API instance.
@@ -191,6 +207,13 @@ ADMIN_PASSWORD=replace_with_a_strong_password
 CLIENT_URL=http://localhost:8080
 YOUTUBE_API_KEY=replace_with_youtube_api_key
 SONG_SKIP_PC_THRESHOLD=100
+TZ=Asia/Ho_Chi_Minh
+XIANGQI_STAKE_PC=10
+XIANGQI_REWARD_EASY=15
+XIANGQI_REWARD_MEDIUM=38
+XIANGQI_REWARD_HARD=66
+XIANGQI_DAILY_REWARD_CAP=500
+XIANGQI_ENGINE_WORKERS=2
 ```
 
 Sau đó:
@@ -202,7 +225,11 @@ npm install
 npm run dev
 ```
 
-API chưa có backend test harness; script `npm test` hiện không chạy test.
+API dùng Node test runner cho các kiểm tra backend hiện có:
+
+```bash
+npm test
+```
 
 ### Client host
 
@@ -275,6 +302,7 @@ toàn bộ pipeline bằng Docker Compose.
 | `ADMIN_PASSWORD` | Password admin, env là nguồn sự thật | Không có |
 | `CLIENT_URL` | CORS origin cho REST và Socket.IO | `http://localhost:3000` cho REST |
 | `YOUTUBE_API_KEY` | Lấy metadata video YouTube | Không có |
+| `TZ` | Múi giờ dùng cho giới hạn thưởng theo ngày | Múi giờ của container |
 
 ### Polite Coins, vote-next và game
 
@@ -292,12 +320,25 @@ toàn bộ pipeline bằng Docker Compose.
 | `BILLIARDS_MAX_BET` | Cược billiards tối đa | `50` |
 | `BILLIARDS_INTERMISSION_MS` | Nghỉ giữa hai ván billiards | `27000` |
 | `BILLIARDS_RETENTION_MS` | Thời gian giữ dữ liệu ván để xem lại | `7200000` |
+| `XIANGQI_STAKE_PC` | PC trừ khi bắt đầu một ván cờ tướng | `10` |
+| `XIANGQI_REWARD_EASY` | Thưởng thắng mức dễ | `15` |
+| `XIANGQI_REWARD_MEDIUM` | Thưởng thắng mức trung bình | `38` |
+| `XIANGQI_REWARD_HARD` | Thưởng thắng mức khó | `66` |
+| `XIANGQI_DAILY_REWARD_CAP` | Tổng thưởng cờ tướng tối đa mỗi user/ngày | `500` |
+| `XIANGQI_ENGINE_WORKERS` | Số worker xử lý nước đi của bot | `2` |
+| `XIANGQI_ENGINE_MOVE_MS` | Ngân sách thời gian tìm nước đi | `800` |
+| `XIANGQI_ENGINE_JOB_TIMEOUT_MS` | Timeout toàn bộ job engine | `3000` |
+| `XIANGQI_ENGINE_MAX_RETRIES` | Số lần thử lại khi engine lỗi/timeout | `1` |
 
 Các biến timing nâng cao của billiards (`BILLIARDS_WAIT_MS`,
 `BILLIARDS_AIM_MS`, `BILLIARDS_AIM_BREAK_MS`,
 `BILLIARDS_AIM_BALL_IN_HAND_MS`, `BILLIARDS_SETTLE_MS`,
 `BILLIARDS_SETTLE_POT_MS`) và `BILLIARDS_MISS_CHANCE` chỉ cần đổi khi tinh chỉnh
 engine mô phỏng.
+
+`XIANGQI_ENGINE_PATH` là tùy chọn. Khi không khai báo, API dùng JS engine tích
+hợp. Nếu khai báo, đường dẫn phải trỏ tới binary Pikafish có quyền thực thi bên
+trong container. `XIANGQI_GAME_RETENTION_MS` mặc định giữ dữ liệu ván trong 30 ngày.
 
 Khi test Cho-Han local có thể dùng vòng ngắn:
 
@@ -360,13 +401,15 @@ Các nhóm endpoint chính:
 | `/api/coins` | Số dư và daily bonus |
 | `/api/chohan` | Trạng thái, lịch sử và đặt cược |
 | `/api/billiards` | Ván hiện tại/lịch sử và đặt cược theo cú đánh |
+| `/api/xiangqi` | Cấu hình, ván đang chơi, nước đi, gợi ý và đáp án cờ tướng |
 | `/api/tts` | Generate, warm-up, voice và health |
 | `/api/idioms` | Thành ngữ, vote và reroll |
 | `/api/lunch-vote` | Team, lựa chọn và vote bữa trưa |
 | `/api/news`, `/api/weather` | Tin tức và thời tiết |
 
-Guest có thể đọc dữ liệu công khai. Thao tác thêm bài, vote, bid, góp PC để next,
-chat và đặt cược cần user token. Mở/đóng phiên, điều khiển playback, xóa bài và
+Guest có thể đọc dữ liệu công khai nhưng không được bắt đầu hoặc chơi cờ tướng.
+Thao tác thêm bài, vote, bid, góp PC để next, chat và đặt cược cần user token.
+Mở/đóng phiên, điều khiển playback, xóa bài và
 reroll thành ngữ cần quyền admin. Riêng khi quỹ vote-next đủ ngưỡng, server tự xử lý
 chuyển bài và phát sự kiện real-time cho bảng điều khiển admin. Backend luôn lấy
 danh tính từ JWT, không tin username gửi trong body.
@@ -393,8 +436,10 @@ Trước khi deploy:
 2. Đặt đúng `CLIENT_URL`, `VITE_API_URL`, `VITE_SOCKET_URL` và hai remote URL.
 3. Bump `VIENEU_TTS_CACHE_VERSION` nếu thay voice hoặc inference settings.
 4. Kiểm tra `SONG_SKIP_PC_THRESHOLD` đúng với định mức muốn áp dụng.
-5. Build lại client và hai remotes vì các URL `VITE_*` được đóng vào bundle.
-6. Giữ volume MongoDB và TTS model khi recreate container.
+5. Đặt `TZ=Asia/Ho_Chi_Minh` để quota cờ tướng reset đúng 00:00 giờ Việt Nam.
+6. Kiểm tra nhóm `XIANGQI_*`; rebuild API để cài dependency `xiangqi.js`.
+7. Build lại client và hai remotes vì các URL `VITE_*` được đóng vào bundle.
+8. Giữ volume MongoDB và TTS model khi recreate container.
 
 ## Quy ước phát triển
 
@@ -412,15 +457,17 @@ Trước khi deploy:
 
 ## Kiểm thử
 
-Client dùng Vitest, React Testing Library và jsdom:
+Client dùng Vitest, React Testing Library và jsdom; API dùng Node test runner:
 
 ```bash
 cd client
 nvm use
 npm test
 npm run build
+
+cd ../api
+npm test
 ```
 
-API hiện chưa có test runner chính thức. Khi thay đổi auth, coins, bid, vote-next,
-Cho-Han hoặc billiards, cần kiểm tra thêm các tình huống request đồng thời, hoàn tiền
-và cập nhật MongoDB nguyên tử.
+Khi thay đổi auth, coins, bid, vote-next, Cho-Han, billiards hoặc cờ tướng, cần kiểm
+tra thêm các tình huống request đồng thời, hoàn tiền và cập nhật MongoDB nguyên tử.
