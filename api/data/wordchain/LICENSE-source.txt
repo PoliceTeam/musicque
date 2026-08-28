@@ -1,0 +1,8 @@
+Nguồn dữ liệu đầy đủ dự kiến: Kaikki.org machine-readable Vietnamese dictionary,
+trích xuất từ Wiktionary và phát hành theo CC BY-SA 4.0 / GFDL.
+
+https://kaikki.org/dictionary/Vietnamese/
+https://kaikki.org/dictionary/rawdata.html
+
+File starter-words.json là danh sách bootstrap nhỏ được biên tập thủ công cho MusicQue,
+chỉ dùng để game có thể chạy trước khi import catalog Kaikki đầy đủ.

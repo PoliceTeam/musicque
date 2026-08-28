@@ -95,6 +95,13 @@ export const getChohanHistory = (limit = 20) =>
 export const placeChohanBet = (side, amount) =>
   api.post("/api/chohan/bet", { side, amount });
 
+// Nối từ realtime trong phiên phát nhạc
+export const getWordChainState = () => api.get("/api/word-chain/state");
+export const getWordChainHistory = (limit = 10) =>
+  api.get("/api/word-chain/history", { params: { limit } });
+export const submitWordChainAnswer = (phrase, requestKey) =>
+  api.post("/api/word-chain/answers", { phrase, requestKey });
+
 // Bid PC để đẩy điểm bài hát
 export const bidSong = (songId, amount) =>
   api.post(`/api/songs/${songId}/bid`, { amount });

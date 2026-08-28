@@ -30,11 +30,12 @@ describe('LiveActivityFeed', () => {
         id: 'evt-1',
         type: 'song_added',
         timestamp: '2026-06-09T10:00:00.000Z',
-        username: 'Alice',
+        username: 'alice',
+        displayName: 'Alice Nguyễn',
         songTitle: 'New Song',
       });
     });
 
-    expect(screen.getByText(/Alice đã thêm "New Song"/)).toBeInTheDocument();
+    expect(screen.getByText(/Alice Nguyễn đã thêm "New Song"/)).toBeInTheDocument();
   });
 });

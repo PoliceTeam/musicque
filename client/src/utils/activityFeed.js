@@ -5,13 +5,15 @@ export const formatActivityItem = (event) => {
     return null;
   }
 
+  const actorName = event.displayName;
+
   switch (event.type) {
     case 'song_added':
       return {
         id: event.id,
         timestamp: event.timestamp,
         icon: '🎵',
-        text: `${event.username} đã thêm "${event.songTitle}"`,
+        text: `${actorName} đã thêm "${event.songTitle}"`,
         tone: 'success',
       };
     case 'vote_cast': {
@@ -21,7 +23,7 @@ export const formatActivityItem = (event) => {
           id: event.id,
           timestamp: event.timestamp,
           icon: '↩️',
-          text: `${event.username} đã bỏ ${voteLabel} "${event.songTitle}"`,
+          text: `${actorName} đã bỏ ${voteLabel} "${event.songTitle}"`,
           tone: 'default',
         };
       }
@@ -29,7 +31,7 @@ export const formatActivityItem = (event) => {
         id: event.id,
         timestamp: event.timestamp,
         icon: event.voteType === 'up' ? '👍' : '👎',
-        text: `${event.username} ${event.voteAction === 'changed' ? 'đổi' : 'đã'} ${voteLabel} "${event.songTitle}" (${event.voteScore ?? 0} điểm)`,
+        text: `${actorName} ${event.voteAction === 'changed' ? 'đổi' : 'đã'} ${voteLabel} "${event.songTitle}" (${event.voteScore ?? 0} điểm)`,
         tone: event.voteType === 'up' ? 'success' : 'warning',
       };
     }
@@ -38,7 +40,7 @@ export const formatActivityItem = (event) => {
         id: event.id,
         timestamp: event.timestamp,
         icon: '🚀',
-        text: `${event.username} đã bid ${event.amount} PC cho "${event.songTitle}" (${event.rankScore ?? 0} điểm)`,
+        text: `${actorName} đã bid ${event.amount} PC cho "${event.songTitle}" (${event.rankScore ?? 0} điểm)`,
         tone: 'success',
       };
     case 'song_skipped_by_pc':
@@ -54,7 +56,7 @@ export const formatActivityItem = (event) => {
         id: event.id,
         timestamp: event.timestamp,
         icon: '▶️',
-        text: `Đang phát: "${event.songTitle}"${event.username ? ` — ${event.username}` : ''}`,
+        text: `Đang phát: "${event.songTitle}"${actorName ? ` — ${actorName}` : ''}`,
         tone: 'processing',
       };
     case 'session_started':
@@ -62,7 +64,7 @@ export const formatActivityItem = (event) => {
         id: event.id,
         timestamp: event.timestamp,
         icon: '🎉',
-        text: `${event.username} đã mở phiên phát nhạc`,
+        text: `${actorName} đã mở phiên phát nhạc`,
         tone: 'success',
       };
     case 'session_ended':
@@ -70,7 +72,7 @@ export const formatActivityItem = (event) => {
         id: event.id,
         timestamp: event.timestamp,
         icon: '🛑',
-        text: `${event.username} đã kết thúc phiên phát nhạc`,
+        text: `${actorName} đã kết thúc phiên phát nhạc`,
         tone: 'default',
       };
     default:

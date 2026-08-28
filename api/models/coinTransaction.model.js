@@ -16,6 +16,9 @@ const TRANSACTION_TYPES = [
   'xiangqi_bet',
   'xiangqi_payout',
   'xiangqi_refund',
+  'wordchain_answer',
+  'wordchain_payout',
+  'wordchain_refund',
   'admin_adjustment',
 ]
 
@@ -56,7 +59,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound'],
       default: undefined,
     },
     referenceId: {

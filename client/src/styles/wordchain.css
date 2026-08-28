@@ -1,0 +1,73 @@
+.wordchain-promo { position: fixed; z-index: 1180; display: flex; width: 250px; min-height: 102px; box-sizing: border-box; align-items: center; gap: 10px; padding: 18px 12px 12px; overflow: hidden; border: 1px solid rgba(190,255,222,.28); border-radius: 16px; color: #fff; background: radial-gradient(circle at 10% 20%, rgba(70,255,179,.28), transparent 38%), linear-gradient(145deg,#173b37,#102521 62%,#091714); box-shadow: 0 15px 34px rgba(2,31,24,.38); cursor: grab; touch-action: none; user-select: none; }
+.wordchain-promo:not([style]) { visibility: hidden; }
+.wordchain-promo.is-dragging { cursor: grabbing; box-shadow: 0 20px 45px rgba(2,31,24,.52); }
+.wordchain-promo__drag { position: absolute; top: 3px; left: 7px; color: rgba(255,255,255,.55); font-size: 13px; }
+.wordchain-promo__close { position: absolute; z-index: 2; top: 5px; right: 5px; display: grid; width: 20px; height: 20px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: rgba(255,255,255,.8); background: rgba(0,0,0,.25); cursor: pointer; font-size: 9px; }
+.wordchain-promo__icon { display: grid; width: 45px; height: 45px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(177,255,218,.3); border-radius: 14px; background: rgba(44,214,145,.13); font-size: 24px; transform: rotate(-5deg); }
+.wordchain-promo__copy { min-width: 0; flex: 1; }
+.wordchain-promo__copy h2 { margin: 0 0 3px; font-size: 15px; line-height: 1.2; }
+.wordchain-promo__copy p { margin: 0 0 8px; overflow: hidden; color: rgba(255,255,255,.77); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.wordchain-promo__copy p strong { color: #a9f5cf; }
+.wordchain-promo__copy > div { display: flex; gap: 5px; }
+.wordchain-promo__copy button { padding: 6px 9px; border: 0; border-radius: 999px; color: #08251b; background: #73e7ad; cursor: pointer; font-size: 10px; font-weight: 850; }
+.wordchain-promo__copy button + button { color: #fff; background: rgba(255,255,255,.14); }
+.wordchain-promo__badge { position: absolute; right: 10px; bottom: 4px; color: #83e8b6; font-size: 8px; font-weight: 800; letter-spacing: .03em; }
+
+.wordchain-backdrop { position: fixed; z-index: 1450; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(2,13,10,.76); backdrop-filter: blur(7px); }
+.wordchain-game { width: min(920px,100%); max-height: 92vh; overflow: auto; border: 1px solid var(--sp-border); border-radius: 22px; color: var(--sp-text); background: var(--sp-surface); box-shadow: 0 30px 90px rgba(0,0,0,.46); }
+.wordchain-game__head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--sp-border); background: linear-gradient(115deg,rgba(31,190,123,.13),transparent); }
+.wordchain-game__head span, .wordchain-rules__head span { color: var(--sp-green); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.wordchain-game__head h2, .wordchain-rules__head h2 { margin: 3px 0 0; font-size: 22px; }
+.wordchain-game__head-actions { display: flex; gap: 7px; }
+.wordchain-game__head-actions button, .wordchain-rules__head button { display: grid; width: 32px; height: 32px; padding: 0; place-items: center; border: 1px solid var(--sp-border); border-radius: 50%; color: var(--sp-text); background: var(--sp-surface-2); cursor: pointer; font-weight: 850; }
+.wordchain-layout { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(240px,.75fr); }
+.wordchain-arena { padding: 22px; border-right: 1px solid var(--sp-border); }
+.wordchain-status { display: flex; align-items: center; justify-content: space-between; color: var(--sp-text-muted); font-size: 12px; font-weight: 750; }
+.wordchain-status strong { min-width: 48px; color: var(--sp-green); font-size: 29px; font-variant-numeric: tabular-nums; text-align: right; }
+.wordchain-status strong.is-urgent { color: var(--sp-red); animation: wordchain-pulse .55s ease-in-out infinite alternate; }
+@keyframes wordchain-pulse { to { opacity: .45; transform: scale(.94); } }
+.wordchain-current { display: flex; min-height: 148px; margin: 13px 0 18px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(35,190,124,.22); border-radius: 18px; background: radial-gradient(circle,rgba(41,194,126,.13),transparent 68%),var(--sp-surface-2); }
+.wordchain-current small { color: var(--sp-text-faint); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.wordchain-current strong { margin: 6px 0 2px; color: var(--sp-green); font-size: clamp(33px,5vw,52px); letter-spacing: -.04em; }
+.wordchain-current span { color: var(--sp-text-muted); font-size: 11px; }
+.wordchain-answer > label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 800; }
+.wordchain-answer > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+.wordchain-answer input { min-width: 0; height: 44px; padding: 0 13px; border: 1px solid var(--sp-border); border-radius: 11px; outline: 0; color: var(--sp-text); background: var(--sp-surface-2); font-size: 15px; }
+.wordchain-answer input:focus { border-color: var(--sp-green); box-shadow: 0 0 0 3px var(--sp-green-soft); }
+.wordchain-answer button[type='submit'] { padding: 0 17px; border: 0; border-radius: 11px; color: #052016; background: var(--sp-green); cursor: pointer; font-weight: 900; }
+.wordchain-answer button:disabled { cursor: not-allowed; opacity: .4; }
+.wordchain-answer > p { min-height: 18px; margin: 7px 2px 0; color: var(--sp-text-muted); font-size: 10px; }
+.wordchain-login { padding: 0; border: 0; color: var(--sp-green); background: transparent; cursor: pointer; font-size: 11px; font-weight: 800; }
+.wordchain-meta { display: flex; margin-top: 18px; flex-wrap: wrap; gap: 6px; }
+.wordchain-meta span { padding: 5px 8px; border-radius: 999px; color: var(--sp-text-muted); background: var(--sp-surface-2); font-size: 10px; font-weight: 700; }
+.wordchain-history { min-height: 430px; padding: 20px; background: color-mix(in srgb,var(--sp-surface-2) 54%,transparent); }
+.wordchain-history h3 { margin: 0 0 14px; font-size: 14px; }
+.wordchain-history__seed, .wordchain-history li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border-bottom: 1px solid var(--sp-border); font-size: 11px; }
+.wordchain-history__seed { border-radius: 9px; background: var(--sp-green-soft); }
+.wordchain-history span { min-width: 0; overflow: hidden; color: var(--sp-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.wordchain-history strong { flex: 0 0 auto; color: var(--sp-text); }
+.wordchain-history ol { max-height: 340px; margin: 8px 0 0; padding: 0; overflow: auto; list-style: none; }
+.wordchain-history > p { color: var(--sp-text-faint); font-size: 11px; text-align: center; }
+.wordchain-result { padding: 14px 16px; border-radius: 13px; text-align: center; background: var(--sp-green-soft); }
+.wordchain-result > span { font-size: 30px; }
+.wordchain-result h3 { margin: 5px 0; }
+.wordchain-result > strong { color: var(--sp-green); font-size: 25px; }
+.wordchain-result p, .wordchain-result small { display: block; margin: 6px 0 0; color: var(--sp-text-muted); font-size: 10px; }
+.wordchain-result--voided { background: var(--sp-surface-2); }
+.wordchain-empty { padding: 60px 20px; text-align: center; }
+.wordchain-empty > span { display: block; font-size: 42px; }
+.wordchain-empty strong { display: block; margin-top: 8px; }
+.wordchain-empty p { color: var(--sp-text-muted); }
+
+.wordchain-rules { width: min(700px,100%); max-height: 92vh; overflow: auto; padding: 24px; box-sizing: border-box; border: 1px solid var(--sp-border); border-radius: 20px; color: var(--sp-text); background: var(--sp-surface); box-shadow: 0 28px 85px rgba(0,0,0,.44); }
+.wordchain-rules__head { display: flex; align-items: flex-start; justify-content: space-between; }
+.wordchain-rules__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0 14px; }
+.wordchain-rules__grid article { padding: 14px; border-radius: 12px; background: var(--sp-surface-2); }
+.wordchain-rules__grid strong { font-size: 13px; }
+.wordchain-rules__grid p, .wordchain-rules__note { color: var(--sp-text-muted); font-size: 12px; line-height: 1.5; }
+.wordchain-rules__note { padding: 12px 14px; border-left: 3px solid var(--sp-green); background: var(--sp-green-soft); }
+.wordchain-rules > .sp-btn { width: 100%; }
+
+.sp-quicktoys__btn--wordchain { color: #08794e !important; background: rgba(66,224,156,.16) !important; }
+@media (max-width: 760px) { .wordchain-layout { grid-template-columns: 1fr; } .wordchain-arena { border-right: 0; border-bottom: 1px solid var(--sp-border); } .wordchain-history { min-height: 220px; } .wordchain-rules__grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .wordchain-status strong.is-urgent { animation: none; } }

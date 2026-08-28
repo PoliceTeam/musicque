@@ -12,6 +12,7 @@ import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
+import WordChainPromo from '../components/WordChain/WordChainPromo';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -51,6 +52,7 @@ const HomePage = () => {
   const [newsTab, setNewsTab] = useState('1');
   const [showNewsReader, setShowNewsReader] = useState(false);
   const [xiangqiPromoDismissed, setXiangqiPromoDismissed] = useState(false);
+  const [wordChainPromoDismissed, setWordChainPromoDismissed] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -265,6 +267,18 @@ const HomePage = () => {
                   </button>
                 </Tooltip>
               )}
+              {currentSession && wordChainPromoDismissed && (
+                <Tooltip title="Nối từ giành PCs">
+                  <button
+                    type="button"
+                    className="sp-quicktoys__btn sp-quicktoys__btn--wordchain"
+                    aria-label="Mở game nối từ"
+                    onClick={() => setWordChainPromoDismissed(false)}
+                  >
+                    🔗
+                  </button>
+                </Tooltip>
+              )}
               <Tooltip title={showSnowEffect ? 'Tắt tuyết' : 'Bật tuyết'}>
                 <button
                   type="button"
@@ -387,6 +401,13 @@ const HomePage = () => {
 
         {!xiangqiPromoDismissed && (
           <XiangqiPromo onDismiss={dismissXiangqiPromo} bottomInset={hasPlayer ? 96 : 12} />
+        )}
+
+        {currentSession && !wordChainPromoDismissed && (
+          <WordChainPromo
+            onDismiss={() => setWordChainPromoDismissed(true)}
+            bottomInset={hasPlayer ? 96 : 12}
+          />
         )}
 
         {/* ── Thanh phát nhạc ─────────────────────────────────────── */}

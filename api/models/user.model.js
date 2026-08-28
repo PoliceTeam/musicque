@@ -97,6 +97,11 @@ const userSchema = new mongoose.Schema({
   },
   xiangqiLastRewardOperation: String,
   xiangqiLastRewardAmount: { type: Number, default: 0 },
+  // Quota thưởng nối từ theo ngày lịch của server.
+  wordChainRewardDateKey: { type: String, default: null },
+  wordChainRewardEarned: { type: Number, default: 0, min: 0 },
+  wordChainLastRewardOperation: String,
+  wordChainLastRewardAmount: { type: Number, default: 0 },
   createdAt: {
     type: Date,
     default: Date.now,

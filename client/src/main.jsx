@@ -7,6 +7,7 @@ import './styles/chohan.css'
 import './styles/billiards.css'
 import './styles/news.css'
 import './styles/xiangqi.css'
+import './styles/wordchain.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

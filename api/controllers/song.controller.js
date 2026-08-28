@@ -24,7 +24,6 @@ exports.addSong = async (req, res) => {
 
     // Người thêm bài lấy từ token, không còn nhận username tự khai từ body
     const user = req.user
-    const username = user.username
 
     // Kiểm tra message nếu có
     if (message && message.trim() !== '') {
@@ -128,7 +127,7 @@ exports.addSong = async (req, res) => {
       io.emit('playlist_updated', updatedPlaylist)
       emitActivity(io, {
         type: 'song_added',
-        username,
+        displayName: user.displayName,
         songTitle: videoTitle,
         songId: newSong._id.toString(),
       })
@@ -174,7 +173,6 @@ exports.voteSong = async (req, res) => {
 
     // Người vote lấy từ token — mỗi tài khoản chỉ có đúng một phiếu
     const user = req.user
-    const username = user.username
 
     if (!['up', 'down'].includes(voteType)) {
       return res.status(400).json({ message: 'Loại vote không hợp lệ' })
@@ -236,7 +234,7 @@ exports.voteSong = async (req, res) => {
       io.emit('playlist_updated', updatedPlaylist)
       emitActivity(io, {
         type: 'vote_cast',
-        username,
+        displayName: user.displayName,
         voteType,
         voteAction,
         songTitle: song.title,
@@ -331,7 +329,7 @@ exports.bidSong = async (req, res) => {
       io.emit('playlist_updated', updatedPlaylist)
       emitActivity(io, {
         type: 'song_boosted',
-        username: user.username,
+        displayName: user.displayName,
         amount,
         songTitle: updatedSong.title,
         songId: updatedSong._id.toString(),
@@ -570,7 +568,7 @@ exports.markSongAsPlaying = async (req, res) => {
         type: 'now_playing',
         songTitle: song.title,
         songId: song._id.toString(),
-        username: song.addedBy?.username,
+        displayName: song.addedBy?.displayName,
       })
     }
 

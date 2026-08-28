@@ -3,6 +3,7 @@ const { emitActivity } = require("../utils/activityEmitter");
 const Song = require("../models/song.model");
 const chohan = require("../services/chohan.service");
 const songSkip = require("../services/songSkip.service");
+const wordChain = require("../services/wordChain.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -36,13 +37,17 @@ exports.startSession = async (req, res) => {
       io.emit("session_updated", newSession);
       emitActivity(io, {
         type: "session_started",
-        username: req.user?.username || "Admin",
+        displayName: req.user?.displayName,
       });
     }
 
     // Mở luôn phiên game Cho-Han chạy song song (không chặn response nếu lỗi)
     chohan.startGame(io, newSession).catch((error) => {
       console.error("[Cho-Han] Không mở được game:", error.message);
+    });
+
+    wordChain.startGame(io, newSession).catch((error) => {
+      console.error("[Nối từ] Không mở được game:", error.message);
     });
 
     res.status(201).json({
@@ -77,6 +82,10 @@ exports.endSession = async (req, res) => {
       console.error("[Cho-Han] Không dừng được game:", error.message);
     });
 
+    await wordChain.stopGame({ reason: "session_ended" }).catch((error) => {
+      console.error("[Nối từ] Không dừng được game:", error.message);
+    });
+
     // Khoản góp chưa đủ 100 PCs không tạo ra lượt next nên phải hoàn toàn bộ.
     await songSkip.refundSessionPools(
       activeSession._id,
@@ -89,7 +98,7 @@ exports.endSession = async (req, res) => {
     io.emit("session_updated", null);
     emitActivity(io, {
       type: "session_ended",
-      username: req.user?.username || "Admin",
+      displayName: req.user?.displayName,
     });
 
     res.status(200).json({

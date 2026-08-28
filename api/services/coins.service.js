@@ -178,6 +178,74 @@ async function creditXiangqiRewardOnce(userId, requestedAmount, transaction = {}
 }
 
 /**
+ * Trả thưởng nối từ với trần ngày ngay trong một atomic pipeline. Retry cùng
+ * operationKey không thể cộng lại lần hai, kể cả server restart lúc settle.
+ */
+async function creditWordChainRewardOnce(userId, requestedAmount, transaction = {}) {
+  const operationKey = transaction.operationKey
+  const dailyCap = Math.max(0, Number(transaction.dailyCap) || 0)
+  const dateKey = transaction.dateKey
+  if (!Number.isFinite(requestedAmount) || requestedAmount <= 0 || !operationKey || !dateKey) {
+    return null
+  }
+
+  const updated = await User.findOneAndUpdate(
+    { _id: userId, appliedCoinOperations: { $ne: operationKey } },
+    [
+      {
+        $set: {
+          appliedCoinOperations: {
+            $concatArrays: [{ $ifNull: ['$appliedCoinOperations', []] }, [operationKey]],
+          },
+          wordChainRewardEarned: {
+            $cond: [
+              { $eq: ['$wordChainRewardDateKey', dateKey] },
+              { $ifNull: ['$wordChainRewardEarned', 0] },
+              0,
+            ],
+          },
+          wordChainRewardDateKey: dateKey,
+        },
+      },
+      {
+        $set: {
+          wordChainLastRewardOperation: operationKey,
+          wordChainLastRewardAmount: {
+            $min: [
+              requestedAmount,
+              { $max: [0, { $subtract: [dailyCap, '$wordChainRewardEarned'] }] },
+            ],
+          },
+        },
+      },
+      {
+        $set: {
+          wordChainRewardEarned: {
+            $add: ['$wordChainRewardEarned', '$wordChainLastRewardAmount'],
+          },
+          polites: { $add: ['$polites', '$wordChainLastRewardAmount'] },
+        },
+      },
+    ],
+    { new: true },
+  )
+
+  if (!updated) {
+    const previous = await User.findById(userId)
+      .select('wordChainLastRewardOperation wordChainLastRewardAmount polites')
+    if (previous?.wordChainLastRewardOperation === operationKey) {
+      return { user: previous, credited: previous.wordChainLastRewardAmount || 0 }
+    }
+    return null
+  }
+  const credited = updated.wordChainLastRewardOperation === operationKey
+    ? updated.wordChainLastRewardAmount
+    : 0
+  if (credited > 0) await recordTransaction(updated, credited, transaction)
+  return { user: updated, credited }
+}
+
+/**
  * Thưởng đăng nhập ngày: +DAILY_BONUS, tối đa 1 lần/ngày lịch (giờ server).
  * Điều kiện lastDailyBonusAt < đầu ngày hôm nay nằm ngay trong câu update nên
  * hai request đồng thời chỉ một cái trúng — không cần transaction.
@@ -300,13 +368,19 @@ async function getEconomyStats(period = '30d') {
                 xiangqiPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'xiangqi_payout'] }, '$amount', 0] },
                 },
+                wordChainSpent: {
+                  $sum: { $cond: [{ $eq: ['$type', 'wordchain_answer'] }, { $abs: '$amount' }, 0] },
+                },
+                wordChainPayout: {
+                  $sum: { $cond: [{ $eq: ['$type', 'wordchain_payout'] }, '$amount', 0] },
+                },
                 refunded: {
                   $sum: {
                     $cond: [
                       {
                         $in: [
                           '$type',
-                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund', 'xiangqi_refund'],
+                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund', 'xiangqi_refund', 'wordchain_refund'],
                         ],
                       },
                       '$amount',
@@ -332,6 +406,9 @@ async function getEconomyStats(period = '30d') {
                 xiangqiRefund: {
                   $sum: { $cond: [{ $eq: ['$type', 'xiangqi_refund'] }, '$amount', 0] },
                 },
+                wordChainRefund: {
+                  $sum: { $cond: [{ $eq: ['$type', 'wordchain_refund'] }, '$amount', 0] },
+                },
               },
             },
             {
@@ -349,11 +426,14 @@ async function getEconomyStats(period = '30d') {
                 chohanPayout: 1,
                 xiangqiWagered: 1,
                 xiangqiPayout: 1,
+                wordChainSpent: 1,
+                wordChainPayout: 1,
                 refunded: 1,
                 songBidRefund: 1,
                 songSkipRefund: 1,
                 chohanRefund: 1,
                 xiangqiRefund: 1,
+                wordChainRefund: 1,
               },
             },
           ],
@@ -428,6 +508,9 @@ async function getEconomyStats(period = '30d') {
     xiangqiWagered: 0,
     xiangqiPayout: 0,
     xiangqiRefund: 0,
+    wordChainSpent: 0,
+    wordChainPayout: 0,
+    wordChainRefund: 0,
   }
 
   return {
@@ -444,10 +527,15 @@ async function getEconomyStats(period = '30d') {
         + totals.songSkipSpent
         + totals.chohanWagered
         + totals.xiangqiWagered
+        + totals.wordChainSpent
         - totals.chohanPayout
         - totals.xiangqiPayout
+        - totals.wordChainPayout
         - totals.refunded,
-      playerWinProfit: totals.chohanPayout / 2 + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered),
+      playerWinProfit:
+        totals.chohanPayout / 2
+        + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered)
+        + Math.max(0, totals.wordChainPayout - totals.wordChainSpent),
     },
     topUsers: transactionStats[0]?.topUsers || [],
   }
@@ -472,6 +560,7 @@ module.exports = {
   credit,
   creditOnce,
   creditXiangqiRewardOnce,
+  creditWordChainRewardOnce,
   recordTransaction,
   claimDailyBonus,
   getLeaderboard,

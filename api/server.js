@@ -12,6 +12,7 @@ const chohan = require('./services/chohan.service')
 const billiards = require('./services/billiards.service')
 const songSkip = require('./services/songSkip.service')
 const xiangqi = require('./services/xiangqi.service')
+const wordChain = require('./services/wordChain.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -97,6 +98,10 @@ mongoose
       // Nếu đang có phiên chạy dở (server restart giữa chừng) thì mở lại game Cho-Han
       chohan.resumeIfActiveSession(io).catch((error) => {
         console.error('[Cho-Han] Resume lỗi:', error.message)
+      })
+
+      wordChain.resumeIfActiveSession(io).catch((error) => {
+        console.error('[Nối từ] Resume lỗi:', error.message)
       })
 
       // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,

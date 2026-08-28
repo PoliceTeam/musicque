@@ -64,7 +64,7 @@ async function advanceCurrentSong({ songId, reason, io }) {
         type: 'now_playing',
         songTitle: nextSong.title,
         songId: nextSong._id.toString(),
-        username: nextSong.addedBy?.username,
+        displayName: nextSong.addedBy?.displayName,
       })
     }
   }

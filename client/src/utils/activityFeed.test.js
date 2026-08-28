@@ -12,11 +12,13 @@ describe('activityFeed utils', () => {
       id: '1',
       type: 'song_added',
       timestamp: '2026-06-09T10:00:00.000Z',
-      username: 'Alice',
+      username: 'alice',
+      displayName: 'Alice Nguyễn',
       songTitle: 'Test Song',
     });
 
-    expect(item.text).toContain('Alice');
+    expect(item.text).toContain('Alice Nguyễn');
+    expect(item.text).not.toContain('alice');
     expect(item.text).toContain('Test Song');
     expect(item.icon).toBe('🎵');
   });
