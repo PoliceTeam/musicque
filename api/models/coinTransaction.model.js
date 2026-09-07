@@ -19,6 +19,7 @@ const TRANSACTION_TYPES = [
   'wordchain_answer',
   'wordchain_payout',
   'wordchain_refund',
+  'redlight_payout',
   'admin_adjustment',
 ]
 
@@ -59,7 +60,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound'],
       default: undefined,
     },
     referenceId: {

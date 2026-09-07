@@ -15,6 +15,9 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 
 - Tạo và kết thúc phiên phát nhạc theo quyền admin.
 - Thêm bài hát bằng URL YouTube, kèm lời nhắn cho người nghe.
+- API kiểm tra quyền phát nhúng của YouTube trước khi nhận bài. Với video cũ trong
+  hàng chờ bị xóa, chuyển riêng tư hoặc chặn iframe, admin player tự bỏ qua để luồng
+  phát không bị mắc kẹt.
 - Phát lời nhắn bằng VieNeu-TTS; tự động fallback sang Microsoft Edge TTS khi
   dịch vụ neural không phản hồi.
 - Upvote/downvote bài hát theo tài khoản, cập nhật thứ tự playlist real-time.
@@ -26,7 +29,8 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
   PC đang góp cho lượt skip được hoàn lại. Server chỉ nhận tối đa phần PC còn thiếu
   để không thu vượt ngưỡng.
 - Theo dõi bài đang phát, hàng chờ, hoạt động gần đây và điều khiển phát nhạc từ
-  trang admin.
+  trang admin. Khi video kết thúc, callback chính thức của player gọi luồng chuyển
+  bài server-side và tự phát bài kế tiếp.
 
 ### Tài khoản và Polite Coins
 

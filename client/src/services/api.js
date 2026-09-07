@@ -102,6 +102,12 @@ export const getWordChainHistory = (limit = 10) =>
 export const submitWordChainAnswer = (phrase, requestKey) =>
   api.post("/api/word-chain/answers", { phrase, requestKey });
 
+export const getRedLightState = () => api.get("/api/red-light/state");
+export const joinRedLight = (socketId) => api.post("/api/red-light/join", { socketId });
+export const fillRedLightBots = (socketId) => api.post("/api/red-light/bots", { socketId });
+export const leaveRedLight = (reason = "leave") => api.post("/api/red-light/leave", { reason });
+export const sendRedLightInput = (holding) => api.post("/api/red-light/input", { holding });
+
 // Bid PC để đẩy điểm bài hát
 export const bidSong = (songId, amount) =>
   api.post(`/api/songs/${songId}/bid`, { amount });

@@ -81,12 +81,23 @@ exports.addSong = async (req, res) => {
 
     try {
       const response = await youtube.videos.list({
-        part: 'snippet',
+        part: 'snippet,status',
         id: videoId,
       })
 
-      const videoInfo = response.data.items[0].snippet
-      const videoTitle = videoInfo.title
+      const videoInfo = response.data.items?.[0]
+      if (!videoInfo) {
+        return res.status(400).json({
+          message: 'Không tìm thấy video hoặc video không ở trạng thái công khai',
+        })
+      }
+      if (videoInfo.status?.embeddable === false) {
+        return res.status(400).json({
+          message: 'Video này không cho phép phát nhúng, vui lòng chọn video khác',
+        })
+      }
+
+      const videoTitle = videoInfo.snippet.title
 
       // Kiểm tra bài hát đã tồn tại trong session hiện tại
       const existingSong = await Song.findOne({

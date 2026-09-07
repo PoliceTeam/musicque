@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { PlaylistProvider } from './contexts/PlaylistContext'
 import { ChohanProvider } from './contexts/ChohanContext'
 import { WordChainProvider } from './contexts/WordChainContext'
+import { RedLightProvider } from './contexts/RedLightContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
@@ -40,33 +41,35 @@ function AppContent() {
         <PlaylistProvider>
           <ChohanProvider>
             <WordChainProvider>
-              <Router>
-                <Suspense fallback={<RouteFallback />}>
-                  <Routes>
-                    <Route path='/' element={<HomePage />} />
-                    <Route path='/login' element={<LoginPage initialMode='login' />} />
-                    <Route path='/register' element={<LoginPage initialMode='register' />} />
-                    <Route
-                      path='/xiangqi'
-                      element={
-                        <ProtectedRoute>
-                          <XiangqiPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path='/admin'
-                      element={
-                        <ProtectedRoute adminOnly={true}>
-                          <AdminPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                  </Routes>
-                </Suspense>
-                {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
-                <AuthModal />
-              </Router>
+              <RedLightProvider>
+                <Router>
+                  <Suspense fallback={<RouteFallback />}>
+                    <Routes>
+                      <Route path='/' element={<HomePage />} />
+                      <Route path='/login' element={<LoginPage initialMode='login' />} />
+                      <Route path='/register' element={<LoginPage initialMode='register' />} />
+                      <Route
+                        path='/xiangqi'
+                        element={
+                          <ProtectedRoute>
+                            <XiangqiPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path='/admin'
+                        element={
+                          <ProtectedRoute adminOnly={true}>
+                            <AdminPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                    </Routes>
+                  </Suspense>
+                  {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
+                  <AuthModal />
+                </Router>
+              </RedLightProvider>
             </WordChainProvider>
           </ChohanProvider>
         </PlaylistProvider>

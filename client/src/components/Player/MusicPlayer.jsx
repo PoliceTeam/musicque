@@ -20,6 +20,10 @@ import {
   getCurrentSong,
   generateTTS,
 } from '../../services/api';
+import {
+  getYouTubePlayerErrorMessage,
+  shouldAutoSkipYouTubeError,
+} from '../../utils/youtubePlayer';
 
 const { Text } = Typography;
 
@@ -70,6 +74,8 @@ const MusicPlayer = () => {
   const ttsRef = useRef(null);
   const ttsAudioUrlCacheRef = useRef(new Map());
   const currentSongRef = useRef(null);
+  const advancingSongIdRef = useRef(null);
+  const playerErrorHandledSongIdRef = useRef(null);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -452,36 +458,77 @@ const MusicPlayer = () => {
     }
   };
 
-  const handleNext = async () => {
-    setNextLoading(true);
-    wasPlayingRef.current = true; // Luôn đặt thành true để đảm bảo bài mới sẽ phát
+  const handleNext = async (reason = 'manual') => {
+    // Callback onEnded có thể đến ngay trong cùng tick player vừa render, trước
+    // effect đồng bộ ref chạy xong; state hiện tại là fallback an toàn.
+    const song = currentSong || currentSongRef.current;
+    if (!song?._id || advancingSongIdRef.current === song._id) return;
 
+    advancingSongIdRef.current = song._id;
+    setNextLoading(true);
+    // Pause bài cũ trước khi bật cờ auto-play. Nếu bật cờ sớm, render do
+    // setPlaying(false) có thể khiến effect phía dưới phát lại chính bài cũ và
+    // tiêu thụ cờ trước khi response bài mới về.
     handlePause();
 
-    if (currentSong) {
-      try {
-        const { data } = await advanceSong(currentSong._id);
-        wasMessageSpokenRef.current = false;
-        setCurrentSong(data.currentSong || null);
-        await refreshPlaylist();
-        message.success('Đã chuyển sang bài tiếp theo');
-      } catch (error) {
-        console.error('Error handling song completion:', error);
-        message.error('Có lỗi xảy ra khi xóa bài hát');
-      } finally {
-        setNextLoading(false);
-      }
-    } else {
-      setNextLoading(false);
-    }
+    try {
+      const { data } = await advanceSong(song._id);
+      const nextSong = data.currentSong || null;
+      const nextSongId = nextSong?._id || null;
+      const currentRefId = currentSongRef.current?._id || null;
+      const alreadyAppliedBySocket = currentRefId !== song._id && currentRefId === nextSongId;
 
-    if (playlist.length === 0) {
-      message.info('Đã hết playlist');
+      if (!alreadyAppliedBySocket) {
+        wasMessageSpokenRef.current = false;
+        playerErrorHandledSongIdRef.current = null;
+        wasPlayingRef.current = Boolean(nextSong);
+        currentSongRef.current = nextSong;
+        setCurrentSong(nextSong);
+      }
+      await refreshPlaylist();
+
+      if (reason === 'manual') {
+        message.success('Đã chuyển sang bài tiếp theo');
+      }
+      if (!data.currentSong) message.info('Đã hết playlist');
+    } catch (error) {
+      // Một tab admin khác hoặc luồng PC vote-next có thể đã chuyển bài trước.
+      // Đồng bộ lại thay vì hiển thị lỗi và để player mắc kẹt ở bài cũ.
+      if (error.response?.status === 409) {
+        wasPlayingRef.current = true;
+        const nextSong = await fetchCurrentSong();
+        if (!nextSong) wasPlayingRef.current = false;
+      } else {
+        wasPlayingRef.current = false;
+        console.error('Error handling song completion:', error);
+        message.error('Không thể chuyển sang bài tiếp theo');
+      }
+    } finally {
+      if (advancingSongIdRef.current === song._id) {
+        advancingSongIdRef.current = null;
+      }
+      setNextLoading(false);
     }
   };
 
   const handleEnded = () => {
-    handleNext();
+    handleNext('ended');
+  };
+
+  const handlePlayerError = (error) => {
+    console.error('Player error:', error);
+
+    if (!shouldAutoSkipYouTubeError(error)) {
+      message.error(getYouTubePlayerErrorMessage(error));
+      return;
+    }
+
+    const songId = currentSong?._id || currentSongRef.current?._id;
+    if (!songId || playerErrorHandledSongIdRef.current === songId) return;
+
+    playerErrorHandledSongIdRef.current = songId;
+    message.warning(getYouTubePlayerErrorMessage(error));
+    handleNext('player_error');
   };
 
   // Auto-next do cộng đồng đạt 100 PCs. Event mang songId cũ để nhiều tab admin
@@ -498,6 +545,7 @@ const MusicPlayer = () => {
       setPlaying(false);
       wasMessageSpokenRef.current = false;
       wasPlayingRef.current = Boolean(nextSong);
+      currentSongRef.current = nextSong || null;
       setCurrentSong(nextSong || null);
     };
 
@@ -581,24 +629,15 @@ const MusicPlayer = () => {
             style={{ marginTop: 16, marginBottom: 16, position: 'relative' }}
           >
             <ReactPlayer
+              key={currentSong._id}
               ref={playerRef}
               url={currentSong.youtubeUrl}
               playing={playing && !speaking}
               controls={false}
               width='100%'
               height='240px'
-              onReady={() => {
-                const internalPlayer = playerRef.current?.getInternalPlayer();
-                if (internalPlayer && internalPlayer.addEventListener) {
-                  internalPlayer.addEventListener('onStateChange', (event) => {
-                    if (event.data === 0) handleEnded();
-                  });
-                }
-              }}
-              onError={(error) => {
-                console.error('Player error:', error);
-                message.error('Có lỗi khi tải video');
-              }}
+              onEnded={handleEnded}
+              onError={handlePlayerError}
               playsinline
               config={{
                 youtube: {
@@ -684,7 +723,7 @@ const MusicPlayer = () => {
               <>
                 <Button
                   icon={<StepForwardOutlined />}
-                  onClick={handleNext}
+                  onClick={() => handleNext('manual')}
                   size='large'
                   loading={nextLoading}
                 >

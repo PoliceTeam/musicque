@@ -1,6 +1,7 @@
 const Session = require('./models/session.model')
 const { resolveUserFromToken } = require('./services/auth.service')
 const chatService = require('./services/chat.service')
+const redLight = require('./services/redLight.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 
 let io;
@@ -148,8 +149,34 @@ const initSocket = (server) => {
       }
     });
 
+    socket.on('redlight:bind', async (data = {}) => {
+      try {
+        const user = await resolveUserFromToken(data.token)
+        if (!user) return
+        redLight.bindSocket({ user, socketId: socket.id })
+      } catch (error) {
+        console.error('[Đèn xanh] Bind socket lỗi:', error.message)
+      }
+    })
+
+    socket.on('redlight:input', async (data = {}) => {
+      try {
+        const user = await resolveUserFromToken(data.token)
+        if (!user) return
+        redLight.bindSocket({ user, socketId: socket.id })
+        redLight.setHold({
+          userId: user._id,
+          holding: Boolean(data.holding),
+          socketId: socket.id,
+        })
+      } catch (error) {
+        console.error('[Đèn xanh] Input lỗi:', error.message)
+      }
+    })
+
     socket.on('disconnect', () => {
       console.log('Client disconnected', socket.id);
+      redLight.onSocketDisconnect(socket.id)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor
         socket.to(socket.poliboardRoom).emit('cursor:remove', { id: socket.id });

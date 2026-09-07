@@ -4,6 +4,7 @@ const Song = require("../models/song.model");
 const chohan = require("../services/chohan.service");
 const songSkip = require("../services/songSkip.service");
 const wordChain = require("../services/wordChain.service");
+const redLight = require("../services/redLight.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -50,6 +51,10 @@ exports.startSession = async (req, res) => {
       console.error("[Nối từ] Không mở được game:", error.message);
     });
 
+    redLight.startGame(io, newSession).catch((error) => {
+      console.error("[Đèn xanh] Không mở được game:", error.message);
+    });
+
     res.status(201).json({
       message: "Đã tạo phiên mới",
       session: newSession,
@@ -84,6 +89,10 @@ exports.endSession = async (req, res) => {
 
     await wordChain.stopGame({ reason: "session_ended" }).catch((error) => {
       console.error("[Nối từ] Không dừng được game:", error.message);
+    });
+
+    await redLight.stopGame({ reason: "session_ended" }).catch((error) => {
+      console.error("[Đèn xanh] Không dừng được game:", error.message);
     });
 
     // Khoản góp chưa đủ 100 PCs không tạo ra lượt next nên phải hoàn toàn bộ.

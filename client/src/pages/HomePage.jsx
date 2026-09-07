@@ -13,6 +13,7 @@ import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import WordChainPromo from '../components/WordChain/WordChainPromo';
+import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -53,8 +54,29 @@ const HomePage = () => {
   const [showNewsReader, setShowNewsReader] = useState(false);
   const [xiangqiPromoDismissed, setXiangqiPromoDismissed] = useState(false);
   const [wordChainPromoDismissed, setWordChainPromoDismissed] = useState(false);
+  const [redLightOpen, setRedLightOpen] = useState(false);
+  const [redLightPreview, setRedLightPreview] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined
+    if (!new URLSearchParams(window.location.search).has('rlMock')) return undefined
+    setRedLightPreview(true)
+    setRedLightOpen(true)
+    return undefined
+  }, [])
+
+  const openRedLight = (event) => {
+    const useMock = import.meta.env.DEV && event?.shiftKey
+    setRedLightPreview(Boolean(useMock))
+    setRedLightOpen(true)
+  }
+
+  const closeRedLight = () => {
+    setRedLightOpen(false)
+    setRedLightPreview(false)
+  }
 
   const dismissXiangqiPromo = () => {
     setXiangqiPromoDismissed(true);
@@ -279,6 +301,16 @@ const HomePage = () => {
                   </button>
                 </Tooltip>
               )}
+              <Tooltip title={import.meta.env.DEV ? 'Đèn xanh, Đèn đỏ · Shift+click = mock UI' : 'Đèn xanh, Đèn đỏ'}>
+                <button
+                  type="button"
+                  className={`sp-quicktoys__btn sp-quicktoys__btn--redlight${redLightOpen ? ' is-active' : ''}`}
+                  aria-label="Mở Đèn xanh Đèn đỏ"
+                  onClick={openRedLight}
+                >
+                  🚦
+                </button>
+              </Tooltip>
               <Tooltip title={showSnowEffect ? 'Tắt tuyết' : 'Bật tuyết'}>
                 <button
                   type="button"
@@ -409,6 +441,12 @@ const HomePage = () => {
             bottomInset={hasPlayer ? 96 : 12}
           />
         )}
+
+        <RedLightOverlay
+          open={redLightOpen}
+          preview={redLightPreview}
+          onClose={closeRedLight}
+        />
 
         {/* ── Thanh phát nhạc ─────────────────────────────────────── */}
         {hasPlayer && (

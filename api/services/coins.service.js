@@ -245,6 +245,70 @@ async function creditWordChainRewardOnce(userId, requestedAmount, transaction = 
   return { user: updated, credited }
 }
 
+async function creditRedLightRewardOnce(userId, requestedAmount, transaction = {}) {
+  const operationKey = transaction.operationKey
+  const dailyCap = Math.max(0, Number(transaction.dailyCap) || 0)
+  const dateKey = transaction.dateKey
+  if (!Number.isFinite(requestedAmount) || requestedAmount <= 0 || !operationKey || !dateKey) {
+    return null
+  }
+
+  const updated = await User.findOneAndUpdate(
+    { _id: userId, appliedCoinOperations: { $ne: operationKey } },
+    [
+      {
+        $set: {
+          appliedCoinOperations: {
+            $concatArrays: [{ $ifNull: ['$appliedCoinOperations', []] }, [operationKey]],
+          },
+          redLightRewardEarned: {
+            $cond: [
+              { $eq: ['$redLightRewardDateKey', dateKey] },
+              { $ifNull: ['$redLightRewardEarned', 0] },
+              0,
+            ],
+          },
+          redLightRewardDateKey: dateKey,
+        },
+      },
+      {
+        $set: {
+          redLightLastRewardOperation: operationKey,
+          redLightLastRewardAmount: {
+            $min: [
+              requestedAmount,
+              { $max: [0, { $subtract: [dailyCap, '$redLightRewardEarned'] }] },
+            ],
+          },
+        },
+      },
+      {
+        $set: {
+          redLightRewardEarned: {
+            $add: ['$redLightRewardEarned', '$redLightLastRewardAmount'],
+          },
+          polites: { $add: ['$polites', '$redLightLastRewardAmount'] },
+        },
+      },
+    ],
+    { new: true },
+  )
+
+  if (!updated) {
+    const previous = await User.findById(userId)
+      .select('redLightLastRewardOperation redLightLastRewardAmount polites')
+    if (previous?.redLightLastRewardOperation === operationKey) {
+      return { user: previous, credited: previous.redLightLastRewardAmount || 0 }
+    }
+    return null
+  }
+  const credited = updated.redLightLastRewardOperation === operationKey
+    ? updated.redLightLastRewardAmount
+    : 0
+  if (credited > 0) await recordTransaction(updated, credited, transaction)
+  return { user: updated, credited }
+}
+
 /**
  * Thưởng đăng nhập ngày: +DAILY_BONUS, tối đa 1 lần/ngày lịch (giờ server).
  * Điều kiện lastDailyBonusAt < đầu ngày hôm nay nằm ngay trong câu update nên
@@ -374,6 +438,9 @@ async function getEconomyStats(period = '30d') {
                 wordChainPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'wordchain_payout'] }, '$amount', 0] },
                 },
+                redLightPayout: {
+                  $sum: { $cond: [{ $eq: ['$type', 'redlight_payout'] }, '$amount', 0] },
+                },
                 refunded: {
                   $sum: {
                     $cond: [
@@ -428,6 +495,7 @@ async function getEconomyStats(period = '30d') {
                 xiangqiPayout: 1,
                 wordChainSpent: 1,
                 wordChainPayout: 1,
+                redLightPayout: 1,
                 refunded: 1,
                 songBidRefund: 1,
                 songSkipRefund: 1,
@@ -511,6 +579,7 @@ async function getEconomyStats(period = '30d') {
     wordChainSpent: 0,
     wordChainPayout: 0,
     wordChainRefund: 0,
+    redLightPayout: 0,
   }
 
   return {
@@ -531,11 +600,13 @@ async function getEconomyStats(period = '30d') {
         - totals.chohanPayout
         - totals.xiangqiPayout
         - totals.wordChainPayout
+        - (totals.redLightPayout || 0)
         - totals.refunded,
       playerWinProfit:
         totals.chohanPayout / 2
         + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered)
-        + Math.max(0, totals.wordChainPayout - totals.wordChainSpent),
+        + Math.max(0, totals.wordChainPayout - totals.wordChainSpent)
+        + (totals.redLightPayout || 0),
     },
     topUsers: transactionStats[0]?.topUsers || [],
   }
@@ -561,6 +632,7 @@ module.exports = {
   creditOnce,
   creditXiangqiRewardOnce,
   creditWordChainRewardOnce,
+  creditRedLightRewardOnce,
   recordTransaction,
   claimDailyBonus,
   getLeaderboard,

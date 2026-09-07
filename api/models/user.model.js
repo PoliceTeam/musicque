@@ -102,6 +102,10 @@ const userSchema = new mongoose.Schema({
   wordChainRewardEarned: { type: Number, default: 0, min: 0 },
   wordChainLastRewardOperation: String,
   wordChainLastRewardAmount: { type: Number, default: 0 },
+  redLightRewardDateKey: { type: String, default: null },
+  redLightRewardEarned: { type: Number, default: 0, min: 0 },
+  redLightLastRewardOperation: String,
+  redLightLastRewardAmount: { type: Number, default: 0 },
   createdAt: {
     type: Date,
     default: Date.now,

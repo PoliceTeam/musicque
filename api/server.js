@@ -13,6 +13,7 @@ const billiards = require('./services/billiards.service')
 const songSkip = require('./services/songSkip.service')
 const xiangqi = require('./services/xiangqi.service')
 const wordChain = require('./services/wordChain.service')
+const redLight = require('./services/redLight.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -102,6 +103,10 @@ mongoose
 
       wordChain.resumeIfActiveSession(io).catch((error) => {
         console.error('[Nối từ] Resume lỗi:', error.message)
+      })
+
+      redLight.resumeIfActiveSession(io).catch((error) => {
+        console.error('[Đèn xanh] Resume lỗi:', error.message)
       })
 
       // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,
