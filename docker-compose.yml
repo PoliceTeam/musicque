@@ -7,7 +7,7 @@ services:
       context: ./mongodb
       dockerfile: Dockerfile
     container_name: music-order-mongodb
-    restart: always
+    restart: "no"
     environment:
       MONGO_INITDB_DATABASE: music-order-app
     ports:
@@ -42,6 +42,8 @@ services:
       - WORDCHAIN_TURN_MS=8000
       - WORDCHAIN_IDLE_MS=30000
       - WORDCHAIN_BETWEEN_ROUNDS_MS=5000
+      - WORDCHAIN_BOT_ENABLED=true
+      - WORDCHAIN_BOT_TRIGGER_MS=1000
       - WORDCHAIN_ROUND_PAYOUT_CAP=60
       - WORDCHAIN_DAILY_PAYOUT_CAP=250
       - XIANGQI_STAKE_PC=10

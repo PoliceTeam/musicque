@@ -21,6 +21,8 @@ test('cấu hình công khai khóa đúng trần thưởng đã duyệt', () => 
   const config = wordChain.publicConfig()
   assert.equal(config.answerCost, 1)
   assert.equal(config.turnMs, 8000)
+  assert.equal(config.botEnabled, true)
+  assert.equal(config.botTriggerMs, 1000)
   assert.equal(config.roundPayoutCap, 60)
   assert.equal(config.dailyPayoutCap, 250)
 })
@@ -39,6 +41,41 @@ test('serialize không lộ username ra UI', () => {
   })
   assert.equal(payload.moves[0].displayName, 'Alice Nguyễn')
   assert.equal(Object.hasOwn(payload.moves[0], 'username'), false)
+})
+
+test('serialize tính bot là một người chơi nhưng không lộ username bot', () => {
+  const payload = wordChain.serializeRound({
+    _id: 'round-bot',
+    roundNumber: 2,
+    status: 'playing',
+    seedPhrase: 'thể thao',
+    currentPhrase: 'thao tác',
+    requiredSyllable: 'tác',
+    participantIds: ['user-1'],
+    botJoined: true,
+    moves: [{ username: 'wordchain_bot', displayName: 'Bot Nối Từ', isBot: true, phrase: 'thao tác', stake: 0 }],
+    lastPlayer: { username: 'wordchain_bot', displayName: 'Bot Nối Từ', isBot: true },
+  })
+  assert.equal(payload.participantCount, 2)
+  assert.equal(payload.botJoined, true)
+  assert.equal(payload.moves[0].isBot, true)
+  assert.equal(payload.lastPlayer.isBot, true)
+  assert.equal(Object.hasOwn(payload.lastPlayer, 'username'), false)
+})
+
+test('bot chỉ đáp khi còn một người thật hoặc đã tham gia ván', () => {
+  assert.equal(wordChain.shouldBotReply({
+    status: 'playing', participantIds: ['user-1'], botJoined: false, lastPlayer: { userId: 'user-1' },
+  }), true)
+  assert.equal(wordChain.shouldBotReply({
+    status: 'playing', participantIds: ['user-1', 'user-2'], botJoined: false, lastPlayer: { userId: 'user-2' },
+  }), false)
+  assert.equal(wordChain.shouldBotReply({
+    status: 'playing', participantIds: ['user-1', 'user-2'], botJoined: true, lastPlayer: { userId: 'user-1' },
+  }), true)
+  assert.equal(wordChain.shouldBotReply({
+    status: 'playing', participantIds: ['user-1'], botJoined: true, lastPlayer: { isBot: true },
+  }), false)
 })
 
 test('catalog Kaikki chứa cụm có nghĩa và loại ví dụ bịa', () => {

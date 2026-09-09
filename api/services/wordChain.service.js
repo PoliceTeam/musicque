@@ -10,12 +10,22 @@ const { normalizePhrase, splitPhrase, isValidTwoSyllablePhrase } = require('./wo
 const TURN_MS = Number(process.env.WORDCHAIN_TURN_MS || 8000)
 const IDLE_MS = Number(process.env.WORDCHAIN_IDLE_MS || 30000)
 const BETWEEN_ROUNDS_MS = Number(process.env.WORDCHAIN_BETWEEN_ROUNDS_MS || 5000)
+const BOT_ENABLED = process.env.WORDCHAIN_BOT_ENABLED !== 'false'
+const BOT_TRIGGER_MS = Math.min(
+  Math.max(0, TURN_MS - 100),
+  Math.max(0, Number(process.env.WORDCHAIN_BOT_TRIGGER_MS || 1000)),
+)
 const ANSWER_COST = 1
 const PAYOUT_MULTIPLIER = 3
 const ROUND_PAYOUT_CAP = Number(process.env.WORDCHAIN_ROUND_PAYOUT_CAP || 60)
 const DAILY_PAYOUT_CAP = Number(process.env.WORDCHAIN_DAILY_PAYOUT_CAP || 250)
 const MIN_TURNS_FOR_REWARD = 3
 const MIN_PLAYERS_FOR_REWARD = 2
+const BOT_PLAYER = Object.freeze({
+  username: 'wordchain_bot',
+  displayName: 'Bot Nối Từ',
+  isBot: true,
+})
 
 let ioRef = null
 let running = false
@@ -37,6 +47,9 @@ class WordChainError extends Error {
 const publicConfig = () => ({
   turnMs: TURN_MS,
   idleMs: IDLE_MS,
+  botEnabled: BOT_ENABLED,
+  botTriggerMs: BOT_TRIGGER_MS,
+  botDisplayName: BOT_PLAYER.displayName,
   answerCost: ANSWER_COST,
   payoutMultiplier: PAYOUT_MULTIPLIER,
   roundPayoutCap: ROUND_PAYOUT_CAP,
@@ -52,9 +65,11 @@ const dateKeyNow = () => {
 
 const serializeRound = (round) => {
   if (!round) return null
+  const participantCount = (round.participantIds?.length || 0) + (round.botJoined ? 1 : 0)
   const moves = (round.moves || []).slice(-30).map((move) => ({
     userId: move.userId,
     displayName: move.displayName || move.username,
+    isBot: Boolean(move.isBot),
     phrase: move.phrase,
     submittedAt: move.submittedAt,
   }))
@@ -67,22 +82,29 @@ const serializeRound = (round) => {
     requiredSyllable: round.requiredSyllable,
     moves,
     turnCount: round.moves?.length || 0,
-    participantCount: round.participantIds?.length || 0,
+    participantCount,
+    botJoined: Boolean(round.botJoined),
     lastPlayer: round.lastPlayer
       ? {
           userId: round.lastPlayer.userId,
           displayName: round.lastPlayer.displayName || round.lastPlayer.username,
+          isBot: Boolean(round.lastPlayer.isBot),
         }
       : null,
     idleEndsAt: round.idleEndsAt,
     deadlineAt: round.deadlineAt,
     winner: round.winner
-      ? { userId: round.winner.userId, displayName: round.winner.displayName || round.winner.username }
+      ? {
+          userId: round.winner.userId,
+          displayName: round.winner.displayName || round.winner.username,
+          isBot: Boolean(round.winner.isBot),
+        }
       : null,
     requestedPayout: round.requestedPayout || 0,
     payout: round.payout || 0,
     rewardEligible: Boolean(round.rewardEligible),
     rewardReason: round.rewardReason || null,
+    finishReason: round.finishReason || null,
     serverNow: Date.now(),
   }
 }
@@ -94,6 +116,12 @@ const broadcast = (event, payload) => {
 const clearGameTimer = () => {
   if (timer) clearTimeout(timer)
   timer = null
+}
+
+const shouldBotReply = (round) => {
+  if (!BOT_ENABLED || round?.status !== 'playing' || round.lastPlayer?.isBot) return false
+  const humanCount = round.participantIds?.length || 0
+  return Boolean(round.botJoined) || humanCount === 1
 }
 
 const seedDictionary = async () => {
@@ -197,9 +225,13 @@ const scheduleCurrentRound = (round) => {
   if (!running || !round) return
   const endsAt = round.status === 'waiting' ? round.idleEndsAt : round.deadlineAt
   if (!endsAt) return
-  const waitMs = Math.max(0, new Date(endsAt).getTime() - Date.now())
+  const endMs = new Date(endsAt).getTime()
+  const botReplyAt = shouldBotReply(round) ? endMs - BOT_TRIGGER_MS : null
+  const targetMs = botReplyAt === null ? endMs : Math.max(Date.now(), botReplyAt)
+  const waitMs = Math.max(0, targetMs - Date.now())
   timer = setTimeout(() => {
     if (round.status === 'waiting') expireIdleRound(round._id).catch(logLoopError)
+    else if (botReplyAt !== null) playBotTurn(round._id).catch(logLoopError)
     else settleRound(round._id, { reason: 'timeout' }).catch(logLoopError)
   }, waitMs)
 }
@@ -211,6 +243,106 @@ const scheduleNextRound = () => {
 }
 
 const logLoopError = (error) => console.error('[Nối từ] Game loop lỗi:', error.message)
+
+const chooseBotAnswer = async (round) => {
+  const match = {
+    status: 'approved',
+    firstSyllable: round.requiredSyllable,
+    normalizedPhrase: { $nin: round.usedWords || [] },
+  }
+  let [answer] = await WordEntry.aggregate([
+    { $match: { ...match, nextWordCount: { $gt: 0 } } },
+    { $sample: { size: 1 } },
+  ])
+  if (!answer) {
+    ;[answer] = await WordEntry.aggregate([{ $match: match }, { $sample: { size: 1 } }])
+  }
+  return answer || null
+}
+
+const playBotTurn = async (roundId) => {
+  clearGameTimer()
+  if (!running || currentRoundId?.toString() !== roundId.toString()) return null
+
+  const round = await WordChainRound.findById(roundId)
+  if (!round || !shouldBotReply(round)) {
+    if (round && ['waiting', 'playing'].includes(round.status)) scheduleCurrentRound(round)
+    return null
+  }
+  if (!round.deadlineAt || Date.now() >= new Date(round.deadlineAt).getTime()) {
+    return settleRound(roundId, { reason: 'timeout' })
+  }
+
+  const answer = await chooseBotAnswer(round)
+  if (!answer) {
+    const now = new Date()
+    const botDefeated = await WordChainRound.findOneAndUpdate(
+      {
+        _id: round._id,
+        status: 'playing',
+        version: round.version,
+        deadlineAt: { $gt: now },
+        'lastPlayer.isBot': { $ne: true },
+      },
+      {
+        $set: { botJoined: true, ...(!round.botJoined ? { botJoinedAt: now } : {}) },
+        $inc: { version: 1 },
+      },
+      { new: true },
+    )
+    if (botDefeated) return settleRound(roundId, { reason: 'bot_no_answer' })
+
+    const latest = await WordChainRound.findById(roundId)
+    if (latest && ['waiting', 'playing'].includes(latest.status)) scheduleCurrentRound(latest)
+    return latest
+  }
+
+  const now = new Date()
+  const requestKey = `bot:${round._id}:${round.version}`
+  const updated = await WordChainRound.findOneAndUpdate(
+    {
+      _id: round._id,
+      status: 'playing',
+      version: round.version,
+      deadlineAt: { $gt: now },
+      usedWords: { $ne: answer.normalizedPhrase },
+      'lastPlayer.isBot': { $ne: true },
+    },
+    {
+      $set: {
+        currentPhrase: answer.phrase,
+        requiredSyllable: answer.lastSyllable,
+        deadlineAt: new Date(now.getTime() + TURN_MS),
+        lastPlayer: BOT_PLAYER,
+        botJoined: true,
+        ...(!round.botJoined ? { botJoinedAt: now } : {}),
+      },
+      $push: {
+        usedWords: answer.normalizedPhrase,
+        moves: {
+          ...BOT_PLAYER,
+          phrase: answer.phrase,
+          normalizedPhrase: answer.normalizedPhrase,
+          requestKey,
+          stake: 0,
+          submittedAt: now,
+        },
+      },
+      $inc: { version: 1 },
+    },
+    { new: true },
+  )
+
+  if (!updated) {
+    const latest = await WordChainRound.findById(roundId)
+    if (latest && ['waiting', 'playing'].includes(latest.status)) scheduleCurrentRound(latest)
+    return latest
+  }
+
+  broadcast('wordchain_round', serializeRound(updated))
+  scheduleCurrentRound(updated)
+  return updated
+}
 
 const beginRound = async () => {
   if (!running || !sessionId) return null
@@ -235,7 +367,8 @@ const beginRound = async () => {
 
 const refundMoves = async (round, reason) => {
   for (const move of round.moves || []) {
-    await coins.creditOnce(move.userId, move.stake || ANSWER_COST, {
+    if (move.isBot || !move.userId || !move.stake) continue
+    await coins.creditOnce(move.userId, move.stake, {
       type: 'wordchain_refund',
       operationKey: `wordchain:refund:${round._id}:${move.requestKey}`,
       referenceType: 'WordChainRound',
@@ -247,28 +380,54 @@ const refundMoves = async (round, reason) => {
 
 const finalizeSettlement = async (round, reason) => {
   const turnCount = round.moves?.length || 0
-  const participantCount = round.participantIds?.length || 0
-  const eligible = turnCount >= MIN_TURNS_FOR_REWARD
+  const participantCount = (round.participantIds?.length || 0) + (round.botJoined ? 1 : 0)
+  const hasWinner = Boolean(round.lastPlayer?.userId || round.lastPlayer?.isBot)
+  const rewardEligible = turnCount >= MIN_TURNS_FOR_REWARD
     && participantCount >= MIN_PLAYERS_FOR_REWARD
     && round.lastPlayer?.userId
 
-  if (!eligible) {
-    await refundMoves(round, reason === 'session_ended' ? 'session_ended_before_eligible' : 'round_not_eligible')
-    const voided = await WordChainRound.findByIdAndUpdate(
+  if (reason !== 'session_ended' && round.lastPlayer?.isBot && hasWinner) {
+    return WordChainRound.findByIdAndUpdate(
       round._id,
       {
         $set: {
-          status: 'voided',
+          status: 'settled',
+          winner: round.lastPlayer,
+          requestedPayout: 0,
+          payout: 0,
           rewardEligible: false,
-          rewardReason: participantCount < MIN_PLAYERS_FOR_REWARD
-            ? 'Chưa đủ 2 người chơi, toàn bộ phí đã được hoàn'
-            : 'Chưa đủ 3 lượt nối, toàn bộ phí đã được hoàn',
+          rewardReason: 'Bot Nối Từ chiến thắng',
+          finishReason: reason,
           settledAt: new Date(),
         },
       },
       { new: true },
     )
-    return voided
+  }
+
+  if (!rewardEligible) {
+    await refundMoves(round, reason === 'session_ended' ? 'session_ended_before_eligible' : 'round_not_eligible')
+    const humanBeatBot = reason === 'bot_no_answer'
+      && Boolean(round.botJoined && round.lastPlayer?.userId)
+    const finished = await WordChainRound.findByIdAndUpdate(
+      round._id,
+      {
+        $set: {
+          status: humanBeatBot ? 'settled' : 'voided',
+          ...(humanBeatBot ? { winner: round.lastPlayer } : {}),
+          rewardEligible: false,
+          rewardReason: humanBeatBot
+            ? 'Bạn thắng bot nhưng chưa đủ 3 lượt, phí đã được hoàn'
+            : participantCount < MIN_PLAYERS_FOR_REWARD
+            ? 'Chưa đủ 2 người chơi, toàn bộ phí đã được hoàn'
+            : 'Chưa đủ 3 lượt nối, toàn bộ phí đã được hoàn',
+          finishReason: reason,
+          settledAt: new Date(),
+        },
+      },
+      { new: true },
+    )
+    return finished
   }
 
   const requestedPayout = Math.min(turnCount * PAYOUT_MULTIPLIER, ROUND_PAYOUT_CAP)
@@ -295,6 +454,7 @@ const finalizeSettlement = async (round, reason) => {
         rewardReason: payout < requestedPayout
           ? `Đã áp dụng trần thưởng ${DAILY_PAYOUT_CAP} PC/ngày`
           : null,
+        finishReason: reason,
         settlementOperationKey: operationKey,
         settledAt: new Date(),
       },
@@ -527,6 +687,7 @@ module.exports = {
   WordChainError,
   publicConfig,
   serializeRound,
+  shouldBotReply,
   ensureDictionary,
   startGame,
   stopGame,

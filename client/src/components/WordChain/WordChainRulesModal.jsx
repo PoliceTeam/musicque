@@ -24,8 +24,9 @@ const WordChainRulesModal = ({ open, onClose, onPlay }) => {
           <article><strong>⏱️ {config.turnMs / 1000} giây mỗi lượt</strong><p>Đồng hồ bắt đầu sau câu đầu tiên và reset sau mỗi câu hợp lệ. Người nối cuối khi hết giờ sẽ thắng.</p></article>
           <article><strong>🪙 {config.answerCost} PC mỗi câu</strong><p>Chỉ câu được server chấp nhận mới mất PC. Câu sai, đến trễ hoặc thua race không bị trừ.</p></article>
           <article><strong>🏆 Thưởng x{config.payoutMultiplier}</strong><p>Thưởng theo số lượt, tối đa {config.roundPayoutCap} PC/ván và {config.dailyPayoutCap} PC/ngày.</p></article>
+          {config.botEnabled && <article><strong>🤖 Bot tiếp sức</strong><p>Nếu chỉ có một người chơi, bot sẽ vào khi còn {config.botTriggerMs / 1000} giây và đấu đến khi một bên bí từ.</p></article>}
         </div>
-        <p className='wordchain-rules__note'>Không được nối hai lượt liên tiếp hoặc dùng lại từ. Ván cần ít nhất {config.minPlayersForReward} người và {config.minTurnsForReward} lượt; nếu chưa đủ, toàn bộ phí được hoàn.</p>
+        <p className='wordchain-rules__note'>Không được nối hai lượt liên tiếp hoặc dùng lại từ. Bot không mất/nhận PC nhưng được tính là một người chơi; người thật cần ít nhất {config.minTurnsForReward} lượt cả ván để nhận thưởng.</p>
         <button type='button' className='sp-btn sp-btn--primary' onClick={onPlay || onClose}>Đã hiểu, nối từ ngay</button>
       </section>
     </div>,

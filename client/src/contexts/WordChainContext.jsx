@@ -16,6 +16,9 @@ export const useWordChain = () => {
 const DEFAULT_CONFIG = {
   turnMs: 8000,
   idleMs: 30000,
+  botEnabled: true,
+  botTriggerMs: 1000,
+  botDisplayName: 'Bot Nối Từ',
   answerCost: 1,
   payoutMultiplier: 3,
   roundPayoutCap: 60,

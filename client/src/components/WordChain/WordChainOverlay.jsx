@@ -77,13 +77,17 @@ const WordChainOverlay = ({ open, onClose }) => {
               <div className='wordchain-current'>
                 <small>TỪ HIỆN TẠI</small>
                 <strong>{round?.currentPhrase || 'Đang chọn từ...'}</strong>
-                {round?.lastPlayer && <span>bởi {round.lastPlayer.displayName}</span>}
+                {round?.lastPlayer && <span>bởi {round.lastPlayer.isBot ? '🤖 ' : ''}{round.lastPlayer.displayName}</span>}
               </div>
 
               {['settled', 'voided'].includes(round?.status) ? (
                 <div className={`wordchain-result wordchain-result--${round.status}`}>
                   {round.winner ? (
-                    <><span>🏆</span><h3>{round.winner.displayName} chiến thắng!</h3><strong>+{round.payout} PC</strong></>
+                    <>
+                      <span>{round.winner.isBot ? '🤖' : '🏆'}</span>
+                      <h3>{round.winner.displayName} chiến thắng!</h3>
+                      {!round.winner.isBot && <strong>+{round.payout} PC</strong>}
+                    </>
                   ) : (
                     <><span>↩️</span><h3>Ván chưa đủ điều kiện</h3></>
                   )}
@@ -116,6 +120,12 @@ const WordChainOverlay = ({ open, onClose }) => {
                     <p>Bạn không đủ PC để trả lời.</p>
                   ) : round?.status === 'waiting' ? (
                     <p>Câu đầu tiên sẽ kích hoạt đồng hồ {config.turnMs / 1000} giây.</p>
+                  ) : round?.lastPlayer?.isBot ? (
+                    <p>Bot đã nối. Đến lượt bạn!</p>
+                  ) : round?.botJoined ? (
+                    <p>Bot sẽ đáp khi đồng hồ còn {config.botTriggerMs / 1000} giây.</p>
+                  ) : round?.participantCount === 1 ? (
+                    <p>Nếu chưa có người thứ hai, bot sẽ vào khi còn {config.botTriggerMs / 1000} giây.</p>
                   ) : (
                     <p>Câu hợp lệ sẽ reset đồng hồ về {config.turnMs / 1000} giây.</p>
                   )}
@@ -136,7 +146,7 @@ const WordChainOverlay = ({ open, onClose }) => {
               <ol>
                 {recentMoves.map((move, index) => (
                   <li key={`${move.submittedAt}-${index}`}>
-                    <span>{move.displayName}</span><strong>{move.phrase}</strong>
+                    <span>{move.isBot ? '🤖 ' : ''}{move.displayName}</span><strong>{move.phrase}</strong>
                   </li>
                 ))}
               </ol>
