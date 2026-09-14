@@ -11,29 +11,35 @@ import {
   estimatePayout,
   betActorName,
   summarizeBets,
+  summarizeMyHistory,
   groupBetsByDate,
 } from '../../utils/lottery'
 
-const PublicBetRow = ({ bet, mine }) => (
+const betOutcome = (bet) => {
+  if (!bet.settled) return '⏳ Chờ'
+  if (bet.won) return `🎉 +${bet.payout}`
+  if ((Number(bet.payout) || 0) > 0) return `↩ +${bet.payout}`
+  return `Thua −${bet.amount}`
+}
+
+const PublicBetRow = ({ bet, mine, showDate = false }) => (
   <li
     className={`lot-betitem${mine ? ' is-mine' : ''}${
       bet.settled ? (bet.won ? ' is-won' : ' is-lost') : ''
     }`}
   >
     <span className="lot-betitem__who" title={bet.username}>
-      {betActorName(bet)}
+      {showDate ? bet.dateKey?.slice(5) || '—' : betActorName(bet)}
     </span>
     <span className="lot-betitem__type">{BET_LABELS[bet.betType] || bet.betType}</span>
     <span className="lot-betitem__nums">{(bet.numbers || []).join('-')}</span>
     <span className="lot-betitem__amt">{bet.amount} PC</span>
-    <span className="lot-betitem__state">
-      {!bet.settled ? '⏳' : bet.won ? `🎉 +${bet.payout}` : '—'}
-    </span>
+    <span className="lot-betitem__state">{betOutcome(bet)}</span>
   </li>
 )
 
 const LotteryOverlay = ({ open, onClose }) => {
-  const { draw, config, results, todayBets, publicBets, placeBet } = useLottery()
+  const { draw, config, results, todayBets, publicBets, myHistory, placeBet } = useLottery()
   const { user, balance, isAuthenticated, openAuthModal } = useAuth()
 
   const [betType, setBetType] = useState('de')
@@ -42,8 +48,9 @@ const LotteryOverlay = ({ open, onClose }) => {
   const [stake, setStake] = useState(10)
   const [submitting, setSubmitting] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
-  const [boardOpen, setBoardOpen] = useState(false)
+  const [panel, setPanel] = useState(null)
   const [, setTick] = useState(0)
+  const mySummary = useMemo(() => summarizeMyHistory(myHistory), [myHistory])
 
   const maxStake = config.maxStake || 50
   const activeTab = useMemo(() => BET_TABS.find((t) => t.key === betType), [betType])
@@ -62,22 +69,22 @@ const LotteryOverlay = ({ open, onClose }) => {
   }, [open])
 
   useEffect(() => {
-    if (!open) setBoardOpen(false)
+    if (!open) setPanel(null)
   }, [open])
 
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => {
       if (e.key !== 'Escape') return
-      if (boardOpen) {
-        setBoardOpen(false)
+      if (panel) {
+        setPanel(null)
         return
       }
       onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose, boardOpen])
+  }, [open, onClose, panel])
 
   // Đổi loại cược → reset lựa chọn
   useEffect(() => {
@@ -154,8 +161,27 @@ const LotteryOverlay = ({ open, onClose }) => {
             </span>
             <button
               type="button"
-              className={`lot-help lot-board-btn${boardOpen ? ' is-active' : ''}`}
-              onClick={() => setBoardOpen((current) => !current)}
+              className={`lot-help lot-board-btn${panel === 'mine' ? ' is-active' : ''}`}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  onClose()
+                  openAuthModal('login', 'Đăng nhập để xem lịch sử cược của bạn.')
+                  return
+                }
+                setPanel((current) => (current === 'mine' ? null : 'mine'))
+              }}
+              aria-label="Lịch sử cược của tôi"
+              title="38 vé gần nhất của bạn"
+            >
+              🎫
+              {myHistory.length > 0 && (
+                <span className="lot-board-btn__count">{myHistory.length}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`lot-help lot-board-btn${panel === 'board' ? ' is-active' : ''}`}
+              onClick={() => setPanel((current) => (current === 'board' ? null : 'board'))}
               aria-label="Bảng cược hôm nay"
               title="Xem ai đang đặt hôm nay"
             >
@@ -181,7 +207,7 @@ const LotteryOverlay = ({ open, onClose }) => {
 
         <LotteryRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
 
-        {boardOpen ? (
+        {panel === 'board' ? (
           <div className="lot-board">
             <div className="lot-board__head">
               <div>
@@ -195,7 +221,7 @@ const LotteryOverlay = ({ open, onClose }) => {
               <button
                 type="button"
                 className="sp-btn sp-btn--ghost"
-                onClick={() => setBoardOpen(false)}
+                onClick={() => setPanel(null)}
               >
                 ← Đặt cược
               </button>
@@ -210,6 +236,37 @@ const LotteryOverlay = ({ open, onClose }) => {
                     bet={bet}
                     mine={user?._id && String(bet.userId) === String(user._id)}
                   />
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : panel === 'mine' ? (
+          <div className="lot-board">
+            <div className="lot-board__head">
+              <div>
+                <h3 className="lot-board__title">Vé của bạn</h3>
+                <p className="lot-board__meta">
+                  {mySummary.count === 0
+                    ? 'Chưa có vé nào. Đặt một con để mở sổ.'
+                    : `${mySummary.count} vé gần nhất · ${mySummary.won} thắng · ${mySummary.lost} thua${
+                        mySummary.pending ? ` · ${mySummary.pending} chờ` : ''
+                      } · net ${mySummary.net >= 0 ? '+' : ''}${mySummary.net} PC`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="sp-btn sp-btn--ghost"
+                onClick={() => setPanel(null)}
+              >
+                ← Đặt cược
+              </button>
+            </div>
+            {myHistory.length === 0 ? (
+              <div className="lot-empty lot-empty--board">Chưa có lịch sử cược.</div>
+            ) : (
+              <ul className="lot-betlist lot-betlist--board">
+                {myHistory.map((bet) => (
+                  <PublicBetRow key={bet._id} bet={bet} mine showDate />
                 ))}
               </ul>
             )}

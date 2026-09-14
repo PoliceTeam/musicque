@@ -430,8 +430,13 @@ const shiftDateKey = (dateKey, deltaDays) => {
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-${String(shifted.getUTCDate()).padStart(2, '0')}`
 }
 
-const getMyBets = async (userId, dateKey = vnDateKey()) => {
-  const bets = await LotteryBet.find({ userId, dateKey }).sort({ createdAt: -1 })
+const MY_HISTORY_LIMIT = Number(process.env.LOTTERY_MY_HISTORY_LIMIT || 38)
+
+const getMyBets = async (userId, { dateKey, limit } = {}) => {
+  const query = { userId }
+  if (dateKey) query.dateKey = String(dateKey)
+  const safeLimit = Math.min(Math.max(Number(limit) || MY_HISTORY_LIMIT, 1), 100)
+  const bets = await LotteryBet.find(query).sort({ createdAt: -1 }).limit(safeLimit)
   return bets.map(serializeBet)
 }
 
@@ -557,6 +562,7 @@ module.exports = {
   getMyBets,
   getPublicBets,
   placeBet,
+  MY_HISTORY_LIMIT,
   // export de test/tai su dung
   parseDrawFromDescription,
   evaluateBet,

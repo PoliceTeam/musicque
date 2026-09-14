@@ -13,8 +13,10 @@ import {
   getLotteryState,
   getLotteryResults,
   getLotteryPublicBets,
+  getLotteryMyBets,
   placeLotteryBet,
 } from '../services/api'
+import { MY_HISTORY_LIMIT } from '../utils/lottery'
 
 export const LotteryContext = createContext()
 
@@ -45,6 +47,7 @@ export const LotteryProvider = ({ children }) => {
   const [config, setConfig] = useState(DEFAULT_CONFIG)
   const [results, setResults] = useState([])
   const [publicBets, setPublicBets] = useState([])
+  const [myHistory, setMyHistory] = useState([])
 
   const loadState = useCallback(async () => {
     try {
@@ -69,10 +72,27 @@ export const LotteryProvider = ({ children }) => {
     }
   }, [])
 
+  const loadMyHistory = useCallback(async () => {
+    if (!user?._id) {
+      setMyHistory([])
+      return
+    }
+    try {
+      const { data } = await getLotteryMyBets({ limit: MY_HISTORY_LIMIT })
+      setMyHistory(data.bets || [])
+    } catch {
+      /* keep last known history */
+    }
+  }, [user?._id])
+
   useEffect(() => {
     loadState()
     loadPublicBets()
   }, [loadState, loadPublicBets])
+
+  useEffect(() => {
+    loadMyHistory()
+  }, [loadMyHistory])
 
   useEffect(() => {
     if (!socket) return undefined
@@ -86,7 +106,12 @@ export const LotteryProvider = ({ children }) => {
     }
 
     const onBet = (payload) => {
-      if (payload?.bet) setPublicBets((prev) => upsertBet(prev, payload.bet))
+      if (payload?.bet) {
+        setPublicBets((prev) => upsertBet(prev, payload.bet))
+        if (user?._id && String(payload.bet.userId) === String(user._id)) {
+          setMyHistory((prev) => upsertBet(prev, payload.bet).slice(0, MY_HISTORY_LIMIT))
+        }
+      }
     }
 
     const onSettled = (payload) => {
@@ -97,6 +122,7 @@ export const LotteryProvider = ({ children }) => {
         })
       }
       loadPublicBets()
+      loadMyHistory()
       refreshBalance()
     }
 
@@ -109,7 +135,7 @@ export const LotteryProvider = ({ children }) => {
       socket.off('lottery_bet', onBet)
       socket.off('lottery_settled', onSettled)
     }
-  }, [socket, loadPublicBets, refreshBalance])
+  }, [socket, loadPublicBets, loadMyHistory, refreshBalance, user?._id])
 
   const placeBet = useCallback(
     async (betType, numbers, amount) => {
@@ -118,6 +144,7 @@ export const LotteryProvider = ({ children }) => {
         const { data } = await placeLotteryBet(betType, numbers, amount)
         setBalance(data.balance)
         setPublicBets((prev) => upsertBet(prev, data.bet))
+        setMyHistory((prev) => upsertBet(prev, data.bet).slice(0, MY_HISTORY_LIMIT))
         message.success(`Đã đặt ${amount} PC · ${numbers.join('-')}`)
         return true
       } catch (error) {
@@ -148,6 +175,7 @@ export const LotteryProvider = ({ children }) => {
         publicBets,
         todayBets,
         myBets,
+        myHistory,
         placeBet,
         refresh: loadState,
       }}

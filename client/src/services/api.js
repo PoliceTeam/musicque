@@ -99,8 +99,10 @@ export const placeChohanBet = (side, amount) =>
 export const getLotteryState = () => api.get("/api/lottery/state");
 export const getLotteryResults = (limit = 7) =>
   api.get("/api/lottery/results", { params: { limit } });
-export const getLotteryMyBets = (dateKey) =>
-  api.get("/api/lottery/my-bets", { params: dateKey ? { dateKey } : {} });
+export const getLotteryMyBets = (params = {}) =>
+  api.get("/api/lottery/my-bets", {
+    params: typeof params === "string" ? { dateKey: params } : params,
+  });
 export const getLotteryPublicBets = (params = {}) =>
   api.get("/api/lottery/bets", { params });
 export const placeLotteryBet = (betType, numbers, amount) =>

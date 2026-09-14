@@ -7,6 +7,7 @@ import {
   isValidNumber,
   estimatePayout,
   summarizeBets,
+  summarizeMyHistory,
   groupBetsByDate,
   betActorName,
 } from './lottery'
@@ -70,5 +71,22 @@ describe('lottery utils', () => {
     expect(groups.map((g) => g.dateKey)).toEqual(['2026-09-14', '2026-09-13'])
     expect(groups[0].bets).toHaveLength(2)
     expect(betActorName(bets[1])).toBe('binh')
+  })
+
+  it('summarizes personal win/loss history', () => {
+    const bets = [
+      { amount: 10, payout: 700, settled: true, won: true },
+      { amount: 20, payout: 0, settled: true, won: false },
+      { amount: 15, payout: 0, settled: false, won: false },
+      { amount: 5, payout: 5, settled: true, won: false },
+    ]
+    expect(summarizeMyHistory(bets)).toEqual({
+      count: 4,
+      won: 1,
+      lost: 1,
+      pending: 1,
+      refunded: 1,
+      net: 670,
+    })
   })
 })

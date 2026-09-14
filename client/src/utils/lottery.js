@@ -55,6 +55,29 @@ export const summarizeBets = (bets = []) => {
   return { count: bets.length, users: users.size, staked, won }
 }
 
+export const MY_HISTORY_LIMIT = 38
+
+export const summarizeMyHistory = (bets = []) => {
+  let won = 0
+  let lost = 0
+  let pending = 0
+  let refunded = 0
+  let net = 0
+  for (const bet of bets) {
+    const stake = Number(bet.amount) || 0
+    const payout = Number(bet.payout) || 0
+    if (!bet.settled) {
+      pending += 1
+      continue
+    }
+    net += payout - stake
+    if (bet.won) won += 1
+    else if (payout > 0) refunded += 1
+    else lost += 1
+  }
+  return { count: bets.length, won, lost, pending, refunded, net }
+}
+
 export const groupBetsByDate = (bets = []) => {
   const groups = []
   const index = new Map()

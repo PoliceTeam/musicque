@@ -19,10 +19,13 @@ exports.getResults = async (req, res) => {
   }
 }
 
-// GET /api/lottery/my-bets?dateKey= — ve cua toi (phai dang nhap)
+// GET /api/lottery/my-bets?dateKey=&limit= — lich su ve cua toi (phai dang nhap)
 exports.getMyBets = async (req, res) => {
   try {
-    const bets = await lottery.getMyBets(req.user._id, req.query.dateKey)
+    const bets = await lottery.getMyBets(req.user._id, {
+      dateKey: req.query.dateKey,
+      limit: req.query.limit,
+    })
     res.status(200).json({ bets })
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
