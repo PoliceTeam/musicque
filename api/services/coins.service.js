@@ -441,13 +441,26 @@ async function getEconomyStats(period = '30d') {
                 redLightPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'redlight_payout'] }, '$amount', 0] },
                 },
+                lotteryWagered: {
+                  $sum: { $cond: [{ $eq: ['$type', 'lottery_bet'] }, { $abs: '$amount' }, 0] },
+                },
+                lotteryPayout: {
+                  $sum: { $cond: [{ $eq: ['$type', 'lottery_payout'] }, '$amount', 0] },
+                },
                 refunded: {
                   $sum: {
                     $cond: [
                       {
                         $in: [
                           '$type',
-                          ['song_bid_refund', 'song_skip_refund', 'chohan_refund', 'xiangqi_refund', 'wordchain_refund'],
+                          [
+                            'song_bid_refund',
+                            'song_skip_refund',
+                            'chohan_refund',
+                            'xiangqi_refund',
+                            'wordchain_refund',
+                            'lottery_refund',
+                          ],
                         ],
                       },
                       '$amount',
@@ -476,6 +489,9 @@ async function getEconomyStats(period = '30d') {
                 wordChainRefund: {
                   $sum: { $cond: [{ $eq: ['$type', 'wordchain_refund'] }, '$amount', 0] },
                 },
+                lotteryRefund: {
+                  $sum: { $cond: [{ $eq: ['$type', 'lottery_refund'] }, '$amount', 0] },
+                },
               },
             },
             {
@@ -496,12 +512,15 @@ async function getEconomyStats(period = '30d') {
                 wordChainSpent: 1,
                 wordChainPayout: 1,
                 redLightPayout: 1,
+                lotteryWagered: 1,
+                lotteryPayout: 1,
                 refunded: 1,
                 songBidRefund: 1,
                 songSkipRefund: 1,
                 chohanRefund: 1,
                 xiangqiRefund: 1,
                 wordChainRefund: 1,
+                lotteryRefund: 1,
               },
             },
           ],
@@ -580,6 +599,9 @@ async function getEconomyStats(period = '30d') {
     wordChainPayout: 0,
     wordChainRefund: 0,
     redLightPayout: 0,
+    lotteryWagered: 0,
+    lotteryPayout: 0,
+    lotteryRefund: 0,
   }
 
   return {
@@ -597,16 +619,19 @@ async function getEconomyStats(period = '30d') {
         + totals.chohanWagered
         + totals.xiangqiWagered
         + totals.wordChainSpent
+        + (totals.lotteryWagered || 0)
         - totals.chohanPayout
         - totals.xiangqiPayout
         - totals.wordChainPayout
         - (totals.redLightPayout || 0)
+        - (totals.lotteryPayout || 0)
         - totals.refunded,
       playerWinProfit:
         totals.chohanPayout / 2
         + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered)
         + Math.max(0, totals.wordChainPayout - totals.wordChainSpent)
-        + (totals.redLightPayout || 0),
+        + (totals.redLightPayout || 0)
+        + Math.max(0, (totals.lotteryPayout || 0) - (totals.lotteryWagered || 0)),
     },
     topUsers: transactionStats[0]?.topUsers || [],
   }

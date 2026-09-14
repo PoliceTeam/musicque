@@ -14,6 +14,7 @@ const songSkip = require('./services/songSkip.service')
 const xiangqi = require('./services/xiangqi.service')
 const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
+const lottery = require('./services/lottery.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -118,6 +119,11 @@ mongoose
       // Tiếp tục các lượt hoàn PC bị gián đoạn do server restart.
       songSkip.resumePendingRefunds(io).catch((error) => {
         console.error('[PC Next] Hoàn PC treo lỗi:', error.message)
+      })
+
+      // Lô đề: dọn ngày treo + lên lịch tự fetch kết quả và trả thưởng.
+      lottery.init(io).catch((error) => {
+        console.error('[Lô đề] Khởi động scheduler lỗi:', error.message)
       })
 
     })

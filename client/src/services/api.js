@@ -95,6 +95,15 @@ export const getChohanHistory = (limit = 20) =>
 export const placeChohanBet = (side, amount) =>
   api.post("/api/chohan/bet", { side, amount });
 
+// Lô đề — cược lô/đề theo kết quả XSMB, chốt 18:00, trả thưởng 19:00
+export const getLotteryState = () => api.get("/api/lottery/state");
+export const getLotteryResults = (limit = 7) =>
+  api.get("/api/lottery/results", { params: { limit } });
+export const getLotteryMyBets = (dateKey) =>
+  api.get("/api/lottery/my-bets", { params: dateKey ? { dateKey } : {} });
+export const placeLotteryBet = (betType, numbers, amount) =>
+  api.post("/api/lottery/bet", { betType, numbers, amount });
+
 // Nối từ realtime trong phiên phát nhạc
 export const getWordChainState = () => api.get("/api/word-chain/state");
 export const getWordChainHistory = (limit = 10) =>

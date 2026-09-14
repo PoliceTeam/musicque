@@ -75,6 +75,14 @@ export const formatActivityItem = (event) => {
         text: `${actorName} đã kết thúc phiên phát nhạc`,
         tone: 'default',
       };
+    case 'lottery_win':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        icon: '🎰',
+        text: `${actorName} ${event.message || 'trúng lê đồ'}`,
+        tone: 'success',
+      };
     default:
       return null;
   }

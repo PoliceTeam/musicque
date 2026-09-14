@@ -11,6 +11,7 @@ import UserMenu from '../components/Auth/UserMenu';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
+import LotteryPanel from '../components/Lottery/LotteryPanel';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import WordChainPromo from '../components/WordChain/WordChainPromo';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
@@ -379,6 +380,8 @@ const HomePage = () => {
 
         {/* ── Cột phải ────────────────────────────────────────────── */}
         <aside className="sp-rail">
+          <LotteryPanel />
+
           <ChohanPanel />
 
           <BilliardsPanel />

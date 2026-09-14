@@ -1,0 +1,700 @@
+/* ══════════════════════════════════════════════════════════════════
+   Lê Đồ (Mang PCs đi Lê Đồ) — giao diện đỏ/vàng may mắn, dùng chung token sp-*
+   ══════════════════════════════════════════════════════════════════ */
+
+.lot-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── CTA ở cột phải Home ──────────────────────────────────────────── */
+.lot-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: var(--sp-radius-lg);
+  cursor: pointer;
+  overflow: hidden;
+  color: #fff5e0;
+  background: linear-gradient(135deg, #b3140f 0%, #d81f21 45%, #8f0d0a 100%);
+  box-shadow: 0 6px 18px rgba(178, 20, 15, 0.4);
+  transition: transform 0.14s ease, box-shadow 0.2s ease;
+  text-align: left;
+}
+
+.lot-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(178, 20, 15, 0.5);
+}
+
+.lot-cta__glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120px 60px at 85% -10%, rgba(255, 214, 120, 0.55), transparent 70%),
+    radial-gradient(90px 50px at 10% 120%, rgba(255, 180, 60, 0.35), transparent 70%);
+  pointer-events: none;
+}
+
+.lot-cta__icon {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  z-index: 1;
+}
+
+.lot-cta__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  z-index: 1;
+}
+
+.lot-cta__title {
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.lot-cta__sub {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.lot-cta__badge {
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: var(--sp-radius-pill);
+  background: rgba(255, 236, 179, 0.95);
+  color: #7a0c08;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── Dải kết quả mini dưới CTA ────────────────────────────────────── */
+.lot-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.lot-mini__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sp-text-muted);
+}
+
+.lot-mini__db {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #d81f21;
+  background: rgba(216, 31, 33, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.lot-mini__chip {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sp-text-muted);
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+
+/* ── Overlay + modal ──────────────────────────────────────────────── */
+.lot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(3px);
+  animation: lot-fade 0.15s ease;
+}
+
+.lot-overlay--rules {
+  z-index: 1300;
+}
+
+@keyframes lot-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lot-modal {
+  width: min(920px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-lg);
+  box-shadow: var(--sp-shadow-lg);
+  animation: lot-pop 0.18s ease;
+}
+
+@keyframes lot-pop {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.lot-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  color: #fff5e0;
+  background: linear-gradient(135deg, #b3140f, #d81f21);
+}
+
+.lot-modal__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lot-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lot-status {
+  padding: 4px 10px;
+  border-radius: var(--sp-radius-pill);
+  background: rgba(255, 236, 179, 0.95);
+  color: #7a0c08;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lot-help,
+.lot-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+
+.lot-help:hover,
+.lot-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Thân modal 2 cột ─────────────────────────────────────────────── */
+.lot-body {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.lot-play {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lot-side {
+  position: relative;
+  border-left: 1px solid var(--sp-border);
+  background: var(--sp-surface-2);
+}
+
+.lot-side__inner {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Tabs loại cược ───────────────────────────────────────────────── */
+.lot-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.lot-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 1.5px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.lot-tab:hover {
+  border-color: #d81f21;
+}
+
+.lot-tab.is-active {
+  border-color: #d81f21;
+  background: rgba(216, 31, 33, 0.1);
+  box-shadow: inset 0 0 0 1px #d81f21;
+}
+
+.lot-tab__label {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.lot-tab__mult {
+  font-size: 11px;
+  font-weight: 800;
+  color: #d81f21;
+}
+
+/* ── Thanh hiển thị con đã chọn ───────────────────────────────────── */
+.lot-pickbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lot-pickbar__hint {
+  font-size: 12px;
+  color: var(--sp-text-muted);
+  font-weight: 600;
+}
+
+.lot-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 34px;
+  align-items: center;
+}
+
+.lot-picks__empty {
+  font-size: 13px;
+  color: var(--sp-text-faint);
+}
+
+.lot-pick {
+  padding: 5px 10px;
+  border-radius: var(--sp-radius-pill);
+  border: none;
+  background: linear-gradient(135deg, #f4b823, #e79b0c);
+  color: #4d3400;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Nhập tay ─────────────────────────────────────────────────────── */
+.lot-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lot-input {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: var(--sp-radius);
+  border: 1.5px solid var(--sp-border);
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+.lot-input:focus {
+  outline: none;
+  border-color: #d81f21;
+}
+
+/* ── Lưới chọn số nhanh ───────────────────────────────────────────── */
+.lot-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.lot-grid__cell {
+  padding: 6px 0;
+  border: 1px solid var(--sp-border);
+  border-radius: 6px;
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.lot-grid__cell:hover {
+  border-color: #d81f21;
+  color: #d81f21;
+}
+
+.lot-grid__cell.is-selected {
+  background: #d81f21;
+  border-color: #d81f21;
+  color: #fff;
+  font-weight: 800;
+}
+
+/* ── Mức cược + ước tính ──────────────────────────────────────────── */
+.lot-betbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.lot-stake {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lot-stake__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--sp-border-strong);
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lot-stake__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lot-stake__value {
+  min-width: 64px;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-estimate {
+  font-size: 13px;
+  color: var(--sp-text-muted);
+}
+
+.lot-estimate strong {
+  color: var(--sp-green);
+  font-size: 15px;
+}
+
+.lot-place {
+  width: 100%;
+}
+
+.lot-note {
+  padding: 10px 12px;
+  border-radius: var(--sp-radius);
+  background: rgba(245, 155, 35, 0.12);
+  color: #b5710a;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.lot-balance {
+  text-align: center;
+  font-size: 13px;
+  color: var(--sp-text-muted);
+}
+
+/* ── Cột phải: card ───────────────────────────────────────────────── */
+.lot-card {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  padding: 12px;
+}
+
+.lot-card__title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.lot-empty {
+  font-size: 13px;
+  color: var(--sp-text-faint);
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Danh sách vé ─────────────────────────────────────────────────── */
+.lot-betlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lot-betitem {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: var(--sp-surface-2);
+  font-size: 12px;
+}
+
+.lot-betitem.is-won {
+  background: var(--sp-green-soft);
+}
+
+.lot-betitem.is-lost {
+  opacity: 0.55;
+}
+
+.lot-betitem__type {
+  font-weight: 700;
+  color: var(--sp-text-muted);
+}
+
+.lot-betitem__nums {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #d81f21;
+}
+
+.lot-betitem__amt {
+  font-variant-numeric: tabular-nums;
+  color: var(--sp-text-muted);
+}
+
+.lot-betitem__state {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--sp-green);
+  white-space: nowrap;
+}
+
+/* ── Danh sách kết quả ────────────────────────────────────────────── */
+.lot-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lot-resitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: var(--sp-surface-2);
+}
+
+.lot-resitem__date {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sp-text-muted);
+  min-width: 44px;
+}
+
+.lot-resitem__db {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: linear-gradient(135deg, #d81f21, #b3140f);
+  padding: 2px 9px;
+  border-radius: 6px;
+}
+
+.lot-resitem__seven {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.lot-resitem__chip {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sp-text-muted);
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+
+/* ── Modal luật ───────────────────────────────────────────────────── */
+.lot-rules {
+  width: min(560px, 100%);
+  overflow-y: auto;
+  padding-bottom: 18px;
+}
+
+.lot-rules .lot-modal__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.lot-rules__slogan {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 14px 18px 0;
+  padding: 12px 14px;
+  border-radius: var(--sp-radius);
+  border-left: 4px solid var(--sp-green);
+  background: linear-gradient(100deg, rgba(29, 185, 84, 0.12), rgba(244, 184, 35, 0.1));
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--sp-text);
+}
+
+.lot-rules__slogan span[aria-hidden] {
+  font-size: 20px;
+  font-style: normal;
+  line-height: 1.2;
+}
+
+.lot-rules__lead {
+  padding: 12px 18px 0;
+  margin: 0;
+  font-size: 14px;
+  color: var(--sp-text);
+}
+
+.lot-rules__block {
+  padding: 12px 18px 0;
+}
+
+.lot-rules__block h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.lot-rules__block ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--sp-text-muted);
+  line-height: 1.6;
+}
+
+.lot-rules__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.lot-rules__table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--sp-border);
+}
+
+.lot-rules__table td:last-child {
+  text-align: right;
+  font-weight: 800;
+  color: #d81f21;
+  white-space: nowrap;
+}
+
+.lot-rules__note {
+  margin: 10px 18px 0;
+  padding: 10px 12px;
+  border-radius: var(--sp-radius);
+  background: rgba(245, 155, 35, 0.12);
+  color: #b5710a;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.lot-rules .sp-btn {
+  margin-left: 18px;
+  margin-right: 18px;
+  width: calc(100% - 36px) !important;
+}
+
+/* ── Responsive nhẹ (desktop-first) ───────────────────────────────── */
+@media (max-width: 720px) {
+  .lot-body {
+    grid-template-columns: 1fr;
+  }
+  .lot-side {
+    border-left: none;
+    border-top: 1px solid var(--sp-border);
+    max-height: 40vh;
+  }
+  .lot-side__inner {
+    position: static;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lot-overlay,
+  .lot-modal {
+    animation: none;
+  }
+}
