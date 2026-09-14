@@ -30,7 +30,17 @@ const LotteryPanel = () => {
   return (
     <div className="lot-rail">
       <button type="button" className="lot-cta" onClick={() => setOpen(true)}>
+        <span className="lot-cta__rim" aria-hidden="true" />
+        <span className="lot-cta__fill" aria-hidden="true" />
         <span className="lot-cta__glow" aria-hidden="true" />
+        <span className="lot-cta__shine" aria-hidden="true" />
+        <span className="lot-cta__coins" aria-hidden="true">
+          <span className="lot-cta__coin lot-cta__coin--1">💰</span>
+          <span className="lot-cta__coin lot-cta__coin--2">🪙</span>
+          <span className="lot-cta__spark lot-cta__spark--1" />
+          <span className="lot-cta__spark lot-cta__spark--2" />
+          <span className="lot-cta__spark lot-cta__spark--3" />
+        </span>
         <span className="lot-cta__icon" aria-hidden="true">
           🎰
         </span>

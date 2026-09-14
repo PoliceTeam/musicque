@@ -193,6 +193,7 @@ body {
  * phần mà người ta muốn đọc. Giờ nó giữ sàn `--sp-rail-news-min` và cả cột
  * phải tự cuộn khi không đủ chỗ, thay vì bóp mỗi khung tin.
  */
+.sp-rail > .lot-rail,
 .sp-rail > .chohan-rail,
 .sp-rail > .bil-rail {
   flex: 0 0 auto;

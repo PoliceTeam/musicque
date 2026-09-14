@@ -8,44 +8,182 @@
   gap: 8px;
 }
 
-/* ── CTA ở cột phải Home ──────────────────────────────────────────── */
+/* ── CTA ở cột phải Home — luxury gold, hút mắt hơn Cho-Han ───────── */
 .lot-cta {
+  --lot-gold: #f3d27a;
+  --lot-gold-bright: #fff4c8;
+  --lot-wine: #5a0c14;
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 14px 16px;
+  padding: 15px 16px;
   border: none;
   border-radius: var(--sp-radius-lg);
   cursor: pointer;
   overflow: hidden;
-  color: #fff5e0;
-  background: linear-gradient(135deg, #b3140f 0%, #d81f21 45%, #8f0d0a 100%);
-  box-shadow: 0 6px 18px rgba(178, 20, 15, 0.4);
-  transition: transform 0.14s ease, box-shadow 0.2s ease;
+  color: #fff6dc;
+  background: transparent;
+  box-shadow:
+    0 0 0 1px rgba(243, 210, 122, 0.55),
+    0 8px 22px rgba(90, 12, 20, 0.45),
+    0 0 26px rgba(212, 175, 55, 0.28);
+  animation: lot-cta-breathe 3.4s ease-in-out infinite;
+  transition: transform 0.16s ease, box-shadow 0.2s ease;
   text-align: left;
 }
 
 .lot-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 26px rgba(178, 20, 15, 0.5);
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 200, 0.85),
+    0 14px 32px rgba(90, 12, 20, 0.5),
+    0 0 36px rgba(243, 210, 122, 0.45);
+}
+
+.lot-cta:active {
+  transform: translateY(-1px);
+}
+
+.lot-cta__rim,
+.lot-cta__fill,
+.lot-cta__glow,
+.lot-cta__shine,
+.lot-cta__coins {
+  pointer-events: none;
+}
+
+.lot-cta__rim {
+  position: absolute;
+  inset: -55%;
+  background: conic-gradient(
+    from 0deg,
+    #7a5a14 0%,
+    #ffe9a8 18%,
+    #c9a227 36%,
+    #fff6d0 54%,
+    #8a6a1c 72%,
+    #f3d27a 86%,
+    #7a5a14 100%
+  );
+  animation: lot-cta-spin 5.5s linear infinite;
+  z-index: 0;
+}
+
+.lot-cta__fill {
+  position: absolute;
+  inset: 1.5px;
+  border-radius: calc(var(--sp-radius-lg) - 1px);
+  background:
+    linear-gradient(160deg, #7a1420 0%, #c41f28 42%, #4a0c12 100%);
+  z-index: 0;
 }
 
 .lot-cta__glow {
   position: absolute;
-  inset: 0;
+  inset: 1.5px;
+  border-radius: calc(var(--sp-radius-lg) - 1px);
   background:
-    radial-gradient(120px 60px at 85% -10%, rgba(255, 214, 120, 0.55), transparent 70%),
-    radial-gradient(90px 50px at 10% 120%, rgba(255, 180, 60, 0.35), transparent 70%);
-  pointer-events: none;
+    radial-gradient(130px 70px at 88% -8%, rgba(255, 228, 150, 0.62), transparent 68%),
+    radial-gradient(100px 56px at 8% 118%, rgba(255, 196, 80, 0.32), transparent 70%);
+  z-index: 0;
+}
+
+.lot-cta__shine {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -40%;
+  width: 42%;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 244, 200, 0.06) 36%,
+    rgba(255, 255, 255, 0.46) 50%,
+    rgba(243, 210, 122, 0.2) 62%,
+    transparent 100%
+  );
+  transform: translateX(-30%) rotate(12deg);
+  animation: lot-cta-shine 4.4s ease-in-out infinite;
+  z-index: 1;
+}
+
+.lot-cta__coins {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.lot-cta__coin {
+  position: absolute;
+  font-size: 13px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  animation: lot-cta-float 3.8s ease-in-out infinite;
+}
+
+.lot-cta__coin--1 {
+  top: 5px;
+  right: 26%;
+}
+
+.lot-cta__coin--2 {
+  bottom: 6px;
+  left: 20%;
+  animation-delay: -1.4s;
+  font-size: 12px;
+}
+
+.lot-cta__spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lot-gold-bright);
+  box-shadow: 0 0 8px 2px rgba(255, 228, 150, 0.85);
+  animation: lot-cta-twinkle 2.2s ease-in-out infinite;
+}
+
+.lot-cta__spark--1 {
+  top: 10px;
+  left: 48%;
+}
+
+.lot-cta__spark--2 {
+  bottom: 12px;
+  right: 22%;
+  animation-delay: -0.7s;
+  width: 3px;
+  height: 3px;
+}
+
+.lot-cta__spark--3 {
+  top: 18px;
+  left: 14%;
+  animation-delay: -1.5s;
+  width: 4px;
+  height: 4px;
 }
 
 .lot-cta__icon {
-  font-size: 30px;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  font-size: 26px;
   line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
-  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff4c8, #e0b84a 55%, #9a6f14);
+  box-shadow:
+    0 0 0 1px rgba(255, 236, 180, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.28),
+    0 0 12px rgba(243, 210, 122, 0.45);
+  filter: none;
 }
 
 .lot-cta__body {
@@ -54,29 +192,108 @@
   gap: 2px;
   flex: 1;
   min-width: 0;
-  z-index: 1;
+  z-index: 2;
 }
 
 .lot-cta__title {
   font-weight: 900;
   font-size: 15px;
   letter-spacing: 0.01em;
+  color: #f3d27a;
+  background: linear-gradient(
+    100deg,
+    #c9a227 0%,
+    #fff6d0 28%,
+    #f3d27a 52%,
+    #fff8e0 74%,
+    #d4af37 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lot-cta-foil 3.2s linear infinite;
+  filter: drop-shadow(0 1px 0 rgba(60, 10, 12, 0.45));
 }
 
 .lot-cta__sub {
   font-size: 12px;
-  opacity: 0.9;
+  color: rgba(255, 244, 214, 0.88);
 }
 
 .lot-cta__badge {
-  z-index: 1;
+  z-index: 2;
   padding: 4px 10px;
   border-radius: var(--sp-radius-pill);
-  background: rgba(255, 236, 179, 0.95);
-  color: #7a0c08;
+  background: linear-gradient(180deg, #fff6d0 0%, #f0c85a 100%);
+  color: #6a120e;
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 2px 6px rgba(80, 20, 10, 0.25);
+}
+
+@keyframes lot-cta-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(243, 210, 122, 0.45),
+      0 8px 22px rgba(90, 12, 20, 0.42),
+      0 0 20px rgba(212, 175, 55, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 244, 200, 0.8),
+      0 10px 26px rgba(90, 12, 20, 0.5),
+      0 0 34px rgba(243, 210, 122, 0.42);
+  }
+}
+
+@keyframes lot-cta-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lot-cta-shine {
+  0%,
+  28% {
+    transform: translateX(-40%) rotate(12deg);
+  }
+  52%,
+  100% {
+    transform: translateX(280%) rotate(12deg);
+  }
+}
+
+@keyframes lot-cta-foil {
+  to {
+    background-position: 220% 0;
+  }
+}
+
+@keyframes lot-cta-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-10deg);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-7px) rotate(12deg);
+    opacity: 0.95;
+  }
+}
+
+@keyframes lot-cta-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
 
 /* ── Dải kết quả mini dưới CTA ────────────────────────────────────── */
@@ -797,7 +1014,19 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lot-overlay,
-  .lot-modal {
+  .lot-modal,
+  .lot-cta,
+  .lot-cta__rim,
+  .lot-cta__shine,
+  .lot-cta__coin,
+  .lot-cta__spark,
+  .lot-cta__title {
     animation: none;
+  }
+
+  .lot-cta__title {
+    color: #fff4c8;
+    background: none;
+    -webkit-text-fill-color: #fff4c8;
   }
 }
