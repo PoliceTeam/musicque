@@ -29,6 +29,20 @@ exports.getMyBets = async (req, res) => {
   }
 }
 
+// GET /api/lottery/bets?dateKey=&days=&limit= — bang cuoc cong khai
+exports.getPublicBets = async (req, res) => {
+  try {
+    const bets = await lottery.getPublicBets({
+      dateKey: req.query.dateKey,
+      days: req.query.days,
+      limit: req.query.limit,
+    })
+    res.status(200).json({ bets })
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message })
+  }
+}
+
 // POST /api/lottery/bet { betType, numbers, amount } — dat cuoc (phai dang nhap)
 exports.placeBet = async (req, res) => {
   try {

@@ -404,11 +404,14 @@ const getRecentResults = async (limit = 7) => {
   return draws.map(serializeResult).filter(Boolean)
 }
 
-// Ve cua toi cho mot ngay (mac dinh hom nay)
-const getMyBets = async (userId, dateKey = vnDateKey()) => {
-  const bets = await LotteryBet.find({ userId, dateKey }).sort({ createdAt: -1 })
-  return bets.map((bet) => ({
+const serializeBet = (bet) => {
+  if (!bet) return null
+  return {
     _id: bet._id,
+    dateKey: bet.dateKey,
+    userId: bet.userId,
+    username: bet.username,
+    displayName: bet.displayName || bet.username,
     betType: bet.betType,
     numbers: bet.numbers,
     amount: bet.amount,
@@ -418,7 +421,37 @@ const getMyBets = async (userId, dateKey = vnDateKey()) => {
     hitCount: bet.hitCount,
     payout: bet.payout,
     createdAt: bet.createdAt,
-  }))
+  }
+}
+
+const shiftDateKey = (dateKey, deltaDays) => {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const shifted = new Date(Date.UTC(year, month - 1, day + deltaDays))
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-${String(shifted.getUTCDate()).padStart(2, '0')}`
+}
+
+const getMyBets = async (userId, dateKey = vnDateKey()) => {
+  const bets = await LotteryBet.find({ userId, dateKey }).sort({ createdAt: -1 })
+  return bets.map(serializeBet)
+}
+
+// Public slip board: PCs are play-money, so every ticket is visible.
+const getPublicBets = async ({ dateKey, days, limit } = {}) => {
+  const today = vnDateKey()
+  const safeLimit = Math.min(Math.max(Number(limit) || 200, 1), 500)
+  const query = {}
+
+  if (dateKey) {
+    query.dateKey = String(dateKey)
+  } else {
+    const span = Math.min(Math.max(Number(days) || 1, 1), 14)
+    query.dateKey = span === 1 ? today : { $gte: shiftDateKey(today, 1 - span) }
+  }
+
+  const bets = await LotteryBet.find(query)
+    .sort({ dateKey: -1, createdAt: -1 })
+    .limit(safeLimit)
+  return bets.map(serializeBet)
 }
 
 // Chuan hoa + validate cac so theo tung loai cuoc
@@ -500,15 +533,11 @@ const placeBet = async ({ user, betType, numbers, amount }) => {
     throw httpError(500, 'Không đặt được cược, đã hoàn PC')
   }
 
+  const publicBet = serializeBet(bet)
+  broadcast('lottery_bet', { bet: publicBet })
+
   return {
-    bet: {
-      _id: bet._id,
-      betType: bet.betType,
-      numbers: bet.numbers,
-      amount: bet.amount,
-      multiplier: bet.multiplier,
-      createdAt: bet.createdAt,
-    },
+    bet: publicBet,
     balance: debited.polites,
   }
 }
@@ -526,6 +555,7 @@ module.exports = {
   getState,
   getRecentResults,
   getMyBets,
+  getPublicBets,
   placeBet,
   // export de test/tai su dung
   parseDrawFromDescription,

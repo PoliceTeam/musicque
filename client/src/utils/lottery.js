@@ -45,3 +45,27 @@ export const estimatePayout = (betType, amount) => {
   if (!tab) return 0
   return (Number(amount) || 0) * tab.mult
 }
+
+export const betActorName = (bet) => bet?.displayName || bet?.username || 'Ẩn danh'
+
+export const summarizeBets = (bets = []) => {
+  const users = new Set(bets.map((bet) => String(bet.userId || bet.username)))
+  const staked = bets.reduce((sum, bet) => sum + (Number(bet.amount) || 0), 0)
+  const won = bets.filter((bet) => bet.settled && bet.won).length
+  return { count: bets.length, users: users.size, staked, won }
+}
+
+export const groupBetsByDate = (bets = []) => {
+  const groups = []
+  const index = new Map()
+  for (const bet of bets) {
+    const key = bet.dateKey || 'unknown'
+    if (!index.has(key)) {
+      const group = { dateKey: key, bets: [] }
+      index.set(key, group)
+      groups.push(group)
+    }
+    index.get(key).bets.push(bet)
+  }
+  return groups
+}

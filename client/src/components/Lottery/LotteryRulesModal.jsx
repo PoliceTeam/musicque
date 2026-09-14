@@ -54,6 +54,7 @@ const LotteryRulesModal = ({ open, onClose }) => {
           <ul>
             <li>Tối đa <strong>50 PC / vé</strong>, đặt bao nhiêu vé tùy thích.</li>
             <li>Không giới hạn tiền thưởng.</li>
+            <li>Mọi vé đều <strong>công khai</strong> trên bảng cược — PCs là tiền vui, xem nhau để chơi cho nóng.</li>
           </ul>
         </div>
 

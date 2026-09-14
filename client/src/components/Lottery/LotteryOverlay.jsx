@@ -9,11 +9,32 @@ import {
   requiredPicks,
   isValidNumber,
   estimatePayout,
+  betActorName,
+  summarizeBets,
+  groupBetsByDate,
 } from '../../utils/lottery'
 
+const PublicBetRow = ({ bet, mine }) => (
+  <li
+    className={`lot-betitem${mine ? ' is-mine' : ''}${
+      bet.settled ? (bet.won ? ' is-won' : ' is-lost') : ''
+    }`}
+  >
+    <span className="lot-betitem__who" title={bet.username}>
+      {betActorName(bet)}
+    </span>
+    <span className="lot-betitem__type">{BET_LABELS[bet.betType] || bet.betType}</span>
+    <span className="lot-betitem__nums">{(bet.numbers || []).join('-')}</span>
+    <span className="lot-betitem__amt">{bet.amount} PC</span>
+    <span className="lot-betitem__state">
+      {!bet.settled ? '⏳' : bet.won ? `🎉 +${bet.payout}` : '—'}
+    </span>
+  </li>
+)
+
 const LotteryOverlay = ({ open, onClose }) => {
-  const { draw, config, results, myBets, placeBet } = useLottery()
-  const { balance, isAuthenticated, openAuthModal } = useAuth()
+  const { draw, config, results, todayBets, publicBets, placeBet } = useLottery()
+  const { user, balance, isAuthenticated, openAuthModal } = useAuth()
 
   const [betType, setBetType] = useState('de')
   const [picks, setPicks] = useState([]) // các con đã chọn (chuỗi)
@@ -21,11 +42,17 @@ const LotteryOverlay = ({ open, onClose }) => {
   const [stake, setStake] = useState(10)
   const [submitting, setSubmitting] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [boardOpen, setBoardOpen] = useState(false)
   const [, setTick] = useState(0)
 
   const maxStake = config.maxStake || 50
   const activeTab = useMemo(() => BET_TABS.find((t) => t.key === betType), [betType])
   const need = requiredPicks(betType)
+  const todaySummary = useMemo(() => summarizeBets(todayBets), [todayBets])
+  const historyGroups = useMemo(
+    () => groupBetsByDate(publicBets.filter((bet) => bet.dateKey !== draw?.dateKey)),
+    [publicBets, draw?.dateKey],
+  )
 
   // Nhịp 1s cho countdown
   useEffect(() => {
@@ -35,11 +62,22 @@ const LotteryOverlay = ({ open, onClose }) => {
   }, [open])
 
   useEffect(() => {
+    if (!open) setBoardOpen(false)
+  }, [open])
+
+  useEffect(() => {
     if (!open) return undefined
-    const onKey = (e) => e.key === 'Escape' && onClose()
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (boardOpen) {
+        setBoardOpen(false)
+        return
+      }
+      onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, onClose, boardOpen])
 
   // Đổi loại cược → reset lựa chọn
   useEffect(() => {
@@ -116,6 +154,18 @@ const LotteryOverlay = ({ open, onClose }) => {
             </span>
             <button
               type="button"
+              className={`lot-help lot-board-btn${boardOpen ? ' is-active' : ''}`}
+              onClick={() => setBoardOpen((current) => !current)}
+              aria-label="Bảng cược hôm nay"
+              title="Xem ai đang đặt hôm nay"
+            >
+              👥
+              {todaySummary.count > 0 && (
+                <span className="lot-board-btn__count">{todaySummary.count}</span>
+              )}
+            </button>
+            <button
+              type="button"
               className="lot-help"
               onClick={() => setRulesOpen(true)}
               aria-label="Luật chơi"
@@ -131,6 +181,40 @@ const LotteryOverlay = ({ open, onClose }) => {
 
         <LotteryRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
 
+        {boardOpen ? (
+          <div className="lot-board">
+            <div className="lot-board__head">
+              <div>
+                <h3 className="lot-board__title">Bảng cược hôm nay</h3>
+                <p className="lot-board__meta">
+                  {todaySummary.count === 0
+                    ? 'Chưa có ai đặt — bạn có thể là vé đầu tiên.'
+                    : `${todaySummary.count} vé · ${todaySummary.users} người · ${todaySummary.staked} PC đã xuống`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="sp-btn sp-btn--ghost"
+                onClick={() => setBoardOpen(false)}
+              >
+                ← Đặt cược
+              </button>
+            </div>
+            {todayBets.length === 0 ? (
+              <div className="lot-empty lot-empty--board">Chưa có vé nào hôm nay.</div>
+            ) : (
+              <ul className="lot-betlist lot-betlist--board">
+                {todayBets.map((bet) => (
+                  <PublicBetRow
+                    key={bet._id}
+                    bet={bet}
+                    mine={user?._id && String(bet.userId) === String(user._id)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
         <div className="lot-body">
           {/* ── Cột trái: đặt cược ─────────────────────────────── */}
           <div className="lot-play">
@@ -276,33 +360,55 @@ const LotteryOverlay = ({ open, onClose }) => {
             </div>
           </div>
 
-          {/* ── Cột phải: vé của tôi + kết quả ──────────────────── */}
+          {/* ── Cột phải: bảng cược công khai + kết quả ────────── */}
           <div className="lot-side">
             <div className="lot-side__inner">
               <section className="lot-card">
-                <h3 className="lot-card__title">🎟️ Vé của bạn hôm nay</h3>
-                {myBets.length === 0 ? (
-                  <div className="lot-empty">Chưa có vé nào.</div>
+                <h3 className="lot-card__title">🔥 Bảng cược hôm nay</h3>
+                {todayBets.length === 0 ? (
+                  <div className="lot-empty">Chưa có vé nào. Đặt trước để mọi người thấy!</div>
                 ) : (
-                  <ul className="lot-betlist">
-                    {myBets.map((bet) => (
-                      <li
-                        key={bet._id}
-                        className={`lot-betitem${bet.settled ? (bet.won ? ' is-won' : ' is-lost') : ''}`}
-                      >
-                        <span className="lot-betitem__type">{BET_LABELS[bet.betType]}</span>
-                        <span className="lot-betitem__nums">{bet.numbers.join('-')}</span>
-                        <span className="lot-betitem__amt">{bet.amount} PC</span>
-                        <span className="lot-betitem__state">
-                          {!bet.settled
-                            ? '⏳'
-                            : bet.won
-                              ? `🎉 +${bet.payout}`
-                              : '—'}
-                        </span>
-                      </li>
+                  <>
+                    <p className="lot-card__meta">
+                      {todaySummary.count} vé · {todaySummary.users} người · {todaySummary.staked} PC
+                    </p>
+                    <ul className="lot-betlist">
+                      {todayBets.map((bet) => (
+                        <PublicBetRow
+                          key={bet._id}
+                          bet={bet}
+                          mine={user?._id && String(bet.userId) === String(user._id)}
+                        />
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </section>
+
+              <section className="lot-card">
+                <h3 className="lot-card__title">🧾 Lịch sử 7 ngày</h3>
+                {historyGroups.length === 0 ? (
+                  <div className="lot-empty">Chưa có vé ngày trước.</div>
+                ) : (
+                  <div className="lot-history">
+                    {historyGroups.map((group) => (
+                      <div key={group.dateKey} className="lot-history__day">
+                        <div className="lot-history__label">
+                          {group.dateKey.slice(5)} · {summarizeBets(group.bets).count} vé ·{' '}
+                          {summarizeBets(group.bets).won} thắng
+                        </div>
+                        <ul className="lot-betlist">
+                          {group.bets.map((bet) => (
+                            <PublicBetRow
+                              key={bet._id}
+                              bet={bet}
+                              mine={user?._id && String(bet.userId) === String(user._id)}
+                            />
+                          ))}
+                        </ul>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </section>
 
@@ -333,6 +439,7 @@ const LotteryOverlay = ({ open, onClose }) => {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

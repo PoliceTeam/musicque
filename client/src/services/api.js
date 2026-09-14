@@ -101,6 +101,8 @@ export const getLotteryResults = (limit = 7) =>
   api.get("/api/lottery/results", { params: { limit } });
 export const getLotteryMyBets = (dateKey) =>
   api.get("/api/lottery/my-bets", { params: dateKey ? { dateKey } : {} });
+export const getLotteryPublicBets = (params = {}) =>
+  api.get("/api/lottery/bets", { params });
 export const placeLotteryBet = (betType, numbers, amount) =>
   api.post("/api/lottery/bet", { betType, numbers, amount });
 

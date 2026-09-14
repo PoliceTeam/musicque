@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useLottery } from '../../contexts/LotteryContext'
 import LotteryOverlay from './LotteryOverlay'
-import { getCountdown } from '../../utils/lottery'
+import { getCountdown, summarizeBets } from '../../utils/lottery'
 
 const LotteryPanel = () => {
-  const { draw, results } = useLottery()
+  const { draw, results, todayBets } = useLottery()
   const [open, setOpen] = useState(false)
   const [, setTick] = useState(0)
 
@@ -25,6 +25,7 @@ const LotteryPanel = () => {
   }
 
   const latest = results[0]
+  const todaySummary = summarizeBets(todayBets)
 
   return (
     <div className="lot-rail">
@@ -35,7 +36,11 @@ const LotteryPanel = () => {
         </span>
         <span className="lot-cta__body">
           <span className="lot-cta__title">Mang PCs đi Lê Đồ</span>
-          <span className="lot-cta__sub">Đề ×70 · Lê ×4 · quỹ may mắn</span>
+          <span className="lot-cta__sub">
+            {todaySummary.count > 0
+              ? `${todaySummary.count} vé · ${todaySummary.users} người hôm nay`
+              : 'Đề ×70 · Lê ×4 · quỹ may mắn'}
+          </span>
         </span>
         <span className="lot-cta__badge">{badge}</span>
       </button>

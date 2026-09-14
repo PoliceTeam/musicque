@@ -213,6 +213,73 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+.lot-board-btn {
+  position: relative;
+  font-size: 15px;
+}
+
+.lot-board-btn.is-active {
+  background: rgba(255, 236, 179, 0.95);
+  color: #7a0c08;
+  border-color: #ffe9a0;
+}
+
+.lot-board-btn__count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ffe9a0;
+  color: #7a0c08;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+}
+
+.lot-board {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 420px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 16px 18px 20px;
+}
+
+.lot-board__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lot-board__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.lot-board__meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+
+.lot-empty--board {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.lot-betlist--board .lot-betitem {
+  font-size: 13px;
+  padding: 9px 11px;
+}
+
 /* ── Thân modal 2 cột ─────────────────────────────────────────────── */
 .lot-body {
   display: grid;
@@ -474,6 +541,13 @@
   font-weight: 800;
 }
 
+.lot-card__meta {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+
 .lot-empty {
   font-size: 13px;
   color: var(--sp-text-faint);
@@ -493,8 +567,8 @@
 
 .lot-betitem {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  gap: 6px;
   align-items: center;
   padding: 7px 9px;
   border-radius: 7px;
@@ -508,6 +582,17 @@
 
 .lot-betitem.is-lost {
   opacity: 0.55;
+}
+
+.lot-betitem.is-mine {
+  box-shadow: inset 0 0 0 1.5px #d81f21;
+}
+
+.lot-betitem__who {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lot-betitem__type {
@@ -531,6 +616,24 @@
   font-variant-numeric: tabular-nums;
   color: var(--sp-green);
   white-space: nowrap;
+}
+
+.lot-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lot-history__day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lot-history__label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--sp-text-muted);
 }
 
 /* ── Danh sách kết quả ────────────────────────────────────────────── */

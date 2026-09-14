@@ -6,6 +6,9 @@ import {
   requiredPicks,
   isValidNumber,
   estimatePayout,
+  summarizeBets,
+  groupBetsByDate,
+  betActorName,
 } from './lottery'
 
 describe('lottery utils', () => {
@@ -54,5 +57,18 @@ describe('lottery utils', () => {
     expect(estimatePayout('3cang', 10)).toBe(4000)
     expect(estimatePayout('xien2', 10)).toBe(100)
     expect(estimatePayout('unknown', 10)).toBe(0)
+  })
+
+  it('summarizes and groups a public slip board', () => {
+    const bets = [
+      { _id: '1', dateKey: '2026-09-14', userId: 'a', displayName: 'An', amount: 10, settled: true, won: true },
+      { _id: '2', dateKey: '2026-09-14', userId: 'b', username: 'binh', amount: 20, settled: false, won: false },
+      { _id: '3', dateKey: '2026-09-13', userId: 'a', displayName: 'An', amount: 5, settled: true, won: false },
+    ]
+    expect(summarizeBets(bets)).toEqual({ count: 3, users: 2, staked: 35, won: 1 })
+    const groups = groupBetsByDate(bets)
+    expect(groups.map((g) => g.dateKey)).toEqual(['2026-09-14', '2026-09-13'])
+    expect(groups[0].bets).toHaveLength(2)
+    expect(betActorName(bets[1])).toBe('binh')
   })
 })

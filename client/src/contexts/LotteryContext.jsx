@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from 'react'
 import { message } from 'antd'
 import { PlaylistContext } from './PlaylistContext'
@@ -11,7 +12,7 @@ import { useAuth } from './AuthContext'
 import {
   getLotteryState,
   getLotteryResults,
-  getLotteryMyBets,
+  getLotteryPublicBets,
   placeLotteryBet,
 } from '../services/api'
 
@@ -30,15 +31,20 @@ const DEFAULT_CONFIG = {
   labels: {},
 }
 
-export const LotteryProvider = ({ children }) => {
-  // Dùng chung socket của PlaylistContext, không mở kết nối thứ hai
-  const { socket } = useContext(PlaylistContext)
-  const { setBalance, refreshBalance, requireAuth, isAuthenticated } = useAuth()
+const upsertBet = (list, bet) => {
+  if (!bet?._id) return list
+  const without = list.filter((item) => item._id !== bet._id)
+  return [bet, ...without]
+}
 
-  const [draw, setDraw] = useState(null) // { dateKey, status, bettingOpen, cutoffAt, result }
+export const LotteryProvider = ({ children }) => {
+  const { socket } = useContext(PlaylistContext)
+  const { user, setBalance, refreshBalance, requireAuth } = useAuth()
+
+  const [draw, setDraw] = useState(null)
   const [config, setConfig] = useState(DEFAULT_CONFIG)
-  const [results, setResults] = useState([]) // kết quả các ngày gần đây
-  const [myBets, setMyBets] = useState([])
+  const [results, setResults] = useState([])
+  const [publicBets, setPublicBets] = useState([])
 
   const loadState = useCallback(async () => {
     try {
@@ -50,30 +56,23 @@ export const LotteryProvider = ({ children }) => {
       if (state.config) setConfig({ ...DEFAULT_CONFIG, ...state.config })
       setResults(res.results || [])
     } catch {
-      /* im lặng, socket/lần load sau sẽ đồng bộ lại */
+      /* keep last known state */
     }
   }, [])
 
-  const loadMyBets = useCallback(async () => {
-    if (!isAuthenticated) {
-      setMyBets([])
-      return
-    }
+  const loadPublicBets = useCallback(async () => {
     try {
-      const { data } = await getLotteryMyBets()
-      setMyBets(data.bets || [])
+      const { data } = await getLotteryPublicBets({ days: 7, limit: 300 })
+      setPublicBets(data.bets || [])
     } catch {
-      /* bỏ qua */
+      /* keep last known board */
     }
-  }, [isAuthenticated])
+  }, [])
 
   useEffect(() => {
     loadState()
-  }, [loadState])
-
-  useEffect(() => {
-    loadMyBets()
-  }, [loadMyBets])
+    loadPublicBets()
+  }, [loadState, loadPublicBets])
 
   useEffect(() => {
     if (!socket) return undefined
@@ -86,26 +85,31 @@ export const LotteryProvider = ({ children }) => {
       )
     }
 
+    const onBet = (payload) => {
+      if (payload?.bet) setPublicBets((prev) => upsertBet(prev, payload.bet))
+    }
+
     const onSettled = (payload) => {
-      // Kết quả về → cập nhật bảng kết quả và số dư (server đã cộng thưởng)
       if (payload.result) {
         setResults((prev) => {
           const withoutDay = prev.filter((r) => r.dateKey !== payload.result.dateKey)
           return [payload.result, ...withoutDay].slice(0, 10)
         })
       }
-      loadMyBets()
+      loadPublicBets()
       refreshBalance()
     }
 
     socket.on('lottery_closed', onClosed)
+    socket.on('lottery_bet', onBet)
     socket.on('lottery_settled', onSettled)
 
     return () => {
       socket.off('lottery_closed', onClosed)
+      socket.off('lottery_bet', onBet)
       socket.off('lottery_settled', onSettled)
     }
-  }, [socket, loadMyBets, refreshBalance])
+  }, [socket, loadPublicBets, refreshBalance])
 
   const placeBet = useCallback(
     async (betType, numbers, amount) => {
@@ -113,7 +117,7 @@ export const LotteryProvider = ({ children }) => {
       try {
         const { data } = await placeLotteryBet(betType, numbers, amount)
         setBalance(data.balance)
-        setMyBets((prev) => [data.bet, ...prev])
+        setPublicBets((prev) => upsertBet(prev, data.bet))
         message.success(`Đã đặt ${amount} PC · ${numbers.join('-')}`)
         return true
       } catch (error) {
@@ -124,9 +128,29 @@ export const LotteryProvider = ({ children }) => {
     [requireAuth, setBalance],
   )
 
+  const todayKey = draw?.dateKey
+  const todayBets = useMemo(
+    () => (todayKey ? publicBets.filter((bet) => bet.dateKey === todayKey) : publicBets),
+    [publicBets, todayKey],
+  )
+  const myBets = useMemo(() => {
+    if (!user?._id) return []
+    const mine = String(user._id)
+    return todayBets.filter((bet) => String(bet.userId) === mine)
+  }, [todayBets, user?._id])
+
   return (
     <LotteryContext.Provider
-      value={{ draw, config, results, myBets, placeBet, refresh: loadState }}
+      value={{
+        draw,
+        config,
+        results,
+        publicBets,
+        todayBets,
+        myBets,
+        placeBet,
+        refresh: loadState,
+      }}
     >
       {children}
     </LotteryContext.Provider>
