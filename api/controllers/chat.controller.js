@@ -39,3 +39,12 @@ exports.getSessionMessages = async (req, res) => {
     return sendError(res, error)
   }
 }
+
+exports.uploadImage = async (req, res) => {
+  try {
+    const result = await chatService.saveChatImage({ dataUrl: req.body?.image })
+    return res.status(201).json(result)
+  } catch (error) {
+    return sendError(res, error)
+  }
+}

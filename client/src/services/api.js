@@ -147,6 +147,8 @@ export const getChatMessages = (sessionId, params = {}, config = {}) =>
     params: { limit: 50, ...params },
   });
 
+export const uploadChatImage = (image) => api.post("/api/chat/images", { image });
+
 // Song API — danh tính người gửi lấy từ token, không truyền username nữa
 export const addSong = (youtubeUrl, message) =>
   api.post("/api/songs", { youtubeUrl, message });

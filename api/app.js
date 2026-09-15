@@ -28,7 +28,12 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/api/chat/images') {
+    return express.json({ limit: '2mb' })(req, res, next)
+  }
+  return express.json()(req, res, next)
+})
 
 // Health check API
 app.get('/api/health', (req, res) => {

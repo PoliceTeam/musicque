@@ -3,10 +3,14 @@ const mongoose = require('mongoose');
 const messageSchema = new mongoose.Schema({
   content: {
     type: String,
-    required: true,
+    default: '',
     trim: true,
-    minlength: 1,
     maxlength: 500,
+  },
+  imageUrl: {
+    type: String,
+    trim: true,
+    maxlength: 200,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,7 +22,7 @@ const messageSchema = new mongoose.Schema({
     ref: 'Session',
     required: true,
   },
-  // Id do client sinh cho mỗi lần gửi; dùng để chống socket emit trùng tạo 2 tin.
+  // Client-generated id per send; used to ignore duplicate socket emits.
   clientMessageId: {
     type: String,
     trim: true,

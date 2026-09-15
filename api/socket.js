@@ -44,7 +44,7 @@ const initSocket = (server) => {
 
     const handleChatMessage = async (data = {}) => {
       try {
-        const { content, token, clientMessageId } = data
+        const { content, token, clientMessageId, imageUrl } = data
 
         // Danh tính lấy từ token, không nhận username tự khai từ client
         const user = await resolveUserFromToken(token)
@@ -64,6 +64,7 @@ const initSocket = (server) => {
           sessionId,
           user,
           content,
+          imageUrl,
           clientMessageId,
         })
 

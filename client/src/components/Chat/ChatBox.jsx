@@ -1,10 +1,18 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Empty, Input, Spin, Typography, message as toastMessage } from 'antd'
-import { LoginOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons'
+import { Button, Empty, Image, Input, Spin, Typography, message as toastMessage } from 'antd'
+import { CloseOutlined, LoginOutlined, MessageOutlined, PictureOutlined, SendOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { PlaylistContext } from '../../contexts/PlaylistContext'
-import { getChatMessages, getStoredToken } from '../../services/api'
+import { getChatMessages, getStoredToken, uploadChatImage } from '../../services/api'
+import {
+  CHAT_MESSAGE_MAX_LENGTH,
+  getPastedImageFile,
+  insertAtCursor,
+  prepareChatImage,
+  resolveChatImageSrc,
+} from '../../utils/chatMedia'
 import UserAvatar from '../Avatar/UserAvatar'
+import ChatEmojiPicker from './ChatEmojiPicker'
 import './chat.css'
 
 const { Text } = Typography
@@ -28,7 +36,9 @@ const getMessageKeys = (message) => {
   if (message.clientMessageId) {
     keys.push(`client:${message.sessionId}:${getAuthorId(message)}:${message.clientMessageId}`)
   }
-  if (!keys.length) keys.push(`fallback:${message.createdAt}:${message.content}`)
+  if (!keys.length) {
+    keys.push(`fallback:${message.createdAt}:${message.content || ''}:${message.imageUrl || ''}`)
+  }
   return keys
 }
 
@@ -50,15 +60,21 @@ const mergeMessages = (current, incoming) => {
 const ChatBox = ({ className = '' }) => {
   const [messages, setMessages] = useState([])
   const [messageInput, setMessageInput] = useState('')
+  const [pendingImage, setPendingImage] = useState(null)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [sending, setSending] = useState(false)
   const messagesEndRef = useRef(null)
   const lastSubmitRef = useRef(null)
+  const sendingRef = useRef(false)
+  const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const { currentSession, socket } = useContext(PlaylistContext)
   const { isAuthenticated, openAuthModal, user } = useAuth()
 
   const sessionId = currentSession?._id
   const canSend = isAuthenticated && Boolean(socket) && Boolean(sessionId)
   const trimmedInput = messageInput.trim()
+  const hasDraft = Boolean(trimmedInput || pendingImage)
 
   const roomTitle = useMemo(() => {
     if (!currentSession) return 'Phòng chat'
@@ -114,20 +130,58 @@ const ChatBox = ({ className = '' }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
 
-  const handleSendMessage = () => {
+  const getTextarea = () => inputRef.current?.resizableTextArea?.textArea
+
+  const attachImageFile = async (file) => {
+    if (!file) return
+    try {
+      const prepared = await prepareChatImage(file)
+      setPendingImage(prepared)
+    } catch (error) {
+      toastMessage.warning(error.message || 'Không gắn được ảnh')
+    }
+  }
+
+  const handlePaste = (event) => {
+    const file = getPastedImageFile(event.clipboardData)
+    if (!file) return
+    event.preventDefault()
+    attachImageFile(file)
+  }
+
+  const handleDrop = (event) => {
+    const file = [...(event.dataTransfer?.files || [])].find((item) => item.type?.startsWith('image/'))
+    if (!file) return
+    event.preventDefault()
+    attachImageFile(file)
+  }
+
+  const insertEmoji = (emoji) => {
+    const textarea = getTextarea()
+    const start = textarea?.selectionStart ?? messageInput.length
+    const end = textarea?.selectionEnd ?? start
+    const next = insertAtCursor(messageInput, emoji, start, end)
+    setMessageInput(next.value)
+    requestAnimationFrame(() => {
+      textarea?.focus()
+      textarea?.setSelectionRange(next.cursor, next.cursor)
+    })
+  }
+
+  const handleSendMessage = async () => {
     if (!isAuthenticated) {
       openAuthModal('login', 'Đăng nhập để trò chuyện trong phiên phát nhạc.')
       return
     }
 
-    if (!trimmedInput) return
+    if (!hasDraft) return
 
     if (!socket || !sessionId) {
       toastMessage.warning('Chưa có phiên chat đang mở')
       return
     }
 
-    const signature = `${sessionId}:${trimmedInput}`
+    const signature = `${sessionId}:${trimmedInput}:${pendingImage?.name || ''}:${pendingImage?.dataUrl?.slice(-24) || ''}`
     const now = Date.now()
     if (
       lastSubmitRef.current?.signature === signature &&
@@ -136,17 +190,39 @@ const ChatBox = ({ className = '' }) => {
       return
     }
 
-    const clientMessageId = createClientMessageId()
-    lastSubmitRef.current = { signature, sentAt: now, clientMessageId }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setSending(true)
 
-    socket.emit('chat:message', {
-      sessionId,
-      content: trimmedInput,
-      token: getStoredToken(),
-      clientMessageId,
-    })
+    try {
+      let imageUrl
+      if (pendingImage?.dataUrl) {
+        const response = await uploadChatImage(pendingImage.dataUrl)
+        imageUrl = response.data?.url
+        if (!imageUrl) {
+          throw new Error('Không tải được ảnh')
+        }
+      }
 
-    setMessageInput('')
+      const clientMessageId = createClientMessageId()
+      lastSubmitRef.current = { signature, sentAt: Date.now(), clientMessageId }
+
+      socket.emit('chat:message', {
+        sessionId,
+        content: trimmedInput,
+        imageUrl,
+        token: getStoredToken(),
+        clientMessageId,
+      })
+
+      setMessageInput('')
+      setPendingImage(null)
+    } catch (error) {
+      toastMessage.error(error.response?.data?.message || error.message || 'Không gửi được tin nhắn')
+    } finally {
+      sendingRef.current = false
+      setSending(false)
+    }
   }
 
   const handleKeyDown = (event) => {
@@ -188,10 +264,11 @@ const ChatBox = ({ className = '' }) => {
               const author = chatMessage.user || {}
               const authorName = chatMessage.displayName || author.displayName || chatMessage.username
               const isMine = user?._id && author._id?.toString() === user._id.toString()
+              const imageSrc = resolveChatImageSrc(chatMessage.imageUrl)
 
               return (
                 <article
-                  key={chatMessage._id || `${chatMessage.createdAt}:${chatMessage.content}`}
+                  key={chatMessage._id || `${chatMessage.createdAt}:${chatMessage.content}:${chatMessage.imageUrl || ''}`}
                   className={`chat-room__message${isMine ? ' chat-room__message--mine' : ''}`}
                 >
                   <UserAvatar
@@ -206,7 +283,15 @@ const ChatBox = ({ className = '' }) => {
                       {chatMessage.role === 'admin' && <span className="chat-room__role">admin</span>}
                       <span className="chat-room__time">{formatTime(chatMessage.createdAt)}</span>
                     </div>
-                    <p>{chatMessage.content}</p>
+                    {chatMessage.content ? <p>{chatMessage.content}</p> : null}
+                    {imageSrc ? (
+                      <Image
+                        className="chat-room__photo"
+                        src={imageSrc}
+                        alt="Ảnh chat"
+                        preview={{ mask: 'Xem' }}
+                      />
+                    ) : null}
                   </div>
                 </article>
               )
@@ -216,25 +301,75 @@ const ChatBox = ({ className = '' }) => {
         )}
       </div>
 
-      <div className="chat-room__composer">
-        <Input.TextArea
-          value={messageInput}
-          onChange={(event) => setMessageInput(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            isAuthenticated ? 'Nhập tin nhắn...' : 'Đăng nhập để gửi tin nhắn'
+      <div
+        className="chat-room__composer"
+        onDragOver={(event) => {
+          if ([...(event.dataTransfer?.items || [])].some((item) => item.type?.startsWith('image/'))) {
+            event.preventDefault()
           }
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          maxLength={500}
-          disabled={!currentSession}
-        />
-        <Button
-          type="primary"
-          icon={isAuthenticated ? <SendOutlined /> : <LoginOutlined />}
-          onClick={handleSendMessage}
-          disabled={!currentSession || (!trimmedInput && isAuthenticated) || (!canSend && isAuthenticated)}
-          aria-label={isAuthenticated ? 'Gửi tin nhắn' : 'Đăng nhập để chat'}
-        />
+        }}
+        onDrop={handleDrop}
+      >
+        {pendingImage ? (
+          <div className="chat-room__pending">
+            <img src={pendingImage.dataUrl} alt={pendingImage.name} />
+            <span className="chat-room__pending-name">{pendingImage.name}</span>
+            <button
+              type="button"
+              className="chat-room__pending-remove"
+              aria-label="Gỡ ảnh"
+              onClick={() => setPendingImage(null)}
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+        ) : null}
+
+        <div className="chat-room__composer-row">
+          <ChatEmojiPicker disabled={!currentSession} onSelect={insertEmoji} />
+          <Input.TextArea
+            ref={inputRef}
+            value={messageInput}
+            onChange={(event) => setMessageInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            placeholder={
+              isAuthenticated ? 'Nhập tin nhắn, emoji hoặc dán ảnh...' : 'Đăng nhập để gửi tin nhắn'
+            }
+            autoSize={{ minRows: 1, maxRows: 3 }}
+            maxLength={CHAT_MESSAGE_MAX_LENGTH}
+            disabled={!currentSession}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              event.target.value = ''
+              attachImageFile(file)
+            }}
+          />
+          <button
+            type="button"
+            className="chat-room__tool"
+            disabled={!currentSession}
+            aria-label="Gắn ảnh"
+            title="Gắn hoặc dán ảnh"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <PictureOutlined />
+          </button>
+          <Button
+            type="primary"
+            icon={isAuthenticated ? <SendOutlined /> : <LoginOutlined />}
+            onClick={handleSendMessage}
+            loading={sending}
+            disabled={!currentSession || (!hasDraft && isAuthenticated) || (!canSend && isAuthenticated)}
+            aria-label={isAuthenticated ? 'Gửi tin nhắn' : 'Đăng nhập để chat'}
+          />
+        </div>
       </div>
     </section>
   )

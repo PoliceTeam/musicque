@@ -5,6 +5,10 @@ docker-compose.bak.prod.yml
 # TTS generated audio cache
 api/tts-cache/
 
+# Chat image uploads
+api/chat-uploads/*
+!api/chat-uploads/.gitkeep
+
 # Node.js
 node_modules/
 npm-debug.log
