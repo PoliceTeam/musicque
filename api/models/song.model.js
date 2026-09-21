@@ -53,6 +53,12 @@ const songSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // Quyền lợi Core: +5 khi order bài, tách riêng để UI giải thích nguồn điểm.
+  coreBoost: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
   // Điểm xếp hạng thực tế = voteScore + bidScore. Denormalized để sort trực tiếp
   // (Mongo không sort được trên tổng 2 field). Luôn giữ đồng bộ ở cả 2 đường ghi:
   // voteSong() gọi calculateVoteScore(), bid dùng $inc cả bidScore lẫn rankScore.

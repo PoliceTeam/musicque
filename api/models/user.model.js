@@ -73,6 +73,27 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  coreStartedAt: { type: Date, default: null },
+  coreExpiresAt: { type: Date, default: null },
+  coreLastPurchaseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CoreMembership',
+    default: null,
+  },
+  coreStyle: {
+    type: String,
+    enum: [
+      'polite-blue', 'polite-red', 'polite-yellow', 'polite-green',
+      'aurora', 'solar', 'neon', 'ruby', 'crystal',
+    ],
+    default: 'polite-blue',
+  },
+  coreMotionEnabled: { type: Boolean, default: true },
+  coreIntensity: {
+    type: String,
+    enum: ['subtle', 'vivid'],
+    default: 'subtle',
+  },
   lastLoginAt: {
     type: Date,
     default: null,
@@ -157,10 +178,29 @@ userSchema.methods.toPublicJSON = function () {
     color: this.color,
     avatarId: this.avatarId || getStableAvatarId(this._id?.toString() || this.username),
     polites: this.polites ?? 0,
+    core: getCoreProfile(this),
   }
 }
+
+function getCoreProfile(user, now = new Date()) {
+  const expiresAt = user?.coreExpiresAt || null
+  return {
+    active: Boolean(expiresAt && new Date(expiresAt) > now),
+    startedAt: user?.coreStartedAt || null,
+    expiresAt,
+    style: user?.coreStyle || 'polite-blue',
+    motionEnabled: user?.coreMotionEnabled !== false,
+    intensity: user?.coreIntensity || 'subtle',
+  }
+}
+
+userSchema.virtual('core').get(function () {
+  return getCoreProfile(this)
+})
+userSchema.set('toJSON', { virtuals: true })
 
 const User = mongoose.model('User', userSchema)
 
 module.exports = User
 module.exports.USERNAME_PATTERN = USERNAME_PATTERN
+module.exports.getCoreProfile = getCoreProfile

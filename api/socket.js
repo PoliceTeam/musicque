@@ -3,13 +3,14 @@ const { resolveUserFromToken } = require('./services/auth.service')
 const chatService = require('./services/chat.service')
 const redLight = require('./services/redLight.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
+const { getAllowedOrigins } = require('./utils/cors')
 
 let io;
 
 const initSocket = (server) => {
   io = require('socket.io')(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: getAllowedOrigins(),
       methods: ["GET", "POST"],
       credentials: true,
       transports: ['websocket', 'polling']

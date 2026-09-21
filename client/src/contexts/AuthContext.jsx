@@ -9,6 +9,8 @@ import {
   setStoredToken,
   getCoinBalance,
   claimDailyBonus,
+  purchaseCore as purchaseCoreApi,
+  updateCorePreferences as updateCorePreferencesApi,
 } from '../services/api'
 
 export const AuthContext = createContext()
@@ -146,6 +148,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
+  const purchaseCore = useCallback(async () => {
+    try {
+      const requestKey = globalThis.crypto?.randomUUID?.() || `core:${Date.now()}`
+      const response = await purchaseCoreApi(requestKey)
+      setUser(response.data.user)
+      setBalanceState(response.data.user.polites)
+      message.success(response.data.message || 'Đã kích hoạt Core')
+      return { ok: true, user: response.data.user }
+    } catch (error) {
+      return { ok: false, error: extractError(error, 'Không mua được Core') }
+    }
+  }, [])
+
+  const updateCorePreferences = useCallback(async (preferences) => {
+    try {
+      const response = await updateCorePreferencesApi(preferences)
+      setUser(response.data.user)
+      message.success(response.data.message || 'Đã lưu phong cách Core')
+      return { ok: true, user: response.data.user }
+    } catch (error) {
+      return { ok: false, error: extractError(error, 'Không lưu được phong cách Core') }
+    }
+  }, [])
+
   /**
    * Guard cho hành động cần tài khoản. Trả true nếu được phép đi tiếp,
    * ngược lại mở modal đăng nhập và trả false.
@@ -195,6 +221,8 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateAvatar,
+      purchaseCore,
+      updateCorePreferences,
       requireAuth,
       authModal,
       openAuthModal,
@@ -214,6 +242,8 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateAvatar,
+      purchaseCore,
+      updateCorePreferences,
       requireAuth,
       authModal,
       openAuthModal,

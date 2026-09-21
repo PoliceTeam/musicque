@@ -8,6 +8,9 @@ import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
+import CoreLaunchPopup from '../components/Core/CoreLaunchPopup';
+import { markCoreLaunchSeen, shouldShowCoreLaunch } from '../components/Core/coreLaunch';
+import CoreMembershipModal from '../components/Core/CoreMembershipModal';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
@@ -44,7 +47,7 @@ const getGreeting = () => {
 const HomePage = () => {
   const navigate = useNavigate();
   const { currentSession, currentSong } = useContext(PlaylistContext);
-  const { displayName } = useAuth();
+  const { user, displayName } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
@@ -57,8 +60,31 @@ const HomePage = () => {
   const [wordChainPromoDismissed, setWordChainPromoDismissed] = useState(false);
   const [redLightOpen, setRedLightOpen] = useState(false);
   const [redLightPreview, setRedLightPreview] = useState(false);
+  const [coreLaunchOpen, setCoreLaunchOpen] = useState(false);
+  const [coreMembershipOpen, setCoreMembershipOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldShowCoreLaunch(user)) {
+      setCoreLaunchOpen(false)
+      return undefined
+    }
+    const timeoutId = window.setTimeout(() => {
+      markCoreLaunchSeen(user._id)
+      setCoreLaunchOpen(true)
+    }, 650)
+    return () => window.clearTimeout(timeoutId)
+  }, [user])
+
+  const dismissCoreLaunch = () => {
+    setCoreLaunchOpen(false)
+  }
+
+  const exploreCore = () => {
+    dismissCoreLaunch()
+    setCoreMembershipOpen(true)
+  }
 
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined
@@ -487,6 +513,16 @@ const HomePage = () => {
           />
         </Suspense>
       )}
+
+      <CoreLaunchPopup
+        open={coreLaunchOpen}
+        onClose={dismissCoreLaunch}
+        onExplore={exploreCore}
+      />
+      <CoreMembershipModal
+        open={coreMembershipOpen}
+        onClose={() => setCoreMembershipOpen(false)}
+      />
     </>
   );
 };

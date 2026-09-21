@@ -88,6 +88,13 @@ export const getCoinEconomyStats = (period = "30d", config = {}) =>
   api.get("/api/coins/admin/stats", { ...config, params: { period } });
 export const claimDailyBonus = () => api.post("/api/coins/daily-bonus");
 
+// Core Membership — mua bằng Polite Coins và tùy biến nhận diện
+export const getCoreStatus = () => api.get("/api/core/me");
+export const purchaseCore = (requestKey) =>
+  api.post("/api/core/purchase", { requestKey });
+export const updateCorePreferences = (preferences) =>
+  api.patch("/api/core/preferences", preferences);
+
 // Cho-Han (Bakuchi) API
 export const getChohanState = () => api.get("/api/chohan/state");
 export const getChohanHistory = (limit = 20) =>

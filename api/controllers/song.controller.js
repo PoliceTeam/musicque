@@ -7,9 +7,14 @@ const { emitActivity } = require('../utils/activityEmitter')
 const ttsService = require('../services/tts.service')
 const coinsService = require('../services/coins.service')
 const playbackService = require('../services/playback.service')
+const coreService = require('../services/coreMembership.service')
+const USER_PUBLIC_SELECT =
+  'username displayName color avatarId coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity'
 
 const populatePlaylistQuery = (query) =>
-  query.populate('addedBy', 'username displayName').populate('votes.userId', 'username displayName')
+  query
+    .populate('addedBy', USER_PUBLIC_SELECT)
+    .populate('votes.userId', 'username displayName')
 
 // Khởi tạo YouTube API client
 const youtube = google.youtube({
@@ -112,7 +117,19 @@ exports.addSong = async (req, res) => {
         })
       }
 
-      // Tạo bài hát mới
+      let coreBoost = 0
+      if (coreService.isActive(user)) {
+        const boostedSongCount = await Song.countDocuments({
+          sessionId: activeSession._id,
+          addedBy: user._id,
+          coreBoost: { $gt: 0 },
+        })
+        if (boostedSongCount < coreService.CORE_SONG_BOOST_LIMIT) {
+          coreBoost = coreService.CORE_SONG_BOOST
+        }
+      }
+
+      // Tạo bài hát mới; Core boost nằm trong bidScore để mọi phép sort hiện tại giữ nguyên.
       const newSong = await Song.create({
         title: videoTitle,
         youtubeUrl,
@@ -120,10 +137,13 @@ exports.addSong = async (req, res) => {
         message: message || '',
         addedBy: user._id,
         sessionId: activeSession._id,
+        coreBoost,
+        bidScore: coreBoost,
+        rankScore: coreBoost,
       })
 
       // Populate thông tin người thêm
-      await newSong.populate('addedBy', 'username displayName')
+      await newSong.populate('addedBy', USER_PUBLIC_SELECT)
 
       // Lấy danh sách bài hát đã sắp xếp
       const updatedPlaylist = await populatePlaylistQuery(
@@ -152,7 +172,7 @@ exports.addSong = async (req, res) => {
         )
         if (!speechText) {
           return res.status(201).json({
-            message: 'Đã thêm bài hát',
+            message: coreBoost ? `Đã thêm bài hát với Core Boost +${coreBoost}` : 'Đã thêm bài hát',
             song: newSong,
           })
         }
@@ -165,7 +185,7 @@ exports.addSong = async (req, res) => {
       }
 
       res.status(201).json({
-        message: 'Đã thêm bài hát',
+        message: coreBoost ? `Đã thêm bài hát với Core Boost +${coreBoost}` : 'Đã thêm bài hát',
         song: newSong,
       })
     } catch (error) {
@@ -460,7 +480,7 @@ exports.getCurrentSong = async (req, res) => {
     let currentSong = await Song.findOne({
       sessionId: activeSession._id,
       playing: true,
-    }).populate('addedBy', 'username displayName')
+    }).populate('addedBy', USER_PUBLIC_SELECT)
     let updatedPlaylist
 
     // Nếu không có bài nào đang phát, lấy bài có điểm vote cao nhất và chưa phát
@@ -469,7 +489,7 @@ exports.getCurrentSong = async (req, res) => {
         sessionId: activeSession._id,
         played: false,
       })
-        .populate('addedBy', 'username displayName')
+        .populate('addedBy', USER_PUBLIC_SELECT)
         .sort({ rankScore: -1, addedAt: 1 })
 
       if (currentSong) {
@@ -483,7 +503,7 @@ exports.getCurrentSong = async (req, res) => {
           playing: false,
           played: false,
         })
-          .populate('addedBy', 'username displayName')
+          .populate('addedBy', USER_PUBLIC_SELECT)
           .sort({ rankScore: -1, addedAt: 1 })
 
         // // Thông báo qua socket.io
@@ -501,7 +521,7 @@ exports.getCurrentSong = async (req, res) => {
         playing: false,
         played: false,
       })
-        .populate('addedBy', 'username displayName')
+        .populate('addedBy', USER_PUBLIC_SELECT)
         .sort({ rankScore: -1, addedAt: 1 })
 
       // // Thông báo qua socket.io
@@ -530,7 +550,7 @@ exports.getPlaylist = async (req, res) => {
       playing: false,
       played: false,
     })
-      .populate('addedBy', 'username displayName')
+      .populate('addedBy', USER_PUBLIC_SELECT)
       .sort({ rankScore: -1, addedAt: 1 })
 
     res.status(200).json({ playlist: songs })
@@ -561,7 +581,7 @@ exports.markSongAsPlaying = async (req, res) => {
     await song.save()
 
     // Populate thông tin người thêm
-    await song.populate('addedBy', 'username displayName')
+    await song.populate('addedBy', USER_PUBLIC_SELECT)
 
     // Lấy playlist đã sắp xếp (không bao gồm bài đang phát)
     const updatedPlaylist = await populatePlaylistQuery(

@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const mongoose = require('mongoose')
 const Message = require('../models/message.model')
 const Session = require('../models/session.model')
+const User = require('../models/user.model')
 
 const DEFAULT_LIMIT = 50
 const MAX_LIMIT = 100
@@ -110,6 +111,7 @@ const normalizeImageUrl = (imageUrl) => {
 
 const formatMessage = (message) => {
   const user = message.userId
+  const core = User.getCoreProfile(user)
   const publicUser = {
     _id: user?._id,
     username: user?.username || 'unknown',
@@ -117,6 +119,7 @@ const formatMessage = (message) => {
     role: user?.role || 'user',
     color: user?.color || '#1db954',
     avatarId: user?.avatarId,
+    core,
   }
 
   return {
@@ -131,6 +134,7 @@ const formatMessage = (message) => {
     color: publicUser.color,
     avatarId: publicUser.avatarId,
     role: publicUser.role,
+    core,
     createdAt: message.createdAt,
   }
 }
@@ -189,7 +193,7 @@ exports.getSessionMessages = async ({ sessionId, limit, before }) => {
   const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .limit(normalizeLimit(limit))
-    .populate('userId', 'username displayName role color avatarId')
+    .populate('userId', 'username displayName role color avatarId coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity')
     .lean({ virtuals: false })
 
   return messages.reverse().map(formatMessage)
@@ -251,7 +255,7 @@ exports.createSessionMessage = async ({ sessionId, user, content, imageUrl, clie
       sessionId: session._id,
       userId: user._id,
       clientMessageId: normalizedClientMessageId,
-    }).populate('userId', 'username displayName role color avatarId')
+    }).populate('userId', 'username displayName role color avatarId coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity')
 
     if (existing) return markDeduplicated(formatMessage(existing))
   }
@@ -274,10 +278,10 @@ exports.createSessionMessage = async ({ sessionId, user, content, imageUrl, clie
       clientMessageId: normalizedClientMessageId,
     })
     if (!message) throw error
-    await message.populate('userId', 'username displayName role color avatarId')
+    await message.populate('userId', 'username displayName role color avatarId coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity')
     return markDeduplicated(formatMessage(message))
   }
 
-  await message.populate('userId', 'username displayName role color avatarId')
+  await message.populate('userId', 'username displayName role color avatarId coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity')
   return formatMessage(message)
 }

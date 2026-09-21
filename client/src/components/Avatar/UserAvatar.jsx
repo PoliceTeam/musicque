@@ -1,6 +1,8 @@
 import React from 'react'
 import { getAvatarColor, getInitials } from '../../utils/avatar'
 import { getAvatarUrl, getStableAnimalAvatarId } from '../../constants/animalAvatars'
+import { getCoreClassName } from '../Core/coreIdentity'
+import '../Core/core.css'
 
 const UserAvatar = ({ user, name, avatarId, size = 28, className = '' }) => {
   const displayName = name || user?.displayName || user?.username || ''
@@ -9,7 +11,7 @@ const UserAvatar = ({ user, name, avatarId, size = 28, className = '' }) => {
 
   return (
     <span
-      className={`sp-avatar sp-avatar--image ${className}`.trim()}
+      className={getCoreClassName(user?.core, `sp-avatar sp-avatar--image ${className}`)}
       style={{
         width: size,
         height: size,

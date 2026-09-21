@@ -16,14 +16,16 @@ const xiangqiRoutes = require('./routes/xiangqi.routes');
 const wordChainRoutes = require('./routes/wordChain.routes');
 const redLightRoutes = require('./routes/redLight.routes');
 const lotteryRoutes = require('./routes/lottery.routes');
+const coreMembershipRoutes = require('./routes/coreMembership.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
+const { createCorsOrigin } = require('./utils/cors');
 
 const app = express();
 
 // Cấu hình CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: createCorsOrigin(),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Musicque-Device', 'my-custom-header'],
   credentials: true
 }));
@@ -57,6 +59,7 @@ app.use('/api/xiangqi', xiangqiRoutes);
 app.use('/api/word-chain', wordChainRoutes);
 app.use('/api/red-light', redLightRoutes);
 app.use('/api/lottery', lotteryRoutes);
+app.use('/api/core', coreMembershipRoutes);
 
 // Error handling
 app.use(errorHandler);

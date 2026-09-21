@@ -350,7 +350,7 @@ async function getLeaderboard(limit = 5) {
     role: 'user',
     password: { $exists: true, $ne: null },
   })
-    .select('username displayName color avatarId polites')
+    .select('username displayName color avatarId polites coreStartedAt coreExpiresAt coreStyle coreMotionEnabled coreIntensity')
     .sort({ polites: -1, createdAt: 1, _id: 1 })
     .limit(safeLimit)
     .lean()
@@ -362,6 +362,7 @@ async function getLeaderboard(limit = 5) {
     displayName: user.displayName || user.username,
     color: user.color,
     avatarId: user.avatarId,
+    core: User.getCoreProfile(user),
     balance: user.polites ?? 0,
   }))
 }
@@ -403,6 +404,12 @@ async function getEconomyStats(period = '30d') {
                 },
                 dailyGranted: {
                   $sum: { $cond: [{ $eq: ['$type', 'daily_bonus'] }, '$amount', 0] },
+                },
+                corePurchased: {
+                  $sum: { $cond: [{ $eq: ['$type', 'core_purchase'] }, { $abs: '$amount' }, 0] },
+                },
+                coreBonus: {
+                  $sum: { $cond: [{ $eq: ['$type', 'core_bonus'] }, '$amount', 0] },
                 },
                 songBidSpent: {
                   $sum: {
@@ -503,6 +510,8 @@ async function getEconomyStats(period = '30d') {
                 spent: 1,
                 signupGranted: 1,
                 dailyGranted: 1,
+                corePurchased: 1,
+                coreBonus: 1,
                 songBidSpent: 1,
                 songSkipSpent: 1,
                 chohanWagered: 1,
@@ -584,6 +593,8 @@ async function getEconomyStats(period = '30d') {
     spent: 0,
     signupGranted: 0,
     dailyGranted: 0,
+    corePurchased: 0,
+    coreBonus: 0,
     songBidSpent: 0,
     songSkipSpent: 0,
     chohanWagered: 0,
@@ -610,12 +621,13 @@ async function getEconomyStats(period = '30d') {
     circulation: circulation[0] || { currentSupply: 0, userCount: 0 },
     totals: {
       ...totals,
-      issued: totals.signupGranted + totals.dailyGranted,
+      issued: totals.signupGranted + totals.dailyGranted + totals.coreBonus,
       songBidConsumed: totals.songBidSpent - totals.songBidRefund,
       songSkipConsumed: totals.songSkipSpent - totals.songSkipRefund,
       houseNet:
         totals.songBidSpent
         + totals.songSkipSpent
+        + totals.corePurchased
         + totals.chohanWagered
         + totals.xiangqiWagered
         + totals.wordChainSpent
@@ -625,6 +637,7 @@ async function getEconomyStats(period = '30d') {
         - totals.wordChainPayout
         - (totals.redLightPayout || 0)
         - (totals.lotteryPayout || 0)
+        - totals.coreBonus
         - totals.refunded,
       playerWinProfit:
         totals.chohanPayout / 2

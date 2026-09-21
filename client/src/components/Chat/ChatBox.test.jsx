@@ -50,6 +50,13 @@ const renderSessionChat = (socket) =>
         _id: USER_ID,
         username: 'tien',
         displayName: 'Tiến',
+        core: {
+          active: true,
+          expiresAt: '2999-09-21T00:00:00Z',
+          style: 'polite-blue',
+          intensity: 'vivid',
+          motionEnabled: true,
+        },
       },
     },
   })
@@ -90,6 +97,13 @@ describe('ChatBox phòng chat phiên', () => {
         _id: USER_ID,
         username: 'tien',
         displayName: 'Tiến',
+        core: {
+          active: true,
+          expiresAt: '2999-09-21T00:00:00Z',
+          style: 'polite-blue',
+          intensity: 'vivid',
+          motionEnabled: true,
+        },
       },
       username: 'tien',
       displayName: 'Tiến',
@@ -104,6 +118,8 @@ describe('ChatBox phòng chat phiên', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Xin chào phòng phiên')).toHaveLength(1)
     })
+    expect(screen.getByText('CORE')).toBeInTheDocument()
+    expect(screen.getByText('Tiến').closest('.core-identity')).toHaveClass('core-identity--polite-blue')
   })
 
   it('chèn emoji vào ô nhập khi chọn từ bảng emoji', async () => {

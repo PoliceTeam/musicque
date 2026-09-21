@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Dropdown, Modal } from 'antd'
-import { LogoutOutlined, DownOutlined, PictureOutlined } from '@ant-design/icons'
+import { LogoutOutlined, DownOutlined, PictureOutlined, CrownOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import UserAvatar from '../Avatar/UserAvatar'
 import { ANIMAL_AVATARS } from '../../constants/animalAvatars'
+import CoreName from '../Core/CoreName'
+import CoreMembershipModal from '../Core/CoreMembershipModal'
 
 /**
  * Góc phải thanh trên cùng: chip tài khoản khi đã đăng nhập,
@@ -14,6 +16,7 @@ const UserMenu = () => {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarId || 'cat')
   const [savingAvatar, setSavingAvatar] = useState(false)
+  const [coreOpen, setCoreOpen] = useState(false)
 
   useEffect(() => {
     if (user?.avatarId) setSelectedAvatar(user.avatarId)
@@ -42,6 +45,12 @@ const UserMenu = () => {
 
   // "Bảng điều khiển" nằm ở SidebarNav — không lặp lại ở đây
   const items = [
+    {
+      key: 'core',
+      icon: <CrownOutlined />,
+      label: user.core?.active ? 'Tùy biến Core' : 'Mua Core · 250 PC',
+      onClick: () => setCoreOpen(true),
+    },
     {
       key: 'avatar',
       icon: <PictureOutlined />,
@@ -74,7 +83,7 @@ const UserMenu = () => {
       <Dropdown menu={{ items }} trigger={['click']} placement='bottomRight'>
         <button type='button' className='sp-user-chip' aria-label='Menu tài khoản'>
           <UserAvatar user={user} name={displayName} />
-          <span>{displayName}</span>
+          <CoreName user={user} name={displayName} />
           {isAdmin && <span style={{ fontSize: 11, color: 'var(--sp-green)' }}>ADMIN</span>}
           <DownOutlined style={{ fontSize: 10, opacity: 0.6 }} />
         </button>
@@ -110,6 +119,7 @@ const UserMenu = () => {
           ))}
         </div>
       </Modal>
+      <CoreMembershipModal open={coreOpen} onClose={() => setCoreOpen(false)} />
     </>
   )
 }

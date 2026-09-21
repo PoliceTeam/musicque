@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getYouTubeThumbnail } from '../../utils/reactions'
 import QuickReactionButtons from '../Home/QuickReactionButtons'
 import BidButton from './BidButton'
+import CoreName from '../Core/CoreName'
 
 const scoreClass = (score) => {
   if (score > 0) return 'sp-score sp-score--positive'
@@ -80,7 +81,8 @@ const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
                       {song.title}
                     </div>
                     <div className='sp-track__sub'>
-                      <span>{addedBy}</span>
+                      <CoreName user={song.addedBy} name={addedBy} showBadge={false} />
+                      {song.coreBoost > 0 && <span className='core-boost-chip'>CORE +{song.coreBoost}</span>}
                       {song.message && (
                         <>
                           <span aria-hidden='true'>·</span>
@@ -95,7 +97,7 @@ const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
                       className={scoreClass(song.rankScore ?? song.voteScore)}
                       title={
                         song.bidScore
-                          ? `${song.voteScore} vote + ${song.bidScore} bid`
+                          ? `${song.voteScore} vote + ${Math.max(0, (song.bidScore || 0) - (song.coreBoost || 0))} bid${song.coreBoost ? ` + ${song.coreBoost} Core` : ''}`
                           : undefined
                       }
                     >

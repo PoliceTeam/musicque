@@ -12,6 +12,8 @@ import {
   resolveChatImageSrc,
 } from '../../utils/chatMedia'
 import UserAvatar from '../Avatar/UserAvatar'
+import CoreName from '../Core/CoreName'
+import { getCoreClassName } from '../Core/coreIdentity'
 import ChatEmojiPicker from './ChatEmojiPicker'
 import './chat.css'
 
@@ -269,7 +271,10 @@ const ChatBox = ({ className = '' }) => {
               return (
                 <article
                   key={chatMessage._id || `${chatMessage.createdAt}:${chatMessage.content}:${chatMessage.imageUrl || ''}`}
-                  className={`chat-room__message${isMine ? ' chat-room__message--mine' : ''}`}
+                  className={getCoreClassName(
+                    author.core,
+                    `chat-room__message${isMine ? ' chat-room__message--mine' : ''}`,
+                  )}
                 >
                   <UserAvatar
                     user={author}
@@ -279,7 +284,7 @@ const ChatBox = ({ className = '' }) => {
                   />
                   <div className="chat-room__bubble">
                     <div className="chat-room__meta">
-                      <span className="chat-room__author">{authorName}</span>
+                      <CoreName user={author} name={authorName} className='chat-room__author' />
                       {chatMessage.role === 'admin' && <span className="chat-room__role">admin</span>}
                       <span className="chat-room__time">{formatTime(chatMessage.createdAt)}</span>
                     </div>
