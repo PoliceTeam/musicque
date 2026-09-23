@@ -11,6 +11,9 @@ import '../styles/workspace.css'
 
 const NewsReaderModal = lazy(() => import('../components/News/NewsReaderModal'))
 const NesGame = lazy(() => import('../components/NesGame/NesGame'))
+const LotteryOverlay = lazy(() => import('../components/Lottery/LotteryOverlay'))
+const ChohanOverlay = lazy(() => import('../components/Chohan/ChohanOverlay'))
+const BilliardsOverlay = lazy(() => import('../components/Billiards/BilliardsOverlay'))
 
 const zoneLabels = {
   music: 'Music Club',
@@ -27,9 +30,18 @@ const WorkspacePage = () => {
   const [activeZone, setActiveZone] = useState(null)
   const [chat, setChat] = useState('')
   const [nesGame, setNesGame] = useState(null)
+  const [activeGame, setActiveGame] = useState(null)
 
   const openZone = useCallback((zoneId) => setActiveZone(zoneId), [])
   const showError = useCallback((text) => message.error(text), [])
+  const openArcadeGame = (gameId) => {
+    setActiveZone(null)
+    setActiveGame(gameId)
+  }
+  const openNesGame = (game) => {
+    setActiveZone(null)
+    setNesGame(game)
+  }
 
   const sendChat = (event) => {
     event.preventDefault()
@@ -122,13 +134,23 @@ const WorkspacePage = () => {
         footer={null}
         title='🕹️ Arcade'
         centered
+        width='min(760px, 94vw)'
         className='workspace-zone-modal'
       >
         <div className='workspace-game-grid'>
-          <button type='button' onClick={() => setNesGame({ file: '/nes/contra.nes', name: 'Contra' })}>
+          <button type='button' onClick={() => openArcadeGame('lottery')}>
+            <span>🎰</span><strong>Lô đề</strong><small>Chọn số may mắn cùng mọi người</small>
+          </button>
+          <button type='button' onClick={() => openArcadeGame('chohan')}>
+            <span>🎴</span><strong>Cho-Han</strong><small>Cược chẵn lẻ bằng Polite Coins</small>
+          </button>
+          <button type='button' onClick={() => openArcadeGame('billiards')}>
+            <span>🎱</span><strong>Bi-a 9 bóng</strong><small>Theo dõi ván đấu và đặt kèo</small>
+          </button>
+          <button type='button' onClick={() => openNesGame({ file: '/nes/contra.nes', name: 'Contra' })}>
             <span>🔫</span><strong>Contra</strong><small>NES co-op cổ điển</small>
           </button>
-          <button type='button' onClick={() => setNesGame({ file: '/nes/super_mario.nes', name: 'Super Mario' })}>
+          <button type='button' onClick={() => openNesGame({ file: '/nes/super_mario.nes', name: 'Super Mario' })}>
             <span>🍄</span><strong>Super Mario</strong><small>Đi cảnh tuổi thơ</small>
           </button>
           <button type='button' onClick={() => navigate('/xiangqi')}>
@@ -136,6 +158,12 @@ const WorkspacePage = () => {
           </button>
         </div>
       </Modal>
+
+      <Suspense fallback={null}>
+        {activeGame === 'lottery' && <LotteryOverlay open onClose={() => setActiveGame(null)} />}
+        {activeGame === 'chohan' && <ChohanOverlay open onClose={() => setActiveGame(null)} />}
+        {activeGame === 'billiards' && <BilliardsOverlay open onClose={() => setActiveGame(null)} />}
+      </Suspense>
 
       {activeZone === 'news' && (
         <Suspense fallback={null}>
