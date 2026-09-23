@@ -2,6 +2,7 @@ const Session = require('./models/session.model')
 const { resolveUserFromToken } = require('./services/auth.service')
 const chatService = require('./services/chat.service')
 const redLight = require('./services/redLight.service')
+const workspace = require('./services/workspace.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
 
@@ -85,6 +86,38 @@ const initSocket = (server) => {
 
     socket.on('chat:message', handleChatMessage)
     socket.on('chat_message', handleChatMessage)
+
+    // Workspace 2.5D: presence tạm thời, danh tính luôn lấy từ token.
+    socket.on('workspace:join', async (data = {}) => {
+      try {
+        const user = await resolveUserFromToken(data.token)
+        if (!user) {
+          socket.emit('workspace:error', { message: 'Vui lòng đăng nhập để vào workspace' })
+          return
+        }
+        workspace.join({ socket, user, position: data.position })
+      } catch (error) {
+        console.error('[Workspace] Không thể tham gia:', error.message)
+        socket.emit('workspace:error', { message: 'Không thể kết nối workspace' })
+      }
+    })
+
+    socket.on('workspace:move', (data = {}) => {
+      workspace.move({ socket, position: data })
+    })
+
+    socket.on('workspace:chat', (data = {}) => {
+      const result = workspace.chat({ socket, content: data.content })
+      if (result.error) {
+        socket.emit('workspace:error', { message: result.error })
+        return
+      }
+      io.to(workspace.ROOM).emit('workspace:chat', result.message)
+    })
+
+    socket.on('workspace:leave', () => {
+      workspace.leave(socket)
+    })
 
     // Whiteboard (PoliBoard) real-time handlers
     socket.on('join-room', async (roomId) => {
@@ -178,6 +211,7 @@ const initSocket = (server) => {
 
     socket.on('disconnect', () => {
       console.log('Client disconnected', socket.id);
+      workspace.leave(socket)
       redLight.onSocketDisconnect(socket.id)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor

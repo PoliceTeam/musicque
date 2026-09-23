@@ -1,0 +1,184 @@
+.workspace-shell {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: #eef7ff;
+  color: #24324a;
+}
+
+.workspace-topbar {
+  height: 68px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #d8e5f2;
+  box-shadow: 0 6px 20px rgba(70, 105, 140, 0.09);
+  position: relative;
+  z-index: 20;
+}
+
+.workspace-brand {
+  border: 0;
+  background: transparent;
+  color: #24324a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workspace-brand span { display: flex; flex-direction: column; }
+.workspace-brand strong { font-size: 15px; }
+.workspace-brand small { color: #71839a; font-size: 11px; }
+
+.workspace-help {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #71839a;
+  font-size: 12px;
+}
+
+.workspace-help kbd,
+.workspace-prompt kbd {
+  min-width: 27px;
+  padding: 4px 7px;
+  border: 1px solid #a9bfd5;
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  background: #f5f9fd;
+  color: #334155;
+  font: 700 12px monospace;
+  text-align: center;
+}
+
+.workspace-stage { position: relative; height: calc(100vh - 68px); }
+.workspace-game, .workspace-game canvas { width: 100%; height: 100%; display: block; }
+.workspace-game canvas:focus { outline: 3px solid rgba(124, 58, 237, 0.22); outline-offset: -3px; }
+.workspace-now-playing-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.workspace-status {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #c8d9ea;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #52637a;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.workspace-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+.workspace-dot.is-online { background: #22c55e; box-shadow: 0 0 9px #22c55e; }
+
+.workspace-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid #c8d9ea;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #24324a;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 40px rgba(70, 105, 140, 0.18);
+}
+
+.workspace-chat {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: min(410px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid #c8d9ea;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+}
+
+.workspace-chat label { display: block; margin: 0 0 6px 3px; color: #71839a; font-size: 11px; }
+.workspace-chat div { display: flex; gap: 8px; }
+.workspace-chat input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c8d9ea;
+  border-radius: 9px;
+  background: #f8fbff;
+  color: #24324a;
+  padding: 9px 11px;
+  outline: none;
+}
+.workspace-chat input:focus { border-color: #8b5cf6; }
+.workspace-chat button {
+  border: 0;
+  border-radius: 9px;
+  padding: 0 15px;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.workspace-chat button:disabled { opacity: 0.45; cursor: default; }
+
+.workspace-credits {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  color: #6b7f96;
+  font-size: 11px;
+  text-decoration: none;
+  text-shadow: 0 1px 2px #ffffff;
+}
+.workspace-credits:hover { color: #7c3aed; text-decoration: underline; }
+
+.workspace-music-form { margin-bottom: 16px; }
+.workspace-game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.workspace-game-grid button {
+  min-height: 150px;
+  border: 1px solid var(--sp-border);
+  border-radius: 14px;
+  background: var(--sp-surface-2);
+  color: var(--sp-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+}
+.workspace-game-grid button:hover { border-color: #8b5cf6; transform: translateY(-2px); }
+.workspace-game-grid span { font-size: 36px; }
+.workspace-game-grid small { color: var(--sp-text-muted); }
+
+@media (max-width: 760px) {
+  .workspace-help { display: none; }
+  .workspace-game-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-game-grid button { transition: none; }
+}

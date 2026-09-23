@@ -107,6 +107,12 @@ export const PlaylistProvider = ({ children }) => {
       setCurrentSong(response.data.currentSong)
       await fetchSkipState(response.data.currentSong?._id)
     } catch (error) {
+      if (error.response?.status === 404) {
+        setCurrentSong(null)
+        setPlaylist([])
+        await fetchSkipState(null)
+        return
+      }
       console.error('Error fetching current song:', error)
     }
   }

@@ -345,6 +345,91 @@ body {
   display: inline-flex;
 }
 
+/* Workspace là lối vào không gian tương tác, nổi bật hơn điều hướng thường. */
+.sp-nav__item--workspace {
+  gap: 10px;
+  margin-top: 7px;
+  padding: 8px 10px;
+  min-height: 48px;
+  border: 1px solid #a99af7;
+  color: #30205e;
+  background: linear-gradient(115deg, #ece8ff 0%, #e7f2ff 100%);
+  box-shadow: 0 3px 10px rgba(100, 81, 185, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.sp-nav__item--workspace:hover,
+.sp-nav__item--workspace.sp-nav__item--active {
+  color: #21144d;
+  border-color: #836cf0;
+  background: linear-gradient(115deg, #ddd5ff 0%, #d9ebff 100%);
+  box-shadow: 0 5px 16px rgba(100, 81, 185, 0.22);
+  transform: translateY(-1px);
+}
+
+.sp-nav__item--workspace:focus-visible {
+  outline: 3px solid #7359e6;
+  outline-offset: 2px;
+}
+
+.sp-nav__workspace-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(145deg, #8b5cf6, #5478d8);
+  box-shadow: 0 2px 5px rgba(100, 81, 185, 0.23);
+}
+
+.sp-nav__workspace-label {
+  flex: 1;
+  font-weight: 800;
+}
+
+.sp-nav__workspace-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.sp-nav__workspace-badge {
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: #5942b6;
+  background: rgba(255, 255, 255, 0.76);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sp-nav__workspace-beta {
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: #fff;
+  background: #7656d9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+:root[data-theme='dark'] .sp-nav__item--workspace {
+  border-color: #6b5bb9;
+  color: #f5f0ff;
+  background: linear-gradient(115deg, #3e326a 0%, #263d61 100%);
+}
+
+:root[data-theme='dark'] .sp-nav__item--workspace:hover,
+:root[data-theme='dark'] .sp-nav__item--workspace.sp-nav__item--active {
+  color: #fff;
+  border-color: #a591ff;
+  background: linear-gradient(115deg, #514184 0%, #305077 100%);
+}
+
 /* Hàng icon easter egg dưới menu điều hướng */
 .sp-quicktoys {
   display: flex;

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { HomeFilled, DashboardOutlined } from '@ant-design/icons'
+import { HomeFilled, DashboardOutlined, EnvironmentFilled } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 
 /**
@@ -34,6 +34,19 @@ const SidebarNav = ({ subtitle = 'Iced Tea Team', children }) => {
         <button type='button' className={itemClass('/')} onClick={() => navigate('/')}>
           <HomeFilled className='sp-nav__icon' />
           Trang chủ
+        </button>
+
+        <button
+          type='button'
+          className={`${itemClass('/workspace')} sp-nav__item--workspace`}
+          onClick={() => navigate('/workspace')}
+        >
+          <span className='sp-nav__workspace-icon'><EnvironmentFilled className='sp-nav__icon' /></span>
+          <span className='sp-nav__workspace-label'>Workspace</span>
+          <span className='sp-nav__workspace-badges'>
+            <span className='sp-nav__workspace-badge'>KHÁM PHÁ</span>
+            <span className='sp-nav__workspace-beta'>BETA</span>
+          </span>
         </button>
 
         {isAdmin && (
