@@ -4,6 +4,7 @@ const chatService = require('./services/chat.service')
 const redLight = require('./services/redLight.service')
 const workspace = require('./services/workspace.service')
 const workspaceVoice = require('./services/workspaceVoice.service')
+const werewolf = require('./services/werewolf.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
 
@@ -230,11 +231,24 @@ const initSocket = (server) => {
       }
     })
 
+    // Ma Sói: token tuỳ chọn — khách vẫn xem được, nhưng chỉ nhận bản state công khai
+    socket.on('werewolf:watch', async (data = {}) => {
+      try {
+        const user = data.token ? await resolveUserFromToken(data.token) : null
+        werewolf.watch(socket, user)
+      } catch (error) {
+        console.error('[Ma Sói] Watch lỗi:', error.message)
+      }
+    })
+
+    socket.on('werewolf:unwatch', () => werewolf.unwatch(socket))
+
     socket.on('disconnect', () => {
       console.log('Client disconnected', socket.id);
       workspace.leave(socket)
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))
       redLight.onSocketDisconnect(socket.id)
+      werewolf.onSocketGone(socket)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor
         socket.to(socket.poliboardRoom).emit('cursor:remove', { id: socket.id });

@@ -18,6 +18,7 @@ import LotteryPanel from '../components/Lottery/LotteryPanel';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import WordChainPromo from '../components/WordChain/WordChainPromo';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
+import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -349,6 +350,7 @@ const HomePage = () => {
                 </button>
               </Tooltip>
             </div>
+            <WerewolfLauncher />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />

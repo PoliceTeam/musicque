@@ -336,6 +336,24 @@ The overlay's height is driven by the **table**, not the side column: `.bil-side
 is absolutely positioned so a growing pot log scrolls inside its box instead of
 stretching the modal. Don't make that column static again.
 
+### Ma Sói (Werewolf)
+Multiplayer social-deduction game at `/werewolf`, **not tied to a music session**. Rules are
+modelled on GreyWolfDev/Werewolf (GPL-3.0) but the code and Vietnamese copy are a clean-room
+rewrite — do not paste code or strings from that repo. 13 roles (`api/services/werewolf/roles.js`).
+
+- `api/services/werewolf/engine.js` is pure (state + now + rng in, events out) and covered by
+  `api/test/werewolf.test.js`. One in-memory game; a server restart drops it (nothing is staked).
+- **Privacy is enforced by per-viewer serialization.** Every watcher socket joins room
+  `werewolf` and receives `serializeFor(state, itsUserId)` — never broadcast one shared payload.
+  Log entries carry a `channel` (`public`/`wolves`/`dead`/`private`) filtered per viewer.
+- Actions go over REST (`/api/werewolf/*`); the socket only does `werewolf:watch`/`unwatch`.
+- Winners get `CONFIG.WIN_REWARD` (30 PC) via `creditOnce`; games containing bots
+  (`POST /bots`, admin only) pay nothing.
+- Timers are **not env vars**: defaults are constants in `engine.js` `CONFIG`, and admins edit
+  them on `/admin` (`WerewolfSettings` card → `PUT /api/werewolf/settings`). Saved values live
+  in the single `WerewolfSettings` doc and are re-applied on boot; bounds are `TIMING_FIELDS`.
+  A change takes effect from the next phase.
+
 ## Conventions
 
 - **Vietnamese is the working language** — code comments, `console.log` prefixes, API

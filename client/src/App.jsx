@@ -18,6 +18,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
+const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
 
 const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
@@ -67,6 +68,7 @@ function AppContent() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route path='/werewolf' element={<WerewolfPage />} />
                       <Route
                         path='/admin'
                         element={

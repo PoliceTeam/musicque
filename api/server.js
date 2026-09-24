@@ -15,6 +15,7 @@ const xiangqi = require('./services/xiangqi.service')
 const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
+const werewolf = require('./services/werewolf.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -109,6 +110,9 @@ mongoose
       redLight.resumeIfActiveSession(io).catch((error) => {
         console.error('[Đèn xanh] Resume lỗi:', error.message)
       })
+
+      // Ma Sói không gắn với phiên nhạc: sảnh luôn mở, state chỉ nằm trong RAM.
+      werewolf.init(io)
 
       // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,
       // không thì PC đã trừ mà người thắng không nhận được gì.

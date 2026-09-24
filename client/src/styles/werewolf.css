@@ -1,0 +1,207 @@
+/* ── Ma Sói ──────────────────────────────────────────────────────────
+   Nền đổi theo pha (đêm tím than, ngày vàng nhạt, bỏ phiếu đỏ gạch);
+   panel vẫn dùng token --sp-* để sáng/tối đều đọc được. */
+.ww-page {
+  --ww-accent: #6c5ce7;
+  --ww-accent-soft: rgba(108, 92, 231, 0.14);
+  --ww-wolf: #d9480f;
+  --ww-dead: #868e96;
+  --ww-private: #0c8599;
+  min-height: 100vh;
+  color: var(--sp-text);
+  background: radial-gradient(circle at 50% -20%, var(--ww-accent-soft), transparent 45%), var(--sp-bg);
+  transition: background 0.6s ease;
+}
+.ww-page--night { --ww-accent: #5f3dc4; --ww-accent-soft: rgba(72, 52, 212, 0.32); }
+.ww-page--day { --ww-accent: #e8a200; --ww-accent-soft: rgba(250, 176, 5, 0.22); }
+.ww-page--vote { --ww-accent: #e03131; --ww-accent-soft: rgba(224, 49, 49, 0.18); }
+.ww-page--hunter { --ww-accent: #2b8a3e; --ww-accent-soft: rgba(47, 158, 68, 0.2); }
+.ww-page--ended { --ww-accent: #1db954; --ww-accent-soft: rgba(29, 185, 84, 0.18); }
+
+.ww-loading { display: grid; min-height: 100vh; place-items: center; color: var(--sp-text-muted); }
+
+.ww-topbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto minmax(260px, 1fr);
+  align-items: center;
+  min-height: 64px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--sp-border);
+  background: color-mix(in srgb, var(--sp-surface) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+.ww-back { color: var(--sp-text-muted); font-size: 13px; font-weight: 700; text-decoration: none; }
+.ww-back:hover { color: var(--sp-text); }
+.ww-topbar__brand { display: flex; align-items: center; gap: 9px; font-size: 16px; white-space: nowrap; }
+.ww-topbar__brand span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: var(--ww-accent-soft); font-size: 19px; }
+.ww-topbar__account { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 10px; }
+
+.ww-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: 16px;
+  width: min(1320px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 20px 0 32px;
+  box-sizing: border-box;
+}
+.ww-main { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+
+/* Banner pha + đồng hồ */
+.ww-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1px solid color-mix(in srgb, var(--ww-accent) 45%, var(--sp-border));
+  border-radius: var(--sp-radius-lg);
+  background: linear-gradient(120deg, var(--ww-accent-soft), transparent 70%), var(--sp-surface);
+  box-shadow: var(--sp-shadow);
+}
+.ww-banner__icon { font-size: 34px; line-height: 1; }
+.ww-banner strong { display: block; font-size: 20px; letter-spacing: -0.02em; }
+.ww-banner small { color: var(--sp-text-muted); font-size: 13px; }
+.ww-banner__clock {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: var(--sp-radius-pill);
+  background: var(--sp-surface-2);
+  font: 800 22px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.ww-banner__clock.is-urgent { color: #fff; background: var(--sp-red); animation: ww-pulse 1s ease-in-out infinite; }
+@keyframes ww-pulse { 50% { transform: scale(1.06); } }
+
+/* Vai của tôi */
+.ww-myrole {
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px dashed var(--sp-border-strong);
+  border-radius: var(--sp-radius-lg);
+  background: var(--sp-surface);
+}
+.ww-myrole.is-wolf { border-color: color-mix(in srgb, var(--ww-wolf) 60%, transparent); background: linear-gradient(120deg, rgba(217, 72, 15, 0.1), transparent 60%), var(--sp-surface); }
+.ww-myrole.is-dead { opacity: 0.7; filter: grayscale(0.6); }
+.ww-myrole__emoji { font-size: 40px; line-height: 1; }
+.ww-myrole__eyebrow { color: var(--sp-text-faint); font-size: 10px; font-weight: 800; letter-spacing: 0.12em; }
+.ww-myrole strong { display: block; font-size: 18px; }
+.ww-myrole p { margin: 2px 0 0; color: var(--sp-text-muted); font-size: 13px; line-height: 1.45; }
+.ww-myrole .ww-myrole__extra { color: var(--sp-text); font-weight: 700; }
+
+/* Thanh hành động */
+.ww-actions { position: relative; gap: 10px; padding: 14px 18px; }
+.ww-actions p { margin: 0; font-size: 14px; line-height: 1.5; }
+.ww-actions em { color: var(--ww-accent); font-style: normal; font-weight: 800; }
+.ww-actions__buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ww-actions__buttons .is-active { border-color: var(--ww-accent); color: var(--ww-accent); }
+.ww-actions__meta { color: var(--sp-text-muted); font-size: 12px; }
+.ww-actions__reset { position: absolute; top: 10px; right: 12px; border: 0; background: none; color: var(--sp-text-faint); font-size: 11px; cursor: pointer; }
+.ww-actions__reset:hover { color: var(--sp-red); }
+
+/* Lưới người chơi */
+.ww-grid__hint { margin: 0 0 8px; color: var(--sp-text-muted); font-size: 13px; }
+.ww-grid__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ww-card {
+  position: relative;
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px 10px;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-lg);
+  color: var(--sp-text);
+  background: var(--sp-surface);
+  font: inherit;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+button.ww-card { cursor: pointer; }
+.ww-card.is-targetable:hover { transform: translateY(-2px); border-color: var(--ww-accent); box-shadow: 0 6px 18px var(--ww-accent-soft); }
+.ww-card.is-selected { border-color: var(--ww-accent); box-shadow: 0 0 0 3px var(--ww-accent-soft); }
+.ww-card.is-me { background: linear-gradient(180deg, var(--ww-accent-soft), transparent 60%), var(--sp-surface); }
+.ww-card.is-wolf .ww-card__role { color: var(--ww-wolf); }
+.ww-card.is-dead { opacity: 0.55; filter: grayscale(0.85); }
+.ww-card.is-winner { border-color: #f59f00; }
+.ww-card__avatar { position: relative; }
+.ww-card__tomb, .ww-card__lover { position: absolute; bottom: -4px; font-size: 18px; }
+.ww-card__tomb { right: -10px; }
+.ww-card__lover { left: -10px; }
+.ww-card__name { overflow: hidden; max-width: 100%; margin-top: 4px; font-size: 14px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.ww-card__name small { color: var(--sp-text-muted); font-weight: 600; }
+.ww-card__role { color: var(--sp-text-muted); font-size: 12px; font-weight: 700; }
+.ww-card__unknown { color: var(--sp-text-faint); font-weight: 600; }
+.ww-card__badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: auto; }
+.ww-badge { padding: 2px 7px; border-radius: var(--sp-radius-pill); background: var(--sp-surface-2); color: var(--sp-text-muted); font-size: 11px; font-weight: 700; }
+.ww-badge--ready { background: var(--sp-green-soft); color: var(--sp-green-press); }
+.ww-badge--votes { background: rgba(224, 49, 49, 0.14); color: var(--sp-red); }
+.ww-badge--wolf { background: rgba(217, 72, 15, 0.14); color: var(--ww-wolf); }
+.ww-badge--win { background: rgba(245, 159, 0, 0.18); color: #b35c00; }
+
+/* Diễn biến + chat */
+.ww-feed { position: sticky; top: 16px; height: calc(100vh - 116px); min-height: 460px; overflow: hidden; }
+.ww-feed__head { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 1px solid var(--sp-border); }
+.ww-feed__head span { color: var(--sp-text-faint); font-size: 12px; }
+.ww-feed__list { flex: 1; min-height: 0; margin: 0; padding: 10px 12px; overflow-y: auto; list-style: none; }
+.ww-feed__list > li { margin-bottom: 8px; }
+.ww-feed__list p { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.ww-feed__system { padding: 6px 10px; border-left: 3px solid var(--sp-border-strong); border-radius: 0 6px 6px 0; background: var(--sp-surface-2); color: var(--sp-text-muted); }
+.ww-feed__system.is-wolves { border-left-color: var(--ww-wolf); }
+.ww-feed__system.is-private { border-left-color: var(--ww-private); color: var(--sp-text); background: rgba(12, 133, 153, 0.1); }
+.ww-feed__system.is-dead { border-left-color: var(--ww-dead); }
+.ww-feed__chat { display: flex; gap: 8px; align-items: flex-start; }
+.ww-feed__chat > div { min-width: 0; padding: 6px 10px; border-radius: 10px; background: var(--sp-surface-2); }
+.ww-feed__chat.is-mine > div { background: var(--ww-accent-soft); }
+.ww-feed__chat.is-wolves > div { background: rgba(217, 72, 15, 0.12); }
+.ww-feed__chat.is-dead > div { background: rgba(134, 142, 150, 0.16); font-style: italic; }
+.ww-feed__author { margin-bottom: 1px; font-size: 12px; font-weight: 800; }
+.ww-feed__tag { display: inline-block; margin: 0 6px 2px 0; padding: 1px 6px; border-radius: var(--sp-radius-pill); font-size: 10px; font-weight: 800; letter-spacing: 0.02em; vertical-align: middle; }
+.ww-feed__tag.is-public { background: var(--sp-surface-active); color: var(--sp-text-muted); }
+.ww-feed__tag.is-wolves { background: var(--ww-wolf); color: #fff; }
+.ww-feed__tag.is-dead { background: var(--ww-dead); color: #fff; }
+.ww-feed__tag.is-private { background: var(--ww-private); color: #fff; }
+.ww-feed__empty { color: var(--sp-text-faint); font-size: 13px; text-align: center; }
+.ww-feed__form { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--sp-border); }
+.ww-feed__form .ww-feed__tag { margin: 0; flex-shrink: 0; }
+.ww-feed__form input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-pill);
+  outline: none;
+  color: var(--sp-text);
+  background: var(--sp-surface-2);
+  font: inherit;
+  font-size: 13px;
+}
+.ww-feed__form input:focus { border-color: var(--ww-accent); }
+.ww-feed__form input:disabled { cursor: not-allowed; opacity: 0.7; }
+
+/* Modal luật */
+.ww-rules__flow { margin: 0 0 12px; padding-left: 18px; line-height: 1.6; }
+.ww-rules__flow li { margin-bottom: 6px; }
+.ww-rules__note { padding: 8px 12px; border-radius: 8px; background: var(--sp-surface-2); font-size: 13px; }
+.ww-rules__roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ww-rules__role { display: flex; gap: 10px; padding: 10px; border: 1px solid var(--sp-border); border-radius: 10px; }
+.ww-rules__role.is-wolf { border-color: rgba(217, 72, 15, 0.45); }
+.ww-rules__role.is-tanner, .ww-rules__role.is-killer { border-style: dashed; }
+.ww-rules__emoji { font-size: 26px; line-height: 1; }
+.ww-rules__role h4 { margin: 0; font-size: 14px; }
+.ww-rules__role h4 small { margin-left: 4px; color: var(--sp-text-faint); font-weight: 600; }
+.ww-rules__role p { margin: 2px 0 0; color: var(--sp-text-muted); font-size: 12px; line-height: 1.45; }
+.ww-rules__credit { margin: 12px 0 0; color: var(--sp-text-faint); font-size: 11px; }
+
+@media (max-width: 960px) {
+  .ww-stage { grid-template-columns: minmax(0, 1fr); }
+  .ww-feed { position: static; height: 520px; }
+  .ww-rules__roles { grid-template-columns: minmax(0, 1fr); }
+  .ww-topbar { grid-template-columns: auto 1fr; gap: 10px; padding: 10px 16px; }
+  .ww-topbar__brand { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-page, .ww-card, .ww-banner__clock.is-urgent { transition: none; animation: none; }
+}

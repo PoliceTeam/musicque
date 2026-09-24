@@ -17,6 +17,7 @@ const wordChainRoutes = require('./routes/wordChain.routes');
 const redLightRoutes = require('./routes/redLight.routes');
 const lotteryRoutes = require('./routes/lottery.routes');
 const coreMembershipRoutes = require('./routes/coreMembership.routes');
+const werewolfRoutes = require('./routes/werewolf.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 const { createCorsOrigin } = require('./utils/cors');
 
@@ -60,6 +61,7 @@ app.use('/api/word-chain', wordChainRoutes);
 app.use('/api/red-light', redLightRoutes);
 app.use('/api/lottery', lotteryRoutes);
 app.use('/api/core', coreMembershipRoutes);
+app.use('/api/werewolf', werewolfRoutes);
 
 // Error handling
 app.use(errorHandler);
