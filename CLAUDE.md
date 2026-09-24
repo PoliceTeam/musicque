@@ -353,6 +353,10 @@ rewrite — do not paste code or strings from that repo. 13 roles (`api/services
   them on `/admin` (`WerewolfSettings` card → `PUT /api/werewolf/settings`). Saved values live
   in the single `WerewolfSettings` doc and are re-applied on boot; bounds are `TIMING_FIELDS`.
   A change takes effect from the next phase.
+- `revealRoleOnDeath` (admin switch, **default off**): dead players' roles stay hidden until the
+  game ends. It is frozen onto the game at start. When hidden, night death causes that imply a
+  role (`guard_wolf`, `hunter_night`, …) are announced generically and `death.cause` is masked
+  to `night` in the payload; the hunter becomes `revealed` once they take their final shot.
 
 ## Conventions
 

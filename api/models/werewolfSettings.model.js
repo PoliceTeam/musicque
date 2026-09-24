@@ -12,6 +12,7 @@ const werewolfSettingsSchema = new mongoose.Schema(
     hunterMs: Number,
     autoStartMs: Number,
     endedResetMs: Number,
+    revealRoleOnDeath: Boolean,
     updatedBy: String,
   },
   { timestamps: true },

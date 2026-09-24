@@ -24,6 +24,8 @@ const CONFIG = {
   HUNTER_MS: 20_000,
   AUTOSTART_MS: 60_000,
   ENDED_RESET_MS: 5 * 60_000,
+  // Mặc định giấu vai người chết tới hết ván — dân làng không biết mình treo cổ trúng ai
+  REVEAL_ROLE_ON_DEATH: false,
   WIN_REWARD: 30,
   ALPHA_BITE_CHANCE: 0.2,
   HUNTER_BASE_CHANCE: 0.3,
@@ -50,6 +52,14 @@ const TIMING_FIELDS = [
 const getTimings = () =>
   Object.fromEntries(TIMING_FIELDS.map((field) => [field.key, CONFIG[field.configKey]]))
 
+// Công tắc bật/tắt (boolean) admin chỉnh được, cùng cơ chế "thiếu thì về mặc định".
+const OPTION_FIELDS = [
+  { key: 'revealRoleOnDeath', configKey: 'REVEAL_ROLE_ON_DEATH', label: 'Công bố vai khi có người chết' },
+].map((field) => ({ ...field, defaultValue: CONFIG[field.configKey] }))
+
+const getOptions = () =>
+  Object.fromEntries(OPTION_FIELDS.map((field) => [field.key, CONFIG[field.configKey]]))
+
 // Nhận các giá trị ghi đè { nightMs, ... }; field thiếu quay về mặc định (không giữ giá trị cũ),
 // nên đổi hằng số mặc định trong code luôn có hiệu lực với field admin chưa từng chỉnh.
 // Trả { ok, timings } hoặc { ok:false, message } nếu có giá trị ngoài khoảng.
@@ -69,8 +79,14 @@ const applySettings = (input = {}) => {
     }
     next[field.configKey] = value
   }
+  for (const field of OPTION_FIELDS) {
+    const value = input[field.key]
+    if (value === undefined || value === null) next[field.configKey] = field.defaultValue
+    else if (typeof value === 'boolean') next[field.configKey] = value
+    else return { ok: false, message: `${field.label} phải là bật hoặc tắt` }
+  }
   Object.assign(CONFIG, next)
-  return { ok: true, timings: getTimings() }
+  return { ok: true, timings: getTimings(), options: getOptions() }
 }
 
 const STATUS = { LOBBY: 'lobby', PLAYING: 'playing', ENDED: 'ended' }
@@ -114,6 +130,7 @@ const createInitialState = () => ({
   startedAt: null,
   endedAt: null,
   lastChatAt: {},
+  revealRoleOnDeath: CONFIG.REVEAL_ROLE_ON_DEATH,
 })
 
 const createPlayer = (user, now, extras = {}) => ({
@@ -288,6 +305,8 @@ const startGame = (state, { gameId, now, rng, byUserId = null } = {}) => {
   state.status = STATUS.PLAYING
   state.gameId = gameId ? idOf(gameId) : `ww-${now}`
   state.startedAt = now
+  // Chốt luật cho cả ván: admin đổi công tắc giữa chừng không lật vai người đã chết
+  state.revealRoleOnDeath = CONFIG.REVEAL_ROLE_ON_DEATH
   state.autoStartAt = null
   state.day = 0
 
@@ -404,8 +423,20 @@ const DEATH_TEXT = {
   hunter_shot: (name, by) => `🎯 Trước khi gục xuống, thợ săn ${by} kịp kéo ${name} theo cùng.`,
 }
 
+// Các nguyên nhân chết ban đêm tự nó lộ vai (canh nhầm nhà sói → thiên thần + sói,
+// trúng đạn thợ săn khi săn mồi → sói…). Khi giấu vai, chúng được báo chung một câu.
+const HIDDEN_NIGHT_CAUSES = ['eaten', 'stabbed', 'visit_killer', 'guard_wolf', 'hunter_night']
+const HIDDEN_NIGHT_TEXT = (name) => `🪦 Sáng ra, người ta tìm thấy ${name} đã chết.`
+
+const publicCauseOf = (cause) => (HIDDEN_NIGHT_CAUSES.includes(cause) ? 'night' : cause)
+
 const announceDeaths = (state, deaths, now) => {
   deaths.forEach(({ player, cause, by }) => {
+    if (!state.revealRoleOnDeath) {
+      const text = HIDDEN_NIGHT_CAUSES.includes(cause) ? HIDDEN_NIGHT_TEXT(player.displayName) : DEATH_TEXT[cause](player.displayName, by)
+      announce(state, `${text} Vai của ${player.displayName} sẽ được lật khi hết ván.`, now)
+      return
+    }
     const text = (DEATH_TEXT[cause] || DEATH_TEXT.eaten)(player.displayName, by)
     announce(state, `${text} ${player.displayName} là ${roleLabel(player.role)}.`, now)
   })
@@ -490,6 +521,7 @@ const settleOrContinue = (state, ctx, now, rng, next) => {
   if (ctx.hunterShot) {
     const hunter = findPlayer(state, ctx.hunterShot)
     state.hunter = { userId: hunter.userId, resume: ctx.resume, remainingMs: ctx.remainingMs || 0 }
+    hunter.revealed = true // nổ súng công khai thì ai cũng biết là thợ săn
     setPhase(state, PHASE.HUNTER, CONFIG.HUNTER_MS, now)
     announce(state, `🎯 Thợ săn ${hunter.displayName} gục xuống nhưng vẫn kịp giương súng… (${Math.round(CONFIG.HUNTER_MS / 1000)} giây)`, now)
     autoActBots(state, rng)
@@ -919,7 +951,7 @@ const serializeFor = (state, viewerId, now) => {
   const viewerIsCupid = viewer?.originalRole === 'cupid'
 
   const roleVisible = (p) =>
-    ended || !p.alive || p.revealed || viewer?.userId === p.userId || (viewerIsWolf && isWolf(p))
+    ended || (!p.alive && state.revealRoleOnDeath) || p.revealed || viewer?.userId === p.userId || (viewerIsWolf && isWolf(p))
   const loverVisible = (p) =>
     Boolean(p.loverId) && (ended || viewerIsCupid || viewer?.userId === p.userId || viewer?.userId === p.loverId)
 
@@ -931,7 +963,7 @@ const serializeFor = (state, viewerId, now) => {
     isBot: p.isBot,
     isHost: p.userId === state.hostId,
     alive: p.alive,
-    death: p.death,
+    death: p.death && { ...p.death, cause: roleVisible(p) ? p.death.cause : publicCauseOf(p.death.cause) },
     role: roleVisible(p) ? p.role : null,
     originalRole: ended ? p.originalRole : null,
     lover: loverVisible(p),
@@ -974,7 +1006,7 @@ const serializeFor = (state, viewerId, now) => {
     hostId: state.hostId,
     hunterId: state.phase === PHASE.HUNTER ? state.hunter?.userId || null : null,
     serverNow: now,
-    config: publicConfig(),
+    config: { ...publicConfig(), revealRoleOnDeath: state.status === STATUS.LOBBY ? CONFIG.REVEAL_ROLE_ON_DEATH : state.revealRoleOnDeath },
     hasBots: hasBots(state),
     players,
     me,
@@ -993,13 +1025,16 @@ const publicConfig = () => ({
   hunterMs: CONFIG.HUNTER_MS,
   autoStartMs: CONFIG.AUTOSTART_MS,
   endedResetMs: CONFIG.ENDED_RESET_MS,
+  revealRoleOnDeath: CONFIG.REVEAL_ROLE_ON_DEATH,
   winReward: CONFIG.WIN_REWARD,
 })
 
 module.exports = {
   CONFIG,
   TIMING_FIELDS,
+  OPTION_FIELDS,
   getTimings,
+  getOptions,
   applySettings,
   STATUS,
   PHASE,

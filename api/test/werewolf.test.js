@@ -78,8 +78,9 @@ test('sói ăn thịt, thiên thần chặn được', () => {
   assert.ok(seerView.log.some((entry) => entry.text.includes('P1 là 🐺 Ma sói')))
 })
 
-test('không ai bảo vệ thì nạn nhân chết và vai được công bố', () => {
+test('bật công bố vai: nạn nhân chết thì cả làng thấy vai', () => {
   const state = setup(['wolf', 'villager', 'seer', 'villager', 'villager'])
+  state.revealRoleOnDeath = true
   act(state, 'u1', 'u3')
   endNight(state)
   assert.equal(p(state, 'u3').alive, false)
@@ -271,4 +272,51 @@ test('đêm đầu có thần tình yêu thì dài hơn, các đêm sau về bì
   assert.equal(game.phaseEndsAt - game.phaseStartedAt, engine.CONFIG.CUPID_NIGHT_MS)
   const normal = setup(['wolf', 'villager', 'villager', 'villager', 'villager'])
   assert.equal(normal.phaseEndsAt - normal.phaseStartedAt, engine.CONFIG.NIGHT_MS)
+})
+
+test('mặc định giấu vai người chết tới hết ván, kể cả nguyên nhân chết', () => {
+  assert.equal(engine.CONFIG.REVEAL_ROLE_ON_DEATH, false)
+  const state = setup(['wolf', 'guardian', 'seer', 'villager', 'villager', 'villager', 'villager'])
+  act(state, 'u2', 'u1') // thiên thần canh nhà sói
+  act(state, 'u1', 'u3')
+  endNight(state, () => 0) // rng=0 → thiên thần chắc chắn bị ăn
+  assert.equal(p(state, 'u2').alive, false)
+  assert.equal(p(state, 'u2').death.cause, 'guard_wolf')
+  const view = engine.serializeFor(state, 'u4', 2000)
+  const dead = view.players.filter((x) => !x.alive)
+  assert.ok(dead.length >= 2)
+  dead.forEach((x) => {
+    assert.equal(x.role, null)
+    assert.equal(x.death.cause, 'night')
+  })
+  const publicText = view.log.filter((e) => e.channel === 'public').map((e) => e.text).join('\n')
+  Object.values(ROLES).forEach((role) => assert.ok(!publicText.includes(`${role.emoji} ${role.name}`), `lộ ${role.name}`))
+  assert.ok(!publicText.includes('canh nhầm'), 'nguyên nhân chết lộ vai thiên thần')
+  // Người chết vẫn thấy vai của chính mình
+  assert.equal(engine.serializeFor(state, 'u2', 2000).me.role, 'guardian')
+})
+
+test('giấu vai nhưng thợ săn nổ súng thì lộ là thợ săn', () => {
+  const state = setup(['wolf', 'hunter', 'villager', 'villager', 'villager', 'villager', 'villager'])
+  endNight(state)
+  engine.tick(state, state.phaseEndsAt, seeded(2))
+  ;['u3', 'u4', 'u5'].forEach((id) => act(state, id, 'u2'))
+  engine.tick(state, state.phaseEndsAt, seeded(2))
+  const view = engine.serializeFor(state, 'u6', 2000)
+  assert.equal(view.players.find((x) => x.userId === 'u2').role, 'hunter')
+})
+
+test('công tắc chốt theo ván: đổi giữa chừng không lật vai người đã chết', () => {
+  try {
+    const state = setup(['wolf', 'villager', 'seer', 'villager', 'villager'])
+    act(state, 'u1', 'u3')
+    endNight(state)
+    assert.equal(engine.applySettings({ revealRoleOnDeath: true }).ok, true)
+    const view = engine.serializeFor(state, 'u2', 2000)
+    assert.equal(view.players.find((x) => x.userId === 'u3').role, null)
+    assert.equal(view.config.revealRoleOnDeath, false)
+    assert.equal(engine.applySettings({ revealRoleOnDeath: 'yes' }).ok, false)
+  } finally {
+    engine.applySettings({})
+  }
 })

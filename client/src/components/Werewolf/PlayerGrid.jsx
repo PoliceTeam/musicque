@@ -30,7 +30,7 @@ const PlayerCard = ({ player, catalog, state, targetable, selected, wolfPicks, v
         {isMe && <small> (bạn)</small>}
       </div>
       <div className='ww-card__role'>
-        {role ? <span>{role.emoji} {role.name}</span> : state.status === 'lobby' ? (player.isHost ? '👑 Chủ phòng' : player.isBot ? 'Bot' : 'Sẵn sàng') : <span className='ww-card__unknown'>Vai ẩn</span>}
+        {role ? <span>{role.emoji} {role.name}</span> : state.status === 'lobby' ? (player.isHost ? '👑 Chủ phòng' : player.isBot ? 'Bot' : 'Sẵn sàng') : <span className='ww-card__unknown'>{player.alive ? 'Vai ẩn' : 'Lật vai cuối ván'}</span>}
       </div>
       <div className='ww-card__badges'>
         {player.ready && <span className='ww-badge ww-badge--ready'>✓ Sẵn sàng</span>}

@@ -147,14 +147,19 @@ const init = (io) => {
 const settingsView = () => ({
   timings: engine.getTimings(),
   fields: engine.TIMING_FIELDS.map(({ key, label, min, max, defaultMs }) => ({ key, label, min, max, defaultMs })),
+  options: engine.getOptions(),
+  optionFields: engine.OPTION_FIELDS.map(({ key, label, defaultValue }) => ({ key, label, defaultValue })),
 })
 
 const getSettings = () => settingsView()
 
 // Áp dụng ngay cho các pha bắt đầu sau đó; pha đang chạy giữ nguyên giờ kết thúc.
+// Công tắc luật (vd. lộ vai) chốt theo ván nên chỉ có hiệu lực từ ván sau.
 // DB chỉ giữ field khác mặc định, để sau này đổi hằng số trong code vẫn có tác dụng.
 const updateSettings = async (user, input = {}) => {
-  const values = input.reset ? {} : { ...engine.getTimings(), ...(input.timings || {}) }
+  const values = input.reset
+    ? {}
+    : { ...engine.getTimings(), ...engine.getOptions(), ...(input.timings || {}), ...(input.options || {}) }
   const result = engine.applySettings(values)
   if (!result.ok) throw new WerewolfError(result.message, 400, 'INVALID_SETTINGS')
   const $set = { updatedBy: user?.username || null }
@@ -162,6 +167,10 @@ const updateSettings = async (user, input = {}) => {
   engine.TIMING_FIELDS.forEach((field) => {
     if (result.timings[field.key] === field.defaultMs) $unset[field.key] = ''
     else $set[field.key] = result.timings[field.key]
+  })
+  engine.OPTION_FIELDS.forEach((field) => {
+    if (result.options[field.key] === field.defaultValue) $unset[field.key] = ''
+    else $set[field.key] = result.options[field.key]
   })
   await WerewolfSettings.findByIdAndUpdate('default', { $set, $unset }, { upsert: true })
   broadcast()

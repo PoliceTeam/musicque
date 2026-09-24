@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Card, InputNumber, Popconfirm, Space, Typography, message } from 'antd'
+import { Button, Card, InputNumber, Popconfirm, Space, Switch, Typography, message } from 'antd'
 import { getWerewolfSettings, updateWerewolfSettings } from '../../services/api'
 
 const { Text } = Typography
 
-// Chỉnh các mốc thời gian Ma Sói. Server lưu theo ms; ở đây nhập theo giây.
+// Chỉnh thời gian (server lưu ms, ở đây nhập giây) và các công tắc luật của Ma Sói.
 const WerewolfSettings = () => {
   const [fields, setFields] = useState([])
   const [draft, setDraft] = useState({})
   const [saved, setSaved] = useState({})
+  const [optionFields, setOptionFields] = useState([])
+  const [options, setOptions] = useState({})
+  const [savedOptions, setSavedOptions] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -17,6 +20,9 @@ const WerewolfSettings = () => {
     setFields(data.fields)
     setDraft(seconds)
     setSaved(seconds)
+    setOptionFields(data.optionFields || [])
+    setOptions(data.options || {})
+    setSavedOptions(data.options || {})
   }, [])
 
   useEffect(() => {
@@ -40,12 +46,13 @@ const WerewolfSettings = () => {
   }
 
   const dirty = fields.some((field) => draft[field.key] !== saved[field.key])
+    || optionFields.some((field) => options[field.key] !== savedOptions[field.key])
   const valid = fields.every((field) => Number.isFinite(draft[field.key]))
   const roundSeconds = ['nightMs', 'dayMs', 'voteMs'].reduce((sum, key) => sum + (saved[key] || 0), 0)
 
   const submit = () => {
     const timings = Object.fromEntries(fields.map((field) => [field.key, Math.round(draft[field.key] * 1000)]))
-    save({ timings }, 'Đã lưu. Áp dụng từ pha tiếp theo.')
+    save({ timings, options }, 'Đã lưu. Thời gian áp dụng từ pha kế tiếp, luật áp dụng từ ván sau.')
   }
 
   return (
@@ -73,17 +80,36 @@ const WerewolfSettings = () => {
           </label>
         ))}
       </div>
+      {optionFields.map((field) => (
+        <div key={field.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--sp-border)' }}>
+          <Switch
+            checked={Boolean(options[field.key])}
+            onChange={(checked) => setOptions((current) => ({ ...current, [field.key]: checked }))}
+          />
+          <div>
+            <Text strong>{field.label}</Text>
+            <Text type='secondary' style={{ display: 'block', fontSize: 12 }}>
+              {field.key === 'revealRoleOnDeath'
+                ? (options[field.key]
+                  ? 'Đang bật: ai chết là cả làng biết vai ngay (dễ hơn).'
+                  : 'Đang tắt: vai người chết giữ bí mật tới hết ván, không ai biết mình vừa treo cổ trúng ai (khó hơn).')
+                : null}
+              {' '}Mặc định: {field.defaultValue ? 'bật' : 'tắt'} · áp dụng từ ván sau.
+            </Text>
+          </div>
+        </div>
+      ))}
       <Space style={{ marginTop: 16 }}>
         <Button type='primary' loading={saving} disabled={!dirty || !valid} onClick={submit}>
           Lưu thay đổi
         </Button>
-        <Button disabled={!dirty || saving} onClick={() => setDraft(saved)}>Huỷ</Button>
+        <Button disabled={!dirty || saving} onClick={() => { setDraft(saved); setOptions(savedOptions) }}>Huỷ</Button>
         <Popconfirm title='Đưa tất cả về giá trị mặc định?' onConfirm={() => save({ reset: true }, 'Đã khôi phục mặc định')}>
           <Button type='link' disabled={saving}>Khôi phục mặc định</Button>
         </Popconfirm>
       </Space>
       <Text type='secondary' style={{ display: 'block', marginTop: 10, fontSize: 12 }}>
-        Ván đang chơi vẫn giữ nguyên giờ kết thúc của pha hiện tại; thời gian mới áp dụng từ pha kế tiếp.
+        Ván đang chơi vẫn giữ nguyên giờ kết thúc của pha hiện tại; thời gian mới áp dụng từ pha kế tiếp, công tắc luật áp dụng từ ván sau.
       </Text>
     </Card>
   )

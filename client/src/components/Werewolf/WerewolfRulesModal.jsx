@@ -6,7 +6,7 @@ const WerewolfRulesModal = ({ open, onClose, catalog, config }) => (
   <Modal open={open} onCancel={onClose} footer={null} width={720} title='Luật chơi Ma Sói' className='ww-rules'>
     <ol className='ww-rules__flow'>
       <li><strong>🌙 Đêm ({Math.round((config?.nightMs || 20000) / 1000)}s; đêm đầu có Thần tình yêu {Math.round((config?.cupidNightMs || 30000) / 1000)}s)</strong> — ai có kỹ năng thì chọn mục tiêu. Bầy sói bàn nhau trong kênh riêng và chọn người để ăn thịt.</li>
-      <li><strong>☀️ Ngày ({Math.round((config?.dayMs || 120000) / 1000)}s)</strong> — công bố ai đã chết (kèm vai), cả làng thảo luận. Mọi người bấm “Sẵn sàng” thì vào bỏ phiếu sớm.</li>
+      <li><strong>☀️ Ngày ({Math.round((config?.dayMs || 120000) / 1000)}s)</strong> — công bố ai đã chết{config?.revealRoleOnDeath ? ' (kèm vai)' : ' (vai giữ bí mật tới hết ván)'}, cả làng thảo luận. Mọi người bấm “Sẵn sàng” thì vào bỏ phiếu sớm.</li>
       <li><strong>🗳️ Bỏ phiếu ({Math.round((config?.voteMs || 20000) / 1000)}s)</strong> — người nhiều phiếu nhất bị treo cổ. Hoà phiếu hoặc “Bỏ qua” nhiều nhất thì không ai chết.</li>
       <li><strong>🏆 Thắng</strong> — dân làng thắng khi hết sói (và sát nhân); sói thắng khi đông bằng số người còn lại. Phe thắng nhận <strong>+{config?.winReward || 30} PC</strong> (ván có bot không tính thưởng).</li>
     </ol>
