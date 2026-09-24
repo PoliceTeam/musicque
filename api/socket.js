@@ -3,6 +3,7 @@ const { resolveUserFromToken } = require('./services/auth.service')
 const chatService = require('./services/chat.service')
 const redLight = require('./services/redLight.service')
 const workspace = require('./services/workspace.service')
+const workspaceVoice = require('./services/workspaceVoice.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
 
@@ -95,6 +96,7 @@ const initSocket = (server) => {
           socket.emit('workspace:error', { message: 'Vui lòng đăng nhập để vào workspace' })
           return
         }
+        if (workspace.getMember(socket.id)) await workspaceVoice.leave(socket.id)
         workspace.join({ socket, user, position: data.position })
       } catch (error) {
         console.error('[Workspace] Không thể tham gia:', error.message)
@@ -102,8 +104,26 @@ const initSocket = (server) => {
       }
     })
 
-    socket.on('workspace:move', (data = {}) => {
-      workspace.move({ socket, position: data })
+    socket.on('workspace:move', (data = {}, ack) => {
+      const before = workspace.getMember(socket.id)?.roomId
+      const moved = workspace.move({ socket, position: data })
+      if (typeof ack === 'function' && moved) ack(moved)
+      if (moved && before !== moved.roomId) workspaceVoice.onRoomChange(socket).catch((error) => console.error('[Workspace voice] Lỗi đổi phòng:', error.message))
+    })
+
+    socket.on('workspace:voice:join', async (ack) => {
+      try {
+        const result = await workspaceVoice.join(socket)
+        if (typeof ack === 'function') ack(result)
+      } catch (error) {
+        console.error('[Workspace voice] Không thể cấp phiên:', error.message)
+        if (typeof ack === 'function') ack({ error: 'Không thể kết nối voice', code: 'LIVEKIT_UNAVAILABLE' })
+      }
+    })
+
+    socket.on('workspace:voice:leave', async (ack) => {
+      await workspaceVoice.leave(socket.id)
+      if (typeof ack === 'function') ack({ ok: true })
     })
 
     socket.on('workspace:chat', (data = {}) => {
@@ -116,6 +136,7 @@ const initSocket = (server) => {
     })
 
     socket.on('workspace:leave', () => {
+      workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi rời phòng:', error.message))
       workspace.leave(socket)
     })
 
@@ -212,6 +233,7 @@ const initSocket = (server) => {
     socket.on('disconnect', () => {
       console.log('Client disconnected', socket.id);
       workspace.leave(socket)
+      workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))
       redLight.onSocketDisconnect(socket.id)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor

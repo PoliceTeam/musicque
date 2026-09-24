@@ -7,6 +7,7 @@ import UserMenu from '../components/Auth/UserMenu'
 import AddSongForm from '../components/Playlist/AddSongForm'
 import PlaylistView from '../components/Playlist/PlaylistView'
 import WorkspaceGame from '../components/Workspace/WorkspaceGame'
+import WorkspaceVoice from '../components/Workspace/WorkspaceVoice'
 import '../styles/workspace.css'
 
 const NewsReaderModal = lazy(() => import('../components/News/NewsReaderModal'))
@@ -27,12 +28,14 @@ const WorkspacePage = () => {
   const { user } = useAuth()
   const sceneRef = useRef(null)
   const [nearbyZone, setNearbyZone] = useState(null)
+  const [voiceRoomId, setVoiceRoomId] = useState(null)
   const [activeZone, setActiveZone] = useState(null)
   const [chat, setChat] = useState('')
   const [nesGame, setNesGame] = useState(null)
   const [activeGame, setActiveGame] = useState(null)
 
   const openZone = useCallback((zoneId) => setActiveZone(zoneId), [])
+  const showActiveSpeakers = useCallback((socketIds) => sceneRef.current?.setSpeakingSocketIds(socketIds), [])
   const showError = useCallback((text) => message.error(text), [])
   const openArcadeGame = (gameId) => {
     setActiveZone(null)
@@ -72,8 +75,11 @@ const WorkspacePage = () => {
           onZoneChange={setNearbyZone}
           onInteract={openZone}
           onError={showError}
+          onVoiceRoomChange={setVoiceRoomId}
           sceneRef={sceneRef}
         />
+
+        <WorkspaceVoice socket={socket} roomId={voiceRoomId} onActiveSpeakersChange={showActiveSpeakers} />
 
         <div className='workspace-now-playing-sr' aria-live='polite'>
           {currentSong?.title ? `Đang phát: ${currentSong.title}` : 'Chưa có bài hát đang phát'}

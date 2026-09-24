@@ -90,6 +90,25 @@
 .workspace-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
 .workspace-dot.is-online { background: #22c55e; box-shadow: 0 0 9px #22c55e; }
 
+.workspace-voice {
+  position: absolute;
+  top: 55px;
+  right: 16px;
+  z-index: 5;
+  width: 260px;
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid #b9d5e8;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 32px rgba(70, 105, 140, 0.15);
+}
+.workspace-voice small { color: #52637a; }
+.workspace-voice div { display: flex; gap: 7px; }
+.workspace-voice button { border: 0; border-radius: 8px; padding: 8px; background: #5b67d7; color: white; cursor: pointer; }
+.workspace-voice button:disabled { opacity: 0.5; cursor: default; }
+
 .workspace-prompt {
   position: absolute;
   left: 50%;

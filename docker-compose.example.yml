@@ -23,6 +23,10 @@ services:
       - ADMIN_PASSWORD=your_admin_password
       - CLIENT_URL=your_client_url
       - SOCKET_URL=your_socket_url
+      - WORKSPACE_VOICE_ENABLED=${WORKSPACE_VOICE_ENABLED:-false}
+      - LIVEKIT_URL=${LIVEKIT_URL:-}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-}
       - SONG_SKIP_PC_THRESHOLD=100
       - WORDCHAIN_TURN_MS=8000
       - WORDCHAIN_IDLE_MS=30000

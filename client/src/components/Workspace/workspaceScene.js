@@ -1,7 +1,9 @@
 import Phaser from 'phaser'
 
 export const WORLD_WIDTH = 1600
-export const WORLD_HEIGHT = 900
+export const WORLD_HEIGHT = 1500
+
+const VOICE_ROOM_COLORS = [0xf59e0b, 0x22c55e, 0x8b5cf6, 0x06b6d4]
 
 export const ZONES = [
   { id: 'music', label: 'MUSIC CLUB', hint: 'Order nhạc', x: 300, y: 410, width: 380, height: 320, color: 0x8b5cf6 },
@@ -95,7 +97,10 @@ export class WorkspaceScene extends Phaser.Scene {
     this.onMove = onMove
     this.onReady = onReady
     this.remotePlayers = new Map()
+    this.speakingSocketIds = new Set()
+    this.selfSocketId = null
     this.currentZone = null
+    this.voiceOccupancy = {}
     this.lastSentAt = 0
     this.lastSentPosition = { x: 0, y: 0 }
   }
@@ -330,6 +335,51 @@ export class WorkspaceScene extends Phaser.Scene {
     this.nowPlayingText.setMask(tickerMaskShape.createGeometryMask())
   }
 
+  drawVoiceRooms(rooms) {
+    this.voiceRoomLabels = new Map()
+    this.add.text(800, 845, 'VOICE ROOMS  ·  BƯỚC QUA CỬA ĐỂ TRÒ CHUYỆN', {
+      fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: '#354660',
+    }).setOrigin(0.5)
+    rooms.forEach((room, index) => {
+      const color = VOICE_ROOM_COLORS[index % VOICE_ROOM_COLORS.length]
+      const left = room.x - room.width / 2
+      const top = room.y - room.height / 2
+      const bottom = top + room.height
+      const graphics = this.add.graphics().setDepth(0)
+      graphics.fillStyle(0xffffff, 0.96).fillRoundedRect(left, top, room.width, room.height, 14)
+      graphics.fillStyle(color, 0.13).fillRect(left + 7, top + 7, room.width - 14, room.height - 14)
+      graphics.fillStyle(0xf3e9d9, 0.9).fillRoundedRect(room.x - 98, room.y + 15, 196, 75, 14)
+      graphics.lineStyle(6, color, 0.7)
+      graphics.lineBetween(left, top, room.x - 48, top)
+      graphics.lineBetween(room.x + 48, top, left + room.width, top)
+      graphics.lineBetween(left, top, left, bottom)
+      graphics.lineBetween(left + room.width, top, left + room.width, bottom)
+      graphics.lineBetween(left, bottom, left + room.width, bottom)
+      this.add.text(room.x, top + 44, room.name.toUpperCase(), {
+        fontFamily: 'monospace', fontSize: '21px', fontStyle: 'bold', color: '#24324a',
+      }).setOrigin(0.5).setDepth(10)
+      const label = this.add.text(room.x, top + 74, `0/${room.capacity} người`, {
+        fontFamily: 'monospace', fontSize: '14px', color: '#52637a',
+      }).setOrigin(0.5).setDepth(10)
+      this.voiceRoomLabels.set(room.id, label)
+      this.add.image(room.x - 65, room.y + 18, 'workspace-sofa').setScale(0.62).setDepth(room.y + 18)
+      this.add.image(room.x + 63, room.y + 48, 'workspace-coffeeTable').setScale(0.5).setDepth(room.y + 48)
+      this.add.image(room.x + 110, room.y - 28, 'workspace-plant').setScale(0.55).setDepth(room.y - 28)
+    })
+  }
+
+  setVoiceRooms(rooms) {
+    if (!this.voiceRoomLabels && rooms.length) this.drawVoiceRooms(rooms)
+    rooms.forEach((room) => this.voiceRoomLabels?.get(room.id)?.setText(`${room.occupancy}/${room.capacity} người`))
+  }
+
+  correctPosition(member) {
+    if (!this.player) return
+    this.player.setPosition(member.x, member.y)
+    this.player.body?.reset(member.x, member.y)
+    this.lastSentPosition = { x: member.x, y: member.y }
+  }
+
   createFurniture() {
     const addRug = (x, y, width, height, color) => {
       const rug = this.add.graphics().setDepth(12)
@@ -469,6 +519,9 @@ export class WorkspaceScene extends Phaser.Scene {
     if (this.ownBubble?.active) {
       this.ownBubble.setPosition(this.player.x, this.player.y - 88).setDepth(this.player.y + 100)
     }
+    if (this.ownSpeakingBadge?.active) {
+      this.ownSpeakingBadge.setPosition(this.player.x + 38, this.player.y - 62).setDepth(this.player.y + 110)
+    }
     for (const remote of this.remotePlayers.values()) {
       if (remote.lastMovedAt && time - remote.lastMovedAt > 160) {
         remote.sprite.anims.stop()
@@ -501,6 +554,7 @@ export class WorkspaceScene extends Phaser.Scene {
   }
 
   setMembers(members, selfId) {
+    this.selfSocketId = selfId
     const activeIds = new Set()
     members.forEach((member) => {
       if (member.socketId === selfId) {
@@ -545,6 +599,8 @@ export class WorkspaceScene extends Phaser.Scene {
     remote.sprite.setPosition(member.x, member.y).setDepth(member.y + 40)
     remote.label.setPosition(member.x, member.y - 47).setDepth(member.y + 80)
     if (remote.bubble) remote.bubble.setPosition(member.x, member.y - 88).setDepth(member.y + 100)
+    if (remote.speakingBadge) remote.speakingBadge.setPosition(member.x + 38, member.y - 62).setDepth(member.y + 110)
+    this.updateSpeakingBadge(member.socketId)
   }
 
   removeRemote(socketId) {
@@ -553,8 +609,51 @@ export class WorkspaceScene extends Phaser.Scene {
     remote.sprite.destroy()
     remote.label.destroy()
     remote.bubble?.destroy()
+    remote.speakingBadge?.destroy()
     if (remote.bubbleTimer) remote.bubbleTimer.remove()
     this.remotePlayers.delete(socketId)
+    this.speakingSocketIds.delete(socketId)
+  }
+
+  createSpeakingBadge(x, y, depth) {
+    const background = this.add.graphics()
+    background.fillStyle(0xffffff, 0.96).fillCircle(0, 0, 16)
+    background.lineStyle(2, 0x38bdf8, 1).strokeCircle(0, 0, 16)
+    const icon = this.add.graphics()
+    icon.fillStyle(0x0875ad, 1)
+    icon.fillRect(-8, -4, 5, 8)
+    icon.fillTriangle(-4, -5, 3, -9, 3, 9)
+    icon.lineStyle(2, 0x0875ad, 1)
+    icon.lineBetween(6, -5, 9, -2)
+    icon.lineBetween(9, -2, 9, 2)
+    icon.lineBetween(9, 2, 6, 5)
+    const badge = this.add.container(x, y, [background, icon]).setDepth(depth)
+    this.tweens.add({ targets: badge, scale: { from: 0.96, to: 1.08 }, duration: 560, yoyo: true, repeat: -1 })
+    badge.once('destroy', () => this.tweens.killTweensOf(badge))
+    return badge
+  }
+
+  updateSpeakingBadge(socketId) {
+    const active = this.speakingSocketIds.has(socketId)
+    if (socketId === this.selfSocketId) {
+      if (active && !this.ownSpeakingBadge && this.player) {
+        this.ownSpeakingBadge = this.createSpeakingBadge(this.player.x + 38, this.player.y - 62, this.player.y + 110)
+      }
+      this.ownSpeakingBadge?.setVisible(active)
+      return
+    }
+    const remote = this.remotePlayers.get(socketId)
+    if (!remote) return
+    if (active && !remote.speakingBadge) {
+      remote.speakingBadge = this.createSpeakingBadge(remote.sprite.x + 38, remote.sprite.y - 62, remote.sprite.y + 110)
+    }
+    remote.speakingBadge?.setVisible(active)
+  }
+
+  setSpeakingSocketIds(socketIds) {
+    const previous = this.speakingSocketIds
+    this.speakingSocketIds = new Set(socketIds)
+    new Set([...previous, ...this.speakingSocketIds]).forEach((socketId) => this.updateSpeakingBadge(socketId))
   }
 
   createCoreBubble(message, x, y, depth) {

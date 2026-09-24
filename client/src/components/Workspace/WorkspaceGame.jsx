@@ -3,7 +3,7 @@ import Phaser from 'phaser'
 import { getStoredToken } from '../../services/api'
 import { WorkspaceScene } from './workspaceScene'
 
-const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onError, sceneRef }) => {
+const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onError, onVoiceRoomChange, sceneRef }) => {
   const hostRef = useRef(null)
   const nowPlayingRef = useRef(nowPlaying)
 
@@ -29,9 +29,15 @@ const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onE
     const onSnapshot = (payload) => {
       selfId = payload.selfId
       scene.setMembers(payload.members || [], selfId)
+      scene.correctPosition((payload.members || []).find((member) => member.socketId === selfId) || { x: 800, y: 680 })
+      scene.setVoiceRooms(payload.rooms || [])
+      onVoiceRoomChange((payload.members || []).find((member) => member.socketId === selfId)?.roomId || null)
     }
     const onJoined = (member) => scene.upsertRemote(member)
     const onMoved = (member) => scene.upsertRemote(member)
+    const onRoomState = (rooms) => scene.setVoiceRooms(rooms)
+    const onPositionCorrected = (member) => scene.correctPosition(member)
+    const onOwnMove = (member) => onVoiceRoomChange(member.roomId || null)
     const onLeft = ({ socketId }) => scene.removeRemote(socketId)
     const onChat = (message) => scene.showBubble(message, selfId)
     const handleError = ({ message }) => onError(message)
@@ -39,7 +45,7 @@ const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onE
     scene = new WorkspaceScene({
       onZoneChange,
       onInteract,
-      onMove: (position) => socket.emit('workspace:move', position),
+      onMove: (position) => socket.emit('workspace:move', position, onOwnMove),
       onReady: () => {
         sceneReady = true
         scene.setNowPlaying(nowPlayingRef.current)
@@ -67,6 +73,8 @@ const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onE
     socket.on('workspace:snapshot', onSnapshot)
     socket.on('workspace:member-joined', onJoined)
     socket.on('workspace:member-moved', onMoved)
+    socket.on('workspace:room-state', onRoomState)
+    socket.on('workspace:position-corrected', onPositionCorrected)
     socket.on('workspace:member-left', onLeft)
     socket.on('workspace:chat', onChat)
     socket.on('workspace:error', handleError)
@@ -77,13 +85,15 @@ const WorkspaceGame = ({ socket, user, nowPlaying, onZoneChange, onInteract, onE
       socket.off('workspace:snapshot', onSnapshot)
       socket.off('workspace:member-joined', onJoined)
       socket.off('workspace:member-moved', onMoved)
+      socket.off('workspace:room-state', onRoomState)
+      socket.off('workspace:position-corrected', onPositionCorrected)
       socket.off('workspace:member-left', onLeft)
       socket.off('workspace:chat', onChat)
       socket.off('workspace:error', handleError)
       sceneRef.current = null
       game.destroy(true)
     }
-  }, [socket, user, onZoneChange, onInteract, onError, sceneRef])
+  }, [socket, user, onZoneChange, onInteract, onError, onVoiceRoomChange, sceneRef])
 
   return <div ref={hostRef} className='workspace-game' aria-label='Bản đồ Musicque Workspace' />
 }
