@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chatChannelFor, formatCountdown, getRemainingMs, tallyVotes } from './werewolf'
+import { chatChannelFor, describeFate, formatCountdown, getRemainingMs, sortHistoryPlayers, tallyVotes } from './werewolf'
 
 describe('werewolf utils', () => {
   it('đếm ngược bù lệch đồng hồ server', () => {
@@ -29,5 +29,21 @@ describe('werewolf utils', () => {
     expect(tally.c.map((p) => p.userId)).toEqual(['a', 'b'])
     expect(tally.skip).toHaveLength(1)
     expect(tally.a).toBeUndefined()
+  })
+
+  it('mô tả số phận người chơi trong lịch sử', () => {
+    expect(describeFate({ alive: true })).toBe('Sống sót')
+    expect(describeFate({ alive: false, deathDay: 2, deathCause: 'eaten' })).toBe('Chết đêm 2 · Bị sói ăn')
+    expect(describeFate({ alive: false, deathDay: 1, deathCause: 'lynched' })).toBe('Chết ngày 1 · Bị treo cổ')
+    expect(describeFate({ alive: false, deathDay: 3, deathPhase: 'vote', deathCause: 'heartbreak' })).toBe('Chết ngày 3 · Chết theo người yêu')
+  })
+
+  it('xếp người thắng và người sống lên đầu', () => {
+    const sorted = sortHistoryPlayers([
+      { userId: 'a', winner: false, alive: true },
+      { userId: 'b', winner: true, alive: false },
+      { userId: 'c', winner: true, alive: true },
+    ])
+    expect(sorted.map((p) => p.userId)).toEqual(['c', 'b', 'a'])
   })
 })

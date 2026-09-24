@@ -224,6 +224,7 @@ export const resignXiangqiGame = (gameId) => api.post(`/api/xiangqi/games/${game
 export const getWerewolfConfig = () => api.get("/api/werewolf/config");
 export const getWerewolfState = () => api.get("/api/werewolf/state");
 export const getWerewolfSummary = () => api.get("/api/werewolf/summary");
+export const getWerewolfHistory = (limit = 5) => api.get("/api/werewolf/history", { params: { limit } });
 export const joinWerewolf = () => api.post("/api/werewolf/join");
 export const leaveWerewolf = () => api.post("/api/werewolf/leave");
 export const startWerewolf = () => api.post("/api/werewolf/start");

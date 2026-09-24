@@ -4,7 +4,7 @@ const WerewolfGame = require('../models/werewolfGame.model')
 const WerewolfSettings = require('../models/werewolfSettings.model')
 const coins = require('./coins.service')
 const engine = require('./werewolf/engine')
-const { publicCatalog } = require('./werewolf/roles')
+const { publicCatalog, TEAM_LABEL } = require('./werewolf/roles')
 
 class WerewolfError extends Error {
   constructor(message, status = 400, code = 'WEREWOLF_ERROR') {
@@ -77,12 +77,15 @@ const settle = (live) => {
       players: game.players.map((p) => ({
         userId: p.userId,
         displayName: p.displayName,
+        avatarId: p.avatarId,
+        color: p.color,
         isBot: p.isBot,
         role: p.role,
         originalRole: p.originalRole,
         alive: p.alive,
         deathCause: p.death?.cause,
         deathDay: p.death?.day,
+        deathPhase: p.death?.phase,
         loverId: p.loverId,
         winner: game.result.winners.includes(p.userId),
         reward: rewards[p.userId] || 0,
@@ -189,6 +192,27 @@ const getConfig = () => ({ config: engine.publicConfig(), roles: publicCatalog()
 
 const getState = (user) => viewFor(user)
 
+// Lịch sử các ván đã xong — vai đã lật hết nên công khai được.
+const HISTORY_MAX = 10
+const getHistory = async (limit = 5) => {
+  const size = Math.min(HISTORY_MAX, Math.max(1, Number(limit) || 5))
+  const games = await WerewolfGame.find().sort({ endedAt: -1 }).limit(size).lean()
+  return {
+    games: games.map((game) => ({
+      id: String(game._id),
+      winnerTeam: game.winnerTeam,
+      teamLabel: TEAM_LABEL[game.winnerTeam] || game.winnerTeam,
+      days: game.days,
+      hasBots: game.hasBots,
+      startedAt: game.startedAt,
+      endedAt: game.endedAt,
+      players: game.players.map(({ userId, displayName, avatarId, color, isBot, role, originalRole, alive, deathCause, deathDay, deathPhase, loverId, winner, reward }) => ({
+        userId, displayName, avatarId, color, isBot, role, originalRole, alive, deathCause, deathDay, deathPhase, loverId, winner, reward,
+      })),
+    })),
+  }
+}
+
 // Tóm tắt nhẹ cho nút ngoài Home: không có vai, log hay danh sách người chơi.
 const getSummary = () => ({
   status: state.status,
@@ -289,6 +313,7 @@ module.exports = {
   updateSettings,
   getState,
   getSummary,
+  getHistory,
   join,
   leave,
   start,

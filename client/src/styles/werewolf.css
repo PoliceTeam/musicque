@@ -194,6 +194,11 @@ button.ww-card { cursor: pointer; }
 .ww-rules__role p { margin: 2px 0 0; color: var(--sp-text-muted); font-size: 12px; line-height: 1.45; }
 .ww-rules__credit { margin: 12px 0 0; color: var(--sp-text-faint); font-size: 11px; }
 
+@media (max-width: 1180px) {
+  .ww-topbar { grid-template-columns: auto 1fr; }
+  .ww-topbar__brand { display: none; }
+}
+
 @media (max-width: 960px) {
   .ww-stage { grid-template-columns: minmax(0, 1fr); }
   .ww-feed { position: static; height: 520px; }
@@ -205,3 +210,38 @@ button.ww-card { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .ww-page, .ww-card, .ww-banner__clock.is-urgent { transition: none; animation: none; }
 }
+
+/* Modal lịch sử ván */
+.ww-history__empty { margin: 20px 0; color: var(--sp-text-muted); text-align: center; }
+.ww-history__game { margin-bottom: 10px; border: 1px solid var(--sp-border); border-radius: 12px; background: var(--sp-surface); overflow: hidden; }
+.ww-history__game.is-wolf { border-left: 4px solid #d9480f; }
+.ww-history__game.is-village { border-left: 4px solid #2f9e44; }
+.ww-history__game.is-tanner, .ww-history__game.is-killer, .ww-history__game.is-lovers { border-left: 4px solid #ae3ec9; }
+.ww-history__game summary { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; list-style: none; }
+.ww-history__game summary::-webkit-details-marker { display: none; }
+.ww-history__game summary::after { content: '▾'; margin-left: 8px; color: var(--sp-text-faint); transition: transform 0.15s ease; }
+.ww-history__game:not([open]) summary::after { transform: rotate(-90deg); }
+.ww-history__icon { font-size: 26px; line-height: 1; }
+.ww-history__headline { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.ww-history__headline small { color: var(--sp-text-muted); font-size: 12px; }
+.ww-history__me { padding: 3px 10px; border-radius: 999px; background: var(--sp-surface-2); color: var(--sp-text-muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ww-history__me.is-win { background: rgba(245, 159, 0, 0.18); color: #b35c00; }
+.ww-history__players { margin: 0; padding: 0 14px 12px; list-style: none; }
+.ww-history__players li {
+  display: grid;
+  grid-template-columns: 26px minmax(90px, 1.1fr) minmax(120px, 1.3fr) minmax(130px, 1.4fr) 22px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.ww-history__players li:nth-child(odd) { background: var(--sp-surface-2); }
+.ww-history__players li.is-me { box-shadow: inset 0 0 0 2px rgba(108, 92, 231, 0.45); }
+.ww-history__players li.is-dead .ww-history__name { color: var(--sp-text-muted); }
+.ww-history__name { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.ww-history__role { font-weight: 700; }
+.ww-history__role.is-wolf { color: #d9480f; }
+.ww-history__role small { color: var(--sp-text-faint); font-weight: 600; }
+.ww-history__fate { color: var(--sp-text-muted); font-size: 12px; }
+.ww-history__result { text-align: center; }

@@ -6,6 +6,7 @@ const router = express.Router()
 
 router.get('/config', controller.getConfig)
 router.get('/summary', controller.getSummary)
+router.get('/history', controller.getHistory)
 router.get('/state', optionalAuthenticate, controller.getState)
 router.post('/join', authenticate, controller.join)
 router.post('/leave', authenticate, controller.leave)

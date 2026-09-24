@@ -82,3 +82,30 @@ export const roleText = (catalog, key) => {
 }
 
 export const isWolfRole = (role) => WOLF_ROLES.includes(role)
+
+export const DEATH_CAUSE_LABEL = {
+  eaten: 'Bị sói ăn',
+  stabbed: 'Bị sát nhân đâm',
+  visit_killer: 'Lạc vào nhà sát nhân',
+  guard_wolf: 'Canh nhầm nhà sói',
+  hunter_night: 'Trúng đạn thợ săn',
+  heartbreak: 'Chết theo người yêu',
+  lynched: 'Bị treo cổ',
+  gunner: 'Bị xạ thủ bắn',
+  hunter_shot: 'Bị thợ săn bắn',
+  night: 'Chết trong đêm',
+}
+
+const DAY_CAUSES = ['lynched', 'gunner', 'hunter_shot']
+
+// "Chết đêm 2 · Bị sói ăn" / "Sống sót". Ván cũ chưa lưu deathPhase thì đoán theo nguyên nhân.
+export const describeFate = (player) => {
+  if (player.alive) return 'Sống sót'
+  const atNight = player.deathPhase ? player.deathPhase === 'night' : !DAY_CAUSES.includes(player.deathCause)
+  const when = player.deathDay ? ` ${atNight ? 'đêm' : 'ngày'} ${player.deathDay}` : ''
+  return `Chết${when} · ${DEATH_CAUSE_LABEL[player.deathCause] || 'Không rõ'}`
+}
+
+// Người thắng lên trước, trong mỗi nhóm thì người sống lên trước
+export const sortHistoryPlayers = (players = []) =>
+  [...players].sort((a, b) => Number(b.winner) - Number(a.winner) || Number(b.alive) - Number(a.alive))

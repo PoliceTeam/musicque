@@ -5,6 +5,7 @@ import UserMenu from '../components/Auth/UserMenu'
 import PlayerGrid from '../components/Werewolf/PlayerGrid'
 import GameFeed from '../components/Werewolf/GameFeed'
 import WerewolfRulesModal from '../components/Werewolf/WerewolfRulesModal'
+import WerewolfHistoryModal from '../components/Werewolf/WerewolfHistoryModal'
 import { useWerewolf } from '../components/Werewolf/useWerewolf'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -95,6 +96,7 @@ const WerewolfPage = () => {
   const { state, receivedAt, catalog, run } = useWerewolf()
   const now = useClock()
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [pending, setPending] = useState(null)
   const [busy, setBusy] = useState(false)
   const rewardedRef = useRef(null)
@@ -162,6 +164,7 @@ const WerewolfPage = () => {
         <Link to='/' className='ww-back'>← Về Musicque</Link>
         <div className='ww-topbar__brand'><span>🐺</span><strong>Ma Sói</strong></div>
         <div className='ww-topbar__account'>
+          <button type='button' className='sp-btn sp-btn--ghost sp-btn--sm' onClick={() => setHistoryOpen(true)}>🕰️ Lịch sử ván</button>
           <button type='button' className='sp-btn sp-btn--ghost sp-btn--sm' onClick={() => setRulesOpen(true)}>📜 Luật & vai</button>
           <UserMenu />
         </div>
@@ -240,6 +243,7 @@ const WerewolfPage = () => {
               </p>
               <div className='ww-actions__buttons'>
                 <button type='button' className='sp-btn sp-btn--primary' disabled={busy} onClick={join}>🔁 Ván mới</button>
+                <button type='button' className='sp-btn sp-btn--outline' onClick={() => setHistoryOpen(true)}>🕰️ Xem lại 5 ván gần nhất</button>
               </div>
             </div>
           )}
@@ -250,6 +254,7 @@ const WerewolfPage = () => {
         <GameFeed state={state} onSend={(content) => run(() => sendWerewolfChat(content))} />
       </main>
 
+      <WerewolfHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} catalog={catalog} myId={user ? String(user._id) : null} />
       <WerewolfRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} catalog={catalog} config={state.config} />
     </div>
   )
