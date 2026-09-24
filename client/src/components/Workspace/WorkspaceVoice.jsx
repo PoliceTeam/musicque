@@ -12,6 +12,16 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
   const [micOn, setMicOn] = useState(false)
   const [error, setError] = useState('')
   const [speakers, setSpeakers] = useState(0)
+  const [endsAt, setEndsAt] = useState(null)
+  const [remainingSeconds, setRemainingSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!endsAt) return undefined
+    const tick = () => setRemainingSeconds(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)))
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [endsAt])
 
   const disconnect = useCallback(() => {
     const room = roomRef.current
@@ -25,6 +35,8 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
     setConnectedRoom(null)
     setMicOn(false)
     setSpeakers(0)
+    setEndsAt(null)
+    setRemainingSeconds(0)
     onActiveSpeakersChange([])
   }, [onActiveSpeakersChange])
 
@@ -58,6 +70,7 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
         setBusy(false)
         return
       }
+      const localEndsAt = Date.now() + Math.max(0, response.remainingMs)
       const room = new Room({ adaptiveStream: true, dynacast: true })
       roomRef.current = room
       room.on(RoomEvent.TrackSubscribed, (track) => {
@@ -75,13 +88,20 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
         setSpeakers(participants.length)
         onActiveSpeakersChange(speakerSocketIds(participants))
       })
-      room.on(RoomEvent.Disconnected, disconnect)
+      room.on(RoomEvent.Disconnected, () => {
+        if (roomRef.current !== room) return
+        disconnect()
+        socket?.emit('workspace:voice:leave')
+      })
       try {
         await room.connect(response.url, response.token)
         if (roomRef.current !== room) { room.disconnect(); return }
+        setRemainingSeconds(Math.max(0, Math.ceil((localEndsAt - Date.now()) / 1000)))
         setConnectedRoom(response.roomId)
+        setEndsAt(localEndsAt)
       } catch {
         disconnect()
+        socket?.emit('workspace:voice:leave')
         setError('Không kết nối được LiveKit. Hãy thử lại.')
       } finally {
         setBusy(false)
@@ -108,6 +128,7 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
     <section className='workspace-voice' aria-live='polite'>
       <strong>🎙️ {names[roomId] || names[connectedRoom] || 'Voice room'}</strong>
       <small>{connectedRoom ? `${speakers} người đang nói · ${micOn ? 'Mic đang bật' : 'Mic đang tắt'}` : 'Chỉ người trong phòng mới nghe được nhau'}</small>
+      {connectedRoom && <small>Phiên còn {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')} · tự ngắt sau 10 phút</small>}
       <div>
         {!connectedRoom ? <button type='button' onClick={join} disabled={busy}>{busy ? 'Đang kết nối…' : 'Tham gia voice'}</button> : <>
           <button type='button' onClick={toggleMic}>{micOn ? 'Tắt mic' : 'Bật mic'}</button>

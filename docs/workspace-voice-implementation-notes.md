@@ -14,6 +14,7 @@ Trạng thái: **MVP đã triển khai trong source; chưa bật LiveKit nếu t
 - Giới hạn **8 người/phòng lớn** là yêu cầu đã chốt. Mức 4 người/phòng nhỏ là giả định MVP, lưu trong cấu hình để dễ đổi.
 - Một người chỉ thuộc tối đa một phòng voice tại một thời điểm. Sức chứa tính theo **người đang ở trong phòng trên map**, kể cả chưa bật mic; người thứ 9 không được bước vào phòng lớn.
 - Vào phòng trên map **không tự mở micro hay kết nối LiveKit**. Nút “Tham gia voice” là lựa chọn rõ ràng; lúc kết nối vẫn tắt mic. Bật mic là thao tác riêng. Rời phòng hoặc Workspace thì ngắt voice và dừng audio track.
+- Một phiên voice của phòng kéo dài tối đa 10 phút tính từ người đầu tiên tham gia. Server ngắt mọi participant khi hết giờ; người vào sau thấy thời gian còn lại và không được tự nối lại. Nếu vẫn muốn nói tiếp, người dùng chủ động bắt đầu phiên mới.
 - Bốn phòng là khu vực vật lý có tường, cửa, biển tên, bố cục nội thất, trạng thái `n/8` hoặc `n/4`; không phải các modal meeting. Các khu Game/Music/News hiện có và chat bong bóng vẫn hoạt động như trước.
 - Người ở hai phòng khác nhau, hoặc ở ngoài phòng, không nghe nhau. Không có âm thanh “xuyên tường” hay âm lượng theo khoảng cách trong MVP: biên phòng là ranh giới nghe/nói tuyệt đối.
 
