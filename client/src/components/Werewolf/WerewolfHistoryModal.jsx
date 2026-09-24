@@ -4,7 +4,7 @@ import UserAvatar from '../Avatar/UserAvatar'
 import { getWerewolfHistory } from '../../services/api'
 import { describeFate, isWolfRole, roleMeta, sortHistoryPlayers } from '../../utils/werewolf'
 
-const RESULT_ICON = { village: '🏡', wolf: '🐺', killer: '🔪', tanner: '👺', lovers: '💞', none: '🪦' }
+const RESULT_ICON = { village: '🏡', wolf: '🐺', killer: '🔪', arsonist: '🔥', cult: '👤', tanner: '👺', lovers: '💞', none: '🪦' }
 
 const formatWhen = (value) => {
   if (!value) return ''

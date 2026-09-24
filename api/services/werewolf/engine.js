@@ -1,226 +1,53 @@
 // Engine Ma Sói thuần (không I/O): mọi hàm nhận state + now + rng và trả về
 // events để service quyết định broadcast/persist. Luật tham khảo GreyWolfDev/Werewolf,
-// phần cài đặt viết mới và rút gọn cho 13 vai.
+// phần cài đặt viết mới cho 36 vai. Đêm nằm ở night.js, phần dùng chung ở core.js.
+const { TEAM, TEAM_LABEL, ROLES, isWolfishRole, roleLabel } = require('./roles')
+const { buildRoles, isBalanced } = require('./balance')
+const { resolveNightEffects } = require('./night')
+const core = require('./core')
+
 const {
-  TEAM,
-  TEAM_LABEL,
-  ROLES,
-  VILLAGE_SPECIALS,
-  isWolfRole,
-  teamOfRole,
-  strengthOf,
-  roleLabel,
-} = require('./roles')
-
-// Mặc định là hằng số; admin chỉnh các mốc thời gian lúc chạy qua applySettings
-// (service lưu vào Mongo và nạp lại khi khởi động).
-const CONFIG = {
-  MIN_PLAYERS: 5,
-  MAX_PLAYERS: 16,
-  NIGHT_MS: 20_000,
-  CUPID_NIGHT_MS: 30_000,
-  DAY_MS: 120_000,
-  VOTE_MS: 20_000,
-  HUNTER_MS: 20_000,
-  AUTOSTART_MS: 60_000,
-  ENDED_RESET_MS: 5 * 60_000,
-  // Mặc định giấu vai người chết tới hết ván — dân làng không biết mình treo cổ trúng ai
-  REVEAL_ROLE_ON_DEATH: false,
-  WIN_REWARD: 30,
-  ALPHA_BITE_CHANCE: 0.2,
-  HUNTER_BASE_CHANCE: 0.3,
-  HUNTER_PER_EXTRA_WOLF: 0.2,
-  GUARD_WOLF_DEATH_CHANCE: 0.5,
-  SK_BEATS_WOLF_CHANCE: 0.8,
-  GUNNER_BULLETS: 2,
-  CHAT_MAX: 240,
-  CHAT_COOLDOWN_MS: 600,
-  LOG_LIMIT: 600,
-}
-
-// Các mốc thời gian admin được chỉnh, kèm giới hạn (ms) để không ai đặt 0 giây hay 3 tiếng.
-const TIMING_FIELDS = [
-  { key: 'nightMs', configKey: 'NIGHT_MS', label: 'Ban đêm', min: 15_000, max: 300_000 },
-  { key: 'cupidNightMs', configKey: 'CUPID_NIGHT_MS', label: 'Đêm đầu có Thần tình yêu', min: 15_000, max: 300_000 },
-  { key: 'dayMs', configKey: 'DAY_MS', label: 'Thảo luận ban ngày', min: 15_000, max: 600_000 },
-  { key: 'voteMs', configKey: 'VOTE_MS', label: 'Bỏ phiếu', min: 10_000, max: 300_000 },
-  { key: 'hunterMs', configKey: 'HUNTER_MS', label: 'Thợ săn bắn phát cuối', min: 10_000, max: 120_000 },
-  { key: 'autoStartMs', configKey: 'AUTOSTART_MS', label: 'Tự bắt đầu khi đủ người', min: 10_000, max: 600_000 },
-  { key: 'endedResetMs', configKey: 'ENDED_RESET_MS', label: 'Giữ màn kết quả', min: 30_000, max: 3_600_000 },
-].map((field) => ({ ...field, defaultMs: CONFIG[field.configKey] }))
-
-const getTimings = () =>
-  Object.fromEntries(TIMING_FIELDS.map((field) => [field.key, CONFIG[field.configKey]]))
-
-// Công tắc bật/tắt (boolean) admin chỉnh được, cùng cơ chế "thiếu thì về mặc định".
-const OPTION_FIELDS = [
-  { key: 'revealRoleOnDeath', configKey: 'REVEAL_ROLE_ON_DEATH', label: 'Công bố vai khi có người chết' },
-].map((field) => ({ ...field, defaultValue: CONFIG[field.configKey] }))
-
-const getOptions = () =>
-  Object.fromEntries(OPTION_FIELDS.map((field) => [field.key, CONFIG[field.configKey]]))
-
-// Nhận các giá trị ghi đè { nightMs, ... }; field thiếu quay về mặc định (không giữ giá trị cũ),
-// nên đổi hằng số mặc định trong code luôn có hiệu lực với field admin chưa từng chỉnh.
-// Trả { ok, timings } hoặc { ok:false, message } nếu có giá trị ngoài khoảng.
-const applySettings = (input = {}) => {
-  const next = {}
-  for (const field of TIMING_FIELDS) {
-    if (input[field.key] === undefined || input[field.key] === null) {
-      next[field.configKey] = field.defaultMs
-      continue
-    }
-    const value = Math.round(Number(input[field.key]))
-    if (!Number.isFinite(value) || value < field.min || value > field.max) {
-      return {
-        ok: false,
-        message: `${field.label} phải từ ${field.min / 1000} đến ${field.max / 1000} giây`,
-      }
-    }
-    next[field.configKey] = value
-  }
-  for (const field of OPTION_FIELDS) {
-    const value = input[field.key]
-    if (value === undefined || value === null) next[field.configKey] = field.defaultValue
-    else if (typeof value === 'boolean') next[field.configKey] = value
-    else return { ok: false, message: `${field.label} phải là bật hoặc tắt` }
-  }
-  Object.assign(CONFIG, next)
-  return { ok: true, timings: getTimings(), options: getOptions() }
-}
-
-const STATUS = { LOBBY: 'lobby', PLAYING: 'playing', ENDED: 'ended' }
-const PHASE = { NIGHT: 'night', DAY: 'day', VOTE: 'vote', HUNTER: 'hunter' }
-const SKIP = 'skip'
-
-const idOf = (value) => String(value)
-const ok = (extra = {}) => ({ ok: true, events: ['changed'], ...extra })
-const fail = (code, message) => ({ ok: false, code, message, events: [] })
-
-const pick = (list, rng) => list[Math.floor(rng() * list.length)]
-const shuffle = (list, rng) => {
-  const copy = [...list]
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
-  }
-  return copy
-}
-
-// ── State ──────────────────────────────────────────────────────────────
-
-const createInitialState = () => ({
-  status: STATUS.LOBBY,
-  gameId: null,
-  hostId: null,
-  autoStartAt: null,
-  players: [],
-  phase: null,
-  day: 0,
-  phaseStartedAt: null,
-  phaseEndsAt: null,
-  actions: {},
-  votes: {},
-  ready: {},
-  hunter: null,
-  flags: { wolvesDrunk: false, cubRage: false, gunnerShotDay: null },
-  log: [],
-  logSeq: 0,
-  result: null,
-  startedAt: null,
-  endedAt: null,
-  lastChatAt: {},
-  revealRoleOnDeath: CONFIG.REVEAL_ROLE_ON_DEATH,
-})
-
-const createPlayer = (user, now, extras = {}) => ({
-  userId: idOf(user._id || user.userId),
-  displayName: user.displayName || user.username || 'Ẩn danh',
-  avatarId: user.avatarId || null,
-  color: user.color || null,
-  isBot: Boolean(extras.isBot),
-  joinedAt: now,
-  role: null,
-  originalRole: null,
-  alive: true,
-  death: null,
-  loverId: null,
-  bullets: 0,
-  revealed: false,
-  pendingBite: false,
-})
-
-const findPlayer = (state, userId) => state.players.find((p) => p.userId === idOf(userId))
-const alivePlayers = (state) => state.players.filter((p) => p.alive)
-const teamOf = (player) => teamOfRole(player.role)
-const isWolf = (player) => Boolean(player && isWolfRole(player.role))
-const aliveWolves = (state) => alivePlayers(state).filter(isWolf)
-const aliveWithRole = (state, role) => alivePlayers(state).find((p) => p.role === role) || null
-
-const pushLog = (state, entry, now) => {
-  state.logSeq += 1
-  state.log.push({
-    id: state.logSeq,
-    at: now,
-    day: state.day,
-    phase: state.phase,
-    kind: entry.kind || 'system',
-    channel: entry.channel || 'public',
-    to: entry.to ? entry.to.map(idOf) : undefined,
-    text: entry.text,
-    author: entry.author,
-  })
-  if (state.log.length > CONFIG.LOG_LIMIT) state.log.splice(0, state.log.length - CONFIG.LOG_LIMIT)
-}
-
-const tell = (state, players, text, now) => {
-  const to = (Array.isArray(players) ? players : [players]).filter(Boolean).map((p) => p.userId)
-  if (to.length) pushLog(state, { channel: 'private', to, text }, now)
-}
-
-const tellWolves = (state, text, now) => pushLog(state, { channel: 'wolves', text }, now)
-
-const announce = (state, text, now) => pushLog(state, { channel: 'public', text }, now)
-
-// ── Chia vai ───────────────────────────────────────────────────────────
-
-const wolfCountFor = (n) => (n >= 13 ? 3 : n >= 8 ? 2 : 1)
-
-const isBalanced = (roles) => {
-  const n = roles.length
-  if (!roles.some(isWolfRole)) return false
-  const enemies = roles.filter((role) => teamOfRole(role) !== TEAM.VILLAGE)
-  const village = roles.filter((role) => teamOfRole(role) === TEAM.VILLAGE)
-  if (enemies.length >= village.length) return false
-  const villageStrength = village.reduce((sum, role) => sum + strengthOf(role, roles), 0)
-  const enemyStrength = enemies.reduce((sum, role) => sum + strengthOf(role, roles), 0)
-  return Math.abs(villageStrength - enemyStrength) <= Math.floor(n / 4) + 1
-}
-
-const buildRoles = (n, rng) => {
-  for (let attempt = 0; attempt < 500; attempt += 1) {
-    const roles = []
-    const wolfSpecials = shuffle(['alpha_wolf', 'wolf_cub'], rng)
-    for (let i = 0; i < wolfCountFor(n); i += 1) {
-      roles.push(wolfSpecials.length && rng() < 0.35 ? wolfSpecials.pop() : 'wolf')
-    }
-    if (n >= 8 && rng() < 0.35) roles.push('serial_killer')
-    if (n >= 6 && rng() < 0.3) roles.push('tanner')
-
-    let specials = shuffle(VILLAGE_SPECIALS, rng)
-    if (rng() < 0.85) specials = ['seer', ...specials.filter((role) => role !== 'seer')]
-    const remaining = n - roles.length
-    const specialCount = Math.min(specials.length, remaining, Math.max(1, Math.round(remaining * (0.3 + rng() * 0.45))))
-    roles.push(...specials.slice(0, specialCount))
-    while (roles.length < n) roles.push('villager')
-
-    if (roles.length === n && isBalanced(roles)) return { roles: shuffle(roles, rng), attempts: attempt + 1 }
-  }
-  // Không cân được (rất hiếm) → bộ vai tối giản luôn hợp lệ
-  const roles = ['wolf', 'seer']
-  while (roles.length < n) roles.push('villager')
-  return { roles: shuffle(roles, rng), attempts: -1 }
-}
+  CONFIG,
+  TIMING_FIELDS,
+  OPTION_FIELDS,
+  getTimings,
+  getOptions,
+  applySettings,
+  STATUS,
+  PHASE,
+  SKIP,
+  SPARK,
+  idOf,
+  ok,
+  fail,
+  pick,
+  shuffle,
+  createInitialState,
+  createPlayer,
+  findPlayer,
+  alivePlayers,
+  teamOf,
+  isPack,
+  isWolfish,
+  isCultist,
+  alivePack,
+  aliveWolfish,
+  aliveCult,
+  aliveWithRole,
+  pushLog,
+  tell,
+  tellWolves,
+  tellCult,
+  announce,
+  shownRoleFor,
+  names,
+  transform,
+  roleChanges,
+  killPlayer,
+  publicCauseOf,
+  announceDeaths,
+  punishElderKiller,
+} = core
 
 // ── Sảnh chờ ───────────────────────────────────────────────────────────
 
@@ -264,7 +91,7 @@ const leaveLobby = (state, userId, now) => {
   return ok()
 }
 
-const BOT_NAMES = ['Bác Ba', 'Cô Tư', 'Chú Năm', 'Anh Sáu', 'Chị Bảy', 'Ông Tám', 'Bà Chín', 'Út Mười', 'Cậu Tý', 'Mợ Sửu', 'Thím Dần']
+const BOT_NAMES = ['Bác Ba', 'Cô Tư', 'Chú Năm', 'Anh Sáu', 'Chị Bảy', 'Ông Tám', 'Bà Chín', 'Út Mười', 'Cậu Tý', 'Mợ Sửu', 'Thím Dần', 'Dì Mão', 'Cụ Thìn', 'Chú Tỵ', 'Cô Ngọ']
 
 const fillBots = (state, now, target = Math.max(CONFIG.MIN_PLAYERS, 7)) => {
   if (state.status !== STATUS.LOBBY) return fail('NOT_IN_LOBBY', 'Chỉ thêm bot khi đang ở sảnh chờ')
@@ -289,6 +116,24 @@ const setPhase = (state, phase, durationMs, now) => {
   state.phaseEndsAt = now + durationMs
 }
 
+const introduce = (state, now) => {
+  state.players.forEach((player) => {
+    const role = shownRoleFor(state, player)
+    tell(state, player, `Bạn là ${roleLabel(role)}. ${ROLES[role].summary}`, now)
+  })
+  const wolfish = aliveWolfish(state)
+  if (wolfish.length > 1) tellWolves(state, `🐺 Bầy sói đêm nay: ${wolfish.map((w) => `${w.displayName} (${ROLES[w.role].name})`).join(', ')}.`, now)
+  const masons = state.players.filter((p) => p.role === 'mason')
+  masons.forEach((m) => tell(state, m, `👷 Hội kín gồm: ${names(masons.filter((x) => x !== m))}.`, now))
+  const cult = state.players.filter(isCultist)
+  if (cult.length) tellCult(state, `👤 Giáo phái khởi đầu với: ${names(cult)}.`, now)
+  const beholder = state.players.find((p) => p.role === 'beholder')
+  if (beholder) {
+    const seer = state.players.find((p) => p.role === 'seer')
+    tell(state, beholder, seer ? `👁️ Tiên tri của làng là ${seer.displayName}.` : '👁️ Làng này không có Tiên tri.', now)
+  }
+}
+
 const startGame = (state, { gameId, now, rng, byUserId = null } = {}) => {
   if (state.status !== STATUS.LOBBY) return fail('GAME_RUNNING', 'Ván đã bắt đầu')
   if (byUserId && state.hostId !== idOf(byUserId)) return fail('NOT_HOST', 'Chỉ chủ phòng mới được bắt đầu sớm')
@@ -301,6 +146,10 @@ const startGame = (state, { gameId, now, rng, byUserId = null } = {}) => {
     player.role = roles[index]
     player.originalRole = roles[index]
     player.bullets = player.role === 'gunner' ? CONFIG.GUNNER_BULLETS : 0
+    if (player.role === 'cultist') {
+      state.cultSeq += 1
+      player.cultJoinedAt = state.cultSeq
+    }
   })
   state.status = STATUS.PLAYING
   state.gameId = gameId ? idOf(gameId) : `ww-${now}`
@@ -309,15 +158,10 @@ const startGame = (state, { gameId, now, rng, byUserId = null } = {}) => {
   state.revealRoleOnDeath = CONFIG.REVEAL_ROLE_ON_DEATH
   state.autoStartAt = null
   state.day = 0
+  state.augurPool = shuffle(Object.keys(ROLES), rng)
 
   announce(state, `🌕 Ván Ma Sói bắt đầu với ${state.players.length} người. Mỗi người đã nhận vai bí mật của mình.`, now)
-  state.players.forEach((player) => {
-    tell(state, player, `Bạn là ${roleLabel(player.role)}. ${ROLES[player.role].summary}`, now)
-  })
-  const wolves = state.players.filter(isWolf)
-  if (wolves.length > 1) {
-    tellWolves(state, `🐺 Bầy sói đêm nay: ${wolves.map((w) => `${w.displayName} (${ROLES[w.role].name})`).join(', ')}.`, now)
-  }
+  introduce(state, now)
   startNight(state, now, rng)
   return ok({ events: ['changed', 'started'] })
 }
@@ -328,8 +172,12 @@ const targetsExcept = (state, player, predicate = () => true) =>
   alivePlayers(state).filter((p) => p.userId !== player.userId && predicate(p)).map((p) => p.userId)
 
 const needsCupid = (state) => state.day === 1 && !state.players.some((p) => p.loverId)
+const hasFirstNightChoice = (state) => state.day === 1 && alivePlayers(state).some((p) =>
+  (p.role === 'cupid' && needsCupid(state)) || (['wild_child', 'doppelganger'].includes(p.role) && !p.modelId) || (p.role === 'thief' && !p.stole))
 
-// Mô tả lượt của một người chơi trong pha hiện tại, dùng cho cả server lẫn UI.
+const NIGHT_KINDS = ['wolf_kill', 'freeze', 'see', 'guard', 'stab', 'pair', 'model', 'steal', 'hunt', 'convert', 'arson', 'visit']
+
+// Lượt chính của một người chơi trong pha hiện tại, dùng cho cả server lẫn UI.
 const availableAction = (state, player) => {
   if (!player || state.status !== STATUS.PLAYING) return null
   if (state.phase === PHASE.HUNTER) {
@@ -341,9 +189,11 @@ const availableAction = (state, player) => {
   if (!player.alive) return null
 
   if (state.phase === PHASE.NIGHT) {
-    if (isWolf(player)) {
-      if (state.flags.wolvesDrunk) return { kind: 'none', label: 'Bầy sói say mèm, đêm nay không đi săn được' }
-      const targets = targetsExcept(state, player, (p) => !isWolf(p))
+    if (state.sleeping) return { kind: 'none', label: '💤 Thần ngủ đã ru cả làng — đêm nay không ai làm được gì' }
+    if (isPack(player)) {
+      if (state.silverNight) return { kind: 'none', label: '⚒️ Bột bạc khắp làng, bầy sói không dám ra tay đêm nay' }
+      if (state.flags.wolvesDrunk) return { kind: 'none', label: '🍻 Bầy sói say mèm, đêm nay không đi săn được' }
+      const targets = targetsExcept(state, player, (p) => !isWolfish(p))
       const needsTwo = state.flags.cubRage && targets.length >= 2
       return {
         kind: 'wolf_kill',
@@ -353,36 +203,80 @@ const availableAction = (state, player) => {
       }
     }
     switch (player.role) {
+      case 'snow_wolf':
+        if (state.silverNight) return { kind: 'none', label: '⚒️ Bột bạc khắp làng, bạn không dám ra tay đêm nay' }
+        return { kind: 'freeze', label: 'Chọn người để đóng băng', targets: targetsExcept(state, player, (p) => !isWolfish(p) && p.frozenDay !== state.day - 1) }
       case 'seer':
+      case 'fool':
         return { kind: 'see', label: 'Chọn người để soi vai', targets: targetsExcept(state, player) }
+      case 'sorcerer':
+        return { kind: 'see', label: 'Chọn người để dò xem là sói hay Tiên tri', targets: targetsExcept(state, player) }
+      case 'oracle':
+        return { kind: 'see', label: 'Chọn người để biết một vai họ KHÔNG phải', targets: targetsExcept(state, player) }
       case 'guardian':
         return { kind: 'guard', label: 'Chọn người để bảo vệ đêm nay', targets: targetsExcept(state, player) }
+      case 'harlot':
+        return { kind: 'visit', label: 'Chọn nhà để ngủ nhờ (hoặc ở nhà)', targets: targetsExcept(state, player), allowSkip: true, skipLabel: '🏠 Ở nhà đêm nay' }
       case 'serial_killer':
         return { kind: 'stab', label: 'Chọn người để ra tay', targets: targetsExcept(state, player) }
+      case 'cult_hunter':
+        return { kind: 'hunt', label: 'Chọn người để truy lùng tín đồ tà giáo', targets: targetsExcept(state, player) }
+      case 'cultist':
+        return { kind: 'convert', label: 'Chọn người để giáo phái chiêu mộ', targets: targetsExcept(state, player, (p) => !isCultist(p)) }
+      case 'arsonist': {
+        const hasDoused = alivePlayers(state).some((p) => p.doused)
+        return {
+          kind: 'arson',
+          label: hasDoused ? 'Tưới xăng thêm một nhà, hoặc châm lửa' : 'Chọn nhà để tưới xăng',
+          targets: targetsExcept(state, player, (p) => !p.doused),
+          extra: hasDoused ? { targetId: SPARK, label: '🔥 Châm lửa đốt mọi nhà đã tưới' } : null,
+        }
+      }
       case 'cupid':
         if (!needsCupid(state)) return null
-        return {
-          kind: 'pair',
-          label: 'Chọn hai người để se duyên (có thể gồm bạn)',
-          targets: alivePlayers(state).map((p) => p.userId),
-          needsTwo: true,
-        }
+        return { kind: 'pair', label: 'Chọn hai người để se duyên (có thể gồm bạn)', targets: alivePlayers(state).map((p) => p.userId), needsTwo: true }
+      case 'wild_child':
+      case 'doppelganger':
+        if (player.modelId) return null
+        return { kind: 'model', label: 'Chọn một người làm hình mẫu', targets: targetsExcept(state, player) }
+      case 'thief':
+        if (player.stole) return null
+        return { kind: 'steal', label: 'Chọn người để trộm vai', targets: targetsExcept(state, player) }
       default:
         return null
     }
   }
 
-  if (state.phase === PHASE.DAY && player.role === 'gunner' && player.bullets > 0 && state.flags.gunnerShotDay !== state.day) {
-    return { kind: 'gunner_shot', label: `Nổ súng (còn ${player.bullets} viên)`, targets: targetsExcept(state, player) }
+  if (state.phase === PHASE.DAY) {
+    if (player.role === 'gunner' && player.bullets > 0 && state.flags.gunnerShotDay !== state.day) {
+      return { kind: 'gunner_shot', label: `Nổ súng (còn ${player.bullets} viên)`, targets: targetsExcept(state, player) }
+    }
+    if (player.role === 'detective') {
+      return { kind: 'investigate', label: 'Chọn người để điều tra (có kết quả cuối ngày)', targets: targetsExcept(state, player) }
+    }
   }
 
   if (state.phase === PHASE.VOTE) {
-    return { kind: 'vote', label: 'Bỏ phiếu treo cổ', targets: targetsExcept(state, player), allowSkip: true }
+    return { kind: 'vote', label: 'Bỏ phiếu treo cổ', targets: targetsExcept(state, player), allowSkip: true, skipLabel: '🤷 Bỏ qua, không treo ai' }
   }
   return null
 }
 
-const NIGHT_KINDS = ['wolf_kill', 'see', 'guard', 'stab', 'pair']
+// Kỹ năng bấm một lần (không cần chọn người), hiện thành nút riêng.
+const abilityButtons = (state, player) => {
+  if (!player?.alive || state.status !== STATUS.PLAYING || player.hasUsedAbility) return []
+  const buttons = []
+  if (player.role === 'mayor' && [PHASE.DAY, PHASE.VOTE].includes(state.phase)) {
+    buttons.push({ kind: 'mayor_reveal', label: '🎖️ Công khai là Trưởng làng (phiếu x2)', confirm: 'Công khai thân phận Trưởng làng?' })
+  }
+  if (player.role === 'blacksmith' && state.phase === PHASE.DAY && state.flags.silverDay !== state.day) {
+    buttons.push({ kind: 'spread_silver', label: '⚒️ Rải bột bạc (chặn sói đêm nay)', confirm: 'Rải bạc? Chỉ dùng được một lần mỗi ván.' })
+  }
+  if (player.role === 'sandman' && state.phase === PHASE.DAY && !state.flags.sleepNext) {
+    buttons.push({ kind: 'sandman_sleep', label: '💤 Ru cả làng ngủ say đêm nay', confirm: 'Ru cả làng ngủ? Chỉ dùng được một lần mỗi ván.' })
+  }
+  return buttons
+}
 
 const nightActionComplete = (state, player) => {
   const action = availableAction(state, player)
@@ -394,71 +288,43 @@ const nightActionComplete = (state, player) => {
 
 const allNightActionsDone = (state) => alivePlayers(state).every((p) => nightActionComplete(state, p))
 
-// ── Chết & hệ quả ──────────────────────────────────────────────────────
+// ── Kiểm tra thắng ─────────────────────────────────────────────────────
 
-// Giết một người và kéo theo hệ quả (người yêu, sói con, phát súng thợ săn).
-// finalShot=false khi thợ săn bị sói ăn — trường hợp đó đã có cơ hội bắn sói riêng.
-const killPlayer = (state, player, cause, ctx, { finalShot = true } = {}) => {
-  if (!player || !player.alive) return
-  player.alive = false
-  player.death = { day: state.day, phase: state.phase, cause }
-  ctx.deaths.push({ player, cause, by: ctx.by })
-  if (player.role === 'wolf_cub') state.flags.cubRage = true
-  if (player.role === 'hunter' && finalShot && alivePlayers(state).length > 0) ctx.hunterShot = player.userId
-  if (player.loverId) {
-    const lover = findPlayer(state, player.loverId)
-    if (lover?.alive) killPlayer(state, lover, 'heartbreak', ctx)
+const PASSIVE_SOLO = ['sorcerer', 'tanner', 'thief', 'doppelganger']
+
+// Hết bầy sói: Sói tuyết thành sói thường, không có thì Kẻ phản bội hoá sói.
+const promoteLastWolves = (state, now) => {
+  if (alivePack(state).length || alivePlayers(state).some((p) => p.pendingBite)) return
+  const snow = aliveWithRole(state, 'snow_wolf')
+  if (snow) {
+    snow.role = 'wolf'
+    tell(state, snow, '☃️ Cả bầy đã chết. Bạn gác lại băng giá và trở thành Ma sói đi săn như bao con khác.', now)
+    return
+  }
+  const traitor = aliveWithRole(state, 'traitor')
+  if (traitor) {
+    traitor.role = 'wolf'
+    tell(state, traitor, '🐍 Bầy sói đã chết hết. Giờ là lúc bạn lột mặt nạ — bạn là Ma sói!', now)
   }
 }
 
-const DEATH_TEXT = {
-  eaten: (name) => `🐺 Sáng ra, dân làng tìm thấy thi thể ${name} bị xé nát.`,
-  stabbed: (name) => `🔪 ${name} được phát hiện với vô số vết dao trên người.`,
-  visit_killer: (name) => `🔪 ${name} đêm qua lạc vào nhà kẻ sát nhân và không bao giờ trở ra.`,
-  guard_wolf: (name) => `👼 ${name} đứng canh nhầm cửa nhà một con sói và bị ăn thịt.`,
-  hunter_night: (name) => `🎯 ${name} trúng đạn của thợ săn ngay lúc đang săn mồi.`,
-  heartbreak: (name) => `💔 Không chịu nổi mất mát, ${name} đã đi theo người mình yêu.`,
-  lynched: (name) => `⚖️ Dân làng đã treo cổ ${name}.`,
-  gunner: (name, by) => `🔫 ĐOÀNG! ${by} rút súng bắn gục ${name}.`,
-  hunter_shot: (name, by) => `🎯 Trước khi gục xuống, thợ săn ${by} kịp kéo ${name} theo cùng.`,
-}
-
-// Các nguyên nhân chết ban đêm tự nó lộ vai (canh nhầm nhà sói → thiên thần + sói,
-// trúng đạn thợ săn khi săn mồi → sói…). Khi giấu vai, chúng được báo chung một câu.
-const HIDDEN_NIGHT_CAUSES = ['eaten', 'stabbed', 'visit_killer', 'guard_wolf', 'hunter_night']
-const HIDDEN_NIGHT_TEXT = (name) => `🪦 Sáng ra, người ta tìm thấy ${name} đã chết.`
-
-const publicCauseOf = (cause) => (HIDDEN_NIGHT_CAUSES.includes(cause) ? 'night' : cause)
-
-const announceDeaths = (state, deaths, now) => {
-  deaths.forEach(({ player, cause, by }) => {
-    if (!state.revealRoleOnDeath) {
-      const text = HIDDEN_NIGHT_CAUSES.includes(cause) ? HIDDEN_NIGHT_TEXT(player.displayName) : DEATH_TEXT[cause](player.displayName, by)
-      announce(state, `${text} Vai của ${player.displayName} sẽ được lật khi hết ván.`, now)
-      return
-    }
-    const text = (DEATH_TEXT[cause] || DEATH_TEXT.eaten)(player.displayName, by)
-    announce(state, `${text} ${player.displayName} là ${roleLabel(player.role)}.`, now)
-  })
-}
-
-// ── Kiểm tra thắng ─────────────────────────────────────────────────────
-
 const checkWinner = (state, rng, now) => {
+  promoteLastWolves(state, now)
   const alive = alivePlayers(state)
   if (alive.length === 0) return { team: TEAM.NONE }
   if (alive.length === 1) {
     const [last] = alive
-    return { team: last.role === 'tanner' ? TEAM.NONE : teamOf(last) }
+    return { team: PASSIVE_SOLO.includes(last.role) ? TEAM.NONE : teamOf(last) }
   }
   if (alive.length === 2) {
     const [a, b] = alive
     if (a.loverId === b.userId) return { team: TEAM.LOVERS }
+    if (alive.every((p) => PASSIVE_SOLO.includes(p.role))) return { team: TEAM.NONE }
     const hunter = alive.find((p) => p.role === 'hunter')
     if (hunter) {
       const other = alive.find((p) => p !== hunter)
       if (other.role === 'serial_killer') return { team: TEAM.KILLER }
-      if (isWolf(other)) {
+      if (isWolfish(other)) {
         const ctx = { deaths: [] }
         if (rng() < CONFIG.HUNTER_BASE_CHANCE) {
           announce(state, `🎯 Chỉ còn hai người. Thợ săn ${hunter.displayName} nhanh tay hơn và hạ gục ${other.displayName}!`, now)
@@ -471,23 +337,39 @@ const checkWinner = (state, rng, now) => {
       }
     }
     if (alive.some((p) => p.role === 'serial_killer')) return { team: TEAM.KILLER }
+    if (alive.some((p) => p.role === 'arsonist') && !alive.some((p) => p.role === 'gunner' && p.bullets > 0)) return { team: TEAM.ARSONIST }
+    const cultist = alive.find(isCultist)
+    if (cultist) {
+      const other = alive.find((p) => p !== cultist)
+      if (isCultist(other)) return { team: TEAM.CULT }
+      if (isWolfish(other)) return { team: TEAM.WOLF }
+      if (other.role === 'cult_hunter') {
+        announce(state, `💂 Chỉ còn hai người. Thợ săn tà giáo ${other.displayName} lật mặt và hạ gục tín đồ ${cultist.displayName}!`, now)
+        killPlayer(state, cultist, 'hunted', { deaths: [] })
+        return { team: TEAM.VILLAGE }
+      }
+      if (!['thief', 'doppelganger'].includes(other.role)) transform(state, other, 'cultist', now, { silent: true })
+      return { team: TEAM.CULT }
+    }
   }
-  if (alive.some((p) => p.role === 'serial_killer')) return null
+  if (alive.length === 3 && alive.every((p) => ['sorcerer', 'thief', 'doppelganger'].includes(p.role))) return { team: TEAM.NONE }
 
-  const wolves = alive.filter(isWolf).length
+  if (alive.some((p) => p.role === 'serial_killer' || p.role === 'arsonist')) return null
+  if (alive.every(isCultist)) return { team: TEAM.CULT }
+
+  const wolves = alive.filter(isWolfish).length
   const others = alive.length - wolves
   if (wolves >= others) {
     const gunnerCanSwing = alive.some((p) => p.role === 'gunner' && p.bullets > 0) && wolves === others
     return gunnerCanSwing ? null : { team: TEAM.WOLF }
   }
-  if (wolves === 0) return { team: TEAM.VILLAGE }
+  if (wolves === 0 && !alive.some(isCultist) && !alive.some((p) => p.pendingBite)) return { team: TEAM.VILLAGE }
   return null
 }
 
 const winnersFor = (state, team) => {
   if (team === TEAM.NONE) return []
   if (team === TEAM.LOVERS) return state.players.filter((p) => p.loverId).map((p) => p.userId)
-  if (team === TEAM.TANNER) return state.players.filter((p) => p.role === 'tanner').map((p) => p.userId)
   return state.players.filter((p) => teamOf(p) === team).map((p) => p.userId)
 }
 
@@ -495,9 +377,11 @@ const WIN_TEXT = {
   [TEAM.VILLAGE]: '🎉 Dân làng đã quét sạch mối nguy. Làng lại bình yên!',
   [TEAM.WOLF]: '🐺 Bầy sói áp đảo dân làng. Ngôi làng thuộc về sói!',
   [TEAM.KILLER]: '🔪 Kẻ sát nhân là người cuối cùng đứng vững.',
+  [TEAM.ARSONIST]: '🔥 Cả làng chìm trong biển lửa. Kẻ phóng hoả đứng nhìn tro tàn mà mỉm cười.',
+  [TEAM.CULT]: '👤 Cả làng đã quy phục giáo phái. Tà giáo chiến thắng!',
   [TEAM.TANNER]: '👺 Kẻ chán đời đã toại nguyện khi bị treo cổ — và thắng một mình!',
   [TEAM.LOVERS]: '💞 Chỉ còn đôi tình nhân sống sót. Tình yêu chiến thắng tất cả!',
-  [TEAM.NONE]: '🪦 Không còn ai sống sót. Không có người thắng.',
+  [TEAM.NONE]: '🪦 Không phe nào trụ lại tới cuối. Không có người thắng.',
 }
 
 const endGame = (state, team, now) => {
@@ -539,160 +423,43 @@ const startNight = (state, now, rng) => {
   state.votes = {}
   state.ready = {}
   state.hunter = null
-  // Đêm đầu dài hơn khi có Thần tình yêu để kịp se duyên
-  const nightMs = needsCupid(state) && aliveWithRole(state, 'cupid') ? CONFIG.CUPID_NIGHT_MS : CONFIG.NIGHT_MS
-  setPhase(state, PHASE.NIGHT, nightMs, now)
 
   state.players.filter((p) => p.alive && p.pendingBite).forEach((p) => {
     p.pendingBite = false
-    if (isWolf(p)) return
-    p.role = 'wolf'
+    if (isWolfish(p)) return
+    transform(state, p, 'wolf', now)
     tell(state, p, '🌑 Vết cắn đêm trước bắt đầu phát tác… Bạn đã hoá thành Ma sói và giờ thuộc phe sói!', now)
-    tellWolves(state, `⚡ ${p.displayName} đã hoá sói nhờ vết cắn của Sói đầu đàn và gia nhập bầy.`, now)
   })
+  roleChanges(state, now)
 
-  announce(state, `🌙 Đêm thứ ${state.day} buông xuống. Mọi người đi ngủ, những kẻ có việc thì thức dậy…`, now)
+  // Bạc rải hôm qua có hiệu lực đêm nay; Thần ngủ thì xoá luôn bạc, cơn giận sói con và cơn say
+  state.silverNight = state.flags.silverDay === state.day - 1
+  state.sleeping = state.flags.sleepNext
+  state.flags.sleepNext = false
+  if (state.sleeping) {
+    state.silverNight = false
+    state.flags.cubRage = false
+    state.flags.wolvesDrunk = false
+  }
+
+  const duration = state.sleeping
+    ? Math.min(CONFIG.SLEEP_NIGHT_MS, CONFIG.NIGHT_MS)
+    : hasFirstNightChoice(state) ? CONFIG.CUPID_NIGHT_MS : CONFIG.NIGHT_MS
+  setPhase(state, PHASE.NIGHT, duration, now)
+  announce(state, state.sleeping
+    ? `💤 Đêm thứ ${state.day}: cả làng chìm vào giấc ngủ say như chết. Không ai thức dậy nổi.`
+    : `🌙 Đêm thứ ${state.day} buông xuống. Mọi người đi ngủ, những kẻ có việc thì thức dậy…`, now)
   autoActBots(state, rng)
 }
 
-const tallyTop = (counts, rng) => {
-  const entries = Object.entries(counts).filter(([, value]) => value > 0)
-  if (!entries.length) return null
-  const max = Math.max(...entries.map(([, value]) => value))
-  return pick(entries.filter(([, value]) => value === max).map(([key]) => key), rng)
-}
-
-const wolfTargets = (state, rng) => {
-  const wolves = aliveWolves(state)
-  const first = {}
-  wolves.forEach((w) => {
-    const target = state.actions[w.userId]?.targetId
-    if (target) first[target] = (first[target] || 0) + 1
-  })
-  const target1 = tallyTop(first, rng)
-  if (!state.flags.cubRage) return target1 ? [target1] : []
-  const second = {}
-  wolves.forEach((w) => {
-    const chosen = state.actions[w.userId]
-    const target = [chosen?.targetId2, chosen?.targetId].find((id) => id && id !== target1)
-    if (target) second[target] = (second[target] || 0) + 1
-  })
-  const target2 = tallyTop(second, rng)
-  return [target1, target2].filter(Boolean)
-}
-
-
 const resolveNight = (state, now, rng) => {
-  const ctx = { deaths: [], resume: 'day' }
-  const saved = new Set()
-
-  // 1. Thần tình yêu (đêm đầu). Không chọn thì số phận tự se duyên ngẫu nhiên.
-  const cupid = aliveWithRole(state, 'cupid')
-  if (cupid && needsCupid(state)) {
-    const chosen = state.actions[cupid.userId]
-    let pair = [chosen?.targetId, chosen?.targetId2].map((id) => id && findPlayer(state, id)).filter((p) => p?.alive)
-    if (pair.length !== 2 || pair[0] === pair[1]) pair = shuffle(alivePlayers(state), rng).slice(0, 2)
-    if (pair.length === 2) {
-      pair[0].loverId = pair[1].userId
-      pair[1].loverId = pair[0].userId
-      tell(state, cupid, `🏹 Mũi tên đã trúng: ${pair[0].displayName} và ${pair[1].displayName} giờ là một cặp.`, now)
-      pair.forEach((lover, index) => {
-        const partner = pair[1 - index]
-        tell(state, lover, `💘 Thần tình yêu đã chọn bạn! Bạn đang yêu ${partner.displayName} (${roleLabel(partner.role)}). Người này chết thì bạn cũng chết theo.`, now)
-      })
-    }
-  }
-
-  const guardian = aliveWithRole(state, 'guardian')
-  const guarded = guardian ? findPlayer(state, state.actions[guardian.userId]?.targetId) : null
-  const serialKiller = aliveWithRole(state, 'serial_killer')
-  const skTarget = serialKiller ? findPlayer(state, state.actions[serialKiller.userId]?.targetId) : null
-
-  // 2. Bầy sói
-  if (state.flags.wolvesDrunk) {
-    state.flags.wolvesDrunk = false
-    tellWolves(state, '🍻 Bầy sói vẫn còn say, cả đêm nằm ngủ vật vờ.', now)
-  } else {
-    const targets = wolfTargets(state, rng)
-    if (state.flags.cubRage && targets.length) state.flags.cubRage = false
-    for (const targetId of targets) {
-      const wolves = aliveWolves(state)
-      if (!wolves.length) break
-      const target = findPlayer(state, targetId)
-      if (!target?.alive || isWolf(target)) continue
-      const visitor = pick(wolves, rng)
-      ctx.by = null
-
-      // Sói mò vào nhà kẻ sát nhân: thường là sói chết. Sát nhân ngồi không thì chắc chắn sói chết.
-      if (target.role === 'serial_killer' && (!skTarget || rng() < CONFIG.SK_BEATS_WOLF_CHANCE)) {
-        killPlayer(state, visitor, 'visit_killer', ctx)
-        tellWolves(state, `🩸 ${visitor.displayName} đi săn đêm qua và không bao giờ trở về…`, now)
-        continue
-      }
-      if (guarded && guarded.userId === target.userId) {
-        saved.add(target.userId)
-        tellWolves(state, `👼 Một thiên thần đã chắn trước cửa nhà ${target.displayName}. Bầy sói ra về tay trắng.`, now)
-        continue
-      }
-      if (target.role === 'cursed') {
-        target.role = 'wolf'
-        tell(state, target, '😾 Sói tấn công bạn đêm qua… nhưng lời nguyền trỗi dậy. Bạn đã hoá thành Ma sói!', now)
-        tellWolves(state, `😾 ${target.displayName} là Kẻ bị nguyền và đã hoá sói. Chào mừng thành viên mới!`, now)
-        continue
-      }
-      if (target.role === 'hunter') {
-        const chance = CONFIG.HUNTER_BASE_CHANCE + (wolves.length - 1) * CONFIG.HUNTER_PER_EXTRA_WOLF
-        if (rng() < chance) {
-          const shot = pick(wolves, rng)
-          ctx.by = target.displayName
-          killPlayer(state, shot, 'hunter_night', ctx)
-          if (wolves.length > 1) killPlayer(state, target, 'eaten', ctx, { finalShot: false })
-          else tell(state, target, `🎯 Sói mò tới nhà bạn và bạn đã bắn hạ ${shot.displayName}!`, now)
-          continue
-        }
-      }
-      const alpha = wolves.find((w) => w.role === 'alpha_wolf')
-      if (alpha && rng() < CONFIG.ALPHA_BITE_CHANCE) {
-        target.pendingBite = true
-        tellWolves(state, `⚡ Sói đầu đàn đã cắn ${target.displayName}. Người này sẽ hoá sói vào đêm mai.`, now)
-        continue
-      }
-      killPlayer(state, target, 'eaten', ctx, { finalShot: false })
-      if (target.role === 'drunk') {
-        state.flags.wolvesDrunk = true
-        tellWolves(state, `🍻 ${target.displayName} là bợm nhậu! Bầy sói say mèm và phải nghỉ săn đêm mai.`, now)
-      }
-    }
-  }
-
-  // 3. Kẻ sát nhân (đã chết dưới tay sói thì không ra tay được nữa)
-  if (serialKiller?.alive && skTarget?.alive) {
-    if (guarded && guarded.userId === skTarget.userId) {
-      saved.add(skTarget.userId)
-      tell(state, serialKiller, `👼 Có ai đó đứng canh nhà ${skTarget.displayName}. Bạn đành bỏ đi.`, now)
-    } else {
-      ctx.by = null
-      killPlayer(state, skTarget, 'stabbed', ctx)
-    }
-  }
-
-  // 4. Số phận thiên thần: canh nhà sát nhân thì chết, canh nhà sói (không bị ai tấn công) thì 50%
-  if (guardian?.alive && guarded) {
-    if (guarded.role === 'serial_killer') {
-      killPlayer(state, guardian, 'visit_killer', ctx)
-    } else if (isWolf(guarded) && !saved.has(guarded.userId) && rng() < CONFIG.GUARD_WOLF_DEATH_CHANCE) {
-      killPlayer(state, guardian, 'guard_wolf', ctx)
-    } else if (saved.has(guarded.userId)) {
-      tell(state, guardian, `👼 Đêm qua có kẻ tấn công ${guarded.displayName}, nhưng bạn đã bảo vệ thành công!`, now)
-    }
-  }
-
-  // 5. Tiên tri nhận kết quả nếu còn sống tới sáng
-  const seer = aliveWithRole(state, 'seer')
-  const seen = seer ? findPlayer(state, state.actions[seer.userId]?.targetId) : null
-  if (seer && seen) tell(state, seer, `🔮 Quả cầu pha lê cho thấy: ${seen.displayName} là ${roleLabel(seen.role)}.`, now)
-
   state.phase = PHASE.DAY
+  if (state.sleeping) {
+    state.sleeping = false
+    announce(state, '☀️ Trời sáng. Cả làng tỉnh dậy sau một giấc ngủ dài — không ai chết.', now)
+    return settleOrContinue(state, { deaths: [], resume: 'day' }, now, rng, () => startDay(state, now, rng))
+  }
+  const ctx = resolveNightEffects(state, now, rng)
   if (!ctx.deaths.length) announce(state, '☀️ Trời sáng. Một đêm yên bình — không ai chết.', now)
   else {
     announce(state, `☀️ Trời sáng. Đêm qua có ${ctx.deaths.length} người không qua khỏi…`, now)
@@ -714,6 +481,18 @@ const startDay = (state, now, rng, durationMs = CONFIG.DAY_MS) => {
   autoActBots(state, rng)
 }
 
+// Cuối ngày: Thám tử nhận kết quả (và có thể bị sói phát hiện), rồi vào bỏ phiếu.
+const endDay = (state, now, rng) => {
+  const detective = aliveWithRole(state, 'detective')
+  const target = detective && findPlayer(state, state.actions[detective.userId]?.targetId)
+  if (detective && target) {
+    if (rng() < CONFIG.DETECTIVE_CAUGHT_CHANCE) tellWolves(state, `🕵️ Bầy sói đánh hơi thấy kẻ rình mò: ${detective.displayName} là Thám tử!`, now)
+    tell(state, detective, `🕵️ Điều tra xong: ${target.displayName} là ${roleLabel(target.role)}.`, now)
+  }
+  roleChanges(state, now)
+  startVote(state, now, rng)
+}
+
 const startVote = (state, now, rng) => {
   state.votes = {}
   setPhase(state, PHASE.VOTE, CONFIG.VOTE_MS, now)
@@ -721,11 +500,13 @@ const startVote = (state, now, rng) => {
   autoActBots(state, rng)
 }
 
+const voteWeight = (player) => (player.role === 'mayor' && player.revealed ? 2 : 1)
+
 const resolveVote = (state, now, rng) => {
   const counts = {}
   alivePlayers(state).forEach((p) => {
     const vote = state.votes[p.userId]
-    if (vote) counts[vote] = (counts[vote] || 0) + 1
+    if (vote) counts[vote] = (counts[vote] || 0) + voteWeight(p)
   })
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1])
   const summary = entries
@@ -742,10 +523,18 @@ const resolveVote = (state, now, rng) => {
   }
 
   const target = findPlayer(state, top[0])
+  if (target.role === 'prince' && !target.hasUsedAbility) {
+    target.hasUsedAbility = true
+    target.revealed = true
+    announce(state, `👑 Khi dây thòng lọng vừa chạm cổ, ${target.displayName} rút ra ấn tín hoàng gia — đây là Hoàng tử! Dân làng vội tha, hôm nay không ai bị treo cổ.`, now)
+    startNight(state, now, rng)
+    return ['changed']
+  }
   const ctx = { deaths: [], resume: 'night', by: null }
   killPlayer(state, target, 'lynched', ctx)
   announceDeaths(state, ctx.deaths, now)
   if (target.role === 'tanner') return endGame(state, TEAM.TANNER, now)
+  roleChanges(state, now)
   return settleOrContinue(state, ctx, now, rng, () => startNight(state, now, rng))
 }
 
@@ -758,10 +547,31 @@ const resumeAfterHunter = (state, info, now, rng) => {
 
 // ── Hành động của người chơi ───────────────────────────────────────────
 
+const useAbility = (state, player, kind, now) => {
+  const button = abilityButtons(state, player).find((b) => b.kind === kind)
+  if (!button) return fail('NO_ACTION', 'Kỹ năng này không dùng được lúc này')
+  player.hasUsedAbility = true
+  if (kind === 'mayor_reveal') {
+    player.revealed = true
+    announce(state, `🎖️ ${player.displayName} công khai là Trưởng làng! Từ giờ phiếu của ${player.displayName} tính gấp đôi.`, now)
+  } else if (kind === 'spread_silver') {
+    player.revealed = true
+    state.flags.silverDay = state.day
+    announce(state, `⚒️ ${player.displayName} là Thợ rèn và đã rải bột bạc khắp làng. Đêm nay bầy sói sẽ không dám bén mảng!`, now)
+  } else if (kind === 'sandman_sleep') {
+    player.revealed = true
+    state.flags.sleepNext = true
+    announce(state, `💤 ${player.displayName} là Thần ngủ và đã rắc bụi mơ khắp làng. Đêm nay mọi người sẽ ngủ say như chết.`, now)
+  }
+  return ok()
+}
+
 const submitAction = (state, userId, payload = {}, now, rng) => {
   if (state.status !== STATUS.PLAYING) return fail('NOT_PLAYING', 'Ván chưa bắt đầu')
   const player = findPlayer(state, userId)
   if (!player) return fail('NOT_PLAYER', 'Bạn không tham gia ván này')
+  if (['mayor_reveal', 'spread_silver', 'sandman_sleep'].includes(payload.kind)) return useAbility(state, player, payload.kind, now)
+
   const action = availableAction(state, player)
   if (!action || action.kind === 'none') return fail('NO_ACTION', 'Bạn không có lượt lúc này')
   if (payload.kind && payload.kind !== action.kind) return fail('STALE_ACTION', 'Pha đã đổi, hãy thử lại')
@@ -774,7 +584,8 @@ const submitAction = (state, userId, payload = {}, now, rng) => {
     state.votes[player.userId] = targetId
     return ok()
   }
-  if (!targetId || !action.targets.includes(targetId)) return fail('BAD_TARGET', 'Mục tiêu không hợp lệ')
+  const special = (action.allowSkip && targetId === SKIP) || (action.extra && targetId === action.extra.targetId)
+  if (!targetId || (!special && !action.targets.includes(targetId))) return fail('BAD_TARGET', 'Mục tiêu không hợp lệ')
 
   if (action.kind === 'gunner_shot') {
     const target = findPlayer(state, targetId)
@@ -784,6 +595,8 @@ const submitAction = (state, userId, payload = {}, now, rng) => {
     const ctx = { deaths: [], by: player.displayName, resume: 'day_continue', remainingMs: Math.max(0, state.phaseEndsAt - now) }
     killPlayer(state, target, 'gunner', ctx)
     announceDeaths(state, ctx.deaths, now)
+    punishElderKiller(state, target, player, now)
+    roleChanges(state, now)
     return { ok: true, events: settleOrContinue(state, ctx, now, rng, () => {}) }
   }
 
@@ -793,6 +606,8 @@ const submitAction = (state, userId, payload = {}, now, rng) => {
     const ctx = { deaths: [], by: player.displayName, resume: info.resume, remainingMs: info.remainingMs }
     killPlayer(state, target, 'hunter_shot', ctx)
     announceDeaths(state, ctx.deaths, now)
+    punishElderKiller(state, target, player, now)
+    roleChanges(state, now)
     state.hunter = null
     return { ok: true, events: settleOrContinue(state, ctx, now, rng, () => resumeAfterHunter(state, info, now, rng)) }
   }
@@ -816,7 +631,7 @@ const setReady = (state, userId, ready = true) => {
 }
 
 const CHAT_DENIED = {
-  night: 'Ban đêm dân làng phải ngủ — chỉ bầy sói được thì thầm',
+  night: 'Ban đêm dân làng phải ngủ — chỉ bầy sói và giáo phái được thì thầm',
   spectator: 'Bạn đang xem, không tham gia ván này',
 }
 
@@ -832,8 +647,9 @@ const chat = (state, userId, text, now) => {
   if (state.status === STATUS.PLAYING) {
     if (!player.alive) channel = 'dead'
     else if (state.phase === PHASE.NIGHT) {
-      if (!isWolf(player)) return fail('NIGHT_SILENT', CHAT_DENIED.night)
-      channel = 'wolves'
+      if (isWolfish(player)) channel = 'wolves'
+      else if (isCultist(player)) channel = 'cult'
+      else return fail('NIGHT_SILENT', CHAT_DENIED.night)
     }
   }
   state.lastChatAt[player.userId] = now
@@ -850,9 +666,13 @@ const chat = (state, userId, text, now) => {
 
 const autoActBots = (state, rng) => {
   state.players.filter((p) => p.isBot).forEach((bot) => {
-    if (state.phase === PHASE.DAY && bot.alive) state.ready[bot.userId] = true
+    if (state.phase === PHASE.DAY && bot.alive) {
+      state.ready[bot.userId] = true
+      const ability = abilityButtons(state, bot)[0]
+      if (ability && rng() < (ability.kind === 'mayor_reveal' ? 0.4 : 0.1)) useAbility(state, bot, ability.kind, state.phaseStartedAt)
+    }
     const action = availableAction(state, bot)
-    if (!action?.targets?.length) return
+    if (!action?.targets?.length && !action?.extra) return
     if (action.kind === 'vote') {
       state.votes[bot.userId] = rng() < 0.15 ? SKIP : pick(action.targets, rng)
       return
@@ -862,11 +682,19 @@ const autoActBots = (state, rng) => {
       state.hunter.botTarget = pick(action.targets, rng)
       return
     }
-    // Sói bot đi theo lựa chọn của đồng bọn nếu đã có
-    const packChoice = action.kind === 'wolf_kill'
-      ? aliveWolves(state).map((w) => state.actions[w.userId]?.targetId).find(Boolean)
-      : null
-    const targetId = packChoice || pick(action.targets, rng)
+    if (action.kind === 'arson' && action.extra && (rng() < 0.35 || !action.targets.length)) {
+      state.actions[bot.userId] = { targetId: SPARK, targetId2: null }
+      return
+    }
+    if (action.kind === 'visit' && rng() < 0.3) {
+      state.actions[bot.userId] = { targetId: SKIP, targetId2: null }
+      return
+    }
+    // Sói/tín đồ bot đi theo lựa chọn của đồng bọn nếu đã có
+    const teamChoice = action.kind === 'wolf_kill'
+      ? alivePack(state).map((w) => state.actions[w.userId]?.targetId).find(Boolean)
+      : action.kind === 'convert' ? aliveCult(state).map((c) => state.actions[c.userId]?.targetId).find(Boolean) : null
+    const targetId = teamChoice || pick(action.targets, rng)
     const rest = action.targets.filter((id) => id !== targetId)
     state.actions[bot.userId] = { targetId, targetId2: action.needsTwo && rest.length ? pick(rest, rng) : null }
   })
@@ -897,12 +725,12 @@ const tick = (state, now, rng) => {
 
   switch (state.phase) {
     case PHASE.NIGHT:
-      if (timeUp || (early && allNightActionsDone(state))) return { events: resolveNight(state, now, rng) }
+      if (timeUp || (early && !state.sleeping && allNightActionsDone(state))) return { events: resolveNight(state, now, rng) }
       break
     case PHASE.DAY:
       if (timeUp || (early && allReady(state))) {
-        startVote(state, now, rng)
-        return { events: ['changed'] }
+        endDay(state, now, rng)
+        return { events: state.status === STATUS.ENDED ? ['changed', 'ended'] : ['changed'] }
       }
       break
     case PHASE.VOTE:
@@ -932,11 +760,13 @@ const tick = (state, now, rng) => {
 
 const logVisibleTo = (state, viewer) => {
   if (state.status === STATUS.ENDED) return () => true
-  const viewerIsWolf = isWolf(viewer)
+  const viewerIsWolf = isWolfish(viewer)
+  const viewerIsCult = isCultist(viewer)
   return (entry) => {
     switch (entry.channel) {
       case 'public': return true
       case 'wolves': return viewerIsWolf
+      case 'cult': return viewerIsCult
       case 'dead': return Boolean(viewer && !viewer.alive)
       case 'private': return Boolean(viewer && entry.to?.includes(viewer.userId))
       default: return false
@@ -947,11 +777,14 @@ const logVisibleTo = (state, viewer) => {
 const serializeFor = (state, viewerId, now) => {
   const viewer = viewerId ? findPlayer(state, viewerId) : null
   const ended = state.status === STATUS.ENDED
-  const viewerIsWolf = isWolf(viewer)
+  const viewerIsWolf = isWolfish(viewer)
   const viewerIsCupid = viewer?.originalRole === 'cupid'
 
+  // Người trong cùng hội nhóm bí mật nhìn thấy nhau: bầy sói, giáo phái, Hội kín
+  const sameCircle = (p) =>
+    Boolean(viewer?.alive) && ((viewerIsWolf && isWolfish(p)) || (isCultist(viewer) && isCultist(p)) || (viewer.role === 'mason' && p.role === 'mason'))
   const roleVisible = (p) =>
-    ended || (!p.alive && state.revealRoleOnDeath) || p.revealed || viewer?.userId === p.userId || (viewerIsWolf && isWolf(p))
+    ended || (!p.alive && state.revealRoleOnDeath) || p.revealed || viewer?.userId === p.userId || sameCircle(p)
   const loverVisible = (p) =>
     Boolean(p.loverId) && (ended || viewerIsCupid || viewer?.userId === p.userId || viewer?.userId === p.loverId)
 
@@ -964,7 +797,7 @@ const serializeFor = (state, viewerId, now) => {
     isHost: p.userId === state.hostId,
     alive: p.alive,
     death: p.death && { ...p.death, cause: roleVisible(p) ? p.death.cause : publicCauseOf(p.death.cause) },
-    role: roleVisible(p) ? p.role : null,
+    role: roleVisible(p) ? shownRoleFor(state, p) : null,
     originalRole: ended ? p.originalRole : null,
     lover: loverVisible(p),
     revealed: p.revealed,
@@ -976,20 +809,24 @@ const serializeFor = (state, viewerId, now) => {
   let me = null
   if (viewer) {
     const action = availableAction(state, viewer)
+    const shownRole = shownRoleFor(state, viewer)
+    const teamVotes = (members) => members.map((m) => ({ userId: m.userId, ...(state.actions[m.userId] || {}) }))
     me = {
       userId: viewer.userId,
-      role: viewer.role,
-      team: viewer.role ? teamOf(viewer) : null,
+      role: shownRole,
+      team: shownRole ? ROLES[shownRole].team : null,
       alive: viewer.alive,
       loverId: viewer.loverId,
       bullets: viewer.bullets,
+      modelId: ['wild_child', 'doppelganger'].includes(viewer.role) ? viewer.modelId : null,
+      doused: viewer.role === 'arsonist' ? alivePlayers(state).filter((p) => p.doused).map((p) => p.userId) : null,
       action: action ? { ...action } : null,
+      abilities: abilityButtons(state, viewer),
       choice: state.actions[viewer.userId] || null,
       vote: state.votes[viewer.userId] || null,
       ready: Boolean(state.ready[viewer.userId]),
-      wolfVotes: viewerIsWolf && state.phase === PHASE.NIGHT
-        ? aliveWolves(state).map((w) => ({ userId: w.userId, ...(state.actions[w.userId] || {}) }))
-        : null,
+      wolfVotes: isPack(viewer) && state.phase === PHASE.NIGHT ? teamVotes(alivePack(state)) : null,
+      cultVotes: isCultist(viewer) && state.phase === PHASE.NIGHT ? teamVotes(aliveCult(state)) : null,
       reward: ended ? state.result.rewards?.[viewer.userId] || 0 : 0,
     }
   }
@@ -1005,6 +842,7 @@ const serializeFor = (state, viewerId, now) => {
     autoStartAt: state.autoStartAt,
     hostId: state.hostId,
     hunterId: state.phase === PHASE.HUNTER ? state.hunter?.userId || null : null,
+    sleeping: state.phase === PHASE.NIGHT && state.sleeping,
     serverNow: now,
     config: { ...publicConfig(), revealRoleOnDeath: state.status === STATUS.LOBBY ? CONFIG.REVEAL_ROLE_ON_DEATH : state.revealRoleOnDeath },
     hasBots: hasBots(state),
@@ -1039,6 +877,7 @@ module.exports = {
   STATUS,
   PHASE,
   SKIP,
+  SPARK,
   idOf,
   createInitialState,
   createPlayer,
@@ -1051,6 +890,7 @@ module.exports = {
   startGame,
   shouldAutoStart,
   availableAction,
+  abilityButtons,
   submitAction,
   setReady,
   chat,
@@ -1062,4 +902,5 @@ module.exports = {
   publicConfig,
   findPlayer,
   resetToLobby,
+  isWolfishRole,
 }

@@ -13,6 +13,7 @@ export const useWerewolf = () => {
   const [state, setState] = useState(null)
   const [receivedAt, setReceivedAt] = useState(() => Date.now())
   const [catalog, setCatalog] = useState([])
+  const [dealing, setDealing] = useState(null)
   const latestRef = useRef(0)
 
   const apply = useCallback((next, { force = false } = {}) => {
@@ -24,7 +25,10 @@ export const useWerewolf = () => {
   }, [])
 
   useEffect(() => {
-    getWerewolfConfig().then(({ data }) => setCatalog(data.roles || [])).catch(() => {})
+    getWerewolfConfig().then(({ data }) => {
+      setCatalog(data.roles || [])
+      setDealing(data.dealing || null)
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -55,5 +59,5 @@ export const useWerewolf = () => {
     }
   }, [apply])
 
-  return { state, receivedAt, catalog, run }
+  return { state, receivedAt, catalog, dealing, run }
 }

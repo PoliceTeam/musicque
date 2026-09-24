@@ -270,7 +270,14 @@ test('đêm đầu có thần tình yêu thì dài hơn, các đêm sau về bì
     seed += 1
   } while (!game.players.some((x) => x.role === 'cupid'))
   assert.equal(game.phaseEndsAt - game.phaseStartedAt, engine.CONFIG.CUPID_NIGHT_MS)
-  const normal = setup(['wolf', 'villager', 'villager', 'villager', 'villager'])
+  const firstNightRoles = ['cupid', 'wild_child', 'doppelganger', 'thief']
+  let normal
+  do {
+    normal = engine.createInitialState()
+    for (let i = 1; i <= 7; i += 1) engine.joinLobby(normal, user(i), 0)
+    engine.startGame(normal, { now: 0, rng: seeded(seed) })
+    seed += 1
+  } while (normal.players.some((x) => firstNightRoles.includes(x.role)))
   assert.equal(normal.phaseEndsAt - normal.phaseStartedAt, engine.CONFIG.NIGHT_MS)
 })
 

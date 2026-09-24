@@ -245,3 +245,22 @@ button.ww-card { cursor: pointer; }
 .ww-history__role small { color: var(--sp-text-faint); font-weight: 600; }
 .ww-history__fate { color: var(--sp-text-muted); font-size: 12px; }
 .ww-history__result { text-align: center; }
+
+/* Vai mới: tà giáo, phóng hoả, kỹ năng ban ngày */
+.ww-page { --ww-cult: #862e9c; }
+.ww-badge--cult { background: rgba(134, 46, 156, 0.14); color: var(--ww-cult); }
+.ww-badge--fuel { background: rgba(232, 89, 12, 0.14); color: #d9480f; }
+.ww-feed__tag.is-cult { background: var(--ww-cult); color: #fff; }
+.ww-feed__system.is-cult { border-left-color: var(--ww-cult); }
+.ww-feed__chat.is-cult > div { background: rgba(134, 46, 156, 0.12); }
+.ww-myrole.is-cult { border-color: color-mix(in srgb, var(--ww-cult) 60%, transparent); }
+.ww-rules__role.is-cult, .ww-rules__role.is-arsonist, .ww-rules__role.is-neutral { border-style: dashed; }
+.ww-actions__ability { border-color: var(--ww-accent); }
+.ww-rules__group { margin: 16px 0 8px; font-size: 15px; }
+.ww-rules__group small { color: var(--sp-text-faint); font-weight: 600; }
+.ww-rules__block { margin-bottom: 4px; }
+.ww-rules__list { margin: 0 0 8px; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.ww-rules__list li { margin-bottom: 4px; }
+.ww-rules__list ul { margin: 4px 0; padding-left: 18px; }
+.ww-rules__role .ww-rules__appears { margin-top: 5px; color: var(--sp-text-faint); font-size: 11px; font-style: italic; }
+.ww-actions .ww-actions__hint { color: var(--sp-text-muted); font-size: 13px; }

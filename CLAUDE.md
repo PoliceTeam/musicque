@@ -339,10 +339,26 @@ stretching the modal. Don't make that column static again.
 ### Ma Sói (Werewolf)
 Multiplayer social-deduction game at `/werewolf`, **not tied to a music session**. Rules are
 modelled on GreyWolfDev/Werewolf (GPL-3.0) but the code and Vietnamese copy are a clean-room
-rewrite — do not paste code or strings from that repo. 13 roles (`api/services/werewolf/roles.js`).
+rewrite — do not paste code or strings from that repo. 36 roles (`api/services/werewolf/roles.js`).
 
-- `api/services/werewolf/engine.js` is pure (state + now + rng in, events out) and covered by
-  `api/test/werewolf.test.js`. One in-memory game; a server restart drops it (nothing is staked).
+- The engine is pure (state + now + rng in, events out), split into `roles.js` (catalog,
+  teams, balance strengths), `balance.js` (role dealing), `core.js` (config, state, log,
+  `killPlayer`, `transform`, `roleChanges`), `night.js` (night resolution) and `engine.js`
+  (phases, day abilities, win check, per-viewer serialization). Tests: `api/test/werewolf.test.js`
+  and `werewolfRoles.test.js` (includes a 600-game all-bot simulation). One in-memory game; a
+  server restart drops it (nothing is staked).
+- **Night order mirrors the original** and matters: snow-wolf freeze → arsonist → pack →
+  serial killer → cult hunter → cult → harlot → seers/sorcerer/fool/oracle/augur → guardian
+  fate → `roleChanges` → thief. All "X visits Y" outcomes go through the single `visit()` in
+  `night.js` (burning house, SK, wolf den, harlot away…) — add new visiting roles there.
+- Role dealing thresholds live in `DEAL_RULES` (`balance.js`) and are served through
+  `GET /api/werewolf/config` (`dealing` + per-role `appears`) to the rules modal and lobby
+  hint — change them there and the player-facing rules follow. Notes deliberately avoid
+  percentages: the roll chance is not the real frequency after balance rejection.
+- Wolf "pack" (`PACK_ROLES`, votes on the kill) ≠ "wolfish" (`WOLFISH_ROLES`, adds Snow Wolf;
+  used for counts, pack visibility and wolf chat). Sorcerer is team wolf but in neither.
+- Secret circles see each other's roles: wolfish, cultists (`cult` chat channel), masons.
+  The Fool is served as `seer` to themselves until death/game end (`shownRoleFor`).
 - **Privacy is enforced by per-viewer serialization.** Every watcher socket joins room
   `werewolf` and receives `serializeFor(state, itsUserId)` — never broadcast one shared payload.
   Log entries carry a `channel` (`public`/`wolves`/`dead`/`private`) filtered per viewer.

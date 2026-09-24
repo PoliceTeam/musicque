@@ -5,6 +5,7 @@ const WerewolfSettings = require('../models/werewolfSettings.model')
 const coins = require('./coins.service')
 const engine = require('./werewolf/engine')
 const { publicCatalog, TEAM_LABEL } = require('./werewolf/roles')
+const { appearanceNote, dealingSummary } = require('./werewolf/balance')
 
 class WerewolfError extends Error {
   constructor(message, status = 400, code = 'WEREWOLF_ERROR') {
@@ -188,7 +189,11 @@ const unwrap = (result) => {
 
 const viewFor = (user) => engine.serializeFor(state, user ? String(user._id) : null, Date.now())
 
-const getConfig = () => ({ config: engine.publicConfig(), roles: publicCatalog() })
+const getConfig = () => ({
+  config: engine.publicConfig(),
+  roles: publicCatalog().map((role) => ({ ...role, appears: appearanceNote(role.key) })),
+  dealing: dealingSummary(),
+})
 
 const getState = (user) => viewFor(user)
 

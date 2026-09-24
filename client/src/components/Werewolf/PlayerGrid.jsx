@@ -2,7 +2,7 @@ import React from 'react'
 import UserAvatar from '../Avatar/UserAvatar'
 import { ACTION_VERB, isWolfRole, roleMeta, tallyVotes } from '../../utils/werewolf'
 
-const PlayerCard = ({ player, catalog, state, targetable, selected, wolfPicks, votesReceived, onPick }) => {
+const PlayerCard = ({ player, catalog, state, targetable, selected, wolfPicks, cultPicks, votesReceived, onPick }) => {
   const role = roleMeta(catalog, player.role)
   const isMe = state.me?.userId === player.userId
   const votedFor = player.vote && player.vote !== 'skip'
@@ -37,6 +37,9 @@ const PlayerCard = ({ player, catalog, state, targetable, selected, wolfPicks, v
         {votedFor && <span className='ww-badge'>→ {votedFor}</span>}
         {votesReceived > 0 && <span className='ww-badge ww-badge--votes'>{votesReceived} phiếu</span>}
         {wolfPicks > 0 && <span className='ww-badge ww-badge--wolf'>🐺 ×{wolfPicks}</span>}
+        {cultPicks > 0 && <span className='ww-badge ww-badge--cult'>👤 ×{cultPicks}</span>}
+        {state.me?.doused?.includes(player.userId) && <span className='ww-badge ww-badge--fuel'>⛽ Đã tưới</span>}
+        {state.me?.modelId === player.userId && <span className='ww-badge'>🧬 Hình mẫu</span>}
         {player.winner && <span className='ww-badge ww-badge--win'>🏆 Thắng</span>}
       </div>
     </>
@@ -54,12 +57,14 @@ const PlayerGrid = ({ state, catalog, selectedIds, onPick }) => {
   const action = state.me?.action
   const targets = new Set(action?.targets || [])
   const votes = state.phase === 'vote' ? tallyVotes(state.players) : {}
-  const wolfPicks = {}
-  const packVotes = state.me?.wolfVotes || []
-  packVotes.forEach((vote) => {
+  // Đồng bọn đang chọn ai (bầy sói / giáo phái) — chỉ server gửi cho đúng người trong nhóm
+  const countPicks = (votes = []) => votes.reduce((acc, vote) => {
     const picked = [vote.targetId, vote.targetId2].filter(Boolean)
-    picked.forEach((id) => { wolfPicks[id] = (wolfPicks[id] || 0) + 1 })
-  })
+    picked.forEach((id) => { acc[id] = (acc[id] || 0) + 1 })
+    return acc
+  }, {})
+  const wolfPicks = countPicks(state.me?.wolfVotes || [])
+  const cultPicks = countPicks(state.me?.cultVotes || [])
 
   return (
     <section className='ww-grid' aria-label='Người chơi'>
@@ -80,6 +85,7 @@ const PlayerGrid = ({ state, catalog, selectedIds, onPick }) => {
             targetable={targets.has(player.userId)}
             selected={selectedIds.includes(player.userId)}
             wolfPicks={wolfPicks[player.userId] || 0}
+            cultPicks={cultPicks[player.userId] || 0}
             votesReceived={votes[player.userId]?.length || 0}
             onPick={onPick}
           />

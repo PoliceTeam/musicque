@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chatChannelFor, describeFate, formatCountdown, getRemainingMs, sortHistoryPlayers, tallyVotes } from './werewolf'
+import { chatChannelFor, describeFate, formatCountdown, getRemainingMs, sortHistoryPlayers, tallyVotes, thirdPartyHint } from './werewolf'
 
 describe('werewolf utils', () => {
   it('đếm ngược bù lệch đồng hồ server', () => {
@@ -13,6 +13,9 @@ describe('werewolf utils', () => {
     const base = { status: 'playing', phase: 'night' }
     expect(chatChannelFor({ ...base, me: { alive: true, role: 'seer' } }).channel).toBeNull()
     expect(chatChannelFor({ ...base, me: { alive: true, role: 'alpha_wolf' } }).channel).toBe('wolves')
+    expect(chatChannelFor({ ...base, me: { alive: true, role: 'snow_wolf' } }).channel).toBe('wolves')
+    expect(chatChannelFor({ ...base, me: { alive: true, role: 'cultist' } }).channel).toBe('cult')
+    expect(chatChannelFor({ ...base, me: { alive: true, role: 'sorcerer' } }).channel).toBeNull()
     expect(chatChannelFor({ ...base, me: { alive: false, role: 'seer' } }).channel).toBe('dead')
     expect(chatChannelFor({ ...base, phase: 'day', me: { alive: true, role: 'seer' } }).channel).toBe('public')
     expect(chatChannelFor({ ...base, me: null }).channel).toBeNull()
@@ -45,5 +48,17 @@ describe('werewolf utils', () => {
       { userId: 'c', winner: true, alive: true },
     ])
     expect(sorted.map((p) => p.userId)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('gợi ý khi nào có phe thứ ba theo số người ở sảnh', () => {
+    const dealing = {
+      thirdParties: [
+        { roles: ['serial_killer', 'arsonist'], minPlayers: 8 },
+        { roles: ['cultist', 'cult_hunter'], minPlayers: 11 },
+      ],
+    }
+    expect(thirdPartyHint(6, dealing)).toBe('Ván này chỉ có dân làng đấu với sói. Thêm 2 người nữa để có thể gặp serial_killer hoặc arsonist.')
+    expect(thirdPartyHint(9, dealing)).toBe('Ván này có thể có phe thứ ba: serial_killer hoặc arsonist. Thêm 2 người nữa để có thể gặp cultist.')
+    expect(thirdPartyHint(12, dealing)).toBe('Ván này có thể có phe thứ ba: serial_killer hoặc arsonist, cultist.')
   })
 })

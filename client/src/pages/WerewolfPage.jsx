@@ -18,10 +18,10 @@ import {
   setWerewolfReady,
   startWerewolf,
 } from '../services/api'
-import { PHASE_META, TEAM_LABEL, formatCountdown, getRemainingMs, roleMeta } from '../utils/werewolf'
+import { PHASE_META, TEAM_LABEL, formatCountdown, getRemainingMs, roleMeta, roleText, thirdPartyHint } from '../utils/werewolf'
 import '../styles/werewolf.css'
 
-const RESULT_ICON = { village: '🏡', wolf: '🐺', killer: '🔪', tanner: '👺', lovers: '💞', none: '🪦' }
+const RESULT_ICON = { village: '🏡', wolf: '🐺', killer: '🔪', arsonist: '🔥', cult: '👤', tanner: '👺', lovers: '💞', none: '🪦' }
 
 const useClock = (ms = 250) => {
   const [now, setNow] = useState(() => Date.now())
@@ -77,15 +77,18 @@ const MyRole = ({ state, catalog }) => {
   const role = roleMeta(catalog, me?.role)
   if (!me || !role) return null
   const lover = me.loverId && state.players.find((p) => p.userId === me.loverId)
+  const model = me.modelId && state.players.find((p) => p.userId === me.modelId)
   return (
     <div className={`ww-myrole is-${role.team}${me.alive ? '' : ' is-dead'}`}>
       <span className='ww-myrole__emoji'>{role.emoji}</span>
       <div>
-        <span className='ww-myrole__eyebrow'>VAI CỦA BẠN · {TEAM_LABEL[role.team]}{me.alive ? '' : ' · ĐÃ CHẾT'}</span>
+        <span className='ww-myrole__eyebrow'>VAI CỦA BẠN · {TEAM_LABEL[role.team] || 'Đơn độc'}{me.alive ? '' : ' · ĐÃ CHẾT'}</span>
         <strong>{role.name}</strong>
         <p>{role.summary}</p>
         {lover && <p className='ww-myrole__extra'>💞 Bạn đang yêu {lover.displayName}</p>}
         {me.role === 'gunner' && <p className='ww-myrole__extra'>🔫 Còn {me.bullets} viên đạn</p>}
+        {model && <p className='ww-myrole__extra'>🧬 Hình mẫu của bạn: {model.displayName}{model.alive ? '' : ' (đã chết)'}</p>}
+        {me.doused?.length > 0 && <p className='ww-myrole__extra'>⛽ Đã tưới xăng {me.doused.length} nhà</p>}
       </div>
     </div>
   )
@@ -93,7 +96,7 @@ const MyRole = ({ state, catalog }) => {
 
 const WerewolfPage = () => {
   const { user, isAdmin, requireAuth, refreshBalance } = useAuth()
-  const { state, receivedAt, catalog, run } = useWerewolf()
+  const { state, receivedAt, catalog, dealing, run } = useWerewolf()
   const now = useClock()
   const [rulesOpen, setRulesOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -154,7 +157,7 @@ const WerewolfPage = () => {
   }
 
   const choiceNames = choice
-    .map((id) => (id === 'skip' ? 'Bỏ qua' : state.players.find((p) => p.userId === id)?.displayName))
+    .map((id) => (id === 'skip' ? (action?.kind === 'visit' ? 'Ở nhà' : 'Bỏ qua') : id === 'spark' ? '🔥 Châm lửa' : state.players.find((p) => p.userId === id)?.displayName))
     .filter(Boolean)
     .join(' & ')
 
@@ -182,6 +185,7 @@ const WerewolfPage = () => {
                   ? isHost ? 'Bạn là chủ phòng — bắt đầu khi đủ người, hoặc để đồng hồ tự chạy.' : 'Đã vào làng. Chờ chủ phòng bắt đầu nhé…'
                   : `Vào làng để nhận một vai bí mật. Cần ${state.config.minPlayers}–${state.config.maxPlayers} người.`}
               </p>
+              {dealing && <p className='ww-actions__hint'>🃏 {thirdPartyHint(state.players.length, dealing, (key) => roleText(catalog, key))}</p>}
               <div className='ww-actions__buttons'>
                 {!me && <button type='button' className='sp-btn sp-btn--primary' disabled={busy} onClick={join}>🚪 Vào làng</button>}
                 {me && isHost && (
@@ -200,11 +204,18 @@ const WerewolfPage = () => {
               {action && action.kind !== 'none' ? (
                 <>
                   <p><strong>{action.label}</strong>{choiceNames && <> · Đã chọn: <em>{choiceNames}</em></>}{pending && ' · chọn thêm một người nữa'}</p>
-                  {action.allowSkip && (
+                  {(action.allowSkip || action.extra) && (
                     <div className='ww-actions__buttons'>
-                      <button type='button' className={`sp-btn sp-btn--outline${me.vote === 'skip' ? ' is-active' : ''}`} disabled={busy} onClick={() => submit({ targetId: 'skip' })}>
-                        🤷 Bỏ qua, không treo ai
-                      </button>
+                      {action.allowSkip && (
+                        <button type='button' className={`sp-btn sp-btn--outline${choice.includes('skip') ? ' is-active' : ''}`} disabled={busy} onClick={() => submit({ targetId: 'skip' })}>
+                          {action.skipLabel || 'Bỏ qua'}
+                        </button>
+                      )}
+                      {action.extra && (
+                        <button type='button' className={`sp-btn sp-btn--danger${choice.includes(action.extra.targetId) ? ' is-active' : ''}`} disabled={busy} onClick={() => submit({ targetId: action.extra.targetId })}>
+                          {action.extra.label}
+                        </button>
+                      )}
                     </div>
                   )}
                 </>
@@ -213,10 +224,25 @@ const WerewolfPage = () => {
                   {action?.label
                     || (!me ? 'Bạn đang xem ván này. Ván sau nhớ vào làng sớm nhé!'
                       : !me.alive ? '🪦 Bạn đã chết. Hãy theo dõi và trò chuyện ở Nghĩa địa.'
-                        : state.phase === 'night' ? '😴 Bạn đang ngủ say… chờ trời sáng.'
+                        : state.phase === 'night' ? (state.sleeping ? '💤 Thần ngủ đã ru cả làng — ai cũng ngủ say.' : '😴 Bạn đang ngủ say… chờ trời sáng.')
                           : state.phase === 'hunter' ? `🎯 Đang chờ thợ săn ${hunter?.displayName || ''} bóp cò…`
                             : 'Thảo luận xem ai là sói nào!')}
                 </p>
+              )}
+              {me?.abilities?.length > 0 && (
+                <div className='ww-actions__buttons'>
+                  {me.abilities.map((ability) => (
+                    <button
+                      key={ability.kind}
+                      type='button'
+                      className='sp-btn sp-btn--outline ww-actions__ability'
+                      disabled={busy}
+                      onClick={() => (!ability.confirm || window.confirm(ability.confirm)) && call(() => sendWerewolfAction({ kind: ability.kind }))}
+                    >
+                      {ability.label}
+                    </button>
+                  ))}
+                </div>
               )}
               {state.phase === 'day' && me?.alive && (
                 <div className='ww-actions__buttons'>
@@ -255,7 +281,7 @@ const WerewolfPage = () => {
       </main>
 
       <WerewolfHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} catalog={catalog} myId={user ? String(user._id) : null} />
-      <WerewolfRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} catalog={catalog} config={state.config} />
+      <WerewolfRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} catalog={catalog} dealing={dealing} config={state.config} />
     </div>
   )
 }

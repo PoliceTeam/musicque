@@ -11,6 +11,7 @@ export const PHASE_META = {
 export const CHANNEL_META = {
   public: { label: 'Cả làng', className: 'is-public' },
   wolves: { label: 'Bầy sói', className: 'is-wolves' },
+  cult: { label: 'Tà giáo', className: 'is-cult' },
   dead: { label: 'Nghĩa địa', className: 'is-dead' },
   private: { label: 'Chỉ bạn thấy', className: 'is-private' },
 }
@@ -22,17 +23,29 @@ export const ACTION_VERB = {
   stab: 'Ra tay',
   pair: 'Se duyên',
   vote: 'Bầu',
+  freeze: 'Đóng băng',
+  visit: 'Ngủ nhờ nhà',
+  hunt: 'Truy lùng',
+  convert: 'Chiêu mộ',
+  arson: 'Tưới xăng',
+  model: 'Chọn làm hình mẫu',
+  steal: 'Trộm vai',
+  investigate: 'Điều tra',
   gunner_shot: 'Bắn',
   hunter_shot: 'Bắn',
 }
 
-export const WOLF_ROLES = ['wolf', 'alpha_wolf', 'wolf_cub']
+// Phe sói nhìn thấy nhau và chat chung (Pháp sư không nằm trong đây)
+export const WOLF_ROLES = ['wolf', 'alpha_wolf', 'wolf_cub', 'lycan', 'snow_wolf']
 
 export const TEAM_LABEL = {
   village: 'Phe dân làng',
   wolf: 'Phe sói',
   tanner: 'Đơn độc',
   killer: 'Đơn độc',
+  arsonist: 'Đơn độc',
+  cult: 'Phe tà giáo',
+  neutral: 'Trung lập',
 }
 
 // Đồng hồ server: phaseEndsAt là mốc server, bù lệch bằng serverNow lúc nhận state.
@@ -56,9 +69,9 @@ export const chatChannelFor = (state) => {
   if (state.status !== 'playing') return { channel: 'public' }
   if (!me.alive) return { channel: 'dead' }
   if (state.phase === 'night') {
-    return WOLF_ROLES.includes(me.role)
-      ? { channel: 'wolves' }
-      : { channel: null, reason: 'Ban đêm dân làng phải ngủ…' }
+    if (WOLF_ROLES.includes(me.role)) return { channel: 'wolves' }
+    if (me.role === 'cultist') return { channel: 'cult' }
+    return { channel: null, reason: 'Ban đêm dân làng phải ngủ…' }
   }
   return { channel: 'public' }
 }
@@ -93,6 +106,11 @@ export const DEATH_CAUSE_LABEL = {
   lynched: 'Bị treo cổ',
   gunner: 'Bị xạ thủ bắn',
   hunter_shot: 'Bị thợ săn bắn',
+  visit_wolf: 'Gõ nhầm cửa hang sói',
+  harlot_victim: 'Ngủ nhờ nhà có án mạng',
+  hunted: 'Bị thợ săn tà giáo hạ',
+  visit_burning: 'Vào nhà đang cháy',
+  burned: 'Chết cháy',
   night: 'Chết trong đêm',
 }
 
@@ -109,3 +127,16 @@ export const describeFate = (player) => {
 // Người thắng lên trước, trong mỗi nhóm thì người sống lên trước
 export const sortHistoryPlayers = (players = []) =>
   [...players].sort((a, b) => Number(b.winner) - Number(a.winner) || Number(b.alive) - Number(a.alive))
+
+// Gợi ý ở sảnh chờ: với số người hiện tại thì phe thứ ba nào có thể xuất hiện, còn thiếu bao nhiêu người.
+export const thirdPartyHint = (count, dealing, nameOf = (key) => key) => {
+  if (!dealing?.thirdParties?.length) return null
+  const label = (group) => group.roles.filter((role) => role !== 'cult_hunter').map(nameOf).join(' hoặc ')
+  const unlocked = dealing.thirdParties.filter((group) => count >= group.minPlayers)
+  const next = dealing.thirdParties.filter((group) => count < group.minPlayers).sort((a, b) => a.minPlayers - b.minPlayers)[0]
+  const parts = []
+  if (unlocked.length) parts.push(`Ván này có thể có phe thứ ba: ${unlocked.map(label).join(', ')}.`)
+  else parts.push('Ván này chỉ có dân làng đấu với sói.')
+  if (next) parts.push(`Thêm ${next.minPlayers - count} người nữa để có thể gặp ${label(next)}.`)
+  return parts.join(' ')
+}
