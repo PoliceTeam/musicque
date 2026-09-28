@@ -44,10 +44,15 @@ const canCrossRoomBoundary = (fromX, fromY, toX, toY, room) => {
   const wasInside = roomAt(fromX, fromY)?.id === room.id
   const isInside = roomAt(toX, toY)?.id === room.id
   if (wasInside === isInside) return true
-  // Cửa ở giữa cạnh trên; không đi xuyên qua tường bên hoặc tường dưới.
+  // Phòng thường có cửa cạnh trên; Làng Ma Sói có lối vào cả trên lẫn dưới.
   const top = room.y - room.height / 2
-  return Math.abs(toX - room.x) <= 48 && Math.abs(fromX - room.x) <= 48 &&
-    Math.min(fromY, toY) <= top && Math.max(fromY, toY) >= top
+  const bottom = room.y + room.height / 2
+  const entrances = room.entrances || ['top']
+  const crosses = (boundary) => Math.min(fromY, toY) <= boundary && Math.max(fromY, toY) >= boundary
+  return Math.abs(toX - room.x) <= 58 && Math.abs(fromX - room.x) <= 58 && (
+    (entrances.includes('top') && crosses(top)) ||
+    (entrances.includes('bottom') && crosses(bottom))
+  )
 }
 
 const join = ({ socket, user, position = {} }) => {

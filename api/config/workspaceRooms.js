@@ -3,7 +3,10 @@ const ROOMS = [
   { id: 'dubai', name: 'Dubai', x: 635, y: 1110, width: 310, height: 230, capacity: 8 },
   { id: 'koitomo', name: 'Koitomo', x: 970, y: 1110, width: 310, height: 230, capacity: 4 },
   { id: 'sankaku', name: 'Sankaku', x: 1305, y: 1110, width: 310, height: 230, capacity: 4 },
-  { id: 'werewolf', name: 'Làng Ma Sói', x: 800, y: 1510, width: 480, height: 300, capacity: 16, kind: 'werewolf' },
+  {
+    id: 'werewolf', name: 'Làng Ma Sói', x: 800, y: 1510, width: 480, height: 300,
+    capacity: 16, kind: 'werewolf', entrances: ['top', 'bottom'],
+  },
 ]
 
 const roomAt = (x, y) => ROOMS.find((room) => (

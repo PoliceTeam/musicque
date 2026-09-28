@@ -340,6 +340,10 @@ export class WorkspaceScene extends Phaser.Scene {
     this.add.text(800, 845, 'VOICE ROOMS  ·  BƯỚC QUA CỬA ĐỂ TRÒ CHUYỆN', {
       fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: '#354660',
     }).setOrigin(0.5)
+    this.add.text(800, 883, 'MUỐN CHƠI MA SÓI NÓI THÌ ĐI XUỐNG DƯỚI NỮA  ↓', {
+      fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#7154b3',
+      backgroundColor: '#f3efff', padding: { x: 14, y: 7 },
+    }).setOrigin(0.5).setDepth(10)
     rooms.forEach((room, index) => {
       if (room.kind === 'werewolf') {
         this.drawWerewolfRoom(room)
@@ -384,7 +388,8 @@ export class WorkspaceScene extends Phaser.Scene {
     graphics.fillStyle(0x24164f, 0.92).fillRoundedRect(left + 9, top + 9, room.width - 18, room.height - 18, 14)
     graphics.fillStyle(0x372063, 0.8).fillRect(left + 9, top + 176, room.width - 18, room.height - 185)
     graphics.lineStyle(7, 0x9d8cff, 0.72)
-    graphics.lineBetween(left, top, right, top)
+    graphics.lineBetween(left, top, room.x - 58, top)
+    graphics.lineBetween(room.x + 58, top, right, top)
     graphics.lineBetween(left, top, left, bottom)
     graphics.lineBetween(right, top, right, bottom)
     graphics.lineBetween(left, bottom, room.x - 58, bottom)
