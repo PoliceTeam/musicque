@@ -1,5 +1,6 @@
 const { AccessToken, RoomServiceClient, TrackSource } = require('livekit-server-sdk')
 const workspace = require('./workspace.service')
+const werewolf = require('./werewolf.service')
 
 const ROOM_CALL_MAX_MS = 10 * 60 * 1000
 const sessions = new Map()
@@ -9,6 +10,32 @@ const enabled = () => process.env.WORKSPACE_VOICE_ENABLED === 'true' && configur
 const livekitHttpUrl = () => process.env.LIVEKIT_URL.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:')
 const roomName = (roomId) => `musicque-workspace-${roomId}`
 const roomClient = () => new RoomServiceClient(livekitHttpUrl(), process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET)
+const permissionFor = (member) => member?.roomId !== 'werewolf' || werewolf.canSpeak(member.userId)
+
+const syncWerewolfPermissions = async () => {
+  const tasks = [...sessions.values()].filter(({ roomId }) => roomId === 'werewolf').map(async (session) => {
+    const member = workspace.getMember(session.socket.id)
+    const canSpeak = permissionFor(member)
+    session.socket.emit('workspace:voice:permission', { canSpeak, roomId: 'werewolf' })
+    if (session.canSpeak === canSpeak || !enabled()) return
+    try {
+      await roomClient().updateParticipant(roomName('werewolf'), session.identity, {
+        permission: {
+          canSubscribe: true,
+          canPublish: canSpeak,
+          canPublishData: false,
+          canPublishSources: canSpeak ? [TrackSource.MICROPHONE] : [],
+        },
+      })
+      session.canSpeak = canSpeak
+    } catch (error) {
+      if (!/not found|does not exist/i.test(error.message || '')) throw error
+    }
+  })
+  await Promise.all(tasks)
+}
+
+werewolf.onStateChange(syncWerewolfPermissions)
 
 const endRoomCall = async (roomId) => {
   const call = roomCalls.get(roomId)
@@ -85,6 +112,7 @@ const join = async (socket) => {
   if (existing && existing.roomId !== requestedRoomId) await leave(socket.id)
 
   const identity = `${member.userId}:${socket.id}`
+  const canSpeak = permissionFor(member)
   const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
     identity,
     name: member.displayName,
@@ -94,8 +122,8 @@ const join = async (socket) => {
     roomJoin: true,
     room: roomName(requestedRoomId),
     canSubscribe: true,
-    canPublish: true,
-    canPublishSources: [TrackSource.MICROPHONE],
+    canPublish: canSpeak,
+    canPublishSources: canSpeak ? [TrackSource.MICROPHONE] : [],
     canPublishData: false,
   })
   const jwt = await token.toJwt()
@@ -115,8 +143,9 @@ const join = async (socket) => {
     identity,
     endsAt: call.endsAt,
     remainingMs: Math.max(0, call.endsAt - Date.now()),
+    canSpeak,
   }
-  sessions.set(socket.id, { roomId: requestedRoomId, identity, socket })
+  sessions.set(socket.id, { roomId: requestedRoomId, identity, socket, canSpeak })
   call.participants.add(socket.id)
   return response
 }
@@ -129,4 +158,4 @@ const onRoomChange = async (socket) => {
   }
 }
 
-module.exports = { enabled, join, leave, onRoomChange, endRoomCall, ROOM_CALL_MAX_MS }
+module.exports = { enabled, join, leave, onRoomChange, endRoomCall, syncWerewolfPermissions, ROOM_CALL_MAX_MS }

@@ -28,6 +28,13 @@ let state = engine.createInitialState()
 let tickTimer = null
 let broadcastQueued = false
 let settleQueue = Promise.resolve()
+const stateListeners = new Set()
+
+const notifyStateListeners = () => {
+  stateListeners.forEach((listener) => {
+    Promise.resolve().then(listener).catch((error) => console.error('[Ma Sói] Đồng bộ trạng thái ngoài game lỗi:', error.message))
+  })
+}
 
 const broadcast = () => {
   if (!ioRef || broadcastQueued) return
@@ -105,7 +112,10 @@ const settle = (live) => {
 
 const handleEvents = (events = []) => {
   if (events.includes('ended')) settle(state)
-  if (events.length) broadcast()
+  if (events.length) {
+    broadcast()
+    notifyStateListeners()
+  }
 }
 
 const beginGame = (byUserId = null) => {
@@ -310,6 +320,17 @@ const unwatch = (socket) => {
 
 const onSocketGone = (socket) => scheduleLobbyCheck(socket.data?.werewolfUserId)
 
+// Voice trong Workspace chỉ mở đúng lúc người chơi còn sống được thảo luận ban ngày.
+const canSpeak = (userId) => {
+  const player = userId ? engine.findPlayer(state, userId) : null
+  return Boolean(state.status === 'playing' && state.phase === 'day' && player?.alive && !player.isBot)
+}
+
+const onStateChange = (listener) => {
+  stateListeners.add(listener)
+  return () => stateListeners.delete(listener)
+}
+
 module.exports = {
   WerewolfError,
   init,
@@ -330,4 +351,6 @@ module.exports = {
   watch,
   unwatch,
   onSocketGone,
+  canSpeak,
+  onStateChange,
 }

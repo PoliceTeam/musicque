@@ -17,6 +17,9 @@
 .ww-page--vote { --ww-accent: #e03131; --ww-accent-soft: rgba(224, 49, 49, 0.18); }
 .ww-page--hunter { --ww-accent: #2b8a3e; --ww-accent-soft: rgba(47, 158, 68, 0.2); }
 .ww-page--ended { --ww-accent: #1db954; --ww-accent-soft: rgba(29, 185, 84, 0.18); }
+.ww-page--embedded { min-height: 0; }
+.ww-page--embedded .ww-stage { width: 100%; padding: 0; }
+.ww-page--embedded .ww-feed { height: min(70vh, 720px); }
 
 .ww-loading { display: grid; min-height: 100vh; place-items: center; color: var(--sp-text-muted); }
 

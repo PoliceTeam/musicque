@@ -14,9 +14,10 @@ const socketFor = (id) => ({
   nsp: { to() { return { emit() {} } } },
 })
 
-test('bốn phòng voice có biên và sức chứa riêng', () => {
-  assert.deepEqual(ROOMS.map((room) => room.capacity), [8, 8, 4, 4])
+test('các phòng voice có biên và Làng Ma Sói đủ chỗ cho một ván đầy', () => {
+  assert.deepEqual(ROOMS.map((room) => room.capacity), [8, 8, 4, 4, 16])
   assert.equal(roomAt(300, 1110)?.id, 'las-vegas')
+  assert.equal(roomAt(800, 1510)?.id, 'werewolf')
   assert.equal(roomAt(800, 680), null)
 })
 

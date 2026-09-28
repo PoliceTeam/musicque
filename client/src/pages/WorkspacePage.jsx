@@ -15,6 +15,7 @@ const NesGame = lazy(() => import('../components/NesGame/NesGame'))
 const LotteryOverlay = lazy(() => import('../components/Lottery/LotteryOverlay'))
 const ChohanOverlay = lazy(() => import('../components/Chohan/ChohanOverlay'))
 const BilliardsOverlay = lazy(() => import('../components/Billiards/BilliardsOverlay'))
+const WerewolfPage = lazy(() => import('./WerewolfPage'))
 
 const zoneLabels = {
   music: 'Music Club',
@@ -33,6 +34,7 @@ const WorkspacePage = () => {
   const [chat, setChat] = useState('')
   const [nesGame, setNesGame] = useState(null)
   const [activeGame, setActiveGame] = useState(null)
+  const inWerewolfRoom = voiceRoomId === 'werewolf'
 
   const openZone = useCallback((zoneId) => setActiveZone(zoneId), [])
   const showActiveSpeakers = useCallback((socketIds) => sceneRef.current?.setSpeakingSocketIds(socketIds), [])
@@ -93,6 +95,12 @@ const WorkspacePage = () => {
         {nearbyZone && (
           <button type='button' className='workspace-prompt' onClick={() => openZone(nearbyZone.id)}>
             <kbd>E</kbd> Vào {zoneLabels[nearbyZone.id]}
+          </button>
+        )}
+
+        {inWerewolfRoom && (
+          <button type='button' className='workspace-prompt workspace-prompt--werewolf' onClick={() => setActiveGame('werewolf')}>
+            <span>🐺</span> Mở bàn Ma Sói
           </button>
         )}
 
@@ -170,6 +178,21 @@ const WorkspacePage = () => {
         {activeGame === 'chohan' && <ChohanOverlay open onClose={() => setActiveGame(null)} />}
         {activeGame === 'billiards' && <BilliardsOverlay open onClose={() => setActiveGame(null)} />}
       </Suspense>
+
+      <Modal
+        open={activeGame === 'werewolf' && inWerewolfRoom}
+        onCancel={() => setActiveGame(null)}
+        footer={null}
+        width='min(1420px, 96vw)'
+        centered
+        destroyOnClose
+        title={<span className='workspace-werewolf-title'>🌕 Làng Ma Sói <small>Voice chỉ mở cho người còn sống vào ban ngày</small></span>}
+        className='workspace-werewolf-modal'
+      >
+        <Suspense fallback={<div className='workspace-werewolf-loading'>Đang thắp đuốc vào làng…</div>}>
+          {activeGame === 'werewolf' && inWerewolfRoom && <WerewolfPage embedded />}
+        </Suspense>
+      </Modal>
 
       {activeZone === 'news' && (
         <Suspense fallback={null}>

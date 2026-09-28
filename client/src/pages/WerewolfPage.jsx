@@ -94,7 +94,7 @@ const MyRole = ({ state, catalog }) => {
   )
 }
 
-const WerewolfPage = () => {
+const WerewolfPage = ({ embedded = false }) => {
   const { user, isAdmin, requireAuth, refreshBalance } = useAuth()
   const { state, receivedAt, catalog, dealing, run } = useWerewolf()
   const now = useClock()
@@ -162,8 +162,8 @@ const WerewolfPage = () => {
     .join(' & ')
 
   return (
-    <div className={`ww-page ww-page--${state.status === 'playing' ? state.phase : state.status}`}>
-      <header className='ww-topbar'>
+    <div className={`ww-page ww-page--${state.status === 'playing' ? state.phase : state.status}${embedded ? ' ww-page--embedded' : ''}`}>
+      {!embedded && <header className='ww-topbar'>
         <Link to='/' className='ww-back'>← Về Musicque</Link>
         <div className='ww-topbar__brand'><span>🐺</span><strong>Ma Sói</strong></div>
         <div className='ww-topbar__account'>
@@ -171,7 +171,7 @@ const WerewolfPage = () => {
           <button type='button' className='sp-btn sp-btn--ghost sp-btn--sm' onClick={() => setRulesOpen(true)}>📜 Luật & vai</button>
           <UserMenu />
         </div>
-      </header>
+      </header>}
 
       <main className='ww-stage'>
         <div className='ww-main'>

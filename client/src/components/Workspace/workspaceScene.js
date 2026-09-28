@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
 
 export const WORLD_WIDTH = 1600
-export const WORLD_HEIGHT = 1500
+export const WORLD_HEIGHT = 1860
 
-const VOICE_ROOM_COLORS = [0xf59e0b, 0x22c55e, 0x8b5cf6, 0x06b6d4]
+const VOICE_ROOM_COLORS = [0xf59e0b, 0x22c55e, 0x8b5cf6, 0x06b6d4, 0x7c3aed]
 
 export const ZONES = [
   { id: 'music', label: 'MUSIC CLUB', hint: 'Order nhạc', x: 300, y: 410, width: 380, height: 320, color: 0x8b5cf6 },
@@ -341,6 +341,10 @@ export class WorkspaceScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: '#354660',
     }).setOrigin(0.5)
     rooms.forEach((room, index) => {
+      if (room.kind === 'werewolf') {
+        this.drawWerewolfRoom(room)
+        return
+      }
       const color = VOICE_ROOM_COLORS[index % VOICE_ROOM_COLORS.length]
       const left = room.x - room.width / 2
       const top = room.y - room.height / 2
@@ -368,9 +372,63 @@ export class WorkspaceScene extends Phaser.Scene {
     })
   }
 
+  drawWerewolfRoom(room) {
+    const left = room.x - room.width / 2
+    const top = room.y - room.height / 2
+    const bottom = top + room.height
+    const right = left + room.width
+    const graphics = this.add.graphics().setDepth(0)
+
+    // Một ngôi làng đêm pixel-art, lấy bảng màu từ poster Ma Sói ở Homepage.
+    graphics.fillStyle(0x0d0b24, 0.98).fillRoundedRect(left, top, room.width, room.height, 18)
+    graphics.fillStyle(0x24164f, 0.92).fillRoundedRect(left + 9, top + 9, room.width - 18, room.height - 18, 14)
+    graphics.fillStyle(0x372063, 0.8).fillRect(left + 9, top + 176, room.width - 18, room.height - 185)
+    graphics.lineStyle(7, 0x9d8cff, 0.72)
+    graphics.lineBetween(left, top, right, top)
+    graphics.lineBetween(left, top, left, bottom)
+    graphics.lineBetween(right, top, right, bottom)
+    graphics.lineBetween(left, bottom, room.x - 58, bottom)
+    graphics.lineBetween(room.x + 58, bottom, right, bottom)
+
+    const moon = this.add.circle(right - 72, top + 70, 48, 0xffe9a8, 1).setDepth(4)
+    moon.setStrokeStyle(7, 0xffd77d, 0.2)
+    ;[[right - 88, top + 57, 8], [right - 56, top + 82, 6], [right - 81, top + 91, 4]].forEach(([x, y, radius]) => {
+      this.add.circle(x, y, radius, 0xc9964a, 0.28).setDepth(5)
+    })
+    ;[[left + 42, top + 45], [left + 91, top + 82], [left + 145, top + 40], [left + 205, top + 72], [left + 277, top + 38]].forEach(([x, y], index) => {
+      const star = this.add.circle(x, y, index % 2 ? 1.5 : 2.2, 0xffffff, 0.85).setDepth(5)
+      this.tweens.add({ targets: star, alpha: { from: 0.3, to: 1 }, duration: 900 + index * 170, yoyo: true, repeat: -1 })
+    })
+
+    this.add.text(right - 78, top + 93, '🐺', {
+      fontSize: '58px', color: '#080611', shadow: { color: '#9d8cff', blur: 8, fill: true },
+    }).setOrigin(0.5).setFlipX(true).setDepth(6)
+    this.add.text(room.x, top + 47, 'LÀNG MA SÓI', {
+      fontFamily: 'monospace', fontSize: '28px', fontStyle: 'bold', color: '#fff4f7',
+      stroke: '#6d2452', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(10)
+    this.add.text(room.x, top + 86, 'Đêm nay ai là sói?', {
+      fontFamily: 'monospace', fontSize: '15px', fontStyle: 'italic', color: '#c8bbff',
+    }).setOrigin(0.5).setDepth(10)
+
+    // Vòng lửa là tâm tụ họp của dân làng.
+    const fireGlow = this.add.circle(room.x, room.y + 44, 42, 0xff6b35, 0.12).setDepth(room.y + 20)
+    this.add.text(room.x, room.y + 48, '🔥', { fontSize: '48px' }).setOrigin(0.5).setDepth(room.y + 30)
+    this.tweens.add({ targets: fireGlow, scale: { from: 0.8, to: 1.25 }, alpha: { from: 0.08, to: 0.28 }, duration: 950, yoyo: true, repeat: -1 })
+    ;[-150, -88, 88, 150].forEach((offset, index) => {
+      this.add.image(room.x + offset, room.y + 64 + (index % 2) * 12, 'workspace-chair')
+        .setScale(0.7).setTint(0x6f568f).setDepth(room.y + 70 + (index % 2) * 12)
+    })
+    this.voiceRoomLabels.set(room.id, this.add.text(room.x, bottom - 32, `0/${room.capacity} dân làng`, {
+      fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: '#eee9ff',
+    }).setOrigin(0.5).setDepth(10))
+  }
+
   setVoiceRooms(rooms) {
     if (!this.voiceRoomLabels && rooms.length) this.drawVoiceRooms(rooms)
-    rooms.forEach((room) => this.voiceRoomLabels?.get(room.id)?.setText(`${room.occupancy}/${room.capacity} người`))
+    rooms.forEach((room) => this.voiceRoomLabels?.get(room.id)?.setText(
+      room.kind === 'werewolf' ? `${room.occupancy}/${room.capacity} dân làng` : `${room.occupancy}/${room.capacity} người`,
+    ))
   }
 
   correctPosition(member) {

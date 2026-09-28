@@ -126,6 +126,18 @@
   cursor: pointer;
   box-shadow: 0 14px 40px rgba(70, 105, 140, 0.18);
 }
+.workspace-prompt--werewolf {
+  border-color: rgba(186, 170, 255, 0.7);
+  color: #f8f4ff;
+  background: linear-gradient(135deg, #24164f, #0d0b24 68%, #4a142b);
+  box-shadow: 0 10px 30px rgba(60, 30, 170, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+}
+.workspace-prompt--werewolf span { font-size: 20px; filter: drop-shadow(0 0 8px #9d8cff); }
+.workspace-werewolf-modal .ant-modal-content { overflow: hidden; padding: 16px; background: var(--sp-bg); }
+.workspace-werewolf-modal .ant-modal-body { max-height: 82vh; overflow-y: auto; }
+.workspace-werewolf-title { display: inline-flex; align-items: baseline; gap: 10px; color: var(--sp-text); }
+.workspace-werewolf-title small { color: var(--sp-text-muted); font-size: 12px; font-weight: 500; }
+.workspace-werewolf-loading { display: grid; min-height: 320px; place-items: center; color: var(--sp-text-muted); }
 
 .workspace-chat {
   position: absolute;

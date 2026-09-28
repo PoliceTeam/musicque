@@ -4,7 +4,7 @@ const { ROOMS, roomAt } = require('../config/workspaceRooms')
 const MAX_CHAT_LENGTH = 120
 const MOVE_INTERVAL_MS = 50
 const CHAT_INTERVAL_MS = 800
-const WORLD_BOUNDS = { minX: 70, maxX: 1530, minY: 90, maxY: 1430 }
+const WORLD_BOUNDS = { minX: 70, maxX: 1530, minY: 90, maxY: 1790 }
 
 const members = new Map()
 

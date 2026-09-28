@@ -127,6 +127,10 @@ const initSocket = (server) => {
       if (typeof ack === 'function') ack({ ok: true })
     })
 
+    socket.on('workspace:voice:sync', () => {
+      workspaceVoice.syncWerewolfPermissions().catch((error) => console.error('[Workspace voice] Không thể đồng bộ quyền Ma Sói:', error.message))
+    })
+
     socket.on('workspace:chat', (data = {}) => {
       const result = workspace.chat({ socket, content: data.content })
       if (result.error) {
