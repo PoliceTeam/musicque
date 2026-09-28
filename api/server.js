@@ -16,6 +16,7 @@ const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
 const werewolf = require('./services/werewolf.service')
+const sessionScheduler = require('./services/sessionScheduler.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -92,11 +93,18 @@ mongoose
     }
 
     // Khởi động server
-    server.listen(PORT, () => {
+    server.listen(PORT, async () => {
       console.log(`Server running on port ${PORT}`)
 
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()
+
+      // Phải dọn phiên quá hạn trước khi các game khôi phục state sau restart.
+      try {
+        await sessionScheduler.init(io)
+      } catch (error) {
+        console.error('[Scheduler] Khởi động lịch kết thúc phiên lỗi:', error.message)
+      }
 
       // Nếu đang có phiên chạy dở (server restart giữa chừng) thì mở lại game Cho-Han
       chohan.resumeIfActiveSession(io).catch((error) => {

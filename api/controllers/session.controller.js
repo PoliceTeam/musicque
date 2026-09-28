@@ -2,9 +2,9 @@ const Session = require("../models/session.model");
 const { emitActivity } = require("../utils/activityEmitter");
 const Song = require("../models/song.model");
 const chohan = require("../services/chohan.service");
-const songSkip = require("../services/songSkip.service");
 const wordChain = require("../services/wordChain.service");
 const redLight = require("../services/redLight.service");
+const sessionService = require("../services/session.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -68,47 +68,16 @@ exports.startSession = async (req, res) => {
 // Kết thúc phiên hiện tại
 exports.endSession = async (req, res) => {
   try {
-    // Tìm phiên đang hoạt động
-    const activeSession = await Session.findOne({ isActive: true });
+    const activeSession = await sessionService.endActiveSession({
+      io: req.app.get("io"),
+      displayName: req.user?.displayName,
+    });
 
     if (!activeSession) {
       return res
         .status(404)
         .json({ message: "Không có phiên nào đang hoạt động" });
     }
-
-    // Cập nhật phiên
-    activeSession.isActive = false;
-    activeSession.endTime = new Date();
-    await activeSession.save();
-
-    // Dừng game Cho-Han + hoàn cược chưa chốt (không chặn response nếu lỗi)
-    await chohan.stopGame({ reason: "session_ended" }).catch((error) => {
-      console.error("[Cho-Han] Không dừng được game:", error.message);
-    });
-
-    await wordChain.stopGame({ reason: "session_ended" }).catch((error) => {
-      console.error("[Nối từ] Không dừng được game:", error.message);
-    });
-
-    await redLight.stopGame({ reason: "session_ended" }).catch((error) => {
-      console.error("[Đèn xanh] Không dừng được game:", error.message);
-    });
-
-    // Khoản góp chưa đủ 100 PCs không tạo ra lượt next nên phải hoàn toàn bộ.
-    await songSkip.refundSessionPools(
-      activeSession._id,
-      "session_ended",
-      req.app.get("io"),
-    );
-
-    // Thông báo qua socket.io
-    const io = req.app.get("io");
-    io.emit("session_updated", null);
-    emitActivity(io, {
-      type: "session_ended",
-      displayName: req.user?.displayName,
-    });
 
     res.status(200).json({
       message: "Đã kết thúc phiên",
