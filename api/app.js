@@ -62,6 +62,7 @@ app.use('/api/red-light', redLightRoutes);
 app.use('/api/lottery', lotteryRoutes);
 app.use('/api/core', coreMembershipRoutes);
 app.use('/api/werewolf', werewolfRoutes);
+app.use('/api/secret-shift', require('./routes/secretShift.routes'));
 
 // Error handling
 app.use(errorHandler);

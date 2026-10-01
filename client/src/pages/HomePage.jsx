@@ -388,6 +388,16 @@ const HomePage = () => {
           </header>
 
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <button
+                type="button"
+                className="sp-btn sp-btn--primary"
+                onClick={() => navigate('/secret-shift')}
+                aria-label="Chơi Ca trực bí mật"
+              >
+                <span aria-hidden="true">🕵️</span> Chơi Ca trực bí mật
+              </button>
+            </div>
             <NationalDayBanner />
             <TetCountdown />
             <DailyIdiom />

@@ -152,6 +152,9 @@ const WorkspacePage = () => {
         className='workspace-zone-modal'
       >
         <div className='workspace-game-grid'>
+          <button type='button' onClick={() => navigate('/secret-shift')}>
+            <span>🕵️</span><strong>Ca trực bí mật</strong><small>Game suy luận 2D · 4–8 đồng nghiệp</small>
+          </button>
           <button type='button' onClick={() => openArcadeGame('lottery')}>
             <span>🎰</span><strong>Lô đề</strong><small>Chọn số may mắn cùng mọi người</small>
           </button>

@@ -19,6 +19,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
+const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
 
 const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
@@ -69,6 +70,7 @@ function AppContent() {
                         }
                       />
                       <Route path='/werewolf' element={<WerewolfPage />} />
+                      <Route path='/secret-shift' element={<SecretShiftPage />} />
                       <Route
                         path='/admin'
                         element={

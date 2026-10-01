@@ -49,6 +49,10 @@ const SidebarNav = ({ subtitle = 'Iced Tea Team', children }) => {
           </span>
         </button>
 
+        <button type='button' className={itemClass('/secret-shift')} onClick={() => navigate('/secret-shift')}>
+          <span className='sp-nav__icon' aria-hidden='true'>🕵️</span> Ca trực bí mật
+        </button>
+
         {isAdmin && (
           <button type='button' className={itemClass('/admin')} onClick={() => navigate('/admin')}>
             <DashboardOutlined className='sp-nav__icon' />
