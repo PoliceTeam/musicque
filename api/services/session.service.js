@@ -4,9 +4,11 @@ const chohan = require('./chohan.service')
 const songSkip = require('./songSkip.service')
 const wordChain = require('./wordChain.service')
 const redLight = require('./redLight.service')
+const luckyRain = require('./luckyRain.service')
 
 const stopSessionFeatures = async (session, io) => {
   const tasks = [
+    ['Lì xì', () => luckyRain.publish()],
     ['Cho-Han', () => chohan.stopGame({ reason: 'session_ended' })],
     ['Nối từ', () => wordChain.stopGame({ reason: 'session_ended' })],
     ['Đèn xanh', () => redLight.stopGame({ reason: 'session_ended' })],

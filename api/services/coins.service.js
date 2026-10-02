@@ -124,6 +124,40 @@ async function creditOnce(userId, amount, transaction = {}) {
   return updated
 }
 
+// Ví + dấu chống nhận trùng + biên nhận được ghi trong cùng một atomic update.
+// Ledger có thể retry từ biên nhận kể cả khi ví đã thay đổi bởi cược/bid khác.
+async function creditLuckyRainOnce(userId, amount, transaction) {
+  const operationKey = transaction.operationKey
+  if (!operationKey || !Number.isSafeInteger(amount) || amount <= 0) return null
+  let user = await User.findOneAndUpdate(
+    { _id: userId, appliedCoinOperations: { $ne: operationKey } },
+    [
+      { $set: {
+        polites: { $add: [{ $ifNull: ['$polites', 0] }, amount] },
+        appliedCoinOperations: { $concatArrays: [
+          { $ifNull: ['$appliedCoinOperations', []] }, [operationKey],
+        ] },
+      } },
+      { $set: { luckyRainReceipts: { $concatArrays: [
+        { $ifNull: ['$luckyRainReceipts', []] },
+        [{ operationKey, amount, balanceAfter: '$polites', creditedAt: '$$NOW' }],
+      ] } } },
+    ],
+    { new: true },
+  ).select('+luckyRainReceipts')
+  if (!user) user = await User.findById(userId).select('+luckyRainReceipts')
+  const receipt = user?.luckyRainReceipts?.find((item) => item.operationKey === operationKey)
+  if (!receipt) return null
+  const recorded = await recordTransaction({
+    _id: user._id, username: user.username, displayName: user.displayName,
+    polites: receipt.balanceAfter,
+  }, receipt.amount, transaction)
+  if (!recorded && !await CoinTransaction.exists({ operationKey })) {
+    throw new Error('Chưa ghi được lịch sử lì xì; sẽ thử lại từ biên nhận')
+  }
+  return { user, receipt }
+}
+
 /**
  * Trả thưởng cờ tướng và khóa trần ngày ngay trên User document. Pipeline
  * reset quota khi sang ngày mới rồi cộng tối đa phần còn lại; operationKey
@@ -405,6 +439,9 @@ async function getEconomyStats(period = '30d') {
                 dailyGranted: {
                   $sum: { $cond: [{ $eq: ['$type', 'daily_bonus'] }, '$amount', 0] },
                 },
+                luckyRainGranted: {
+                  $sum: { $cond: [{ $eq: ['$type', 'lucky_rain_reward'] }, '$amount', 0] },
+                },
                 corePurchased: {
                   $sum: { $cond: [{ $eq: ['$type', 'core_purchase'] }, { $abs: '$amount' }, 0] },
                 },
@@ -510,6 +547,7 @@ async function getEconomyStats(period = '30d') {
                 spent: 1,
                 signupGranted: 1,
                 dailyGranted: 1,
+                luckyRainGranted: 1,
                 corePurchased: 1,
                 coreBonus: 1,
                 songBidSpent: 1,
@@ -593,6 +631,7 @@ async function getEconomyStats(period = '30d') {
     spent: 0,
     signupGranted: 0,
     dailyGranted: 0,
+    luckyRainGranted: 0,
     corePurchased: 0,
     coreBonus: 0,
     songBidSpent: 0,
@@ -621,7 +660,7 @@ async function getEconomyStats(period = '30d') {
     circulation: circulation[0] || { currentSupply: 0, userCount: 0 },
     totals: {
       ...totals,
-      issued: totals.signupGranted + totals.dailyGranted + totals.coreBonus,
+      issued: totals.signupGranted + totals.dailyGranted + totals.coreBonus + (totals.luckyRainGranted || 0),
       songBidConsumed: totals.songBidSpent - totals.songBidRefund,
       songSkipConsumed: totals.songSkipSpent - totals.songSkipRefund,
       houseNet:
@@ -668,6 +707,7 @@ module.exports = {
   debitOnce,
   credit,
   creditOnce,
+  creditLuckyRainOnce,
   creditXiangqiRewardOnce,
   creditWordChainRewardOnce,
   creditRedLightRewardOnce,

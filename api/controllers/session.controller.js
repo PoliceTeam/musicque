@@ -5,6 +5,7 @@ const chohan = require("../services/chohan.service");
 const wordChain = require("../services/wordChain.service");
 const redLight = require("../services/redLight.service");
 const sessionService = require("../services/session.service");
+const luckyRain = require("../services/luckyRain.service");
 
 // Bắt đầu phiên mới
 exports.startSession = async (req, res) => {
@@ -53,6 +54,10 @@ exports.startSession = async (req, res) => {
 
     redLight.startGame(io, newSession).catch((error) => {
       console.error("[Đèn xanh] Không mở được game:", error.message);
+    });
+
+    luckyRain.publish().catch((error) => {
+      console.error('[Lì xì] Mở lịch lỗi:', error.message);
     });
 
     res.status(201).json({

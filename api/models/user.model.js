@@ -105,6 +105,18 @@ const userSchema = new mongoose.Schema({
     select: false,
     default: undefined,
   },
+  // Biên nhận nằm cùng ví: khôi phục đúng balanceAfter nếu crash sau cộng tiền.
+  luckyRainReceipts: {
+    type: [{
+      _id: false,
+      operationKey: String,
+      amount: Number,
+      balanceAfter: Number,
+      creditedAt: Date,
+    }],
+    select: false,
+    default: undefined,
+  },
   // Tổng thưởng cờ tướng đã nhận trong ngày lịch của server. Hai field này
   // nằm cùng ví để cập nhật số dư + quota trong đúng một atomic operation.
   xiangqiRewardDateKey: {

@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const TRANSACTION_TYPES = [
   'signup_grant',
   'daily_bonus',
+  'lucky_rain_reward',
   'song_bid',
   'song_bid_refund',
   'song_skip_contribution',
@@ -66,7 +67,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound', 'WerewolfGame', 'LotteryBet', 'LotteryDraw', 'CoreMembership'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound', 'WerewolfGame', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'LuckyRainClaim'],
       default: undefined,
     },
     referenceId: {

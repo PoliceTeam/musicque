@@ -53,6 +53,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/tts', ttsRoutes);
 app.use('/api/idioms', idiomsRoutes);
 app.use('/api/coins', coinsRoutes);
+app.use('/api/lucky-rain', require('./routes/luckyRain.routes'));
 app.use('/api/chohan', chohanRoutes);
 app.use('/api/billiards', billiardsRoutes);
 app.use('/api/chat', chatRoutes);

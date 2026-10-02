@@ -17,6 +17,7 @@ const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
 const werewolf = require('./services/werewolf.service')
 const sessionScheduler = require('./services/sessionScheduler.service')
+const luckyRain = require('./services/luckyRain.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -63,6 +64,8 @@ mongoose
 
     // Unique index phải sẵn sàng trước khi nhận đăng ký đồng thời lúc launch.
     await ensureSignupGrantIndexes()
+    // Unique claim và phục hồi thưởng phải sẵn sàng trước khi mở HTTP.
+    await luckyRain.init(io)
 
     // Đồng bộ tài khoản admin từ env — không chặn khởi động nếu lỗi
     try {

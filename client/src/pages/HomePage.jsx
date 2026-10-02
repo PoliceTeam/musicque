@@ -15,8 +15,7 @@ import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
-import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
-import WordChainPromo from '../components/WordChain/WordChainPromo';
+import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
 import ChatBox from '../components/Chat/ChatBox';
@@ -57,8 +56,7 @@ const HomePage = () => {
   const [showWealthLeaderboard, setShowWealthLeaderboard] = useState(false);
   const [newsTab, setNewsTab] = useState('1');
   const [showNewsReader, setShowNewsReader] = useState(false);
-  const [xiangqiPromoDismissed, setXiangqiPromoDismissed] = useState(false);
-  const [wordChainPromoDismissed, setWordChainPromoDismissed] = useState(false);
+  const [wordChainOpen, setWordChainOpen] = useState(false);
   const [redLightOpen, setRedLightOpen] = useState(false);
   const [redLightPreview, setRedLightPreview] = useState(false);
   const [coreLaunchOpen, setCoreLaunchOpen] = useState(false);
@@ -105,10 +103,6 @@ const HomePage = () => {
     setRedLightOpen(false)
     setRedLightPreview(false)
   }
-
-  const dismissXiangqiPromo = () => {
-    setXiangqiPromoDismissed(true);
-  };
 
   const handlePlayNesGame = (gameFile, gameName) => {
     setCurrentGame({ file: gameFile, name: gameName });
@@ -305,25 +299,23 @@ const HomePage = () => {
                   🍄
                 </button>
               </Tooltip>
-              {xiangqiPromoDismissed && (
-                <Tooltip title="Chiến cờ chiếm PCs">
-                  <button
-                    type="button"
-                    className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
-                    aria-label="Chơi cờ tướng"
-                    onClick={() => navigate('/xiangqi')}
-                  >
-                    帥
-                  </button>
-                </Tooltip>
-              )}
-              {currentSession && wordChainPromoDismissed && (
+              <Tooltip title="Chiến cờ chiếm PCs">
+                <button
+                  type="button"
+                  className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
+                  aria-label="Chơi cờ tướng"
+                  onClick={() => navigate('/xiangqi')}
+                >
+                  帥
+                </button>
+              </Tooltip>
+              {currentSession && (
                 <Tooltip title="Nối từ giành PCs">
                   <button
                     type="button"
                     className="sp-quicktoys__btn sp-quicktoys__btn--wordchain"
                     aria-label="Mở game nối từ"
-                    onClick={() => setWordChainPromoDismissed(false)}
+                    onClick={() => setWordChainOpen(true)}
                   >
                     🔗
                   </button>
@@ -472,16 +464,7 @@ const HomePage = () => {
           </section>
         </aside>
 
-        {!xiangqiPromoDismissed && (
-          <XiangqiPromo onDismiss={dismissXiangqiPromo} bottomInset={hasPlayer ? 96 : 12} />
-        )}
-
-        {currentSession && !wordChainPromoDismissed && (
-          <WordChainPromo
-            onDismiss={() => setWordChainPromoDismissed(true)}
-            bottomInset={hasPlayer ? 96 : 12}
-          />
-        )}
+        <WordChainOverlay open={wordChainOpen} onClose={() => setWordChainOpen(false)} />
 
         <RedLightOverlay
           open={redLightOpen}

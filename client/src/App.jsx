@@ -9,6 +9,8 @@ import { WordChainProvider } from './contexts/WordChainContext'
 import { RedLightProvider } from './contexts/RedLightContext'
 import { LotteryProvider } from './contexts/LotteryContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { LuckyRainProvider } from './contexts/LuckyRainContext'
+import LuckyRain from './components/LuckyRain/LuckyRain'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
 import { useTheme } from './contexts/ThemeContext'
@@ -21,6 +23,7 @@ const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
 const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
+const LuckyRainPreview = import.meta.env.DEV ? lazy(() => import('./components/LuckyRain/LuckyRainPreview')) : null
 
 const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
 const TORNADO_EVENT_END = Date.parse('2026-06-23T23:59:59Z')
@@ -43,6 +46,7 @@ function AppContent() {
     <ConfigProvider locale={viVN} theme={antdTheme}>
       <AuthProvider>
         <PlaylistProvider>
+          <LuckyRainProvider>
           <ChohanProvider>
             <WordChainProvider>
               <RedLightProvider>
@@ -50,6 +54,7 @@ function AppContent() {
                 <Router>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
+                      {import.meta.env.DEV && <Route path='/dev/lucky-rain' element={<LuckyRainPreview />} />}
                       <Route path='/' element={<HomePage />} />
                       <Route path='/login' element={<LoginPage initialMode='login' />} />
                       <Route path='/register' element={<LoginPage initialMode='register' />} />
@@ -83,11 +88,13 @@ function AppContent() {
                   </Suspense>
                   {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
                   <AuthModal />
+                  <LuckyRain />
                 </Router>
                 </LotteryProvider>
               </RedLightProvider>
             </WordChainProvider>
           </ChohanProvider>
+          </LuckyRainProvider>
         </PlaylistProvider>
       </AuthProvider>
     </ConfigProvider>

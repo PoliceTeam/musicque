@@ -2,6 +2,9 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+export const getLuckyRainState = () => api.get('/api/lucky-rain/state');
+export const claimLuckyRain = (roundId) => api.post('/api/lucky-rain/claim', { roundId });
+
 export const fetchSecretShiftRooms = () => api.get('/api/secret-shift/rooms');
 
 // Tạo instance axios

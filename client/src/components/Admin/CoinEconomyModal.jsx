@@ -155,7 +155,7 @@ const CoinEconomyModal = ({ open, onClose }) => {
                 label='Đã phát hành'
                 value={stats.totals.issued}
                 tone='issued'
-                note='Vốn đăng ký + thưởng ngày'
+                note='Vốn đăng ký + thưởng ngày + Core + lì xì'
               />
             </section>
 
@@ -170,6 +170,12 @@ const CoinEconomyModal = ({ open, onClose }) => {
                 </span>
               </div>
               <div className='coin-economy__flow-grid'>
+                <Metric
+                  icon={<GiftOutlined />}
+                  label='Đã phát lì xì'
+                  value={stats.totals.luckyRainGranted || 0}
+                  tone='issued'
+                />
                 <Metric
                   icon={<RocketOutlined />}
                   label='Đã dùng bid nhạc'
