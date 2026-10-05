@@ -86,3 +86,30 @@ test('catalog Kaikki chứa cụm có nghĩa và loại ví dụ bịa', () => {
   assert.ok(catalog.every((entry) => splitPhrase(entry.normalizedPhrase).length === 2))
   assert.ok(catalog.every((entry) => entry.definition))
 })
+
+test('catalog bổ sung cụm phổ biến từ Wiktionary tiếng Việt', () => {
+  const entry = catalog.find((word) => word.normalizedPhrase === 'vụ án')
+  assert.ok(entry)
+  assert.equal(entry.source, 'kaikki-viwiktionary')
+  assert.ok(entry.definition)
+  const outgoing = catalog.filter((word) => word.firstSyllable === 'án').length
+  assert.equal(entry.nextWordCount, outgoing)
+})
+
+test('đồng bộ catalog mới dù DB đã có từ điển, giữ trạng thái kiểm duyệt cũ', async (t) => {
+  const WordEntry = require('../models/wordEntry.model')
+  const operations = []
+  t.mock.method(WordEntry, 'init', async () => {})
+  t.mock.method(WordEntry, 'countDocuments', async () => 1)
+  t.mock.method(WordEntry, 'bulkWrite', async (batch) => operations.push(...batch))
+  await wordChain.ensureDictionary()
+  assert.equal(operations.length, catalog.length)
+  const operation = operations.find(({ updateOne }) => updateOne.filter.normalizedPhrase === 'vụ án').updateOne
+  assert.equal(operation.upsert, true)
+  assert.equal(operation.update.$setOnInsert.source, 'kaikki-viwiktionary')
+  assert.equal(operation.update.$setOnInsert.status, 'approved')
+  assert.equal(Object.hasOwn(operation.update.$set, 'status'), false)
+  assert.equal(Object.hasOwn(operation.update.$set, 'definition'), false)
+  await wordChain.ensureDictionary()
+  assert.equal(operations.length, catalog.length)
+})

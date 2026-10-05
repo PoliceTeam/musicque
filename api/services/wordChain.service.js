@@ -126,19 +126,25 @@ const shouldBotReply = (round) => {
 
 const seedDictionary = async () => {
   await WordEntry.init()
-  const importedCount = await WordEntry.countDocuments({ source: 'kaikki-wiktionary' })
-  if (importedCount > 0) return importedCount
-
   if (dictionaryCatalog.length > 0) {
     for (let index = 0; index < dictionaryCatalog.length; index += 1000) {
       const batch = dictionaryCatalog.slice(index, index + 1000).map((entry) => ({
         updateOne: {
           filter: { normalizedPhrase: entry.normalizedPhrase },
           update: {
-            $set: {
-              ...entry,
-              source: 'kaikki-wiktionary',
+            $setOnInsert: {
+              phrase: entry.phrase,
+              normalizedPhrase: entry.normalizedPhrase,
+              firstSyllable: entry.firstSyllable,
+              lastSyllable: entry.lastSyllable,
+              partOfSpeech: entry.partOfSpeech,
+              definition: entry.definition,
+              source: entry.source || 'kaikki-wiktionary',
               status: 'approved',
+            },
+            $set: {
+              nextWordCount: entry.nextWordCount,
+              starterEligible: entry.starterEligible,
             },
           },
           upsert: true,

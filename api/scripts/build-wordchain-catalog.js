@@ -5,12 +5,14 @@ const { normalizePhrase, splitPhrase, isValidTwoSyllablePhrase } = require('../s
 
 const sourcePath = process.argv[2]
 if (!sourcePath) {
-  console.error('Cách dùng: node scripts/build-wordchain-catalog.js <kaikki-vietnamese.jsonl>')
+  console.error('Cách dùng: node scripts/build-wordchain-catalog.js <kaikki-vietnamese.jsonl> [--merge] [--source=kaikki-viwiktionary]')
   process.exit(1)
 }
 
 const ACCEPTED_POS = new Set(['noun', 'verb', 'adj', 'adv', 'phrase'])
 const targetPath = path.join(__dirname, '..', 'data', 'wordchain', 'catalog.json')
+const merge = process.argv.includes('--merge')
+const source = process.argv.find((argument) => argument.startsWith('--source='))?.slice('--source='.length) || 'kaikki-wiktionary'
 
 const definitionOf = (entry) => {
   for (const sense of entry.senses || []) {
@@ -26,7 +28,9 @@ const run = async () => {
     input: fs.createReadStream(sourcePath),
     crlfDelay: Infinity,
   })
-  const entries = new Map()
+  const entries = new Map(merge
+    ? JSON.parse(fs.readFileSync(targetPath, 'utf8')).map((entry) => [entry.normalizedPhrase, entry])
+    : [])
   for await (const line of lines) {
     let entry
     try { entry = JSON.parse(line) } catch { continue }
@@ -44,6 +48,7 @@ const run = async () => {
         lastSyllable,
         partOfSpeech: entry.pos,
         definition,
+        source,
       })
     }
   }
