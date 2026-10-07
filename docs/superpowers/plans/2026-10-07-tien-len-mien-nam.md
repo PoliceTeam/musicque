@@ -1071,3 +1071,96 @@ opponent.
 Commit: `feat(card-table-3d): office room panorama, chairs and contact shadows`, including
 the asset and notices. Claude has already staged nothing: add `client/public/backgrounds/` and
 `THIRD_PARTY_NOTICES.md` in your commit.
+
+## Task 12.1b — Stylized low-poly office break room (replaces the photo panorama)
+
+The user rejected the real-photo panorama. Remove `office-lounge.webp` and its notice entry,
+along with the panorama loading code. Build a **stylized, flat-shaded, low-poly office break
+room** that matches the Musicque UI:
+- Spotify-light: neutral greys, the single accent `#1db954`, rounded, flat;
+- the chibi "toy" look of the characters.
+
+Light and dark themes are both required.
+
+### Layout (metres; the table is at the origin and my camera at about (0, 1.15, 1.16) looking −Z)
+- The room is about 6 × 6 m with walls 2.8 m high. Build the back wall (z = −3) and the left
+  and right walls (x = ±3) plus the floor. Build **no ceiling** and **no wall behind the
+  camera**: the drag-look limits (yaw ±30°, pitch up to +5°) never show them. Check the
+  limits from Task 9, and if the ceiling is ever visible, add a flat ceiling plane.
+- **Back wall** (behind the far opponent):
+  - a soft green-tinted accent panel;
+  - the Musicque logo from `client/public/brand/logo-wordmark.svg`, rasterised once to a
+    `CanvasTexture` (about 512×128) on a plane, mounted **at about 2.1 m, above head height**,
+    so it never sits behind a face;
+  - a wall shelf with a few vinyl records (thin cylinders, a nod to music).
+- **Left wall:**
+  - a wide window with 2×2 panes: frame boxes, and pale sky-blue "glass" using a brighter
+    vertex colour, no transparency;
+  - a 2-seat sofa made of boxes and rounded-ish bevel boxes;
+  - a small side table;
+  - a floor plant: a cylinder pot plus 2–3 icosahedron foliage blobs.
+- **Right wall:**
+  - a pantry counter (a box with a darker top);
+  - a coffee machine (boxes plus a cylinder) and 2 mugs;
+  - 2 pendant lamps above the counter (thin cylinder cords plus cone shades, with the shade
+    inner colour slightly brighter);
+  - a tall speaker (box plus 2 circle "drivers"), another music nod.
+- **Floor:** light wood, with plank stripes made by alternating vertex-colour bands, so no
+  texture is needed. Add a large round rug under the table in a muted green-grey, which
+  grounds the table.
+- Keep the props away from the area **directly behind each side opponent's head** (left and
+  right, roughly at their eye height). Nothing busy should sit behind faces. Keep saturation low
+  so the cards and characters pop.
+
+### Rendering rules (performance budget)
+- **All room geometry is merged into ONE mesh** with `BufferGeometryUtils.mergeGeometries` and a
+  `color` attribute: vertex colours, `MeshLambertMaterial({ vertexColors: true, flatShading:
+  true })`. The logo plane is a second mesh.
+- **Draw-call budget:** at most 2 for the room plus logo, and still 1 for chairs and 1 for
+  contact shadows (Task 12.2/12.3).
+- About **6k triangles** or fewer for the room. There are **no image textures** except the small
+  logo canvas.
+- **Fake AO:** darken the vertex colours near the floor/wall seams and under furniture (a
+  gradient band in the bottom 20–30 cm of each wall and the bottom faces of props). This
+  replaces realtime shadows; do not enable shadow maps.
+- `THREE.Fog` uses the theme background colour, starting at about 4 m and ending at about
+  9 m, to soften the far walls. It is cheap and blends the room into the UI.
+- The room is static: set `matrixAutoUpdate = false` after placement, and build it once per
+  mount, memoised.
+- With on-demand rendering (Task 10), the room adds **0 idle cost**.
+
+### Theme
+- Define two palettes in `components/CardTable3D/roomPalette.js`, light and dark, as semantic
+  keys:
+  - `wall`, `wallAccent`, `floorA`, `floorB`, `rug`, `wood`, `fabric`, `metal`, `glass`,
+    `plant`, `potted`, `lampShade`, `lampGlow`, `logoTint`, `fog`;
+  - derive them from the `--sp-*` tokens where possible. Light mode: walls near `--sp-surface-2`,
+    accent wall `--sp-green-soft` over the wall colour. Dark mode: walls near `--sp-surface`
+    (#121212–#1f1f1f), with the green accent glow slightly stronger.
+- The geometry stores a palette **key index per vertex**. On theme change (`ThemeContext`),
+  rewrite the `color` attribute from the active palette and set `needsUpdate`. **Do not
+  rebuild the geometry.** Also update the fog colour and the light colours, then
+  `invalidate()`.
+- Rasterise the logo canvas in `--sp-text` for light and white for dark, and redraw it on theme
+  change.
+
+### Code structure
+- Put the pure builder in `components/CardTable3D/officeRoom.js`:
+  `buildOfficeRoom() → { geometry, paletteKeys }`, built from small helpers such as
+  `box(w, h, d, at, key)`, `cylinder(…)`, `icosphere(…)`.
+- `components/CardTable3D/OfficeRoom.jsx` mounts the mesh, the logo and the theme recolouring.
+  `TableScene` renders it in first-person mode only. The lobby and fallback do not.
+- Unit tests:
+  - the builder stays within the triangle budget;
+  - all vertices are inside the room bounds;
+  - nothing intersects the table or chair footprint, using bounding-box checks;
+  - every palette key used exists in both palettes;
+  - the theme recolour maps keys to the correct colours.
+
+### Verification
+- Take headless screenshots in **light and dark** at the default view, plus a dragged view at
+  yaw −30° and +30°.
+- Rerun `client/scripts/perf-thirteen.mjs`: idle draws per second stay 0; per-frame draws
+  increase by at most 2 versus the flat background; memory increases by at most 5 MB.
+
+Commit: `feat(card-table-3d): stylized low-poly office break room`.

@@ -70,8 +70,8 @@ try {
   const tables = await api('/thirteen/tables')
   const own = tables.find(table => table.seats.some(seat => seat?.userId === userId))
   tableId = own?.tableId || tables.find(table => table.status === 'waiting' && table.seats.every(seat => !seat))?.tableId
-  assert(tableId, 'No empty QA table available')
-  if (!own) { await api(`/thirteen/tables/${tableId}/sit`, { requestKey: randomUUID() }); seatedByProbe = true }
+  if (!tableId) { tableId = (await api('/thirteen/tables', { visibility: 'public', requestKey: randomUUID() })).tableId; seatedByProbe = true }
+  else if (!own) { await api(`/thirteen/tables/${tableId}/sit`, { requestKey: randomUUID() }); seatedByProbe = true }
   chrome = spawn(chromePath, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--enable-precise-memory-info', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' })
   let tabs
   for (let i = 0; i < 80; i++) { try { tabs = await fetch(`http://127.0.0.1:${port}/json`).then(r => r.json()); break } catch { await pause(100) } }
@@ -85,7 +85,7 @@ try {
   await new Promise(resolve => socket.once('open', resolve))
   await call('Page.enable'); await call('Runtime.enable')
   await call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false })
-  await call('Page.addScriptToEvaluateOnNewDocument', { source: instrument + `;localStorage.setItem('musicque_token', ${JSON.stringify(token)});` })
+  await call('Page.addScriptToEvaluateOnNewDocument', { source: instrument + `;localStorage.setItem('theme', ${JSON.stringify(process.env.PERF_THEME || 'light')});localStorage.setItem('musicque_token', ${JSON.stringify(token)});` })
   await call('Page.navigate', { url: pageUrl })
   if (!own || ['waiting', 'finished'].includes(own.status)) {
     await until('document.querySelector(".thirteen-lobby")')
@@ -111,6 +111,14 @@ try {
   const { data } = await call('Page.captureScreenshot', { format: 'png' })
   const screenshot = process.env.PERF_SCREENSHOT || join(tmpdir(), 'thirteen-perf.png')
   await writeFile(screenshot, Buffer.from(data, 'base64'))
+  if (process.env.PERF_VIEWS === '1') {
+    for (const [name, yaw] of [['left', -Math.PI / 6], ['right', Math.PI / 6]]) {
+      await evaluate(`(() => { const state = window.__thirteenSceneState; state.camera.rotation.set(state.defaultPitch, ${yaw}, 0, 'YXZ'); state.camera.updateMatrixWorld(); state.invalidate() })()`)
+      await pause(400)
+      const capture = await call('Page.captureScreenshot', { format: 'png' })
+      await writeFile(screenshot.replace(/\.png$/, `-${name}.png`), Buffer.from(capture.data, 'base64'))
+    }
+  }
   let browserRssMb = null
   try {
     const list = execFileSync('ps', ['-axo', 'pid=,ppid=,rss='], { encoding: 'utf8' }).trim().split('\n').map(row => row.trim().split(/\s+/).map(Number))
@@ -128,7 +136,7 @@ try {
 } finally {
   socket?.close(); chrome?.kill()
   if (chrome) await new Promise(resolve => { if (chrome.exitCode !== null) resolve(); else chrome.once('exit', resolve) })
-  await rm(profile, { recursive: true, force: true })
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   if (seatedByProbe) {
     const table = await api(`/thirteen/tables/${tableId}`).catch(() => null)
     if (table && ['waiting', 'finished'].includes(table.status)) await api(`/thirteen/tables/${tableId}/leave`, { requestKey: randomUUID() })
