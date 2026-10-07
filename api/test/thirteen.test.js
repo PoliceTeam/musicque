@@ -70,7 +70,7 @@ const service = createTableGameService(definition)
 const { applyMove } = require('../services/thirteen/engine')
 const stateFor = (hands) => ({ status: 'playing', seats: hands.map((hand) => ({ hand, passed: false, finishedPlace: null })), currentSeat: 0, leaderSeat: 0, trick: null, isFirstGame: false, moves: [], finishOrder: [] })
 test('public configuration defaults and serialization never leak hands', () => {
-  assert.deepEqual(service.publicConfig(), { maxTables: 20, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
+  assert.deepEqual(service.publicConfig(), { maxTables: 20, readyCountdownMs: 3000, readyTimeoutMs: 30000, idleSeatMs: 300000, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
   const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
   const match = { _id: 'g', state, seats: [{ userId: 'a' }, {}, {}, {}] }
   const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, match)

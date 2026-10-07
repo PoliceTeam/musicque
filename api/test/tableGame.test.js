@@ -32,6 +32,8 @@ const definition = {
 }
 const fixture = (status = 'playing') => ({ _id: 'g1', game: 'fake', tableId: '1', status, version: 0, seats: ['a', 'b', null, null].map((userId, i) => ({ userId, username: userId || `Bot ${i}`, isBot: !userId })), state: { ...definition.setup({ previous: null }), finishOrder: status === 'settling' || status === 'settled' ? [0, 1, 2, 3] : [] }, moves: [], stake: 10, humanCount: 2, turnDeadlineAt: new Date(Date.now() + 20000) })
 const harness = (t, records = [], gameDefinition = definition) => {
+  let now = Date.now()
+  t.mock.method(Date, 'now', () => now)
   const timers = new Map()
   const operations = new Set()
   const debits = []
@@ -39,7 +41,7 @@ const harness = (t, records = [], gameDefinition = definition) => {
   const emitted = []
   let debitFailure = null
   let creditFailures = 0
-  t.mock.method(global, 'setTimeout', (fn, ms) => { const timer = { fn, ms }; timers.set(timer, timer); return timer })
+  t.mock.method(global, 'setTimeout', (fn, ms) => { const timer = { fn, ms, at: now + ms }; timers.set(timer, timer); return timer })
   t.mock.method(global, 'clearTimeout', (timer) => timers.delete(timer))
   const matches = (game, filter) => Object.entries(filter).every(([key, value]) => key === 'moves.requestKey' ? game.moves.some((m) => m.requestKey === value) : game[key] === value)
   const query = (get) => ({ sort() { return this }, lean: async () => clone(get()) })
@@ -92,8 +94,16 @@ const harness = (t, records = [], gameDefinition = definition) => {
     }
     return original.sit(user, resolve(id), key)
   }
-  for (const method of ['getTable', 'leave', 'start', 'move']) service[method] = (first, second, ...rest) => method === 'getTable' ? original[method](resolve(first), second) : original[method](first, resolve(second), ...rest)
-  const fire = async (timer) => { timers.delete(timer); await timer.fn(); await new Promise(setImmediate) }
+  for (const method of ['getTable', 'leave', 'ready', 'unready', 'move']) service[method] = (first, second, ...rest) => method === 'getTable' ? original[method](resolve(first), second) : original[method](first, resolve(second), ...rest)
+  const fire = async (timer) => { timers.delete(timer); now = Math.max(now, timer.at); await timer.fn(); await new Promise(setImmediate) }
+  service.start = async (userId, id, key) => {
+    const room = service.getTable(id)
+    for (const seat of room.seats.filter(Boolean)) await service.ready(seat.userId, id, key + seat.userId)
+    await fire([...timers.values()].find(timer => timer.at === service.getTable(id).startsAt))
+    const response = service.getTable(id, userId)
+    if (response.startError) throw Object.assign(new Error(response.startError), { code: response.startError })
+    return response
+  }
   return { service, io, records, timers, credits, debits, emitted, fire, failDebit: (id) => { debitFailure = id }, failCredit: (n) => { creditFailures = n } }
 }
 test('partial buy-in failure refunds only debited humans and aborts the game', async (t) => {
@@ -263,7 +273,7 @@ test('invalid automatic moves fall back after three failures or abort and refund
       await h.fire([...h.timers.values()].find((timer) => timer.ms === 1000))
       assert.equal(h.records[0].fundingPending, false)
       assert.deepEqual(h.credits.map((credit) => [credit.userId, credit.amount, credit.type]), [['a', 10, 'thirteen_refund'], ['b', 10, 'thirteen_refund']])
-      assert.equal(h.timers.size, 0)
+      assert.ok([...h.timers.values()].every(timer => timer.ms >= 300000))
       assert.equal(h.service.getTable(1).status, 'waiting')
     } else {
       assert.equal(h.records[0].version, 1)
@@ -334,6 +344,12 @@ test('overlapping socket binds keep only the newest authenticated hand room', as
   pending.logout(null); await third
   assert.deepEqual([...socket.rooms], ['socket'])
   assert.ok(h.timers.size > 0)
+  handlers['table_game:watch']({ game: 'fake' })
+  assert.ok(socket.rooms.has('table_game:watch:fake'))
+  handlers['table_game:unwatch']({ game: 'fake' })
+  handlers['table_game:watch']({ game: 'unknown' })
+  assert.ok(!socket.rooms.has('table_game:watch:fake'))
+  assert.ok(!socket.rooms.has('table_game:watch:unknown'))
 })
 
 test('creates coded rooms idempotently and hides private rooms from strangers and viewers', async t => {
@@ -369,4 +385,74 @@ test('concurrent joins cannot seat a user in two rooms', async t => {
   const results = await Promise.allSettled([h.service.sit(player('c'), a.code, 'c-a'), h.service.sit(player('c'), b.code, 'c-b')])
   assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
   assert.equal(h.service.listTables().filter(table => table.seats.some(seat => seat?.userId === 'c')).length, 1)
+})
+
+test('ready countdown needs every human, and sit, leave and unready cancel it', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', 'create')
+  await h.service.sit(player('b'), room.code, 'sit')
+  await h.service.ready('a', room.code, 'a-ready')
+  assert.equal(h.service.getTable(room.code).startsAt, null)
+  await h.service.ready('b', room.code, 'b-ready')
+  const countdown = [...h.timers.values()].find(timer => timer.ms === 3000)
+  assert.ok(countdown)
+  await h.service.ready('b', room.code, 'b-ready')
+  assert.equal(h.service.getTable(room.code).startsAt, countdown.at)
+  await h.service.unready('b', room.code, 'b-unready')
+  assert.equal(h.service.getTable(room.code).startsAt, null)
+  await h.service.ready('b', room.code, 'b-ready')
+  assert.equal(h.service.getTable(room.code).seats[1].ready, false)
+  await countdown.fn()
+  assert.equal(h.records.length, 0)
+  await h.service.ready('b', room.code, 'again')
+  await h.service.sit(player('c'), room.code, 'sit-c')
+  assert.equal(h.service.getTable(room.code).startsAt, null)
+  await h.service.ready('c', room.code, 'c-ready')
+  assert.ok(h.service.getTable(room.code).startsAt)
+  await h.service.leave('c', room.code, 'leave-c')
+  assert.equal(h.service.getTable(room.code).startsAt, null)
+  // Explicitly ready again after a membership change to restart the countdown.
+  await h.service.unready('a', room.code, 'a-unready')
+  await h.service.ready('a', room.code, 'a-again')
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 3000))
+  assert.equal(h.service.getTable(room.code).status, 'playing')
+  assert.equal(h.debits.length, 2)
+})
+test('result window stands up unready humans and starts remaining ready players', async t => {
+  const h = harness(t, [fixture('settling')])
+  await h.service.resume(h.io)
+  assert.equal(h.service.getTable(1).status, 'finished')
+  await h.service.ready('a', 1, 'ready')
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 30000))
+  const room = h.service.getTable(1)
+  assert.deepEqual(room.auto_left, [{ userId: 'b', reason: 'not_ready' }])
+  assert.equal(room.seats.filter(Boolean).length, 1)
+  assert.ok(room.startsAt)
+  assert.ok(h.emitted.some(event => event.room === 'table_game:user:b' && event.data.auto_left?.[0]?.reason === 'not_ready'))
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 3000))
+  assert.equal(h.service.getTable(1).status, 'playing')
+  assert.equal(h.service.getTable(1).pot, 0)
+})
+test('fresh waiting seats expire only after idle timeout and empty result rooms disappear', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'private', 'create')
+  assert.equal(room.readyDeadlineAt, null)
+  assert.equal(room.seats[0].ready, false)
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 300000))
+  assert.throws(() => h.service.getTable(room.code), { code: 'TABLE_NOT_FOUND' })
+  assert.ok(h.emitted.some(event => event.room === 'table_game:user:a' && event.data.auto_left?.[0]?.reason === 'idle'))
+  h.records.push(fixture('settling'))
+  await h.service.resume(h.io)
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 30000))
+  assert.deepEqual(h.service.listTables(), [])
+})
+test('private state and result reach seated users only; public state reaches viewers only', async t => {
+  const game = { ...fixture(), visibility: 'private' }
+  const h = harness(t, [game])
+  await h.service.resume(h.io)
+  for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find(timer => timer.ms <= 20000))
+  const publicEvents = h.emitted.filter(event => ['table_game_state', 'table_game_result'].includes(event.event))
+  assert.ok(publicEvents.some(event => event.event === 'table_game_result'))
+  assert.ok(publicEvents.every(event => Array.isArray(event.room) && event.room.every(room => ['table_game:user:a', 'table_game:user:b'].includes(room))))
+  assert.deepEqual(h.service.listTables('stranger'), [])
 })

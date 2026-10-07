@@ -18,11 +18,11 @@ definition and `api/services/tableGame/definition.js` for the validated contract
    `resumeAll(io)` for every registered definition.
 4. Wrap the page in `TableGameProvider game="<name>"` and call
    `useTableGame('<name>')`. It exposes tables, the selected table, `myView`,
-   configuration, results and the sit/leave/start/move actions. Move payloads are
+   configuration, results and the create/quickJoin/sit/leave/ready/unready/move actions. Move payloads are
    game-specific; Thirteen uses `{ type: 'play', cards }` or `{ type: 'pass' }`.
 
 The router provides `GET /config`, `GET /tables`, `GET /tables/:id` and
-`POST /tables/:id/{sit,leave,start,move}`. Mutations require authentication and a
+`POST /tables`, `POST /quick-join`, `POST /tables/:id/{sit,leave,ready,unready,move}`. Mutations require authentication and a
 `requestKey`; move also requires `move`. Keys must be unique across matches at a
 table for that user. Client keys are stored as `u:<userId>:<key>`; the `timer:`
 prefix is reserved for engine moves and rejected in client requests.
@@ -31,7 +31,7 @@ it twice. An authenticated table snapshot contains only that user's `myView`.
 
 ## Lifecycle and privacy
 
-The engine owns seats, host handoff, bots, turn deadlines, per-table queues, version
+The engine owns seats, readiness, bots, turn deadlines, per-table queues, version
 checks and recovery. Fewer than two humans makes a practice match with zero stake.
 Tables always fill to `seats.max` with bots, even when `seats.min` is smaller.
 Funding is recorded before debits; partial failure refunds charged users and retries
@@ -48,13 +48,13 @@ Keep `publicView` free of private fields and put only the viewer's secrets in
 `table_game_result`, each tagged with the definition name. `table_game:bind { token }`
 joins `table_game:user:<id>` after token resolution, with stale binds ignored.
 The result event also carries the definition's final `publicView` for the client
-to retain its finished scene after the table returns to waiting. Thirteen exposes
+to retain its finished scene after the table enters the finished ready window. Thirteen exposes
 `remainingHands` only when all four places are known; before that its public view
 never contains hands.
 
 Waiting users leave automatically after 60 seconds disconnected; re-binding cancels
 that grace timer. Active matches persist through restart and resume their deadlines.
-Settled matches restore the previous winner but do not repopulate waiting seats.
+Only active matches restore rooms on boot; settled history supplies the previous winner.
 The engine uses in-process queues and timers: run one API process; multiple replicas
 would need shared table ownership and scheduling.
 
@@ -73,3 +73,9 @@ Keep keyboard controls in a visually hidden checkbox list alongside the scene.
 Generic card IDs and mesh-name mapping live in `utils/cards.js`; clock-offset and
 countdown helpers live in `utils/tableGame.js`. Run `api/test/tableGame.test.js` for
 engine lifecycle/security coverage and definition tests for each game's rules.
+
+## Ready lifecycle
+
+Use `ready` / `unready` rather than `start`. All human seats must be ready before the engine starts a countdown. Membership changes cancel it. Config fields `readyCountdownMs`, `readyTimeoutMs`, and `idleSeatMs` default to 3000, 30000, and 300000 ms. Settled rooms enter `finished`, reset readiness and open the ready window; unready seats expire with `auto_left: [{userId, reason}]`. New waiting rooms use individual idle deadlines. The disconnect grace remains 60 seconds.
+
+Public state/result events target `table_game:watch:<game>`; private rooms target only seated user rooms. Subscribe with `table_game:watch` and unsubscribe on page exit. Deep links join by code, including private rooms.

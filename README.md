@@ -92,6 +92,9 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 
 ### Tiến Lên Miền Nam
 
+Tiến Lên Miền Nam: Chơi nhanh, tạo bàn công khai/riêng tư hoặc nhập mã bàn. Mọi người bấm Sẵn sàng để tự bắt đầu sau 3 giây; sau ván có 30 giây sẵn sàng lại. Ghế chưa sẵn sàng ở bàn mới tự rời sau 5 phút. Link `/thirteen?room=K7Q2` mời vào bàn; thu nhỏ vẫn giữ ghế, không thể rời giữa ván.
+
+
 - Vào `/thirteen` để xem bàn; đăng nhập để ngồi và chơi. Chủ bàn bắt đầu ván,
   bot tự lấp các ghế trống để đủ bốn người.
 - Mỗi người cược `10 PC` khi có ít nhất hai người thật. Chơi một mình với bot
@@ -346,6 +349,9 @@ toàn bộ pipeline bằng Docker Compose.
 | `CHOHAN_MIN_BET` | Cược tối thiểu | `5` |
 | `CHOHAN_MAX_BET` | Cược tối đa | `15` |
 | `THIRTEEN_MAX_TABLES` | Số bàn Tiến Lên Miền Nam tối đa | `20` |
+| `THIRTEEN_READY_COUNTDOWN_MS` | Đếm ngược khi tất cả đã sẵn sàng | `3000` |
+| `THIRTEEN_READY_TIMEOUT_MS` | Thời gian sẵn sàng sau ván; quá hạn tự rời ghế | `30000` |
+| `THIRTEEN_IDLE_SEAT_MS` | Thời gian giữ ghế chưa sẵn sàng ở bàn mới | `300000` |
 | `THIRTEEN_STAKE_PC` | PC cược mỗi người khi có ít nhất hai người thật | `10` |
 | `THIRTEEN_TURN_MS` | Thời gian một lượt | `20000` |
 | `THIRTEEN_BOT_DELAY_MS` | Thời gian bot suy nghĩ | `1200` |
