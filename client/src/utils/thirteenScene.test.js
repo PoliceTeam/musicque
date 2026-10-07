@@ -96,3 +96,9 @@ it('presents single, straight and four-pair tricks upright, layered and clear of
     }
   }
 })
+
+it('does not render stale hands or tricks during the next ready check', () => {
+  const snapshot = buildThirteenSnapshot({...options, table:{...table,status:'waiting',remainingHands:[['3S'],['4S'],['5S'],['6S']],trick:{bySeat:1,cards:['4S']}}})
+  expect(snapshot.cards).toEqual([])
+  expect(snapshot.finished).toBe(false)
+})

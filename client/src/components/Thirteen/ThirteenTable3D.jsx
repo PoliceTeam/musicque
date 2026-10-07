@@ -5,6 +5,7 @@ import { useAnimationActivity } from '../CardTable3D/activity'
 import { useDeck } from '../CardTable3D/useDeck'
 import Card3D from '../CardTable3D/Card3D'
 import TableScene from '../CardTable3D/TableScene'
+import { EmptySeatMarker } from '../CardTable3D/SeatMarker'
 import OpponentAvatar from '../CardTable3D/OpponentAvatar'
 import { useCardTransitions } from '../CardTable3D/useCardTransitions'
 import { MOTION } from '../CardTable3D/anim'
@@ -80,7 +81,8 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
   const renderCard = (card) => <Card3D key={`${frame.matchId}:${card.id}`} deck={deck} cardId={card.cardId} target={card} from={card.from} delay={card.delay} duration={card.duration} height={card.height} reducedMotion={reducedMotion} dim={card.dim} spaces={spaces} poseStore={poseStore} poseId={card.id} selected={card.zone === 'hand' && card.seat === anchor && selectedCards.includes(card.cardId)} onClick={!preview && table.status === 'playing' && card.zone === 'hand' && card.seat === anchor && card.faceUp ? () => toggleCard(card.cardId) : undefined} />
   return <>
     {firstPerson && <CameraHand spaces={spaces} lowered={handLowered} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === 'camera').map(renderCard)}</CameraHand>}
-    {firstPerson && table.seats.map((seat, i) => seat && i !== anchor && <OpponentAvatar key={`${table.matchId}:${i}`} seat={seat} seatIndex={i} position={characterPositions[i]} clipHeight={surfaceY - 0.01} active={table.currentSeat === i} playedKey={frame.trick?.bySeat === i ? frame.trickKey : null} turnDeadlineAt={table.turnDeadlineAt} serverNow={table.serverNow} turnMs={turnMs} spaces={spaces} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === `seat:${i}`).map(renderCard)}</OpponentAvatar>)}
+    {firstPerson && table.seats.map((seat, i) => seat && i !== anchor && <OpponentAvatar key={`${table.matchId}:${i}`} seat={seat} seatIndex={i} phase={table.status} position={characterPositions[i]} clipHeight={surfaceY - 0.01} active={table.currentSeat === i} playedKey={frame.trick?.bySeat === i ? frame.trickKey : null} turnDeadlineAt={table.turnDeadlineAt} serverNow={table.serverNow} turnMs={turnMs} spaces={spaces} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === `seat:${i}`).map(renderCard)}</OpponentAvatar>)}
+    {firstPerson && table.seats.map((seat, i) => !seat && <EmptySeatMarker key={`empty:${i}`} position={[characterPositions[i][0], surfaceY + 0.2, characterPositions[i][2]]} />)}
     {frame.cards.filter(card => !firstPerson || card.space === 'world' || !card.space).map(renderCard)}
     <SceneEffects frame={frame} reducedMotion={reducedMotion} deck={deck} surfaceY={surfaceY} />
   </>

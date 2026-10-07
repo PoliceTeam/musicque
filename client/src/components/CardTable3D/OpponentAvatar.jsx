@@ -8,7 +8,7 @@ import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 import { CHAIR_HEIGHT } from './chair'
 const AVATAR_SCALE = 0.85
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, children }) {
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, phase: roomPhase = 'playing', children }) {
   const { scene } = useTableGLTF('/models/chibi.glb?v=1')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
@@ -77,12 +77,12 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         node.boundingSphere.radius *= 2
       }
     })
-    return { model, rig, hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
+    return { model, rig, waiting: poseTargets(rig, poses.seated, poses.waiting, poses.idle), hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot])
   const activity = useAnimationActivity()
-  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed])
+  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed, roomPhase])
   const phase = useMemo(() => ({}), [])
-  const initialized = useRef(false)
+  const initialized = useRef(false), lastPhase = useRef(roomPhase)
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
@@ -103,7 +103,10 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     if (seat.passed !== lastPassed.current) { passElapsed.current = seat.passed ? 0 : Infinity; lastPassed.current = seat.passed }
     passElapsed.current += delta * 1000
     elapsed.current += delta * 1000
-    const moving = !reducedMotion && (elapsed.current < 750 || interrupted.current)
+    const waiting = roomPhase !== 'playing'
+    const phaseChanged = lastPhase.current !== roomPhase
+    lastPhase.current = roomPhase
+    const moving = !waiting && !reducedMotion && (elapsed.current < 750 || interrupted.current)
     if (moving) {
       playPosePhase(elapsed.current, phase)
       const from = interrupted.current?.from || (phase.reaching ? avatar.hold : elapsed.current < 150 ? avatar.hold : avatar.reach)
@@ -113,8 +116,8 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       const eased = progress * progress * (3 - 2 * progress)
       for (const [name, target] of to) avatar.rig.get(name).bone.quaternion.slerpQuaternions(from.get(name), target, eased)
       if (interrupted.current && progress === 1) { interrupted.current = null; elapsed.current = Infinity }
-    } else if (initialized.current && !wasMoving.current && passElapsed.current >= 800) { activity.stop(); return }
-    else blendPose(avatar.rig, avatar.hold, 1)
+    } else if (initialized.current && !wasMoving.current && !phaseChanged && passElapsed.current >= 800) { activity.stop(); return }
+    else blendPose(avatar.rig, waiting ? avatar.waiting : avatar.hold, 1)
     wasMoving.current = Boolean(moving)
     initialized.current = true
     head.updateWorldMatrix(true, false)
@@ -126,6 +129,6 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   return <>
     <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
     <primitive object={handAnchor}>{children}</primitive>
-    <group ref={headAnchor}><SeatMarker seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
+    <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
   </>
 }

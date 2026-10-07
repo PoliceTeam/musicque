@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Html } from '@react-three/drei'
 const RANKS = ['Nhất', 'Nhì', 'Ba', 'Bét']
-export default function SeatMarker({ seat, position, active, turnDeadlineAt, serverNow, turnMs = 20000 }) {
+export default function SeatMarker({ seat, position, active, turnDeadlineAt, serverNow, turnMs = 20000, phase = 'playing' }) {
   const tag = useRef(), timer = useRef()
   const [count, setCount] = useState(seat.handCount ?? 0)
   const deadlineMs = useMemo(() => new Date(turnDeadlineAt).getTime(), [turnDeadlineAt])
@@ -21,9 +21,14 @@ export default function SeatMarker({ seat, position, active, turnDeadlineAt, ser
     const interval = window.setInterval(update, 1000)
     return () => window.clearInterval(interval)
   }, [active, turnDeadlineAt, deadlineMs, serverNow, turnMs])
+  const showReady = !seat.isBot && ['waiting', 'finished'].includes(phase)
   return <Html position={position} center zIndexRange={[20, 0]}><div ref={tag} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''}`}>
-    <strong>{seat.username}{seat.isBot && <em>BOT</em>}</strong><span>{count} lá <b ref={timer} /></span>
+    <strong>{seat.username}{seat.isBot && <em>BOT</em>}</strong>{showReady ? <span className={`card-table-ready ${seat.ready ? 'is-ready' : ''}`}>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span> : phase === 'playing' && <span>{count} lá <b ref={timer} /></span>}
     {seat.passed && <b className='card-table-pass'>Bỏ lượt</b>}
     {seat.finishedPlace && <b className='card-table-rank'>{RANKS[seat.finishedPlace - 1]}</b>}
   </div></Html>
+}
+
+export function EmptySeatMarker({ position }) {
+  return <Html position={position} center zIndexRange={[20,0]}><span className='card-table-empty-seat'>Ghế trống</span></Html>
 }

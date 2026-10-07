@@ -6,14 +6,15 @@ export const isBombTrick = (previous, next) => {
   return Boolean(old && combo && ['quad', 'pairSequence'].includes(combo.type) && canBeat(combo, old))
 }
 export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }) => {
-  const own = table.remainingHands?.[anchor] ?? myHand
+  const waiting = table.status === 'waiting'
+  const own = waiting ? [] : table.remainingHands?.[anchor] ?? myHand
   // Public and private socket events arrive separately; preserve the previous frame meanwhile.
-  if (!preview && table.matchId && own.length !== table.seats[anchor]?.handCount) return null
+  if (!waiting && !preview && table.matchId && own.length !== table.seats[anchor]?.handCount) return null
   const cards = []
   table.seats.forEach((seat, i) => {
     if (!seat) return
     const hand = table.remainingHands?.[i] ?? (i === anchor ? own : null)
-    const count = hand?.length ?? seat.handCount ?? 0
+    const count = waiting ? 0 : hand?.length ?? seat.handCount ?? 0
     const fan = fanLayout(count, { baseOrder: i === anchor ? 1000 : 500 })
     for (let j = 0; j < count; j++) {
       const held = firstPerson && !table.remainingHands
@@ -26,7 +27,7 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
       cards.push({ id: hand ? `card:${hand[j]}` : `opaque:${i}:${j}`, cardId: hand?.[j] || 'AS', zone: 'hand', seat: i, faceUp: Boolean(hand), position, space: camera ? 'camera' : held ? `seat:${i}` : 'world', tilt, rotation: fan[j].rotation, order: fan[j].order, dealIndex: j * table.seats.length + ((i - anchor + table.seats.length) % table.seats.length) })
     }
   })
-  const combo = table.trick?.cards || []
+  const combo = waiting ? [] : table.trick?.cards || []
   const scale = 1.4, tilt = 35 * Math.PI / 180
   const stand = new Vector3(0, surfaceY + 0.02 + 0.089 * scale / 2 * Math.sin(tilt), 0.30)
   const plane = new Euler(-Math.PI / 2 + tilt, 0, 0)
@@ -37,5 +38,5 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
     cards.push({ id: `card:${card}`, cardId: card, zone: 'trick', seat: table.trick.bySeat, faceUp: true, space: 'world', position, tilt, rotation: pose.rotation, scale, order: pose.order })
   })
   const winner = table.seats.map((seat, i) => ({ ...seat, seat: i })).filter(seat => seat.userId && seat.finishedPlace).sort((a, b) => a.finishedPlace - b.finishedPlace)[0]
-  return { matchId: table.matchId, cards, anchor, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, surfaceY, finished: Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
+  return { matchId: table.matchId, cards, anchor, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, surfaceY, finished: !waiting && Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
 }
