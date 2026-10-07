@@ -273,8 +273,10 @@ test('invalid automatic moves fall back after three failures or abort and refund
       await h.fire([...h.timers.values()].find((timer) => timer.ms === 1000))
       assert.equal(h.records[0].fundingPending, false)
       assert.deepEqual(h.credits.map((credit) => [credit.userId, credit.amount, credit.type]), [['a', 10, 'thirteen_refund'], ['b', 10, 'thirteen_refund']])
-      assert.ok([...h.timers.values()].every(timer => timer.ms >= 300000))
+      // Only the idle-seat timer remains; no fast retry loops.
+      assert.ok([...h.timers.values()].every(timer => timer.ms >= 290000))
       assert.equal(h.service.getTable(1).status, 'waiting')
+      assert.ok(h.service.getTable(1).seats.filter(Boolean).every(seat => !seat.ready))
     } else {
       assert.equal(h.records[0].version, 1)
       assert.deepEqual(h.records[0].moves[0].move, mode === 'timeout' ? { card: '5S' } : { type: 'pass' })
@@ -410,9 +412,10 @@ test('ready countdown needs every human, and sit, leave and unready cancel it', 
   await h.service.ready('c', room.code, 'c-ready')
   assert.ok(h.service.getTable(room.code).startsAt)
   await h.service.leave('c', room.code, 'leave-c')
-  assert.equal(h.service.getTable(room.code).startsAt, null)
-  // Explicitly ready again after a membership change to restart the countdown.
+  // The remaining humans are still ready, so the countdown re-arms on its own.
+  assert.ok(h.service.getTable(room.code).startsAt)
   await h.service.unready('a', room.code, 'a-unready')
+  assert.equal(h.service.getTable(room.code).startsAt, null)
   await h.service.ready('a', room.code, 'a-again')
   await h.fire([...h.timers.values()].find(timer => timer.ms === 3000))
   assert.equal(h.service.getTable(room.code).status, 'playing')
