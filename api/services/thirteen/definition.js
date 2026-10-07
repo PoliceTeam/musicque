@@ -1,5 +1,5 @@
 const { deal } = require('./cards')
-const { classify } = require('./rules')
+const { classify, canBeat } = require('./rules')
 const { applyMove, mustIncludeFor } = require('./engine')
 const { chooseMove } = require('./bot')
 const { splitPot } = require('./payout')
@@ -28,7 +28,9 @@ module.exports = {
     const cards = move.type === 'play' ? move.cards : null
     try {
       const next = applyMove(state, seat, cards)
-      return { ...next, moves: [...state.moves, { seat, cards: cards || [] }] }
+      const combo = classify(cards), previousCombo = classify(state.trick?.cards || [])
+      const isBomb = Boolean(previousCombo && combo && ['quad', 'pairSequence'].includes(combo.type) && canBeat(combo, previousCombo))
+      return { ...next, moves: [...state.moves, { seat, cards: cards || [], isBomb }] }
     } catch (error) { throw new GameRuleError(error.message) }
   },
   timeoutMove: (state, seat) => state.trick ? { type: 'pass' } : { type: 'play', cards: [state.seats[seat].hand[0]] },
@@ -40,7 +42,8 @@ module.exports = {
   publicView: (state) => ({
     seats: state.seats.map((seat) => ({ handCount: seat.hand.length, finishedPlace: seat.finishedPlace, passed: seat.passed })),
     leaderSeat: state.leaderSeat,
-    trick: state.trick ? { cards: [...state.trick.cards], type: state.trick.type, bySeat: state.trick.bySeat } : null,
+    trick: state.trick ? { cards: [...state.trick.cards], type: state.trick.type, bySeat: state.trick.bySeat, isBomb: Boolean(state.moves.findLast(move => move.cards.length)?.isBomb) } : null,
+    lastMove: state.moves.length ? { ...state.moves.at(-1), sequence: state.moves.length } : null,
     mustInclude: mustIncludeFor(state) || null,
     ...(state.finishOrder.length === 4 ? { remainingHands: state.seats.map((seat) => [...seat.hand]) } : {}),
   }),

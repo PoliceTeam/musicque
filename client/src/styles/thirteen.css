@@ -65,3 +65,34 @@ button.thirteen-card { cursor: pointer; }
 .th-game [role='timer'].is-urgent { animation: thirteen-timer-pulse 700ms ease-in-out infinite alternate; }
 @keyframes thirteen-timer-pulse { to { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .th-game [role='timer'].is-urgent { animation: none; } }
+
+.thirteen-header h1 { margin: 0; font-size: 26px; letter-spacing: -0.8px; }
+.thirteen-header p { margin: 4px 0; color: var(--sp-text-muted); font-size: 13px; }
+.thirteen-header > div { margin-right: auto; }
+.thirteen-hero, .thirteen-hero form, .thirteen-resume { display: flex; align-items: center; gap: 12px; }
+.thirteen-hero { margin-top: 28px; }
+.thirteen-hero form { margin-left: auto; }
+.thirteen-hero input { width: 160px; text-transform: uppercase; }
+.thirteen-resume { position: sticky; top: 12px; z-index: 10; padding: 12px 16px; margin-bottom: 24px; justify-content: space-between; border-color: var(--sp-green); }
+.thirteen-chip { padding: 5px 10px; border-radius: 20px; background: var(--sp-surface-2); font-size: 12px; white-space: nowrap; }
+.thirteen-lobby .thirteen-seats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+.thirteen-seats li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.thirteen-avatar { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--sp-green-soft); font-size: 11px; }
+.th-game-header { inset: 12px 16px auto; height: 52px; padding: 0 12px; flex-wrap: nowrap; }
+.th-game-header h2 { margin: 0; font-size: 15px; letter-spacing: -0.3px; white-space: nowrap; }
+.th-game-header .thirteen-actions { flex-wrap: nowrap; }
+.th-game-header .th-icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.th-game .thirteen-actions span { max-width: none; }
+.thirteen-ready-seats { display: grid; grid-template-columns: repeat(2, minmax(160px, 1fr)); gap: 8px 20px; list-style: none; padding: 0; margin: 0 0 12px; }
+.thirteen-ready-seats li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.thirteen-ready-seats span { color: var(--sp-text-muted); }
+.thirteen-results { list-style: none; padding: 0; margin: 0 0 16px; }
+.thirteen-results li { display: flex; justify-content: space-between; gap: 40px; padding: 4px 0; font-size: 14px; }
+.thirteen-hint { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 6px 12px; border-radius: 12px; background: var(--sp-surface); font-size: 12px; }
+.thirteen-timer { width: 40px; height: 40px; border: 3px solid var(--sp-green); border-radius: 50%; display: inline-grid; place-items: center; font-size: 13px !important; }
+@media (max-width: 700px) { .th-game-header h2 { display: none; } .thirteen-hero { flex-wrap: wrap; } .thirteen-hero form { margin-left: 0; } }
+.thirteen-last-play { position: absolute; bottom: calc(100% + 42px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; width: max-content; max-width: calc(100vw - 32px); padding: 7px 10px; border: 1px solid var(--sp-border); border-radius: 16px; background: color-mix(in srgb, var(--sp-surface) 94%, transparent); font-size: 12px; }
+.thirteen-mini-card { display: inline-grid; place-items: center; min-width: 24px; height: 32px; padding: 0 3px; border: 1px solid var(--sp-border); border-radius: 4px; color: var(--sp-text); background: var(--sp-surface-2); font-weight: 700; }
+.thirteen-mini-card.is-red, .thirteen-bomb-badge { color: var(--sp-danger, #e5484d); }
+.thirteen-bomb-badge { padding: 3px 6px; border-radius: 8px; background: var(--sp-surface-2); }
+.thirteen-pass-notice { margin-left: 5px; color: var(--sp-text-muted); }

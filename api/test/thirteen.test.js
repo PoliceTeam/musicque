@@ -168,3 +168,18 @@ test('definition timeout leads with lowest single and passes when responding', (
   assert.deepEqual(definition.timeoutMove(next, 1), { type: 'pass' })
   assert.deepEqual(state.seats[0].hand, ['3S', '3H'])
 })
+
+test('public last move identifies bombs and passes without exposing a hand', () => {
+  const definition = require('../services/thirteen/definition')
+  let state = stateFor([['2S', '8S'], ['3S', '3C', '3D', '3H', '9S'], ['4S', '10S'], ['5S', 'JS']])
+  state = definition.applyMove(state, 0, { type: 'play', cards: ['2S'] })
+  assert.equal(definition.publicView(state).trick.isBomb, false)
+  state = definition.applyMove(state, 1, { type: 'play', cards: ['3S', '3C', '3D', '3H'] })
+  const view = definition.publicView(state)
+  assert.equal(view.trick.isBomb, true)
+  assert.deepEqual(view.lastMove, { seat: 1, cards: ['3S', '3C', '3D', '3H'], isBomb: true, sequence: 2 })
+  state = definition.applyMove(state, 2, { type: 'pass' })
+  assert.equal(definition.publicView(state).trick.isBomb, true)
+  assert.deepEqual(definition.publicView(state).lastMove, { seat: 2, cards: [], isBomb: false, sequence: 3 })
+  assert.ok(!JSON.stringify(view).includes('9S'))
+})

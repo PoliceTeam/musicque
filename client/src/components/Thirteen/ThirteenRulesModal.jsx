@@ -8,6 +8,7 @@ export default function ThirteenRulesModal({ open, onClose }) {
     <p>Bỏ lượt thì chờ hết vòng. Người đánh cuối dẫn vòng mới; nếu đã hết bài thì người còn bài kế tiếp dẫn. Ván đầu người giữ 3♠ đánh trước và phải đánh 3♠.</p>
     <p>Hết giờ: người dẫn đánh lá nhỏ nhất; người đáp bỏ lượt. Ghế trống có bot. Mất kết nối vẫn giữ ghế và tiếp tục bằng đồng hồ, không hoàn cược.</p>
     <p>Một người chơi là luyện tập miễn phí. Từ hai người, cược cố định và chia quỹ theo thứ hạng người thật: 2 người 100/0%; 3 người 70/30/0%; 4 người 60/30/10/0%. Bot không nhận PC. Phần lẻ về người đứng đầu.</p>
+    <p>Mọi người bấm Sẵn sàng để bắt đầu sau 3 giây. Sau mỗi ván có 30 giây sẵn sàng lại, nếu không bạn sẽ tự rời ghế. Bàn mới giữ ghế chưa sẵn sàng tối đa 5 phút. Thu nhỏ vẫn giữ ghế; không thể rời khi đang chơi.</p>
     <p>Không áp dụng tới trắng, thối heo, cóng hay phạt PC khi chặt.</p>
   </Modal>
 }
