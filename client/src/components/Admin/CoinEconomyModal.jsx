@@ -170,6 +170,8 @@ const CoinEconomyModal = ({ open, onClose }) => {
                 </span>
               </div>
               <div className='coin-economy__flow-grid'>
+                <Metric icon={<CrownOutlined />} label='Cược Tiến Lên' value={stats.totals.thirteenWagered} tone='wager' />
+                <Metric icon={<ArrowUpOutlined />} label='Thưởng Tiến Lên' value={stats.totals.thirteenPayout} tone='payout' />
                 <Metric
                   icon={<RocketOutlined />}
                   label='Đã dùng bid nhạc'

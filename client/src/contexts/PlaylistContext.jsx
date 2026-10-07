@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import {
@@ -75,7 +76,7 @@ export const PlaylistProvider = ({ children }) => {
     [lastReactionBySongId],
   )
 
-  const fetchSkipState = async (songId) => {
+  const fetchSkipState = useCallback(async (songId) => {
     if (!songId) {
       setSkipState({
         songId: null,
@@ -94,9 +95,9 @@ export const PlaylistProvider = ({ children }) => {
     } catch (error) {
       console.error('Không lấy được tiến độ PC next:', error)
     }
-  }
+  }, [])
 
-  const fetchCurrentSong = async () => {
+  const fetchCurrentSong = useCallback(async () => {
     try {
       const response = await getCurrentSong()
       // getCurrentSong có thể không trả updatedPlaylist (phiên rỗng, không có bài
@@ -115,11 +116,44 @@ export const PlaylistProvider = ({ children }) => {
       }
       console.error('Error fetching current song:', error)
     }
-  }
+  }, [fetchSkipState, mergeUserVotesFromPlaylist])
 
   useEffect(() => {
     fetchCurrentSong()
-  }, [])
+  }, [fetchCurrentSong])
+
+  const fetchPlaylist = useCallback(async (sessionId) => {
+    try {
+      const response = await getSessionPlaylist(sessionId)
+      setPlaylist(response.data.playlist)
+      mergeUserVotesFromPlaylist(response.data.playlist)
+    } catch (error) {
+      console.error('Error fetching playlist:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [mergeUserVotesFromPlaylist])
+
+  const fetchCurrentSession = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await getCurrentSession()
+      setCurrentSession(response.data.session)
+      if (response.data.session) {
+        fetchPlaylist(response.data.session._id)
+      } else {
+        setPlaylist([])
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Error fetching current session:', error)
+      setLoading(false)
+    }
+  }, [fetchPlaylist])
+
+  useEffect(() => { fetchCurrentSession() }, [fetchCurrentSession])
+
+  const refreshPlaylist = useCallback(() => currentSession && fetchPlaylist(currentSession._id), [currentSession, fetchPlaylist])
 
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
@@ -128,7 +162,6 @@ export const PlaylistProvider = ({ children }) => {
     })
     setSocket(newSocket)
 
-    fetchCurrentSession()
 
     return () => {
       newSocket.disconnect()
@@ -186,36 +219,7 @@ export const PlaylistProvider = ({ children }) => {
       socket.off('song_skip_refunded')
       socket.off('song_playback_advanced')
     }
-  }, [socket, mergeUserVotesFromPlaylist, refreshBalance])
-
-  const fetchCurrentSession = async () => {
-    try {
-      setLoading(true)
-      const response = await getCurrentSession()
-      setCurrentSession(response.data.session)
-      if (response.data.session) {
-        fetchPlaylist(response.data.session._id)
-      } else {
-        setPlaylist([])
-        setLoading(false)
-      }
-    } catch (error) {
-      console.error('Error fetching current session:', error)
-      setLoading(false)
-    }
-  }
-
-  const fetchPlaylist = async (sessionId) => {
-    try {
-      const response = await getSessionPlaylist(sessionId)
-      setPlaylist(response.data.playlist)
-      mergeUserVotesFromPlaylist(response.data.playlist)
-    } catch (error) {
-      console.error('Error fetching playlist:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [socket, mergeUserVotesFromPlaylist, refreshBalance, fetchCurrentSong, fetchSkipState])
 
   const addSong = async (youtubeUrl, messageText) => {
     if (!currentSession) {
@@ -322,7 +326,7 @@ export const PlaylistProvider = ({ children }) => {
         voteSong,
         startSession,
         endSession,
-        refreshPlaylist: () => currentSession && fetchPlaylist(currentSession._id),
+        refreshPlaylist,
         hasActiveSession: !!currentSession,
         playSong,
         playing,

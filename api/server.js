@@ -94,6 +94,10 @@ mongoose
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`)
 
+      require('./services/thirteen.service').resume(io).catch((error) => {
+        console.error('[Thirteen] Resume failed:', error.message)
+      })
+
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()
 

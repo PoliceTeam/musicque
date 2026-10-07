@@ -18,6 +18,8 @@ const stats = {
     issued: 120,
     songBidSpent: 30,
     songBidConsumed: 30,
+    thirteenWagered: 20,
+    thirteenPayout: 20,
     chohanWagered: 50,
     chohanPayout: 140,
     refunded: 0,
@@ -59,6 +61,8 @@ describe('CoinEconomyModal', () => {
     expect(await screen.findByText('Dòng chảy Polite Coins')).toBeInTheDocument()
     expect(screen.getByText('Đang lưu hành')).toBeInTheDocument()
     expect(screen.getByText('Nhà cái chi ròng')).toBeInTheDocument()
+    expect(screen.getByText('Cược Tiến Lên')).toBeInTheDocument()
+    expect(screen.getByText('Thưởng Tiến Lên')).toBeInTheDocument()
     expect(screen.getByText('An')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('7 ngày'))

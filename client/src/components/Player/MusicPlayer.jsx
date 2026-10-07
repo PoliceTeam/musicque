@@ -131,7 +131,7 @@ const MusicPlayer = () => {
   );
 
   // Fetch current song
-  const fetchCurrentSong = async () => {
+  const fetchCurrentSong = useCallback(async () => {
     try {
       const response = await getCurrentSong();
       setCurrentSong(response.data.currentSong);
@@ -141,14 +141,14 @@ const MusicPlayer = () => {
       console.error('Error fetching current song:', error);
       return null;
     }
-  };
+  }, [refreshPlaylist]);
 
   useEffect(() => {
     fetchCurrentSong();
     return () => {
       ttsRef.current?.cancel(false);
     };
-  }, []);
+  }, [fetchCurrentSong]);
 
   // ======== VieNeu-TTS (AI voice) ========
   const playVieneuTTS = useCallback(
@@ -361,7 +361,6 @@ const MusicPlayer = () => {
       addedBy: currentSong?.addedBy?.username,
       speaking,
       wasMessageSpoken: wasMessageSpokenRef.current,
-      playing,
     });
 
     if (!currentSong) {
@@ -559,7 +558,7 @@ const MusicPlayer = () => {
       refreshPlaylist();
       wasPlayingRef.current = false;
     }
-  }, [currentSong, handlePlay]);
+  }, [currentSong, handlePlay, refreshPlaylist]);
 
   const handleRefresh = async () => {
     try {

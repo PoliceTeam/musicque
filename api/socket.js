@@ -205,6 +205,16 @@ const initSocket = (server) => {
       }
     });
 
+    socket.on('thirteen:bind', async (data = {}) => {
+      try {
+        for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
+        const user = await resolveUserFromToken(data.token)
+        if (user) socket.join(`thirteen:user:${user._id}`)
+      } catch (error) {
+        console.error('[Thirteen] Bind failed:', error.message)
+      }
+    })
+
     socket.on('redlight:bind', async (data = {}) => {
       try {
         const user = await resolveUserFromToken(data.token)
