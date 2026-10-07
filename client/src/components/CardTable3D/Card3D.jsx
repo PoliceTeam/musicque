@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { cardQuaternion, tween } from './anim'
-import { Vector3 } from 'three'
+import { liftCardPose, tween } from './anim'
 import { applyWorldPose, readWorldPose, worldPose } from './cardSpaces'
 export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
   const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
@@ -11,21 +10,22 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     const model = deck[cardId].clone(true)
     model.traverse(mesh => {
       if (!mesh.isMesh) return
-      mesh.onBeforeRender = (_renderer, _scene, _camera, _geometry, material) => { material.polygonOffset = true; material.polygonOffsetFactor = -(order.current % 100); material.polygonOffsetUnits = -(order.current % 100) }
+      mesh.onBeforeRender = (_renderer, _scene, _camera, _geometry, material) => { material.polygonOffset = true; material.polygonOffsetFactor = -order.current; material.polygonOffsetUnits = -order.current }
     })
     return model
   }, [deck, cardId])
   useEffect(() => () => { if (hovered) document.body.style.cursor = '' }, [hovered])
   useLayoutEffect(() => {
-    const destination = { ...target, position: [...target.position] }
-    const lift = new Vector3(0, selected ? 0.03 : hovered ? 0.01 : 0, 0).applyQuaternion(cardQuaternion(target))
-    destination.position = destination.position.map((value, i) => value + lift.getComponent(i))
+    const destination = liftCardPose(target, selected ? 0.03 : hovered ? 0.01 : 0)
+    // Hover/selection retargets stay in the hand plane, without a flight arc.
+    const localRetarget = motion.current?.target === target
+    const motionHeight = reducedMotion || localRetarget ? 0 : height
     order.current = target.order ?? 0
     clone.traverse(mesh => { if (mesh.isMesh) mesh.renderOrder = order.current })
     const to = worldPose(destination, spaces)
-    const flip = Boolean(from && from.faceUp !== target.faceUp)
+    const flip = Boolean(!localRetarget && from && from.faceUp !== target.faceUp)
     const initial = motion.current ? readWorldPose(ref.current) : poseStore?.current.get(from?.id || poseId) || worldPose(from || destination, spaces)
-    motion.current = { sample: tween(initial, to, { duration: reducedMotion ? 0 : duration, height: reducedMotion ? 0 : height, flip }), elapsed: reducedMotion || motion.current ? 0 : -delay, destination, to, duration: reducedMotion ? 0 : duration, flip, pending: !reducedMotion && !motion.current && delay > 0 }
+    motion.current = { sample: tween(initial, to, { duration: reducedMotion ? 0 : duration, height: motionHeight, flip }), elapsed: reducedMotion || motion.current ? 0 : -delay, destination, to, target, height: motionHeight, duration: reducedMotion ? 0 : duration, flip, pending: !reducedMotion && !motion.current && delay > 0 }
     applyWorldPose(ref.current, motion.current.sample(0))
   }, [target, from, delay, duration, height, selected, hovered, reducedMotion, spaces, poseStore, poseId, clone])
   useFrame((_, delta) => {
@@ -37,7 +37,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     if (animation.elapsed < 0 && from?.space?.startsWith('seat:')) pose = worldPose(from, spaces)
     else if (animation.elapsed >= 0 && animation.pending) {
       animation.pending = false
-      animation.sample = tween(readWorldPose(ref.current), destination, { duration: animation.duration, height, flip: animation.flip })
+      animation.sample = tween(readWorldPose(ref.current), destination, { duration: animation.duration, height: animation.height, flip: animation.flip })
       animation.to = destination
       animation.elapsed = 0
       pose = animation.sample(0)

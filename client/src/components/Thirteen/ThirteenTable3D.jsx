@@ -33,10 +33,9 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
     }
   }, [frame.trick, frame.trickKey])
   useEffect(() => { elapsed.current = 0; bomb.current = false }, [frame.matchId, frame.finished])
-  useFrame(({ camera }, delta) => {
+  useFrame((_, delta) => {
     elapsed.current += delta * 1000
     const time = elapsed.current
-    if (bomb.current && !reducedMotion && time < MOTION.bomb) camera.position.x += Math.sin(time * 0.09) * 0.004 * (1 - time / MOTION.bomb)
     if (shuffle.current) {
       shuffle.current.visible = frame.deal && !reducedMotion && time < MOTION.shuffle
       shuffle.current.rotation.z = Math.sin(time / 35) * 0.08

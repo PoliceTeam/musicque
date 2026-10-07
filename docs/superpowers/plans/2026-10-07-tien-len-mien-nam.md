@@ -511,8 +511,7 @@ Unchanged from the previous version of this section:
   - looking slightly down at the table centre;
   - FOV about 55° vertical.
 - **The camera is completely fixed.** No OrbitControls, no mouse head-look, no drag, no zoom and no
-  scroll-to-move. Only scripted effects (the bomb shake) may move it briefly, and it always
-  returns to the exact same pose.
+  scroll-to-move. Scripted effects also keep the camera fixed; bomb feedback uses the red flash ring.
 - The across seat is in the middle of the view. The left and right seats are at about ±70°, so
   they appear partially at the screen edges, as at a real table. Tune the FOV and seat angles so
   each opponent's head, hand fan and play area are at least partly visible at 16:9.
@@ -627,8 +626,7 @@ snaps cards to their targets instantly):
    all trick cards sweep into a face-down discard pile at the side.
 6. **Pass:** a short "Bỏ lượt" chip pops at that seat (scale-in, fade-out ~0.8s), and the seat
    dims until the trick resets.
-7. **Chặt (bomb):** a stronger landing with a brief camera shake (~250ms, small amplitude) and a
-   red flash ring on the trick.
+7. **Chặt (bomb):** a stronger landing with a red flash ring on the trick; the camera stays fixed.
 8. **Turn change:** the timer ring moves to the new seat. In the last 5s of my turn the ring pulses.
 9. **Finish:**
    - A player who empties their hand gets a rank badge ("Nhất/Nhì/Ba/Bét") that pops at the seat.
