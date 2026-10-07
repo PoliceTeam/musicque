@@ -5,6 +5,8 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig } from './poses'
 import SeatMarker from './SeatMarker'
+const AVATAR_SCALE = 0.85
+const CHAIR_HEIGHT = 0.63
 export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, clipHeight = 0.775, children }) {
   const { scene } = useGLTF('/models/chibi.glb')
   const yaw = Math.atan2(-position[0], -position[2])
@@ -47,12 +49,13 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         node.boundingSphere.radius *= 2
       }
     })
-    return { model, rig, hipOffset: 0.45 - hipY, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
+    return { model, rig, hipOffset: CHAIR_HEIGHT - hipY * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot, clipHeight])
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
   const lastPlay = useRef(playedKey)
+  const lastPassed = useRef(seat.passed), passElapsed = useRef(Infinity)
   const blending = useRef(false), lastReach = useRef(false)
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
@@ -63,6 +66,8 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   useEffect(() => () => { avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
   useFrame(({ clock }, delta) => {
     if (playedKey !== lastPlay.current) { if (playedKey) elapsed.current = 0; lastPlay.current = playedKey }
+    if (seat.passed !== lastPassed.current) { passElapsed.current = seat.passed ? 0 : Infinity; lastPassed.current = seat.passed }
+    passElapsed.current += delta * 1000
     elapsed.current += delta * 1000
     const reaching = elapsed.current < 650 && !reducedMotion
     const target = reaching ? avatar.reach : avatar.hold
@@ -81,13 +86,13 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     hand.updateWorldMatrix(true, false)
     head.updateWorldMatrix(true, false)
     hand.getWorldPosition(handAnchor.position)
-    handAnchor.position.y -= seat.passed ? 0.03 : 0
+    handAnchor.position.y -= !reducedMotion && passElapsed.current < 800 ? 0.03 * Math.sin(Math.PI * passElapsed.current / 800) : 0
     handAnchor.quaternion.copy(orientation)
     handAnchor.updateWorldMatrix(true, false)
-    if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
+    if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.41 }
   }, -1)
   return <>
-    <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]}><primitive object={avatar.model} dispose={null} /></group>
+    <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
     <primitive object={handAnchor}>{children}</primitive>
     <group ref={headAnchor}><SeatMarker seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
   </>
