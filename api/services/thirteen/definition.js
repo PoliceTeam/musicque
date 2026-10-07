@@ -8,7 +8,7 @@ module.exports = {
   name: 'thirteen',
   seats: { min: 2, max: 4 },
   config: {
-    tableCount: Number(process.env.THIRTEEN_TABLE_COUNT || 3),
+    maxTables: Number(process.env.THIRTEEN_MAX_TABLES || 20),
     stake: Number(process.env.THIRTEEN_STAKE_PC || 10),
     turnMs: Number(process.env.THIRTEEN_TURN_MS || 20000),
     botDelayMs: Number(process.env.THIRTEEN_BOT_DELAY_MS || 1200),

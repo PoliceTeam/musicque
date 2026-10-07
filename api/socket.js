@@ -205,6 +205,11 @@ const initSocket = (server) => {
       }
     });
 
+    for (const action of ['watch', 'unwatch']) socket.on(`table_game:${action}`, (data = {}) => {
+      if (typeof data.game !== 'string' || !Object.hasOwn(require('./services/tableGame').services, data.game)) return
+      if (action === 'watch') socket.join(`table_game:watch:${data.game}`)
+      else socket.leave(`table_game:watch:${data.game}`)
+    })
     let tableGameBindSequence = 0
     socket.on('table_game:bind', async (data = {}) => {
       const sequence = ++tableGameBindSequence

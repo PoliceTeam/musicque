@@ -2,7 +2,7 @@
  * @typedef {Object} TableGameDefinition
  * @property {string} name Route/ledger namespace (lowercase ASCII).
  * @property {{min:number,max:number}} seats Tables always fill to max with bots, even when min is smaller.
- * @property {{tableCount:number,stake:number,turnMs:number,botDelayMs:number}} config
+ * @property {{maxTables:number,stake:number,turnMs:number,botDelayMs:number}} config
  * @property {{stake:string,payout:string,refund:string}} ledger Registered coin types.
  * @property {function({seats:Array,rng:Function,previous:Object|null}):Object} setup
  * @property {function(Object):(number|null)} currentSeat Null once finished.
@@ -23,7 +23,7 @@ const assertDefinition = (definition) => {
   if (!definition || !/^[a-z][a-z0-9-]*$/.test(definition.name || '')) throw new TypeError('Invalid game name')
   const { min, max } = definition.seats || {}
   if (!Number.isInteger(min) || !Number.isInteger(max) || min < 2 || max < min || max > 16) throw new TypeError('Invalid seat limits')
-  for (const key of ['tableCount', 'stake', 'turnMs', 'botDelayMs']) {
+  for (const key of ['maxTables', 'stake', 'turnMs', 'botDelayMs']) {
     const value = definition.config?.[key]
     if (!Number.isInteger(value) || value < (key === 'stake' || key === 'botDelayMs' ? 0 : 1)) throw new TypeError(`Invalid config: ${key}`)
   }

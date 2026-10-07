@@ -9,7 +9,7 @@ const { createTableGameService } = require('../services/tableGame/engine')
 const { assertDefinition, GameRuleError } = require('../services/tableGame/definition')
 const definition = {
   name: 'fake', seats: { min: 2, max: 4 },
-  config: { tableCount: 3, stake: 10, turnMs: 20000, botDelayMs: 1200 },
+  config: { maxTables: 20, stake: 10, turnMs: 20000, botDelayMs: 1200 },
   ledger: { stake: 'thirteen_stake', payout: 'thirteen_payout', refund: 'thirteen_refund' },
   setup: ({ previous }) => ({ seats: Array.from({ length: 4 }, (_, i) => ({ hand: [String(i + 3) + 'S'], passed: false })), currentSeat: previous?.winnerSeat ?? 0, moves: [], finishOrder: [], secret: 'PRIVATE_SENTINEL' }),
   currentSeat: (state) => state.finishOrder.length ? null : state.currentSeat,
@@ -30,7 +30,7 @@ const definition = {
   result: (state) => state.finishOrder.length ? { ranking: state.finishOrder } : null,
   payout: (stake, ids) => ids.map((userId, i) => ({ userId, amount: i === 0 ? stake * ids.length : 0 })),
 }
-const fixture = (status = 'playing') => ({ _id: 'g1', game: 'fake', tableId: 1, status, version: 0, seats: ['a', 'b', null, null].map((userId, i) => ({ userId, username: userId || `Bot ${i}`, isBot: !userId })), state: { ...definition.setup({ previous: null }), finishOrder: status === 'settling' || status === 'settled' ? [0, 1, 2, 3] : [] }, moves: [], stake: 10, humanCount: 2, turnDeadlineAt: new Date(Date.now() + 20000) })
+const fixture = (status = 'playing') => ({ _id: 'g1', game: 'fake', tableId: '1', status, version: 0, seats: ['a', 'b', null, null].map((userId, i) => ({ userId, username: userId || `Bot ${i}`, isBot: !userId })), state: { ...definition.setup({ previous: null }), finishOrder: status === 'settling' || status === 'settled' ? [0, 1, 2, 3] : [] }, moves: [], stake: 10, humanCount: 2, turnDeadlineAt: new Date(Date.now() + 20000) })
 const harness = (t, records = [], gameDefinition = definition) => {
   const timers = new Map()
   const operations = new Set()
@@ -80,6 +80,19 @@ const harness = (t, records = [], gameDefinition = definition) => {
   const service = createTableGameService(gameDefinition)
   const io = { emit: (event, data) => emitted.push({ room: null, event, data: clone(data) }), to: (room) => ({ emit: (event, data) => emitted.push({ room, event, data: clone(data) }) }) }
   service.init(io)
+  // Preserve concise numeric fixture labels while production rooms use generated codes.
+  const aliases = new Map(records.map(record => [Number(record.tableId), String(record.tableId)]))
+  const original = { ...service }
+  const resolve = id => aliases.get(id) || id
+  service.sit = async (user, id, key) => {
+    if (typeof id === 'number' && !aliases.has(id)) {
+      const room = await original.create(user, 'public', key)
+      aliases.set(id, room.tableId)
+      return room
+    }
+    return original.sit(user, resolve(id), key)
+  }
+  for (const method of ['getTable', 'leave', 'start', 'move']) service[method] = (first, second, ...rest) => method === 'getTable' ? original[method](resolve(first), second) : original[method](first, resolve(second), ...rest)
   const fire = async (timer) => { timers.delete(timer); await timer.fn(); await new Promise(setImmediate) }
   return { service, io, records, timers, credits, debits, emitted, fire, failDebit: (id) => { debitFailure = id }, failCredit: (n) => { creditFailures = n } }
 }
@@ -159,17 +172,15 @@ test('human timeout leads with the lowest single and then auto-passes on a respo
   assert.deepEqual(h.records[0].moves[1].move, { pass: true })
   assert.equal(h.records[0].state.seats[1].passed, true)
 })
-test('host leaves clockwise, disconnect hands off, and rebind cancels grace expiry', async (t) => {
+test('disconnect grace expires waiting seats and rebind cancels expiry', async (t) => {
   const h = harness(t)
   for (const id of ['a', 'b', 'c']) {
     h.service.bindSocket({ user: player(id), socketId: id })
     await h.service.sit(player(id), 1, `sit-${id}`)
   }
   await h.service.leave('a', 1, 'leave')
-  assert.equal(h.service.getTable(1).hostId, 'b')
   h.service.onSocketDisconnect('b')
   await new Promise(setImmediate)
-  assert.equal(h.service.getTable(1).hostId, 'c')
   const grace = [...h.timers.values()].find((timer) => timer.ms === 60000)
   h.service.bindSocket({ user: player('b'), socketId: 'b2' })
   assert.ok(!h.timers.has(grace))
@@ -179,22 +190,19 @@ test('host leaves clockwise, disconnect hands off, and rebind cancels grace expi
   await h.fire([...h.timers.values()].find((timer) => timer.ms === 60000))
   assert.ok(!h.service.getTable(1).seats.some((s) => s?.userId === 'b'))
 })
-test('resume starts settled tables empty, but the previous winning bot seat still leads', async (t) => {
-  const last = fixture('settled')
-  last.state.finishOrder = [2, 0, 1, 3]
-  const h = harness(t, [last])
+test('resume ignores settled history and restores only active rooms', async (t) => {
+  const h = harness(t, [fixture('settled')])
   await h.service.resume(h.io)
-  assert.deepEqual(h.service.getTable(1).seats, [null, null, null, null])
-  await h.service.sit(player('a'), 1, 'sit')
-  const game = await h.service.start('a', 1, 'start')
-  assert.equal(game.currentSeat, 2)
-  assert.equal(game.seats[2].isBot, true)
+  assert.deepEqual(h.service.listTables(), [])
+  h.records.push({ ...fixture(), _id: 'g2' })
+  await h.service.resume(h.io)
+  assert.equal(h.service.getTable(1).seats[2].isBot, true)
 })
 test('public state never contains hidden fields, and private views are seat-scoped', async (t) => {
   const h = harness(t, [fixture()])
   await h.service.resume(h.io)
   assert.ok(!JSON.stringify(h.service.listTables()).includes('PRIVATE_SENTINEL'))
-  assert.ok(!JSON.stringify(h.emitted.filter((event) => event.room === null)).includes('PRIVATE_SENTINEL'))
+  assert.ok(!JSON.stringify(h.emitted.filter((event) => ['table_game_state', 'table_game_result'].includes(event.event))).includes('PRIVATE_SENTINEL'))
   assert.equal(h.service.getTable(1).myView, null)
   assert.equal(h.service.getTable(1, 'outsider').myView, null)
   assert.deepEqual(h.service.getTable(1, 'a').myView.hand, ['3S'])
@@ -207,7 +215,7 @@ test('public state never contains hidden fields, and private views are seat-scop
   for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find((timer) => timer.ms <= 20000))
   const result = h.emitted.find((event) => event.event === 'table_game_result')
   assert.ok(result)
-  assert.equal(result.room, null)
+  assert.equal(result.room, 'table_game:watch:fake')
   assert.ok(!JSON.stringify(result.data).includes('PRIVATE_SENTINEL'))
   assert.ok(result.data.ranking.every((seat) => !('hand' in seat) && !('secret' in seat)))
   assert.equal(h.records[0].status, 'settled')
@@ -326,4 +334,39 @@ test('overlapping socket binds keep only the newest authenticated hand room', as
   pending.logout(null); await third
   assert.deepEqual([...socket.rooms], ['socket'])
   assert.ok(h.timers.size > 0)
+})
+
+test('creates coded rooms idempotently and hides private rooms from strangers and viewers', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'private', 'create')
+  assert.match(room.code, /^[A-HJ-NP-Z2-9]{4}$/)
+  assert.equal(room.tableId, room.code)
+  assert.equal(room.seats[0].userId, 'a')
+  assert.equal(h.service.listTables().length, 0)
+  assert.equal(h.service.listTables('a').length, 1)
+  assert.equal((await h.service.create(player('a'), 'private', 'create')).code, room.code)
+  assert.ok(h.emitted.every(event => event.event !== 'table_game_state' || !event.room.includes('table_game:watch:fake')))
+  await h.service.sit(player('b'), room.code, 'invite')
+  assert.equal(h.service.listTables('b').length, 1)
+})
+test('quick join picks the fullest public room and respects the room limit', async t => {
+  const h = harness(t, [], { ...definition, config: { ...definition.config, maxTables: 3 } })
+  const first = await h.service.create(player('a'), 'public', 'a')
+  const second = await h.service.create(player('b'), 'public', 'b')
+  await h.service.sit(player('c'), second.code, 'c')
+  await h.service.create(player('d'), 'private', 'd')
+  assert.equal((await h.service.quickJoin(player('e'), 'e')).code, second.code)
+  await assert.rejects(h.service.create(player('f'), 'public', 'f'), { code: 'TABLE_LIMIT' })
+  await h.service.leave('a', first.code, 'leave')
+  assert.throws(() => h.service.getTable(first.code), { code: 'TABLE_NOT_FOUND' })
+  assert.equal(h.service.listTables().length, 1)
+  assert.equal((await h.service.leave('a', first.code, 'leave')).deleted, true)
+})
+test('concurrent joins cannot seat a user in two rooms', async t => {
+  const h = harness(t)
+  const a = await h.service.create(player('a'), 'public', 'a')
+  const b = await h.service.create(player('b'), 'public', 'b')
+  const results = await Promise.allSettled([h.service.sit(player('c'), a.code, 'c-a'), h.service.sit(player('c'), b.code, 'c-b')])
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
+  assert.equal(h.service.listTables().filter(table => table.seats.some(seat => seat?.userId === 'c')).length, 1)
 })

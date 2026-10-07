@@ -345,7 +345,7 @@ toàn bộ pipeline bằng Docker Compose.
 | `CHOHAN_REVEAL_MS` | Thời gian hiển thị kết quả | `5000` |
 | `CHOHAN_MIN_BET` | Cược tối thiểu | `5` |
 | `CHOHAN_MAX_BET` | Cược tối đa | `15` |
-| `THIRTEEN_TABLE_COUNT` | Số bàn Tiến Lên Miền Nam | `3` |
+| `THIRTEEN_MAX_TABLES` | Số bàn Tiến Lên Miền Nam tối đa | `20` |
 | `THIRTEEN_STAKE_PC` | PC cược mỗi người khi có ít nhất hai người thật | `10` |
 | `THIRTEEN_TURN_MS` | Thời gian một lượt | `20000` |
 | `THIRTEEN_BOT_DELAY_MS` | Thời gian bot suy nghĩ | `1200` |

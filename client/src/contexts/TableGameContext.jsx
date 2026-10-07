@@ -43,7 +43,8 @@ export const TableGameProvider = ({ game, children }) => {
     setTables((current) => {
       const old = current.find((t) => t.tableId === table.tableId)
       if (old && old.serverNow > table.serverNow) return current
-      return [...current.filter((t) => t.tableId !== table.tableId), publicTable].sort((a, b) => a.tableId - b.tableId)
+      if (table.deleted) return current.filter(t => t.tableId !== table.tableId)
+      return [...current.filter((t) => t.tableId !== table.tableId), publicTable].sort((a, b) => String(a.tableId).localeCompare(String(b.tableId)))
     })
     if (view) setPrivateViews((current) => ({ ...current, [table.tableId]: { tableId: table.tableId, matchId: table.matchId, version: table.version, userId, view } }))
   }, [userId])
@@ -67,7 +68,7 @@ export const TableGameProvider = ({ game, children }) => {
   }, [load, socket])
   useEffect(() => {
     if (!socket) return undefined
-    const bind = () => { socket.emit('table_game:bind', { token: getStoredToken() }); load() }
+    const bind = () => { socket.emit('table_game:watch', { game }); socket.emit('table_game:bind', { token: getStoredToken() }); load() }
     const onState = (payload) => { if (payload.game === game) acceptTable(payload) }
     const onPrivate = (payload) => { if (payload.game === game && payload.userId === userId) setPrivateViews((current) => ({ ...current, [payload.tableId]: payload })) }
     const onResult = (payload) => {
@@ -81,6 +82,7 @@ export const TableGameProvider = ({ game, children }) => {
     socket.on('table_game_result', onResult)
     bind()
     return () => {
+      socket.emit('table_game:unwatch', { game })
       socket.off('connect', bind)
       socket.off('table_game_state', onState)
       socket.off('table_game_private', onPrivate)

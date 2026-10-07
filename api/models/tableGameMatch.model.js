@@ -6,7 +6,9 @@ const seatSchema = new mongoose.Schema({
 }, { _id: false })
 const schema = new mongoose.Schema({
   game: { type: String, required: true },
-  tableId: { type: Number, required: true },
+  tableId: { type: String, required: true },
+  visibility: { type: String, enum: ['public', 'private'], default: 'public' },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   status: { type: String, enum: ['playing', 'settling', 'settled', 'aborted'], required: true },
   fundingPending: { type: Boolean, default: false },
   seats: [seatSchema],

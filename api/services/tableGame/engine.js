@@ -13,9 +13,18 @@ class TableGameError extends Error {
 const createTableGameService = (definition) => {
   assertDefinition(definition)
   const { name } = definition
-  const { tableCount, stake, turnMs, botDelayMs } = definition.config
+  const { maxTables = 20, stake, turnMs, botDelayMs } = definition.config
   const maxSeats = definition.seats.max
-  const tables = Array.from({ length: tableCount }, (_, i) => ({ tableId: i + 1, seats: Array(maxSeats).fill(null), hostId: null, lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, queue: Promise.resolve() }))
+  const tables = []
+  const newTable = (code, visibility = 'public', createdBy = null) => ({ tableId: code, code, visibility, createdBy, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, queue: Promise.resolve() })
+  const lobby = { queue: Promise.resolve() }
+  const requests = new Map()
+  const remember = (key, response) => {
+    requests.set(key, response)
+    // ponytail: bounded process-local lobby retries; persist these only if rooms outlive restarts.
+    if (requests.size > 1000) requests.delete(requests.keys().next().value)
+    return response
+  }
   let ioRef = null
   let ready = true
   const sockets = new Map()
@@ -24,7 +33,7 @@ const createTableGameService = (definition) => {
   const publicConfig = () => ({ ...definition.config, seats: definition.seats })
   const tableFor = (id) => {
     if (!ready) throw new TableGameError('Tables are recovering', 503, 'RECOVERING')
-    const table = tables.find((t) => t.tableId === Number(id))
+    const table = tables.find((t) => t.tableId === String(id).toUpperCase())
     if (!table) throw new TableGameError('Table not found', 404, 'TABLE_NOT_FOUND')
     return table
   }
@@ -32,10 +41,9 @@ const createTableGameService = (definition) => {
     const view = match ? definition.publicView(match.state) : {}
     return ({
     ...view,
-    game: name, tableId: table.tableId,
+    game: name, tableId: table.tableId, code: table.code, visibility: table.visibility,
     matchId: match?._id?.toString() || null,
     status: match?.status || 'waiting',
-    hostId: table.hostId,
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),
       userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot),
@@ -54,8 +62,19 @@ const createTableGameService = (definition) => {
     return seat >= 0 ? definition.playerView(match.state, seat) : null
   }
   const snapshot = (table, userId) => ({ ...serializeTable(table), myView: viewFor(table.match, userId) })
+  const emitPublic = (table, event, payload) => {
+    const rooms = table.visibility === 'private' ? (table.match?.seats || table.seats).filter(seat => seat?.userId).map(seat => `table_game:user:${seat.userId}`) : `table_game:watch:${name}`
+    if (rooms.length) ioRef?.to(rooms).emit(event, payload)
+  }
+  const deleteEmpty = table => {
+    if (table.match || table.fundingMatch || table.seats.some(Boolean)) return
+    clearTimeout(table.timer)
+    emitPublic(table, 'table_game_state', { ...serializeTable(table), deleted: true })
+    const index = tables.indexOf(table)
+    if (index >= 0) tables.splice(index, 1)
+  }
   const broadcast = (table) => {
-    ioRef?.emit('table_game_state', serializeTable(table))
+    emitPublic(table, 'table_game_state', serializeTable(table))
     for (const seat of table.match?.seats || table.seats) if (seat?.userId) {
       ioRef?.to(`table_game:user:${seat.userId}`).emit('table_game_private', { game: name, userId: seat.userId.toString(), tableId: table.tableId, matchId: table.match?._id?.toString() || null, version: table.match?.version ?? 0, view: viewFor(table.match, seat.userId) })
     }
@@ -145,9 +164,8 @@ const createTableGameService = (definition) => {
     table.match = null
     clearTimeout(table.timer)
     table.timer = null
-    if (!table.seats.some((s) => s?.userId === table.hostId)) table.hostId = table.seats.find((s) => s)?.userId || null
     for (const seat of table.seats) if (seat && !hasSockets(seat.userId)) scheduleDisconnect(seat.userId)
-    ioRef?.emit('table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), ranking, payouts, publicView: definition.publicView(game.state) })
+    emitPublic(table, 'table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), ranking, payouts, publicView: definition.publicView(game.state) })
     broadcast(table)
   }
   const recover = async (table) => {
@@ -198,31 +216,39 @@ const createTableGameService = (definition) => {
       scheduleRefundRetry(table, game)
     }), 1000)
   }
-  const sit = (user, tableId, requestKey) => {
+  const sit = (user, tableId, requestKey) => enqueue(lobby, () => sitInternal(user, tableId, requestKey))
+  const sitInternal = (user, tableId, requestKey) => {
     validateKey(requestKey)
     const table = tableFor(tableId)
     return enqueue(table, async () => {
-      waiting(table)
       const userId = user._id.toString()
       if (table.seats.some((s) => s?.userId === userId)) return snapshot(table, userId)
+      waiting(table)
       if (tables.some((t) => (t.match?.seats || t.seats).some((s) => s?.userId?.toString() === userId))) throw new TableGameError('Already seated at another table', 409, 'ALREADY_SEATED')
       const seat = table.seats.indexOf(null)
       if (seat < 0) throw new TableGameError('Table is full', 409, 'TABLE_FULL')
       table.seats[seat] = { userId, username: user.displayName || user.username }
-      table.hostId ||= userId
       broadcast(table)
       return snapshot(table, userId)
     })
   }
   const leave = (userId, tableId, requestKey) => {
     validateKey(requestKey)
+    const key = `u:${userId}:leave:${tableId}:${requestKey}`
+    if (requests.has(key)) return Promise.resolve(requests.get(key))
+    return leaveInternal(userId, tableId, requestKey).then(response => { return remember(key, response) })
+  }
+  const leaveInternal = (userId, tableId, requestKey) => {
+    validateKey(requestKey)
     const table = tableFor(tableId)
     return enqueue(table, async () => {
       waiting(table)
-      handoffHost(table, userId)
       table.seats = table.seats.map((s) => s?.userId === userId.toString() ? null : s)
+      const response = snapshot(table, userId)
       broadcast(table)
-      return snapshot(table, userId)
+      deleteEmpty(table)
+      if (!tables.includes(table)) response.deleted = true
+      return response
     })
   }
   const start = (userId, tableId, requestKey) => {
@@ -230,7 +256,7 @@ const createTableGameService = (definition) => {
     requestKey = `u:${userId}:${requestKey}`
     const table = tableFor(tableId)
     return enqueue(table, async () => {
-      if (table.hostId !== userId.toString()) throw new TableGameError('Only the host can start', 403, 'HOST_REQUIRED')
+      if (!table.seats.some(seat => seat?.userId === userId.toString())) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
       const previous = await Game.findOne({ game: name, tableId: table.tableId, startRequestKey: requestKey }).lean()
       if (previous) return snapshot(table, userId)
       waiting(table)
@@ -238,7 +264,7 @@ const createTableGameService = (definition) => {
       const seats = table.seats.map((seat) => seat || { userId: null, username: `Bot ${++botCount}`, isBot: true })
       const humanCount = seats.filter((s) => s.userId).length
       const state = definition.setup({ seats, rng: () => randomInt(0x100000000) / 0x100000000, previous: table.hasPlayed ? { winnerSeat: table.lastWinnerSeat } : null })
-      const game = await Game.create({ game: name, tableId: table.tableId, status: 'aborted', fundingPending: true, seats, state, stake: humanCount >= 2 ? stake : 0, humanCount, startRequestKey: requestKey })
+      const game = await Game.create({ game: name, tableId: table.tableId, visibility: table.visibility, createdBy: table.createdBy, status: 'aborted', fundingPending: true, seats, state, stake: humanCount >= 2 ? stake : 0, humanCount, startRequestKey: requestKey })
       table.fundingMatch = game
       try {
         for (const seat of seats.filter((s) => s.userId)) if (game.stake && !await coins.debitOnce(seat.userId, game.stake, transaction(game, seat, 'stake'))) throw new TableGameError(`Insufficient coins for ${seat.username}`, 409, 'INSUFFICIENT_COINS')
@@ -273,15 +299,6 @@ const createTableGameService = (definition) => {
     })
   }
   const hasSockets = (userId) => [...sockets.values()].includes(userId.toString())
-  const handoffHost = (table, userId) => {
-    if (table.hostId !== userId.toString()) return
-    const seat = table.seats.findIndex((s) => s?.userId === userId.toString())
-    for (let step = 1; step <= maxSeats; step++) {
-      const candidate = table.seats[(seat + step) % maxSeats]
-      if (candidate && candidate.userId !== userId.toString() && hasSockets(candidate.userId)) { table.hostId = candidate.userId; return }
-    }
-    table.hostId = table.seats.find((s) => s && s.userId !== userId.toString())?.userId || null
-  }
   const scheduleDisconnect = (userId) => {
     userId = userId.toString()
     clearTimeout(disconnectTimers.get(userId))
@@ -291,8 +308,8 @@ const createTableGameService = (definition) => {
       for (const table of tables) enqueue(table, async () => {
         if (hasSockets(userId) || table.match || table.fundingMatch) return
         table.seats = table.seats.map((s) => s?.userId === userId ? null : s)
-        handoffHost(table, userId)
-        broadcast(table)
+          broadcast(table)
+        deleteEmpty(table)
       }).catch((error) => console.error('[TableGame] Disconnect failed:', error.message))
     }, DISCONNECT_GRACE_MS))
   }
@@ -300,10 +317,6 @@ const createTableGameService = (definition) => {
     const userId = sockets.get(socketId)
     sockets.delete(socketId)
     if (!userId || hasSockets(userId)) return
-    for (const table of tables) enqueue(table, async () => {
-      handoffHost(table, userId)
-      broadcast(table)
-    }).catch((error) => console.error('[TableGame] Host handoff failed:', error.message))
     scheduleDisconnect(userId)
   }
   const bindSocket = ({ user, socketId }) => {
@@ -313,36 +326,53 @@ const createTableGameService = (definition) => {
     sockets.set(socketId, userId)
     clearTimeout(disconnectTimers.get(userId))
     disconnectTimers.delete(userId)
-    for (const table of tables) enqueue(table, async () => {
-      if (!table.hostId && table.seats.some((s) => s?.userId === userId)) { table.hostId = userId; broadcast(table) }
-    }).catch((error) => console.error('[TableGame] Bind failed:', error.message))
+
   }
+  const createInternal = async (user, visibility, requestKey) => {
+    validateKey(requestKey)
+    if (!ready) throw new TableGameError('Tables are recovering', 503, 'RECOVERING')
+    if (!['public', 'private'].includes(visibility)) throw new TableGameError('Invalid visibility', 400, 'INVALID_VISIBILITY')
+    const key = `u:${user._id}:create:${requestKey}`
+    if (requests.has(key)) return requests.get(key)
+    if (tables.some(table => (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === user._id.toString()))) throw new TableGameError('Already seated at another table', 409, 'ALREADY_SEATED')
+    if (tables.length >= maxTables) throw new TableGameError('Table limit reached', 409, 'TABLE_LIMIT')
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let code
+    do { code = Array.from({ length: 4 }, () => alphabet[randomInt(alphabet.length)]).join('') } while (tables.some(table => table.code === code))
+    const table = newTable(code, visibility, user._id.toString())
+    tables.push(table)
+    const response = await sitInternal(user, code, requestKey)
+    return remember(key, response)
+  }
+  const create = (user, visibility, requestKey) => enqueue(lobby, () => createInternal(user, visibility, requestKey))
+  const quickJoin = (user, requestKey) => enqueue(lobby, async () => {
+    validateKey(requestKey)
+    const own = tables.find(table => (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === user._id.toString()))
+    if (own) return snapshot(own, user._id)
+    const candidates = tables.filter(table => table.visibility === 'public' && !table.match && !table.fundingMatch && table.seats.includes(null))
+    candidates.sort((a, b) => b.seats.filter(Boolean).length - a.seats.filter(Boolean).length)
+    return candidates.length ? sitInternal(user, candidates[0].tableId, requestKey) : createInternal(user, 'public', requestKey)
+  })
   const init = (io) => { ioRef = io }
   const resume = async (io) => {
     init(io)
     ready = false
     try {
-      for (const table of tables) {
-        clearTimeout(table.timer)
-        table.match = null
-        table.seats = Array(maxSeats).fill(null)
-        table.hostId = null
-        for (const game of await Game.find({ game: name, tableId: table.tableId, fundingPending: true }).lean()) await refund(game)
-        const game = await Game.findOne({ game: name, tableId: table.tableId }).sort({ createdAt: -1 }).lean()
-        if (!game) continue
-        const last = await Game.findOne({ game: name, tableId: table.tableId, status: 'settled' }).sort({ createdAt: -1 }).lean()
+      for (const table of tables) clearTimeout(table.timer)
+      tables.length = 0
+      const records = await Game.find({ game: name }).lean()
+      for (const game of records.filter(game => game.fundingPending)) await refund(game)
+      for (const game of records.filter(game => !game.fundingPending && ['playing', 'settling'].includes(game.status))) {
+        const table = newTable(String(game.tableId), game.visibility || 'public', game.createdBy)
+        tables.push(table)
+        const last = records.filter(previous => String(previous.tableId) === table.tableId && previous.status === 'settled').at(-1)
         table.hasPlayed = Boolean(last)
         table.lastWinnerSeat = last ? definition.result(last.state).ranking[0] : null
-        table.seats = Array(maxSeats).fill(null)
-        table.hostId = null
-        if (['playing', 'settling'].includes(game.status)) {
-          table.seats = game.seats.map((s) => s.userId ? { userId: s.userId.toString(), username: s.username } : null)
-          table.hostId = table.seats.find((s) => s)?.userId || null
-          table.match = game
-          if (game.status === 'settling') {
-            try { await settle(table) } catch (error) { scheduleSettlementRetry(table); console.error('[TableGame] Resume settlement failed:', error.message) }
-          } else { broadcast(table); schedule(table) }
-        }
+        table.seats = game.seats.map(seat => seat.userId ? { userId: seat.userId.toString(), username: seat.username } : null)
+        table.match = game
+        if (game.status === 'settling') {
+          try { await settle(table) } catch (error) { scheduleSettlementRetry(table); console.error('[TableGame] Resume settlement failed:', error.message) }
+        } else { broadcast(table); schedule(table) }
       }
       ready = true
     } catch (error) {
@@ -350,6 +380,6 @@ const createTableGameService = (definition) => {
       throw error
     }
   }
-  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: () => tables.map((t) => serializeTable(t)), getTable: (id, userId) => snapshot(tableFor(id), userId), sit, leave, start, move }
+  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, start, move }
 }
 module.exports = { createTableGameService, TableGameError }
