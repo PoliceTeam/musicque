@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { DoubleSide, MeshBasicMaterial, PlaneGeometry } from 'three'
+import { useAnimationActivity } from './activity'
 import { sameCardTarget, tween } from './anim'
 import { applyWorldPose, createPose, readWorldPose, worldPose } from './cardSpaces'
 const glowGeometry = new PlaneGeometry(0.064, 0.095)
@@ -9,9 +10,11 @@ const dimGeometry = new PlaneGeometry(0.058, 0.089)
 const dimMaterial = new MeshBasicMaterial({ color: '#26383d', transparent: true, opacity: 0.2, side: DoubleSide, depthWrite: false })
 export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
   const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
+  const activity = useAnimationActivity()
   const ref = useRef(), inner = useRef(), motion = useRef(null)
   const scratch = useMemo(() => ({ destination: createPose(), sample: createPose() }), [])
   const [hovered, setHovered] = useState(false)
+  useLayoutEffect(() => { activity.start() }, [activity, selected, hovered])
   const clone = useMemo(() => deck[cardId].clone(true), [deck, cardId])
   useEffect(() => () => { if (hovered) document.body.style.cursor = '' }, [hovered])
   useLayoutEffect(() => () => {
@@ -20,18 +23,20 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   useLayoutEffect(() => {
     if (sameCardTarget(motion.current?.target, target) && !(reducedMotion && !motion.current.done)) return
     if (poseStore && poseId && motion.current) poseStore.current.set(poseId, readWorldPose(inner.current))
+    activity.start()
     clone.traverse(mesh => { if (mesh.isMesh) mesh.renderOrder = target.order ?? 0 })
     const to = worldPose(target, spaces)
     const initial = motion.current ? readWorldPose(ref.current) : poseStore?.current.get(from?.id || poseId) || worldPose(from || target, spaces)
     const flip = Boolean(from && from.faceUp !== target.faceUp)
     motion.current = { sample: tween(initial, to, { duration: reducedMotion ? 0 : duration, height: reducedMotion ? 0 : height, flip }), elapsed: reducedMotion || motion.current ? 0 : -delay, target, from, to, duration: reducedMotion ? 0 : duration, height: reducedMotion ? 0 : height, flip, pending: !reducedMotion && !motion.current && delay > 0, done: false }
     applyWorldPose(ref.current, motion.current.sample(0, scratch.sample))
-  }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch])
+  }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch, activity])
   useFrame((_, delta) => {
     const animation = motion.current
     const lift = selected ? 0.03 : hovered ? 0.01 : 0
     const lifting = inner.current && Math.abs(inner.current.position.y - lift) > 1e-5
-    if ((!animation || animation.done) && !lifting) return
+    if ((!animation || animation.done) && !lifting) { activity.stop(); return }
+    delta = activity.step(delta)
     if (lifting) {
       inner.current.position.y += (lift - inner.current.position.y) * (reducedMotion ? 1 : 1 - Math.exp(-20 * delta))
       if (Math.abs(inner.current.position.y - lift) <= 1e-5) inner.current.position.y = lift

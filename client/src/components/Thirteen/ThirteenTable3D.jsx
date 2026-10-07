@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useAnimationActivity } from '../CardTable3D/activity'
 import { useDeck } from '../CardTable3D/useDeck'
 import Card3D from '../CardTable3D/Card3D'
 import TableScene from '../CardTable3D/TableScene'
@@ -12,12 +13,21 @@ import ThirteenFallback2D from './ThirteenFallback2D'
 function CameraHand({ spaces, lowered, reducedMotion, children }) {
   const { camera, scene } = useThree()
   const anchor = useMemo(() => new THREE.Group(), [])
+  const activity = useAnimationActivity()
+  useEffect(() => { activity.start() }, [activity, lowered])
   spaces.current.camera = anchor
   useLayoutEffect(() => { const anchors = spaces.current; scene.add(camera); camera.add(anchor); return () => { camera.remove(anchor); delete anchors.camera } }, [camera, scene, anchor, spaces])
-  useFrame((_, delta) => { anchor.position.y += ((lowered ? -0.17 : 0) - anchor.position.y) * (reducedMotion ? 1 : 1 - Math.exp(-10 * delta)); anchor.updateWorldMatrix(true, true) }, -1)
+  useFrame((_, delta) => {
+    const target = lowered ? -0.17 : 0
+    if (Math.abs(target - anchor.position.y) < 1e-5) { anchor.position.y = target; activity.stop(); return }
+    delta = activity.step(delta)
+    anchor.position.y += (target - anchor.position.y) * (reducedMotion ? 1 : 1 - Math.exp(-10 * delta))
+    anchor.updateWorldMatrix(true, false)
+  }, -1)
   return createPortal(children, anchor)
 }
 function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
+  const activity = useAnimationActivity()
   const shuffle = useRef(), flash = useRef(), burst = useRef()
   const elapsed = useRef(0)
   const object = useMemo(() => new THREE.Object3D(), [])
@@ -27,12 +37,12 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
   useEffect(() => {
     if (frame.trickKey !== previousTrick.current) {
       bomb.current = isBombTrick(previousCombo.current, frame.trick)
-      previousTrick.current = frame.trickKey; previousCombo.current = frame.trick; elapsed.current = 0
+      previousTrick.current = frame.trickKey; previousCombo.current = frame.trick; elapsed.current = 0; activity.start()
     }
-  }, [frame.trick, frame.trickKey])
-  useEffect(() => { elapsed.current = 0; bomb.current = false }, [frame.matchId, frame.finished])
+  }, [frame.trick, frame.trickKey, activity])
+  useEffect(() => { elapsed.current = 0; bomb.current = false; activity.start() }, [frame.matchId, frame.finished, activity])
   useFrame((_, delta) => {
-    elapsed.current += delta * 1000
+    elapsed.current += activity.step(delta) * 1000
     const time = elapsed.current
     if (shuffle.current) {
       shuffle.current.visible = frame.deal && !reducedMotion && time < MOTION.shuffle
@@ -51,6 +61,8 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
       }
       if (burst.current.visible) burst.current.instanceMatrix.needsUpdate = true
     }
+    const active = !reducedMotion && ((frame.deal && time < MOTION.shuffle) || (bomb.current && time < MOTION.bomb) || (frame.finished && time < MOTION.finish))
+    if (!active) activity.stop()
   })
   return <>
     <group ref={shuffle}>{[0, 1, 2].map(i => <Card3D key={i} deck={deck} cardId='AS' target={{ position: [0, surfaceY + 0.004 + i * 0.002, 0], faceUp: false }} reducedMotion />)}</group>

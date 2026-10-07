@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig } from './poses'
+import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 const AVATAR_SCALE = 0.85
 const CHAIR_HEIGHT = 0.63
@@ -51,6 +52,9 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     })
     return { model, rig, hipOffset: CHAIR_HEIGHT - hipY * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot, clipHeight])
+  const activity = useAnimationActivity()
+  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed])
+  const initialized = useRef(false)
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
@@ -60,11 +64,10 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
   const orientation = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), [yaw])
-  const idleRotation = useMemo(() => new THREE.Quaternion(), [])
-  const idleEuler = useMemo(() => new THREE.Euler(), [])
   spaces.current[`seat:${seatIndex}`] = handAnchor
   useEffect(() => () => { avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
-  useFrame(({ clock }, delta) => {
+  useFrame((_, delta) => {
+    delta = activity.step(delta)
     if (playedKey !== lastPlay.current) { if (playedKey) elapsed.current = 0; lastPlay.current = playedKey }
     if (seat.passed !== lastPassed.current) { passElapsed.current = seat.passed ? 0 : Infinity; lastPassed.current = seat.passed }
     passElapsed.current += delta * 1000
@@ -72,17 +75,10 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const reaching = elapsed.current < 650 && !reducedMotion
     const target = reaching ? avatar.reach : avatar.hold
     if (reaching !== lastReach.current) { blending.current = true; lastReach.current = reaching }
-    // Reset just the two idle bones; the remaining rig sleeps after pose convergence.
-    head.quaternion.copy(target.get('mixamorigHead'))
-    avatar.rig.get('mixamorigSpine1').bone.quaternion.copy(target.get('mixamorigSpine1'))
+    const wasBlending = blending.current
     if (blending.current) blending.current = !blendPose(avatar.rig, target, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
-    if (!reducedMotion) {
-      idleEuler.set(Math.sin(clock.elapsedTime * 1.6 + seatIndex) * 0.008, 0, 0)
-      idleRotation.setFromEuler(idleEuler)
-      avatar.rig.get('mixamorigSpine1').bone.quaternion.multiply(idleRotation)
-      idleEuler.set(0, Math.sin(clock.elapsedTime * 0.45 + seatIndex) * 0.035, 0)
-      avatar.rig.get('mixamorigHead').bone.quaternion.multiply(idleRotation.setFromEuler(idleEuler))
-    }
+    if (initialized.current && !reaching && !blending.current && !wasBlending && passElapsed.current >= 800) { activity.stop(); return }
+    initialized.current = true
     hand.updateWorldMatrix(true, false)
     head.updateWorldMatrix(true, false)
     hand.getWorldPosition(handAnchor.position)

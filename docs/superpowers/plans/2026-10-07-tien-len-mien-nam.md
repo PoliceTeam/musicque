@@ -658,3 +658,416 @@ snaps cards to their targets instantly):
 
 Commit: `feat(thirteen): full 3D play view with card animations` (split into 2–3 commits if large,
 for example `feat(card-table-3d): add animation layer`).
+
+## Task 9 — Drag-to-look camera, avatar hand/play cohesion, scoped broadcasts
+
+These replace the earlier "camera completely fixed" rule. The camera still **never follows the
+cursor**; it moves only while the user drags.
+
+### 9.1 Drag-to-look camera (user request)
+- The camera position stays at my seat's eyes. Dragging **rotates the view only**:
+  - yaw ±30° around the default heading;
+  - pitch from the default down to about 65° below horizontal, enough to look straight down at
+    the trick; up to about 5° above the default.
+  - No translation, no zoom, no wheel.
+- Implement it in `components/CardTable3D/` as a small `useDragLook()` hook, or a
+  `<DragLookCamera>`, that writes yaw and pitch into refs, applied in the existing camera
+  `useFrame`. Do not use OrbitControls.
+  - Pointer down on the canvas starts a drag candidate.
+  - Once movement exceeds a 6 px threshold it becomes a drag: set pointer capture and suppress
+    the card click.
+  - Below the threshold, the card click works as today.
+  - Damp toward the target yaw and pitch, with roughly 120 ms smoothing.
+- Release keeps the current angle. Double-click on empty space, or a "Góc mặc định" button in
+  the action bar, eases back to the default over about 400 ms.
+- The bomb shake is applied as an offset on top of the user's yaw and pitch, and decays back to
+  them.
+- The camera-parented hand fan follows the view as today. The "Hạ bài" toggle stays.
+- With `prefers-reduced-motion` set, keep drag but skip the easing.
+- Tests: the pure clamp/threshold helpers (clamp ranges, drag vs click decision) are unit-tested.
+
+### 9.2 Opponent card fan attached to the hand, plus play rhythm
+Root cause in `OpponentAvatar.jsx`:
+- `handAnchor` copies only the **position** of `mixamorig:RightHand`.
+- Its orientation is the seat yaw, so the fan floats away from the hand and ignores wrist
+  rotation and breathing.
+- The played cards start flying at t=0, at the same moment the reach begins.
+
+Fix:
+- Make the fan anchor follow the bone's **full world transform**: position and quaternion from
+  `RightHand`, times a calibrated local offset `HAND_GRIP` (a position plus Euler in
+  `poses.js`) that puts the fan pivot in the palm.
+  - Tune `holdCards` so the left hand sits under or behind the fan as support.
+  - Verify visually from all 3 seats that cards touch the hand, with no gap.
+- Play rhythm, per opponent move:
+  1. 0–150 ms: the cards to be played lift out of the fan, about 2 cm along the card's up axis.
+  2. 150–450 ms: blend to `reachPlay`; the cards stay attached to the hand.
+  3. At the reach peak (about 450 ms): detach the cards **at the hand's current world pose**
+     (`readWorldPose` of each card), then fly a short arc from there to the trick slot. They
+     flip face-up during the flight. Duration about 350 ms.
+  4. Blend back to `holdCards`, about 300 ms, and the fan re-spreads.
+- `useCardTransitions` / `Card3D` need a "release at" delay for opponent plays: the from-pose is
+  sampled at release time, not at state arrival. Keep the server as the source of truth: if a
+  newer state arrives mid-sequence, finish quickly, compressing the remaining steps to about
+  100 ms, and retarget.
+- Apply the same rhythm feel to my own plays: lift the selected cards, then a short pause, then
+  the arc from the fan.
+- When `prefers-reduced-motion` is set, cards snap.
+
+### 9.3 Broadcast only to viewers
+- Today `table_game_state` and `table_game_result` go to **every** connected socket.
+- Add room `table_game:watch:<game>`:
+  - Add socket events `table_game:watch {game}` and `table_game:unwatch {game}`. Watching
+    needs no auth, because the payloads are public.
+  - `TableGameContext` emits `watch` on mount and on reconnect, and `unwatch` on unmount.
+  - The engine emits state and result to `io.to('table_game:watch:<name>')`.
+- Private views keep going to `table_game:user:<id>`.
+- Tests:
+  - The engine io mock asserts that state and result go only to the watch room.
+  - The socket handler joins and leaves the room.
+- Keep it backwards compatible: nothing else in the app listens to these events.
+
+Commits:
+- `feat(card-table-3d): drag-to-look camera`
+- `fix(card-table-3d): attach opponent fans to hand and sequence plays`
+- `perf(table-game): broadcast table state to viewers only`
+
+Run API and client tests, scoped lint and the build. Verify with headless screenshots: the
+default view, a dragged-down view showing the trick, and an opponent mid-reach with cards in hand.
+
+## Task 10 — Performance: no heat when idle, one GPU context, low memory (PRIORITY: before Task 9)
+
+**User report:** while playing, the laptop heats up and the tab uses about 600 MB of RAM.
+These were measured on 2026-10-07 with headless Chrome on the overlay, while the table was idle:
+
+| Metric | Measured |
+|---|---|
+| canvases | 2. The `/thirteen` lobby preview keeps rendering behind the full-screen overlay, so every GLB and texture is uploaded to the GPU twice. |
+| WebGL contexts created | 6, counting the `canRender3D()` probe contexts created on every mount |
+| draw calls per second while nothing moves | about 1,650 with software GL, so continuous rendering. A real 60–120 Hz GPU means 10–20k per second. |
+| JS heap | 40 MB. Most of the RAM is GPU textures plus the decoded images that three keeps, all doubled by the second context. |
+| idle JS | about 107 ms per second; 7 drei `Html` labels are repositioned every frame |
+
+The server is not the bottleneck: a move takes about 13 ms server-side.
+
+**Targets, to verify with the same headless metrics script and report before/after:**
+- 1 WebGL context while playing.
+- 0 draw calls per second when nothing animates, including my own turn while idle.
+- Tab memory at most about 300 MB on a Retina Mac.
+- No growth after opening and closing the overlay 5 times. Check JS heap and the
+  `renderer.info.memory` geometries and textures counts.
+
+### 10.1 Render on demand
+- Set `<Canvas frameloop="demand">`. Add a tiny `useAnimationActivity()` helper or store in
+  `components/CardTable3D/`. Every animated thing registers while it is active and calls
+  `invalidate()` each frame until done:
+  - card tweens
+  - avatar pose blends and reach
+  - the bomb shake
+  - deal and shuffle
+  - the hover lift
+  - drag-look (Task 9)
+- Remove the continuous idle breathing and head sway, or replace them with an event-driven
+  "glance" every 6–10 s that animates for about 600 ms and then stops.
+- Turn timer: show the countdown in the DOM HUD and seat label, not in a per-frame canvas
+  animation. The in-canvas ring is static, and switches seat with one short tween. The
+  last-5s pulse is CSS on the HUD timer.
+- State updates call `invalidate()` once. `useCardTransitions` starts tweens that keep
+  invalidating until they settle.
+- Test: a unit test for the activity store (register → invalidate → unregister → idle).
+
+### 10.2 Exactly one GPU context
+- While the overlay is open, do **not** render the lobby `ThirteenTable3D preview`. Unmount it,
+  or show a static poster instead: a CSS card table or a one-time `toDataURL` snapshot.
+- Cache `canRender3D()` at module level, so it probes once per page load.
+- When the overlay closes, unmount its Canvas and release the context:
+  `gl.dispose()` plus `forceContextLoss()` in the Canvas unmount, or rely on r3f, but verify.
+- When leaving `/thirteen`, call `useGLTF.clear()` for the deck, table and chibi URLs, so parsed
+  GLBs and images do not stay in memory.
+
+### 10.3 Cheaper pixels
+- DPR is at most 1.25 on full screen. `PerformanceMonitor` steps down to 1, and to 0.85 under
+  sustained decline.
+- Turn on `antialias` only when the effective DPR is below 1.25, and pass the flag at Canvas
+  creation.
+- Cards: replace the GLB `MeshStandardMaterial` with a shared `MeshLambertMaterial`, or
+  `MeshBasicMaterial` plus a simple light factor, using the same maps. This means 2 shared
+  materials for 104 draws.
+- Table: keep the standard material, but drop the normal map when DPR is at most 1. Test
+  visually.
+- Avatars: one shared material set across the 3 clones. Keep the tint uniform per clone, but
+  share the program via the same `customProgramCacheKey`. No `DoubleSide`. Hide fully-occluded
+  leg meshes if they are separate meshes.
+- Labels: with on-demand rendering, drei `Html` only repositions on rendered frames, which is
+  acceptable. Use `Html` without `transform`, and with `occlude` off.
+
+### 10.4 Texture memory
+- **Free CPU copies after upload:** for every GLB texture, set
+  `texture.onUpdate = () => texture.image?.close?.()`. These are ImageBitmaps from GLTFLoader.
+  Context-loss recovery then requires a reload, which is acceptable: show the 2D fallback and
+  a "Tải lại" button on `webglcontextlost`.
+- **GPU-compressed textures (KTX2/Basis)** give the largest VRAM win, about 4–8× smaller:
+  - Use `KTX2Loader` from `three/examples/jsm/loaders/KTX2Loader.js`. Copy the transcoder from
+    `client/node_modules/three/examples/jsm/libs/basis/` to `client/public/basis/`. This adds
+    no npm dependency.
+  - Wire it through `useGLTF(url, false, false, (loader) => loader.setKTX2Loader(ktx2))` with a
+    single shared KTX2Loader instance, set up with `detectSupport(gl)`.
+  - The GLB conversion itself needs the `toktx` CLI. Claude is doing the asset conversion
+    separately: `deck-of-cards.glb` uses UASTC (sharp text), `dinner-table.glb` and
+    `chibi.glb` use ETC1S. Make the code work with both WebP and KTX2 GLBs, so it lands
+    independently.
+
+### 10.5 Delivery on the server
+- `client/nginx.conf`: add a `location /models/` block with
+  `Cache-Control: public, max-age=31536000, immutable`. URLs are already versioned with `?v=`.
+  Do not gzip `.glb`: its textures are already compressed, and mesh data is small.
+- Preload the GLBs only on `/thirteen`, which is already the case, not on Home or Workspace.
+
+### Verification
+- Commit the headless metrics script as `client/scripts/perf-thirteen.mjs`, a dev-only tool
+  with no new deps that uses the existing `ws`. It uses the QA user token from an env var and
+  prints the metrics above.
+- Report a before/after table.
+- Run all client tests, scoped lint and the build.
+
+Commits:
+- `perf(card-table-3d): render on demand`
+- `perf(thirteen): single webgl context and resource cleanup`
+- `perf(card-table-3d): cheaper materials and dpr cap`
+- `perf(card-table-3d): ktx2 support and texture memory release`
+- `perf(client): long cache for models`
+
+## Task 11 — Rooms, ready-check, and in-room UX (user request)
+
+**Problems today:**
+- **Overlay header.** It stacks 4 lines: eyebrow, title, the note "Bạn vẫn ngồi bàn; hết giờ sẽ tự
+  đánh" (shown even after the game ends) and "Quỹ thưởng: 0 PC" (shown even in practice). The
+  `?`/`✕` are raw buttons.
+- **New game.** It needs the host to click "Ván mới". An AFK host blocks the whole table.
+- **Lobby.** There are 3 fixed tables plus a 3D preview below them. There is no quick play, no
+  way to invite friends, and no way to rejoin from a link.
+
+### 11.1 Room model (engine, generic — `api/services/tableGame/`)
+- **Dynamic tables replace fixed ones.**
+  - A table is created on demand and identified by a short public code. The code is 4
+    uppercase characters from an unambiguous alphabet (no 0/O/1/I), e.g. `K7Q2`.
+  - Fields: `{ code, visibility: 'public'|'private', createdBy, createdAt }`.
+  - Limit with `THIRTEEN_MAX_TABLES` (default 20).
+  - An **empty** waiting table is deleted immediately when the last human leaves.
+  - Remove `THIRTEEN_TABLE_COUNT` and update `docker-compose*.yml`, the README and the docs.
+- **Actions.** All are authenticated and keep `requestKey` idempotency:
+  - `POST /tables` with `{ visibility }` creates a table and seats the caller.
+  - `POST /quick-join` seats the caller at the **public waiting** table with the most humans
+    and a free seat. If there is none, it creates a public table.
+  - `POST /tables/:code/sit` joins by code. This works for private tables too: the code is the
+    invite.
+  - `POST /tables/:code/leave`, plus `ready` / `unready` (see 11.2).
+  - Remove `start` and the host concept. `hostId` is dropped from the payload and the UI.
+- `GET /tables` lists only **public** tables, plus the caller's own table even if it is
+  private. `GET /tables/:code` works for any code. Codes are not secret-grade, which is fine
+  at office scale.
+- One seat per user across all tables, as today.
+- Joining is only possible while the table is `waiting` or `finished`; bots are removed when a
+  match ends, so seats free up. A `playing` table shows as "Đang chơi" and is not joinable.
+- Persistence: tables stay in memory. `resume` rebuilds tables only for `playing` and
+  `settling` matches, using the `code` stored on the match.
+  - `TableGameMatch.tableId` becomes a String code.
+  - Old numeric docs: cast to String on read. They are settled history, so no migration is
+    needed beyond tolerating them.
+- Socket: state is broadcast to `table_game:watch:<game>` (Task 9.3) and includes `code` and
+  `visibility`. Private tables are broadcast only to the seated users' rooms, not to the watch
+  room.
+
+### 11.2 Ready-check replaces "host starts" (engine, generic)
+- Each seated human has `ready: boolean`. Sitting sets `ready=false`.
+- **Start rule.** At least 1 human is seated **and** every seated human is ready. When that
+  holds, set `startsAt = now + THIRTEEN_READY_COUNTDOWN_MS` (default 3000) and broadcast it.
+  Any sit, leave or unready cancels the countdown. When the countdown fires, start the match:
+  bots fill the empty seats, and stakes are debited as today (practice when there is 1 human).
+- **After a match settles:**
+  - The table goes to `finished`; this is the result phase.
+  - All humans get `ready=false`, and a ready window opens with
+    `readyDeadlineAt = now + THIRTEEN_READY_TIMEOUT_MS` (default 30000).
+  - When the window expires, humans who are not ready are **stood up**, with an
+    `auto_left: 'not_ready'` reason in the next state.
+  - If the remaining humans are all ready, the countdown starts. If nobody remains, the table
+    is deleted.
+- **A fresh waiting table has no ready timeout.** Instead, any human who has not been ready for
+  `THIRTEEN_IDLE_SEAT_MS` (default 300000) is stood up, so stale seats do not block the
+  table. The existing 60 s disconnect grace stays.
+- Leaving mid-match is unchanged: you keep your seat, the timer plays for you, and there is no
+  refund.
+- Engine tests (fake definition):
+  - The countdown starts only when every human is ready.
+  - Sit, leave or unready cancel it.
+  - The ready window stands up players who are not ready.
+  - An empty table is deleted.
+  - Quick-join picks the fullest public table.
+  - The `MAX_TABLES` limit is enforced.
+  - A private table does not appear in a stranger's list and is not broadcast to the watch
+    room.
+  - Idempotent `ready`.
+
+### 11.3 Lobby layout (`/thirteen`, `ThirteenPage.jsx`)
+Use `sp-*` tokens and work in light and dark. Desktop-first.
+- **Top bar:** "← Về trang chủ" · title "Tiến Lên Miền Nam" plus a one-line subtitle ·
+  "Luật chơi" · `UserMenu`.
+- **Hero action row**, one row:
+  - Primary **"Chơi nhanh"**, which is quick-join.
+  - **"Tạo bàn"**, which opens a small antd popover/modal with "Công khai" / "Riêng tư (chỉ vào
+    bằng mã)" and a create button.
+  - A **"Nhập mã bàn"** 4-character input with a "Vào" button.
+  - A small line under the row: "Cược {stake} PC/người khi có từ 2 người thật · Chơi một mình
+    là ván tập (miễn phí)".
+- **Resume banner.** If I am seated anywhere, show a sticky banner at the top: "Bạn đang ở bàn
+  K7Q2 · Đang chơi/Đang chờ" with a "Quay lại bàn" button that opens the overlay.
+- **Room grid:** cards for the public tables. Each card has:
+  - the code;
+  - a status pill: "Đang chờ 2/4", "Sắp bắt đầu 3s", "Đang chơi" or "Vừa xong";
+  - 4 seat slots with avatar or initials, plus a ready check, or "Trống";
+  - a "Vào bàn" button, or a disabled "Đang chơi" button.
+
+  Sort by joinable first, then most humans. Empty state: an illustration-free message,
+  "Chưa có bàn nào — Chơi nhanh để tạo bàn mới", with the two buttons.
+- Deep link: `/thirteen?room=K7Q2` auto-joins (after the auth prompt for guests) and opens the
+  overlay. "Sao chép link mời" inside the room copies this URL.
+- **Remove** the 3D preview from the lobby. This also serves Task 10.2.
+
+### 11.4 The room is the overlay — one flow for waiting → playing → result
+Joining or creating a table **opens the full-screen overlay immediately**, in the waiting phase.
+The overlay is the room for its whole life.
+- **Header (redesign):** a single slim translucent bar, one line, about 52 px tall.
+  - Left: a code chip `Bàn K7Q2`, with a 🔒 icon when private, plus a status pill:
+    "Đang chờ 2/4" / "Bắt đầu sau 3" / "Đang chơi" / "Kết thúc".
+  - Centre: the small title "Tiến Lên Miền Nam".
+  - Right:
+    - a pot chip, `Quỹ 30 PC` for staked games or `Ván tập` for practice;
+    - an icon button "Luật chơi" (?) with a tooltip;
+    - an icon button "Thu nhỏ" (–) with the tooltip "Về sảnh — bạn vẫn giữ ghế". During
+      play, add "hết giờ sẽ tự đánh" to that tooltip;
+    - an icon button "Rời bàn" (door icon). It is disabled during play, with the tooltip
+      "Không thể rời khi đang chơi".
+  - Remove the free-text note line. Use antd `Tooltip` and accessible labels.
+- **Waiting phase** (bottom panel over the canvas, compact):
+  - Seat list with ready state ("Sẵn sàng ✓" / "Chưa sẵn sàng").
+  - My big toggle button **"Sẵn sàng"** / "Huỷ sẵn sàng".
+  - "Sao chép link mời".
+  - When the countdown runs: "Bắt đầu sau 3…", with the button turning into "Huỷ".
+  - In 3D, empty seats show a faint "Ghế trống" tag and no character. Seated humans show their
+    character idle with a ready badge.
+- **Playing phase:** the action bar is a single row at the bottom centre.
+  - Left: my name and card count.
+  - Centre: **"Đánh bài"** (primary, keyboard Enter) · **"Bỏ lượt"** (keyboard Space, hidden
+    when leading).
+  - Right: "Hạ bài", plus "Góc mặc định" from Task 9.
+  - The turn timer is a ring around the HUD timer number; the last 5 s pulse via CSS.
+  - The hint text ("Lượt đầu phải có 3♠" / "Chọn bài rồi đánh") goes in a small line above the
+    bar, only when it is relevant.
+- **Result phase:**
+  - After the reveal (about 1.8 s), show a result panel: a ranking with medals and
+    Nhất/Nhì/Ba/Bét, with the PC delta per human (+20 / −10, or "Ván tập").
+  - Under it, the ready-check for the next game: my **"Sẵn sàng ván mới"** toggle, every
+    player's ready status, and a countdown of `readyDeadlineAt` ("Tự rời bàn sau 24s nếu chưa
+    sẵn sàng").
+  - When everyone is ready: "Bắt đầu sau 3…", then the overlay flows straight into the deal
+    animation **without closing**.
+  - Also show "Rời bàn".
+- **Toasts** (antd `message`, at most one at a time):
+  - "{name} vào bàn" / "{name} rời bàn";
+  - "Bạn đã được mời ra khỏi bàn vì chưa sẵn sàng" when I get `auto_left`;
+  - "Bàn đã đủ người" or "Mã bàn không tồn tại" on join errors.
+- Tests:
+  - `ThirteenOverlay.test.jsx` covers the phases: waiting shows the ready toggle; the
+    countdown text; playing shows the action bar; result shows the ranking and the ready
+    toggle; ✕ minimises; "Rời bàn" is disabled in play.
+  - Lobby tests cover:
+    - quick-join calls the API;
+    - create with visibility;
+    - the code input validation (4 characters from the alphabet);
+    - the resume banner;
+    - the deep link.
+
+### Commits
+- `feat(table-game): dynamic tables with codes and quick join`
+- `feat(table-game): ready check and auto start`
+- `feat(thirteen): lobby with quick play, create and join by code`
+- `feat(thirteen): room overlay phases and header redesign`
+
+Run API and client tests, scoped lint and the build. Verify with headless screenshots of: the
+lobby, the waiting room, playing, and the result with the ready-check.
+
+## Task 12 — Room background and chairs (performance-aware)
+
+**Goal:** the table sits in an office break room, and every character sits on a real chair. The
+budget is **at most 3 extra draw calls and about 15 MB extra VRAM**. There are no realtime
+shadows, no HDR environment/PMREM and no post-processing.
+
+### 12.1 Panorama background (asset already in repo)
+- The asset is `client/public/backgrounds/office-lounge.webp`:
+  - 3072×1536 equirectangular, 495 KB;
+  - CC0, from Poly Haven "Poly Haven Studio", listed in `THIRD_PARTY_NOTICES.md`.
+- Load it once with `TextureLoader`, versioned as `?v=1`. Set:
+  - `mapping = EquirectangularReflectionMapping` and `colorSpace = SRGBColorSpace`;
+  - `generateMipmaps = false` and `minFilter = LinearFilter`, since the background is never
+    minified; this saves about 33% VRAM;
+  - `scene.background = texture`.
+  - Do **not** set `scene.environment`.
+- Set `scene.backgroundRotation` so that the windows and the door sit behind the far opponent,
+  and nothing distracting sits directly behind a side opponent's head. Tune it visually.
+  Optionally set `backgroundIntensity` to about 0.9 so the table and cards pop.
+- The camera only rotates (Task 9 drag-look), so a panorama has no parallax problem. The
+  panorama floor is the floor: add **no floor mesh**.
+- Free the CPU copy after upload, as in Task 10.4. Dispose the texture when the overlay
+  unmounts.
+- Retune the lights so the table, cards and characters match the warm daylight of the
+  panorama: the hemisphere sky colour should be a warm white, and the ground colour taken from
+  the panorama floor. Keep the 2 existing lights; add no new ones.
+- The lobby and fallback do not load the panorama.
+
+### 12.2 Contact shadows (baked, cheap)
+- One small radial-gradient texture, 128×128 and generated once on a `CanvasTexture`, used by
+  `MeshBasicMaterial` with `transparent`, `depthWrite=false` and `multiply`-like darkening.
+- Draw one blob under the table pedestal and one under each chair, as **one InstancedMesh**
+  (1 draw call) of flat quads at y = 0.001.
+
+### 12.3 Chairs
+- Build the chair procedurally in `components/CardTable3D/chair.js`:
+  - seat 0.42 × 0.42 m at 0.45 m height, about 3 cm thick;
+  - backrest about 0.42 × 0.45 m;
+  - 4 legs about 3 × 3 cm.
+- Merge the boxes into **one** `BufferGeometry` with `mergeGeometries` from
+  `three/examples/jsm/utils/BufferGeometryUtils.js` (no new dependency).
+- Use one shared `MeshLambertMaterial` in a dark wood or charcoal colour that matches the
+  pedestal.
+- Render all 4 chairs, mine included, as **one InstancedMesh** (1 draw call). Each chair:
+  - sits about 0.25 m outside the table edge at its seat angle;
+  - faces the table centre, with the backrest away from the table.
+- My own chair is mostly out of view. Keep it anyway for consistency; it costs nothing extra in
+  the instanced call.
+- Unit-test the chair placement maths: 4 seats at 90° steps, facing the centre, at the expected
+  radius.
+
+### 12.4 Characters sit on the chairs
+- Lower each avatar so its pelvis rests on the chair seat. Compute it from the rig: put the hips
+  bone's world Y at seat height plus the pelvis offset, measured once after posing.
+- Characters are scaled about 0.85–0.9 (Task 8/11 framing). Re-check that the chest stays above
+  the tablecloth, and that the hands and fan are 5–12 cm above the table surface. Thighs are
+  roughly horizontal on the seat, and knees and lower legs go under the cloth (chibi legs are
+  short, so dangling feet are fine).
+- Combine this with the true 90/180/270 seat geometry from the last framing correction. The
+  chair radius and the avatar radius must match, so characters sit *in* their chairs.
+- Empty seats show the empty chair, which looks natural, plus the faint "Ghế trống" tag from
+  Task 11.
+
+### 12.5 Performance verification
+Run `client/scripts/perf-thirteen.mjs` from Task 10 before and after:
+- idle draw calls per second must stay 0 with on-demand rendering;
+- the per-frame draw count increases by at most 3;
+- tab memory increases by at most about 15 MB.
+
+Take headless screenshots of the default view and of a dragged view looking at the far
+opponent.
+
+Commit: `feat(card-table-3d): office room panorama, chairs and contact shadows`, including
+the asset and notices. Claude has already staged nothing: add `client/public/backgrounds/` and
+`THIRD_PARTY_NOTICES.md` in your commit.

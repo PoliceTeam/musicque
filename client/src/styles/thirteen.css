@@ -61,3 +61,7 @@ button.thirteen-card { cursor: pointer; }
 .thirteen-own-pass { display: inline-block; margin-left: 8px; animation: thirteen-own-pass 800ms ease-out forwards; }
 @keyframes thirteen-own-pass { 0% { opacity: 0; transform: scale(0.6); } 25%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .thirteen-own-rank, .thirteen-own-pass { animation: none; } }
+
+.th-game [role='timer'].is-urgent { animation: thirteen-timer-pulse 700ms ease-in-out infinite alternate; }
+@keyframes thirteen-timer-pulse { to { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .th-game [role='timer'].is-urgent { animation: none; } }
