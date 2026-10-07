@@ -1,5 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Card,
@@ -504,10 +503,7 @@ const WorldCupScheduleView = () => {
     }
   };
 
-  const scheduleRef = useRef(schedule);
-  useEffect(() => { scheduleRef.current = schedule; }, [schedule]);
-
-  const fetchSchedule = useCallback(async ({ silent = false } = {}) => {
+  const fetchSchedule = async ({ silent = false } = {}) => {
     if (!silent) {
       setLoading(true);
     }
@@ -519,7 +515,7 @@ const WorldCupScheduleView = () => {
       fetchTournamentDetails();
     } catch (err) {
       console.error("Error fetching World Cup schedule:", err);
-      if (!silent || !scheduleRef.current) {
+      if (!silent || !schedule) {
         setError(
           err.response?.data?.error ||
             err.response?.data?.message ||
@@ -529,11 +525,11 @@ const WorldCupScheduleView = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchSchedule();
-  }, [fetchSchedule]);
+  }, []);
 
   useEffect(() => {
     if (!socket) return undefined;
@@ -560,7 +556,7 @@ const WorldCupScheduleView = () => {
     
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [fetchSchedule]);
+  }, []);
 
   useEffect(() => {
     if (!schedule?.refreshAfterMs) return undefined;
@@ -570,7 +566,7 @@ const WorldCupScheduleView = () => {
     }, schedule.refreshAfterMs);
 
     return () => window.clearTimeout(timer);
-  }, [schedule?.refreshAfterMs, schedule?.servedAt, fetchSchedule]);
+  }, [schedule?.refreshAfterMs, schedule?.servedAt]);
 
   if (loading && !schedule) {
     return (

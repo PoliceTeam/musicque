@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { theme } from 'antd';
 
