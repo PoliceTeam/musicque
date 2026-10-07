@@ -26,7 +26,16 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
       cards.push({ id: hand ? `card:${hand[j]}` : `opaque:${i}:${j}`, cardId: hand?.[j] || 'AS', zone: 'hand', seat: i, faceUp: Boolean(hand), position, space: camera ? 'camera' : held ? `seat:${i}` : 'world', tilt, rotation: fan[j].rotation, order: fan[j].order, dealIndex: j * table.seats.length + ((i - anchor + table.seats.length) % table.seats.length) })
     }
   })
-  ;(table.trick?.cards || []).forEach((card, i, combo) => cards.push({ id: `card:${card}`, cardId: card, zone: 'trick', seat: table.trick.bySeat, faceUp: true, space: 'world', position: [(i - (combo.length - 1) / 2) * 0.045, surfaceY + 0.008 + i * 0.0005, 0.1], rotation: ((card.charCodeAt(0) % 7) - 3) * 0.018, scale: 2.015, order: 200 + i }))
+  const combo = table.trick?.cards || []
+  const scale = 1.4, tilt = 35 * Math.PI / 180
+  const stand = new Vector3(0, surfaceY + 0.02 + 0.089 * scale / 2 * Math.sin(tilt), 0.30)
+  const plane = new Euler(-Math.PI / 2 + tilt, 0, 0)
+  const trickFan = fanLayout(combo.length, { width: 0.058 * scale, height: 0.089 * scale, spacing: 0.024, maxSpread: 6 * Math.PI / 180, baseOrder: 200 })
+  combo.forEach((card, i) => {
+    const pose = trickFan[i]
+    const position = new Vector3(...pose.position).add(new Vector3(0, 0, pose.depth)).applyEuler(plane).add(stand).toArray()
+    cards.push({ id: `card:${card}`, cardId: card, zone: 'trick', seat: table.trick.bySeat, faceUp: true, space: 'world', position, tilt, rotation: pose.rotation, scale, order: pose.order })
+  })
   const winner = table.seats.map((seat, i) => ({ ...seat, seat: i })).filter(seat => seat.userId && seat.finishedPlace).sort((a, b) => a.finishedPlace - b.finishedPlace)[0]
-  return { matchId: table.matchId, cards, anchor, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, finished: Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
+  return { matchId: table.matchId, cards, anchor, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, surfaceY, finished: Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
 }

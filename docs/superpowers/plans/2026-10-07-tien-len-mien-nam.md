@@ -1164,3 +1164,49 @@ Light and dark themes are both required.
   increase by at most 2 versus the flat background; memory increases by at most 5 MB.
 
 Commit: `feat(card-table-3d): stylized low-poly office break room`.
+
+## Task 11.5 — Remove the overlay header bar; table info lives on the room wall (user request)
+
+**Codex B (DOM, ThirteenOverlay):**
+- Remove the header bar entirely: the eyebrow, title, note line and pot text.
+- Controls become a tiny icon cluster in the **top-right corner** with no bar and no
+  background strip. Each is a 36 px round translucent button using `sp-*` tokens, with an antd
+  Tooltip and an aria-label:
+  - "Luật chơi" (?);
+  - "Thu nhỏ — về sảnh, vẫn giữ ghế" (–);
+  - "Rời bàn" (door icon), disabled while playing.
+  - `Esc` still minimises.
+- Accessibility: add an `sr-only` `aria-live="polite"` region that states the same information
+  as the wall board: "Bàn FQ8X, đang chơi, quỹ 20 PC". It updates on change.
+- Keep the turn timer in the bottom action bar, plus the last-play chip.
+
+**Codex A (3D, OfficeRoom / ThirteenTable3D):**
+- Add a **wall-mounted info board** on the back wall next to the Musicque logo, at about
+  1.7–2.2 m height. It must not sit behind a face; check against the far opponent's head
+  position.
+  - The board looks like a slim TV or rounded board with a dark frame, about 1.1 × 0.55 m, so
+    the text stays readable from about 4.2 m.
+  - Content, drawn on a `CanvasTexture` of about 1024×512 with the app font (read the
+    computed font-family from `document.body`):
+    - line 1: the large code, `Bàn FQ8X`, plus 🔒 when private;
+    - line 2: a status pill — `Đang chờ 2/4` / `Bắt đầu sau 3` / `Đang chơi` / `Kết thúc`;
+    - line 3: `Quỹ 20 PC`, or `Ván tập` in practice;
+    - during the ready window: `Ván mới sau 24s`.
+  - Colours come from the room palette (light and dark), with the accent `#1db954` for the
+    status pill.
+  - Derive everything from the `table` prop: `code`, `visibility`, `status`, `pot`, humans
+    count, `startsAt`, `readyDeadlineAt`. No new props are needed.
+- **Redraw the canvas only when the displayed text changes.** During countdowns, redraw at most
+  once per second and `invalidate()` once per redraw. It is 1 extra draw call (the board plus
+  its frame can be merged into the room mesh, with the screen as one plane).
+- Verify that it is readable in the default view in both themes. Take headless screenshots.
+
+Commit message (each agent):
+- Codex B: `feat(thirteen): corner controls instead of header`
+- Codex A: `feat(card-table-3d): wall info board`
+
+### Task 9.1 amendment (user request, 2026-10-08)
+**Drag-to-look is horizontal only.** Dragging changes yaw only, within ±30°. **Pitch is
+locked** at the default. Vertical mouse movement is ignored. Readability of the trick comes
+from the trick "display stand", not from looking down. Double-click and "Góc mặc định" reset
+the yaw. The bomb shake still applies as a temporary offset.

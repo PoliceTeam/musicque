@@ -19,7 +19,7 @@ export const diffCardTransitions = (previous, next, isBomb) => {
     return { ...card, from, delay: deal ? MOTION.shuffle + (card.dealIndex ?? index) * MOTION.dealStagger : source?.zone === 'hand' && card.zone === 'trick' && source.seat !== next.anchor ? 250 : 0, duration: deal ? MOTION.deal : source ? bomb && card.zone === 'trick' ? MOTION.bombLanding : MOTION.play : 0, height: deal ? 0.13 : source && card.zone === 'trick' ? bomb ? 0.2 : 0.14 : 0 }
   })
   // A removed opponent slot becomes the revealed trick card, never a duplicate back.
-  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, zone: 'under', dim: true, position: [card.position[0], card.position[1] - 0.001, -0.045], order: 100 + (card.order ?? 0) % 100, from: card, duration: MOTION.play, delay: 0, height: 0 }))
+  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: card, duration: MOTION.play, delay: 0, height: 0 }))
   const exiting = removed.filter((card) => !consumed.has(card.id) && !under.some((combo) => combo.id === card.id) && card.zone !== 'hand').map((card, i) => ({ ...card, zone: 'discard', dim: false, order: 50 + i, space: 'world', tilt: 0, scale: 1, faceUp: false, position: [next.discardPosition[0], next.discardPosition[1] + i * 0.0002, next.discardPosition[2]], from: card, delay: 0, duration: MOTION.sweep, height: 0.035 }))
   return { ...next, cards: [...cards, ...under, ...exiting], deal }
 }

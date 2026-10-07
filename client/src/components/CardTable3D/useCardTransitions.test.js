@@ -47,3 +47,12 @@ it('gives a bomb a stronger, faster landing after the opponent reach delay', () 
   expect(bomb.height).toBeGreaterThan(normal.height)
   expect(bomb.duration).toBeLessThan(normal.duration)
 })
+
+it('slides the previous display combo back onto the cloth and removes its display tilt', () => {
+  const old = { ...snapshot([{ ...card('3S', 'trick'), tilt: 0.61, scale: 1.4, position: [0, 0.84, 0.30] }]), trickKey: 'a' }
+  const next = { ...snapshot([card('4S', 'trick')]), trickKey: 'b', surfaceY: 0.785 }
+  const under = diffCardTransitions(old, next).cards.find(card => card.zone === 'under')
+  expect(under).toMatchObject({ tilt: 0, dim: true, scale: 1.4, position: [0, 0.791, -0.06] })
+  expect(under.from.tilt).toBe(0.61)
+  expect(under.duration).toBeGreaterThan(0)
+})

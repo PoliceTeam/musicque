@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Euler, Vector3 } from 'three'
+import { Euler, PerspectiveCamera, Vector3 } from 'three'
 import { cardQuaternion, liftCardPose, tween } from '../components/CardTable3D/anim'
 import { buildThirteenSnapshot, isBombTrick } from './thirteenScene'
 const table = { matchId: 'g1', seats: [{ userId: 'a', handCount: 1 }, { userId: 'b', handCount: 2 }, { isBot: true, handCount: 1 }, { isBot: true, handCount: 1 }], trick: null }
@@ -62,4 +62,37 @@ it('detects a legal bomb only while beating a previous trick', () => {
   expect(isBombTrick({ cards: ['2S'] }, quad)).toBe(true)
   expect(isBombTrick(null, quad)).toBe(false)
   expect(isBombTrick({ cards: ['10S', '10C', '10D', '10H'] }, quad)).toBe(false)
+})
+
+it('presents single, straight and four-pair tricks upright, layered and clear of my hand', () => {
+  const camera = new PerspectiveCamera(75, 1440 / 900, 0.1, 100)
+  camera.position.set(0, 1.15, 1.16); camera.lookAt(0, 0.785, -0.03); camera.updateMatrixWorld()
+  for (const combo of [['3H'], ['3S', '4D', '5H'], ['3S', '3C', '4S', '4C', '5S', '5C', '6S', '6C']]) {
+    const snapshot = buildThirteenSnapshot({ ...options, table: { ...table, trick: { cards: combo, bySeat: 1 } } })
+    const trick = snapshot.cards.filter(card => card.zone === 'trick')
+    let previousIndex, previousDepth
+    const normal = new Vector3(0, 0, 1).applyQuaternion(cardQuaternion(trick[0]))
+    for (const [i, card] of trick.entries()) {
+      expect(card.scale).toBe(1.4)
+      expect(card.position[2]).toBeCloseTo(0.30, 2)
+      expect(card.tilt).toBeCloseTo(35 * Math.PI / 180)
+      expect(Math.abs(card.rotation)).toBeLessThanOrEqual(3 * Math.PI / 180)
+      const q = cardQuaternion(card), position = new Vector3(...card.position)
+      const top = new Vector3(-0.029 * card.scale, 0.0445 * card.scale, 0).applyQuaternion(q).add(position)
+      const bottom = new Vector3(-0.029 * card.scale, -0.0445 * card.scale, 0).applyQuaternion(q).add(position)
+      expect(top.z).toBeLessThan(bottom.z)
+      expect(top.clone().project(camera).y).toBeGreaterThan(bottom.clone().project(camera).y)
+      expect(bottom.y).toBeGreaterThan(0.785)
+      if (i) {
+        expect(top.x - previousIndex).toBeGreaterThanOrEqual(0.024)
+        expect(position.dot(normal) - previousDepth).toBeCloseTo(0.0005)
+        expect(card.order).toBe(trick[i - 1].order + 1)
+      }
+      const hand = snapshot.cards[0]
+      const handTop = new Vector3(0, 0.0445, 0).applyQuaternion(cardQuaternion(hand)).add(new Vector3(...hand.position))
+      camera.localToWorld(handTop)
+      expect(bottom.clone().project(camera).y).toBeGreaterThan(handTop.project(camera).y)
+      previousIndex = top.x; previousDepth = position.dot(normal)
+    }
+  }
 })
