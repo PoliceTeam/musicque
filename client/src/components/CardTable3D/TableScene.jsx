@@ -30,7 +30,7 @@ function TurnRing({ position, reducedMotion }) {
   })
   return position && <mesh ref={ref} position={initialPosition.current} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.09, 0.097, 64]} /><meshBasicMaterial color='#72edb5' transparent depthWrite={false} /></mesh>
 }
-function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, firstPerson, children }) {
+function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serverNow, firstPerson, children }) {
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
   const dpr = useThree(state => state.viewport.dpr)
@@ -60,7 +60,7 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
   return <>
     {firstPerson && <FixedCamera />}
     <color attach='background' args={['#94a3a6']} />
-    {firstPerson && <OfficeRoom />}
+    {firstPerson && <OfficeRoom table={table} />}
     <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#80766a' />
     <directionalLight position={[2, 4, 3]} color='#fff2dc' intensity={1.7} />
     <primitive object={tableModel} dispose={null} />

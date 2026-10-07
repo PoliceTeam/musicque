@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { buildOfficeRoom } from './officeRoom.js'
 import { recolorRoom, roomPalettes } from './roomPalette'
 import * as THREE from 'three'
+import WallInfoBoard from './WallInfoBoard'
 import { chairGeometry, chairPlacement } from './chair'
 function shadowTexture() {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128
@@ -14,7 +15,7 @@ function shadowTexture() {
   return new THREE.CanvasTexture(canvas)
 }
 let logoSource
-export default function OfficeRoom() {
+export default function OfficeRoom({ table }) {
   const { isDark } = useTheme()
   const { scene, invalidate } = useThree()
   const room = useMemo(buildOfficeRoom, [])
@@ -69,6 +70,7 @@ export default function OfficeRoom() {
   return <>
     <mesh geometry={room.geometry} material={roomMaterial} matrixAutoUpdate={false} dispose={null} />
     <mesh position={[0, 2.1, -2.855]} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}><planeGeometry args={[1.6, 0.4]} /><meshBasicMaterial map={logo.texture} transparent depthWrite={false} /></mesh>
+    {table && <WallInfoBoard table={table} />}
     <instancedMesh ref={chairs} args={[resources.chair, resources.wood, 4]} matrixAutoUpdate={false} />
     <instancedMesh ref={shadows} args={[resources.quad, resources.shadow, 5]} matrixAutoUpdate={false} />
   </>

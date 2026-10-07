@@ -25,6 +25,7 @@ export function buildOfficeRoom() {
   }
   // The upper drag limit exposes the top edge; this flat cap stays in the merged draw.
   add(new BoxGeometry(6, 0.02, 6), [0, 2.79, 0], 'wall', undefined, 'ceiling')
+  box([1.16, 0.61, 0.045], [1.5, 1.85, -2.865], 'metal', 'infoBoardFrame')
   box([2.7, 1.4, 0.025], [0, 1.95, -2.88], 'wallAccent')
   for (let i = 0; i < 12; i++) box([0.5, 0.02, 6], [-2.75 + i * 0.5, -0.01, 0], i % 2 ? 'floorA' : 'floorB', 'floor')
   add(new CircleGeometry(1.55, 48), [0, 0.0005, 0], 'rug', [-Math.PI / 2, 0, 0], 'rug')
