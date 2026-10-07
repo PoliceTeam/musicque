@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bezierArc, easeInOutQuad, easeOutBack, easeOutCubic, tween } from './anim'
+import { bezierArc, easeInOutQuad, easeOutBack, easeOutCubic, sameCardTarget, tween } from './anim'
 import { Quaternion } from 'three'
 describe('card motion', () => {
   it('easing reaches endpoints and stays finite', () => {
@@ -24,5 +24,23 @@ describe('card motion', () => {
     const first = new Quaternion().fromArray(sample(0).quaternion)
     expect(first.angleTo(new Quaternion().fromArray(sample(500).quaternion))).toBeCloseTo(Math.PI)
     expect(sample(1000).done).toBe(true)
+  })
+})
+
+describe('card performance helpers', () => {
+  it('compares targets by value, allowing equivalent server snapshots to stay idle', () => {
+    const target = { position: [0, 1, 2], faceUp: true, space: 'camera', order: 1000 }
+    expect(sameCardTarget(target, { ...target, position: [0, 1 + 1e-8, 2], scale: 1, rotation: 0 })).toBe(true)
+    for (const patch of [{ position: [0, 1.01, 2] }, { faceUp: false }, { space: 'world' }, { scale: 1.1 }, { rotation: 0.1 }, { tilt: 0.1 }, { yaw: 0.1 }, { order: 1001 }]) expect(sameCardTarget(target, { ...target, ...patch })).toBe(false)
+  })
+  it('samples 300 animation frames into the same object and arrays', () => {
+    const sample = tween({ position: [0, 0, 0], faceUp: false }, { position: [1, 1, 1], faceUp: true })
+    const out = { position: [0, 0, 0], quaternion: [0, 0, 0, 1] }
+    const position = out.position, quaternion = out.quaternion
+    for (let frame = 0; frame < 300; frame++) {
+      expect(sample(frame * 16, out)).toBe(out)
+      expect(out.position).toBe(position); expect(out.quaternion).toBe(quaternion)
+    }
+    expect(out.done).toBe(true)
   })
 })

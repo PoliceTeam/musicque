@@ -15,4 +15,14 @@ export const poseTargets = (rig, ...maps) => new Map([...rig].map(([name, { rest
   const rotation = Object.assign({}, ...maps)[name.replace('mixamorig', 'mixamorig:')] || [0, 0, 0]
   return [name, rest.clone().multiply(new Quaternion().setFromEuler(new Euler(...rotation)))]
 }))
-export const blendPose = (rig, targets, alpha) => { for (const [name, target] of targets) rig.get(name).bone.quaternion.slerp(target, alpha) }
+export const blendPose = (rig, targets, alpha, epsilon = 1e-4) => {
+  let settled = true
+  for (const [name, target] of targets) {
+    const quaternion = rig.get(name).bone.quaternion
+    if (quaternion.angleTo(target) <= epsilon) { quaternion.copy(target); continue }
+    quaternion.slerp(target, alpha)
+    if (quaternion.angleTo(target) > epsilon) settled = false
+    else quaternion.copy(target)
+  }
+  return settled
+}

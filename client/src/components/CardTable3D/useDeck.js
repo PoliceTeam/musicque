@@ -1,9 +1,21 @@
 import { useEffect, useMemo } from 'react'
+import { useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { RANKS, SUITS, cardNodeName } from '../../utils/cards'
 export const useDeck = () => {
-  const { scene } = useGLTF('/models/deck-of-cards.glb')
+  const { scene } = useGLTF('/models/deck-of-cards.glb?v=webp1')
+  const gl = useThree(state => state.gl)
+  useEffect(() => {
+    const anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
+    scene.traverse(node => {
+      if (!node.isMesh) return
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+        const texture = material.map
+        if (texture && texture.anisotropy !== anisotropy) { texture.anisotropy = anisotropy; texture.needsUpdate = true }
+      }
+    })
+  }, [scene, gl])
   const templates = useMemo(() => {
     const result = {}
     for (const node of scene.children[0]?.children || scene.children) {

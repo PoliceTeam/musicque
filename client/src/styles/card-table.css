@@ -14,3 +14,5 @@
 @keyframes card-table-pass { 0% { opacity: 0; transform: translateX(-50%) scale(0.6); } 25% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
 @keyframes card-table-rank { from { transform: translateX(-50%) scale(0.5); } to { transform: translateX(-50%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .card-table-pass, .card-table-rank { animation: none; } }
+
+.card-table-stats { z-index: 1301 !important; top: 100px !important; left: 12px !important; }

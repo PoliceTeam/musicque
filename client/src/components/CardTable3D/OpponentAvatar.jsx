@@ -13,10 +13,8 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const materials = new Map()
     model.traverse((node) => {
       if (!node.isMesh) return
-      node.frustumCulled = false
       const tint = (material) => {
         // Match the existing Chibi overlay: exported BLEND skin needs opaque depth writes.
-        material.side = THREE.DoubleSide
         material.transparent = false
         material.depthWrite = true
         material.needsUpdate = true
@@ -40,12 +38,21 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const hipY = rig.get('mixamorigHips').bone.getWorldPosition(new THREE.Vector3()).y
     const hold = poseTargets(rig, poses.seated, poses.holdCards, poses.idle)
     blendPose(rig, hold, 1)
+    model.updateMatrixWorld(true)
+    model.traverse(node => {
+      if (node.isSkinnedMesh) {
+        node.computeBoundingSphere()
+        // Conservative once-only bounds cover the seated-to-reach motion.
+        node.boundingSphere.radius *= 2
+      }
+    })
     return { model, rig, hipOffset: 0.45 - hipY, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot])
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
   const lastPlay = useRef(playedKey)
+  const blending = useRef(false), lastReach = useRef(false)
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
   const orientation = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), [yaw])
@@ -57,7 +64,12 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     if (playedKey !== lastPlay.current) { if (playedKey) elapsed.current = 0; lastPlay.current = playedKey }
     elapsed.current += delta * 1000
     const reaching = elapsed.current < 650 && !reducedMotion
-    blendPose(avatar.rig, reaching ? avatar.reach : avatar.hold, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
+    const target = reaching ? avatar.reach : avatar.hold
+    if (reaching !== lastReach.current) { blending.current = true; lastReach.current = reaching }
+    // Reset just the two idle bones; the remaining rig sleeps after pose convergence.
+    head.quaternion.copy(target.get('mixamorigHead'))
+    avatar.rig.get('mixamorigSpine1').bone.quaternion.copy(target.get('mixamorigSpine1'))
+    if (blending.current) blending.current = !blendPose(avatar.rig, target, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
     if (!reducedMotion) {
       idleEuler.set(Math.sin(clock.elapsedTime * 1.6 + seatIndex) * 0.008, 0, 0)
       idleRotation.setFromEuler(idleEuler)
@@ -65,11 +77,12 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       idleEuler.set(0, Math.sin(clock.elapsedTime * 0.45 + seatIndex) * 0.035, 0)
       avatar.rig.get('mixamorigHead').bone.quaternion.multiply(idleRotation.setFromEuler(idleEuler))
     }
-    avatar.model.updateWorldMatrix(true, true)
+    hand.updateWorldMatrix(true, false)
+    head.updateWorldMatrix(true, false)
     hand.getWorldPosition(handAnchor.position)
     handAnchor.position.y -= seat.passed ? 0.03 : 0
     handAnchor.quaternion.copy(orientation)
-    handAnchor.updateWorldMatrix(true, true)
+    handAnchor.updateWorldMatrix(true, false)
     if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)
   return <>
