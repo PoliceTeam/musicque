@@ -37,3 +37,16 @@ describe('ThirteenProvider', () => {
     expect(screen.getByRole('status')).toHaveTextContent('4S')
   })
 })
+
+it('watches only the mounted game, re-watches on reconnect and unwatches on exit', async () => {
+  mocks.user = null
+  mocks.tables = []
+  socket.emit.mockClear()
+  const view = render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><Probe /></ThirteenProvider></PlaylistContext.Provider>)
+  await waitFor(() => expect(socket.emit).toHaveBeenCalledWith('table_game:watch', { game: 'thirteen' }))
+  socket.emit.mockClear()
+  act(() => mocks.handlers.connect())
+  expect(socket.emit).toHaveBeenCalledWith('table_game:watch', { game: 'thirteen' })
+  view.unmount()
+  expect(socket.emit).toHaveBeenCalledWith('table_game:unwatch', { game: 'thirteen' })
+})
