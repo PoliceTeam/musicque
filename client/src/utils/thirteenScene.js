@@ -1,5 +1,10 @@
 import { Euler, Vector3 } from 'three'
+import { classify, canBeat } from './thirteen'
 import { fanLayout } from '../components/CardTable3D/fanLayout'
+export const isBombTrick = (previous, next) => {
+  const old = classify(previous?.cards || []), combo = classify(next?.cards || [])
+  return Boolean(old && combo && ['quad', 'pairSequence'].includes(combo.type) && canBeat(combo, old))
+}
 export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }) => {
   const own = table.remainingHands?.[anchor] ?? myHand
   // Public and private socket events arrive separately; preserve the previous frame meanwhile.

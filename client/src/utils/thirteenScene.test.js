@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Euler, Vector3 } from 'three'
 import { cardQuaternion, liftCardPose, tween } from '../components/CardTable3D/anim'
-import { buildThirteenSnapshot } from './thirteenScene'
+import { buildThirteenSnapshot, isBombTrick } from './thirteenScene'
 const table = { matchId: 'g1', seats: [{ userId: 'a', handCount: 1 }, { userId: 'b', handCount: 2 }, { isBot: true, handCount: 1 }, { isBot: true, handCount: 1 }], trick: null }
 const options = { table, myHand: ['3S'], anchor: 0, surfaceY: 0.785, seatPositions: [[0, 0.785, 0.55], [-0.55, 0.785, 0], [0, 0.785, -0.55], [0.55, 0.785, 0]], firstPerson: true }
 describe('Thirteen scene snapshots', () => {
@@ -20,7 +20,7 @@ describe('Thirteen scene snapshots', () => {
 
 describe('rendered fan planes and overlap', () => {
   it('keeps all 13 held card faces parallel and their indices spaced in the shared plane', () => {
-    const hand = ['3S', '3C', '3D', '4D', '6C', '6D', '7D', '8H', 'TD', 'JD', 'JH', 'QC', '2S']
+    const hand = ['3S', '3C', '3D', '4D', '6C', '6D', '7D', '8H', '10D', 'JD', 'JH', 'QC', '2S']
     const snapshot = buildThirteenSnapshot({ ...options, myHand: hand, table: { ...table, seats: table.seats.map(seat => ({ ...seat, handCount: 13 })) } })
     const own = snapshot.cards.filter(card => card.seat === 0)
     const normal = new Vector3(0, 0, 1).applyQuaternion(cardQuaternion(own[0]))
@@ -55,4 +55,11 @@ describe('rendered fan planes and overlap', () => {
     expect(cards[1].position[2] - cards[0].position[2]).toBeCloseTo(0.0005)
     expect(cards[1].order).toBe(cards[0].order + 1)
   })
+})
+
+it('detects a legal bomb only while beating a previous trick', () => {
+  const quad = { cards: ['9S', '9C', '9D', '9H'] }
+  expect(isBombTrick({ cards: ['2S'] }, quad)).toBe(true)
+  expect(isBombTrick(null, quad)).toBe(false)
+  expect(isBombTrick({ cards: ['10S', '10C', '10D', '10H'] }, quad)).toBe(false)
 })

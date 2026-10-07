@@ -7,8 +7,7 @@ import TableScene from '../CardTable3D/TableScene'
 import OpponentAvatar from '../CardTable3D/OpponentAvatar'
 import { useCardTransitions } from '../CardTable3D/useCardTransitions'
 import { MOTION } from '../CardTable3D/anim'
-import { classify, canBeat } from '../../utils/thirteen'
-import { buildThirteenSnapshot } from '../../utils/thirteenScene'
+import { buildThirteenSnapshot, isBombTrick } from '../../utils/thirteenScene'
 import ThirteenFallback2D from './ThirteenFallback2D'
 function CameraHand({ spaces, lowered, reducedMotion, children }) {
   const { camera, scene } = useThree()
@@ -27,8 +26,7 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
   const previousCombo = useRef(frame.trick)
   useEffect(() => {
     if (frame.trickKey !== previousTrick.current) {
-      const old = classify(previousCombo.current?.cards || []), next = classify(frame.trick?.cards || [])
-      bomb.current = Boolean(old && next && ['quad', 'pairSequence'].includes(next.type) && canBeat(next, old))
+      bomb.current = isBombTrick(previousCombo.current, frame.trick)
       previousTrick.current = frame.trickKey; previousCombo.current = frame.trick; elapsed.current = 0
     }
   }, [frame.trick, frame.trickKey])
@@ -45,13 +43,13 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
     if (burst.current) {
       const progress = time / MOTION.finish
       burst.current.visible = frame.finished && !reducedMotion && progress < 1
-      for (let i = 0; i < 8; i++) {
+      if (burst.current.visible) for (let i = 0; i < 8; i++) {
         const angle = i * 2.4
         object.position.set((frame.winnerPosition?.[0] || 0) + Math.cos(angle) * progress * 0.2, surfaceY + Math.sin(Math.PI * Math.min(progress, 1)) * 0.45 + i * 0.003, (frame.winnerPosition?.[2] || 0) + Math.sin(angle) * progress * 0.2)
         object.rotation.set(progress * 8 + i, progress * 5, angle)
         object.updateMatrix(); burst.current.setMatrixAt(i, object.matrix)
       }
-      burst.current.instanceMatrix.needsUpdate = true
+      if (burst.current.visible) burst.current.instanceMatrix.needsUpdate = true
     }
   })
   return <>
@@ -65,7 +63,7 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
   const spaces = useRef({})
   const poseStore = useMemo(() => ({ current: new Map(), matchId: table.matchId }), [table.matchId])
   const next = useMemo(() => buildThirteenSnapshot({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }), [table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview])
-  const frame = useCardTransitions(next, { dealOnMount, matchId: table.matchId })
+  const frame = useCardTransitions(next, { dealOnMount, matchId: table.matchId, isBomb: isBombTrick })
   const renderCard = (card) => <Card3D key={`${frame.matchId}:${card.id}`} deck={deck} cardId={card.cardId} target={card} from={card.from} delay={card.delay} duration={card.duration} height={card.height} reducedMotion={reducedMotion} dim={card.dim} spaces={spaces} poseStore={poseStore} poseId={card.id} selected={card.zone === 'hand' && card.seat === anchor && selectedCards.includes(card.cardId)} onClick={!preview && table.status === 'playing' && card.zone === 'hand' && card.seat === anchor && card.faceUp ? () => toggleCard(card.cardId) : undefined} />
   return <>
     {firstPerson && <CameraHand spaces={spaces} lowered={handLowered} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === 'camera').map(renderCard)}</CameraHand>}

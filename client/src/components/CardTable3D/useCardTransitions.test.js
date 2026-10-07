@@ -27,3 +27,23 @@ describe('card transitions', () => {
     expect(diffCardTransitions(first, next).cards[0].from.position).toEqual(first.cards[0].position)
   })
 })
+
+it('keeps at most two face-up combos, then sweeps both on reset', () => {
+  const first = { ...snapshot([card('3S', 'trick')]), trickKey: 'a' }
+  const second = { ...snapshot([card('4S', 'trick')]), trickKey: 'b' }
+  const under = diffCardTransitions(first, second)
+  expect(under.cards.filter(c => c.zone === 'under')).toHaveLength(1)
+  const third = diffCardTransitions(under, { ...snapshot([card('5S', 'trick')]), trickKey: 'c' })
+  expect(third.cards.filter(c => ['trick', 'under'].includes(c.zone))).toHaveLength(2)
+  const reset = diffCardTransitions(third, snapshot([]))
+  expect(reset.cards.every(c => c.zone === 'discard' && !c.faceUp)).toBe(true)
+})
+it('gives a bomb a stronger, faster landing after the opponent reach delay', () => {
+  const previous = { ...snapshot([card('opaque:1:0', 'hand', 1)]), trickKey: 'old' }
+  const next = { ...snapshot([card('9S', 'trick', 1)]), trickKey: 'bomb' }
+  const normal = diffCardTransitions(previous, next).cards[0]
+  const bomb = diffCardTransitions(previous, next, () => true).cards[0]
+  expect(bomb.delay).toBe(250)
+  expect(bomb.height).toBeGreaterThan(normal.height)
+  expect(bomb.duration).toBeLessThan(normal.duration)
+})

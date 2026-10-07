@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ThirteenOverlay from './ThirteenOverlay'
 import ThirteenPage from '../../pages/ThirteenPage'
 const mocks = vi.hoisted(() => ({ state: null }))
-vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered }) => <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} /> }))
+vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> }))
 vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> }))
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' } }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
@@ -18,6 +18,7 @@ describe('ThirteenOverlay', () => {
     render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     const dialog = await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })
     expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveFocus()
     expect(document.body.style.overflow).toBe('hidden')
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
     expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
@@ -43,6 +44,16 @@ describe('ThirteenOverlay', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Nâng bài' }))
     expect(screen.getByLabelText('Sân chơi ba chiều')).toHaveAttribute('data-lowered', 'false')
   })
+  it('keeps keyboard focus within the floating controls', () => {
+    render(<ThirteenOverlay {...props} open />)
+    const first = screen.getByRole('button', { name: 'Xem luật' })
+    const last = screen.getByRole('button', { name: 'Hạ bài' })
+    last.focus()
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(first).toHaveFocus()
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
+    expect(last).toHaveFocus()
+  })
   it('keeps the final reveal open with host rematch controls', async () => {
     const result = { matchId: 'g1', ranking: table.seats.map((seat, i) => ({ ...seat, seat: i })), payouts: [{ userId: 'a', amount: 20 }] }
     render(<ThirteenOverlay {...props} open table={{ ...table, status: 'settled' }} result={result} />)
@@ -56,5 +67,19 @@ describe('ThirteenOverlay', () => {
     render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument())
     expect(screen.getByRole('button', { name: 'Đánh bài' })).toBeEnabled()
+    expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' }).querySelector('[data-deal]')).toHaveAttribute('data-deal', 'false')
   })
+})
+
+it('deals on a waiting-to-playing transition, but not when reopening the same match', async () => {
+  mocks.state = { ...props, tables: [{ ...table, status: 'waiting' }], currentTable: { ...table, matchId: null, status: 'waiting' }, config: { stake: 10 }, closeResult: vi.fn() }
+  const view = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+  expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
+  mocks.state = { ...mocks.state, currentTable: table, tables: [table] }
+  view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+  const dialog = await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })
+  expect(dialog.querySelector('[data-deal]')).toHaveAttribute('data-deal', 'true')
+  await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Vào bàn' }))
+  expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' }).querySelector('[data-deal]')).toHaveAttribute('data-deal', 'false')
 })
