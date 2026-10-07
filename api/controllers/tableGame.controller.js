@@ -16,7 +16,7 @@ const createTableGameController = (service) => {
     sit: respond((req) => service.sit(req.user, req.params.id, req.body.requestKey)),
     move: respond((req) => service.move(req.user._id, req.params.id, req.body.move, req.body.requestKey)),
   }
-  for (const action of ['leave', 'start']) controller[action] = respond((req) => service[action](req.user._id, req.params.id, req.body.requestKey))
+  for (const action of ['leave', 'ready', 'unready']) controller[action] = respond((req) => service[action](req.user._id, req.params.id, req.body.requestKey))
   return controller
 }
 module.exports = { createTableGameController }

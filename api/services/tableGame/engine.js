@@ -13,10 +13,10 @@ class TableGameError extends Error {
 const createTableGameService = (definition) => {
   assertDefinition(definition)
   const { name } = definition
-  const { maxTables = 20, stake, turnMs, botDelayMs } = definition.config
+  const { maxTables = 20, stake, turnMs, botDelayMs, readyCountdownMs = 3000, readyTimeoutMs = 30000, idleSeatMs = 300000 } = definition.config
   const maxSeats = definition.seats.max
   const tables = []
-  const newTable = (code, visibility = 'public', createdBy = null) => ({ tableId: code, code, visibility, createdBy, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, queue: Promise.resolve() })
+  const newTable = (code, visibility = 'public', createdBy = null) => ({ tableId: code, code, visibility, createdBy, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, lobbyTimer: null, startsAt: null, readyDeadlineAt: null, status: 'waiting', autoLeft: [], queue: Promise.resolve() })
   const lobby = { queue: Promise.resolve() }
   const requests = new Map()
   const remember = (key, response) => {
@@ -43,14 +43,16 @@ const createTableGameService = (definition) => {
     ...view,
     game: name, tableId: table.tableId, code: table.code, visibility: table.visibility,
     matchId: match?._id?.toString() || null,
-    status: match?.status || 'waiting',
+    status: match?.status || table.status,
+    startsAt: table.startsAt, readyDeadlineAt: table.readyDeadlineAt, auto_left: table.autoLeft, startError: table.startError || null,
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),
-      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot),
+      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot), ready: Boolean(seat.ready),
     } : null),
     currentSeat: match ? definition.currentSeat(match.state) : null,
     stake: match?.stake ?? stake,
-    pot: match ? match.stake * match.humanCount : 0,
+    pot: match ? match.stake * match.humanCount : table.lastPot || 0,
+    humans: (match?.seats || table.seats).filter(seat => seat?.userId).length,
     turnDeadlineAt: match?.turnDeadlineAt || null,
     version: match?.version ?? 0,
     serverNow: Date.now(),
@@ -69,6 +71,7 @@ const createTableGameService = (definition) => {
   const deleteEmpty = table => {
     if (table.match || table.fundingMatch || table.seats.some(Boolean)) return
     clearTimeout(table.timer)
+    clearTimeout(table.lobbyTimer)
     emitPublic(table, 'table_game_state', { ...serializeTable(table), deleted: true })
     const index = tables.indexOf(table)
     if (index >= 0) tables.splice(index, 1)
@@ -89,6 +92,70 @@ const createTableGameService = (definition) => {
   }
   const waiting = (table) => {
     if (table.match || table.fundingMatch) throw new TableGameError('Table is playing', 409, 'TABLE_PLAYING')
+  }
+  const cancelCountdown = (table) => { table.startsAt = null }
+  const allReady = (table) => table.seats.some(Boolean) && table.seats.filter(Boolean).every(seat => seat.ready)
+  const removeSeats = (table, predicate, reason) => {
+    const removed = table.seats.filter(seat => seat && predicate(seat))
+    table.autoLeft = removed.map(seat => ({ userId: seat.userId, reason }))
+    table.seats = table.seats.map(seat => seat && predicate(seat) ? null : seat)
+    if (removed.length) {
+      cancelCountdown(table)
+      const payload = serializeTable(table)
+      for (const seat of removed) ioRef?.to(`table_game:user:${seat.userId}`).emit('table_game_state', payload)
+    }
+  }
+  const scheduleLobby = (table) => {
+    clearTimeout(table.lobbyTimer)
+    if (!tables.includes(table) || table.match || table.fundingMatch) return
+    const deadlines = [table.startsAt, table.readyDeadlineAt, ...(!table.readyDeadlineAt ? table.seats.filter(seat => seat && !seat.ready).map(seat => seat.idleDeadlineAt) : [])].filter(Boolean)
+    if (!deadlines.length) return
+    table.lobbyTimer = setTimeout(() => enqueue(table, async () => {
+      if (!tables.includes(table) || table.match || table.fundingMatch) return
+      const now = Date.now()
+      if (table.readyDeadlineAt && table.readyDeadlineAt <= now) {
+        removeSeats(table, seat => !seat.ready, 'not_ready')
+        table.readyDeadlineAt = null
+        if (allReady(table) && !table.startsAt) table.startsAt = now + readyCountdownMs
+      } else if (!table.readyDeadlineAt) {
+        removeSeats(table, seat => !seat.ready && seat.idleDeadlineAt <= now, 'idle')
+        if (table.autoLeft.length && allReady(table)) table.startsAt = now + readyCountdownMs
+      }
+      if (table.startsAt && table.startsAt <= now && allReady(table)) {
+        table.startsAt = null
+        try { await startInternal(table) } catch (error) {
+          console.error('[TableGame] Ready start failed:', error.message)
+          table.startError = error.code || 'INTERNAL_ERROR'
+          table.seats.forEach(seat => { if (seat) { seat.ready = false; seat.idleDeadlineAt = now + idleSeatMs } })
+          broadcast(table)
+        }
+      } else broadcast(table)
+      deleteEmpty(table)
+      scheduleLobby(table)
+    }).catch(error => { console.error('[TableGame] Lobby timer failed:', error.message); scheduleLobby(table) }), Math.max(0, Math.min(...deadlines) - Date.now()))
+  }
+  const setReady = (userId, tableId, requestKey, value) => {
+    validateKey(requestKey)
+    const key = `u:${userId}:${value ? 'ready' : 'unready'}:${tableId}:${requestKey}`
+    const table = tableFor(tableId)
+    return enqueue(table, async () => {
+      if (requests.has(key)) return snapshot(table, userId)
+      waiting(table)
+      const seat = table.seats.find(seat => seat?.userId === userId.toString())
+      if (!seat) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
+      table.autoLeft = []
+      table.startError = null
+      if (seat.ready !== value) {
+        seat.ready = value
+        seat.idleDeadlineAt = Date.now() + idleSeatMs
+        if (!value) cancelCountdown(table)
+        else if (allReady(table) && !table.startsAt) table.startsAt = Date.now() + readyCountdownMs
+      }
+      broadcast(table)
+      scheduleLobby(table)
+      remember(key, true)
+      return snapshot(table, userId)
+    })
   }
   const transaction = (game, seat, kind) => ({ type: definition.ledger[kind], operationKey: `${name}:${kind}:${game._id}:${seat.userId}`, referenceType: 'TableGameMatch', referenceId: game._id, metadata: { stake: game.stake } })
   const refund = async (game) => {
@@ -160,13 +227,17 @@ const createTableGameService = (definition) => {
     await Game.updateOne({ _id: game._id, status: 'settling' }, { $set: { status: 'settled' } })
     table.lastWinnerSeat = definition.result(game.state).ranking[0]
     table.hasPlayed = true
-    table.seats = game.seats.map((seat) => seat.userId ? { userId: seat.userId.toString(), username: seat.username } : null)
+    table.seats = game.seats.map((seat) => seat.userId ? { userId: seat.userId.toString(), username: seat.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs } : null)
+    table.status = 'finished'
+    table.lastPot = game.stake * game.humanCount
+    table.readyDeadlineAt = Date.now() + readyTimeoutMs
     table.match = null
     clearTimeout(table.timer)
     table.timer = null
     for (const seat of table.seats) if (seat && !hasSockets(seat.userId)) scheduleDisconnect(seat.userId)
-    emitPublic(table, 'table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), ranking, payouts, publicView: definition.publicView(game.state) })
+    emitPublic(table, 'table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), stake: game.stake, ranking, payouts, publicView: definition.publicView(game.state) })
     broadcast(table)
+    scheduleLobby(table)
   }
   const recover = async (table) => {
     if (!table.match) return
@@ -211,6 +282,7 @@ const createTableGameService = (definition) => {
       await refund(game)
       table.fundingMatch = null
       broadcast(table)
+      scheduleLobby(table)
     }).catch((error) => {
       console.error('[TableGame] Refund failed:', error.message)
       scheduleRefundRetry(table, game)
@@ -227,7 +299,10 @@ const createTableGameService = (definition) => {
       if (tables.some((t) => (t.match?.seats || t.seats).some((s) => s?.userId?.toString() === userId))) throw new TableGameError('Already seated at another table', 409, 'ALREADY_SEATED')
       const seat = table.seats.indexOf(null)
       if (seat < 0) throw new TableGameError('Table is full', 409, 'TABLE_FULL')
-      table.seats[seat] = { userId, username: user.displayName || user.username }
+      cancelCountdown(table)
+      table.autoLeft = []
+      table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs }
+      scheduleLobby(table)
       broadcast(table)
       return snapshot(table, userId)
     })
@@ -243,7 +318,10 @@ const createTableGameService = (definition) => {
     const table = tableFor(tableId)
     return enqueue(table, async () => {
       waiting(table)
-      table.seats = table.seats.map((s) => s?.userId === userId.toString() ? null : s)
+      if (!table.seats.some(seat => seat?.userId === userId.toString())) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
+      removeSeats(table, seat => seat.userId === userId.toString(), 'left')
+      cancelCountdown(table)
+      scheduleLobby(table)
       const response = snapshot(table, userId)
       broadcast(table)
       deleteEmpty(table)
@@ -251,15 +329,13 @@ const createTableGameService = (definition) => {
       return response
     })
   }
-  const start = (userId, tableId, requestKey) => {
-    validateKey(requestKey)
-    requestKey = `u:${userId}:${requestKey}`
-    const table = tableFor(tableId)
-    return enqueue(table, async () => {
-      if (!table.seats.some(seat => seat?.userId === userId.toString())) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
-      const previous = await Game.findOne({ game: name, tableId: table.tableId, startRequestKey: requestKey }).lean()
-      if (previous) return snapshot(table, userId)
+  const startInternal = async (table) => {
       waiting(table)
+      if (!allReady(table)) return
+      clearTimeout(table.lobbyTimer)
+      table.autoLeft = []
+      table.readyDeadlineAt = null
+      const requestKey = `ready:${randomInt(0x100000000)}:${Date.now()}`
       let botCount = 0
       const seats = table.seats.map((seat) => seat || { userId: null, username: `Bot ${++botCount}`, isBot: true })
       const humanCount = seats.filter((s) => s.userId).length
@@ -279,8 +355,6 @@ const createTableGameService = (definition) => {
       }
       broadcast(table)
       schedule(table)
-      return snapshot(table, userId)
-    })
   }
   const move = (userId, tableId, move, requestKey) => {
     validateKey(requestKey)
@@ -307,8 +381,9 @@ const createTableGameService = (definition) => {
       if (hasSockets(userId)) return
       for (const table of tables) enqueue(table, async () => {
         if (hasSockets(userId) || table.match || table.fundingMatch) return
-        table.seats = table.seats.map((s) => s?.userId === userId ? null : s)
-          broadcast(table)
+        removeSeats(table, seat => seat.userId === userId, 'disconnected')
+        scheduleLobby(table)
+        broadcast(table)
         deleteEmpty(table)
       }).catch((error) => console.error('[TableGame] Disconnect failed:', error.message))
     }, DISCONNECT_GRACE_MS))
@@ -358,7 +433,7 @@ const createTableGameService = (definition) => {
     init(io)
     ready = false
     try {
-      for (const table of tables) clearTimeout(table.timer)
+      for (const table of tables) { clearTimeout(table.timer); clearTimeout(table.lobbyTimer) }
       tables.length = 0
       const records = await Game.find({ game: name }).lean()
       for (const game of records.filter(game => game.fundingPending)) await refund(game)
@@ -380,6 +455,6 @@ const createTableGameService = (definition) => {
       throw error
     }
   }
-  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, start, move }
+  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), move }
 }
 module.exports = { createTableGameService, TableGameError }

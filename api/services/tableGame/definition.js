@@ -27,6 +27,7 @@ const assertDefinition = (definition) => {
     const value = definition.config?.[key]
     if (!Number.isInteger(value) || value < (key === 'stake' || key === 'botDelayMs' ? 0 : 1)) throw new TypeError(`Invalid config: ${key}`)
   }
+  for (const key of ['readyCountdownMs', 'readyTimeoutMs', 'idleSeatMs']) if (definition.config[key] !== undefined && (!Number.isInteger(definition.config[key]) || definition.config[key] < 1)) throw new TypeError(`Invalid config: ${key}`)
   for (const key of ['stake', 'payout', 'refund']) if (typeof definition.ledger?.[key] !== 'string' || !definition.ledger[key]) throw new TypeError(`Invalid ledger: ${key}`)
   for (const key of ['setup', 'currentSeat', 'applyMove', 'timeoutMove', 'botMove', 'playerView', 'publicView', 'result', 'payout']) if (typeof definition[key] !== 'function') throw new TypeError(`Missing game function: ${key}`)
   return definition

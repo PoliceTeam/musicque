@@ -70,7 +70,7 @@ const service = createTableGameService(definition)
 const { applyMove } = require('../services/thirteen/engine')
 const stateFor = (hands) => ({ status: 'playing', seats: hands.map((hand) => ({ hand, passed: false, finishedPlace: null })), currentSeat: 0, leaderSeat: 0, trick: null, isFirstGame: false, moves: [], finishOrder: [] })
 test('public configuration defaults and serialization never leak hands', () => {
-  assert.deepEqual(service.publicConfig(), { maxTables: 20, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
+  assert.deepEqual(service.publicConfig(), { maxTables: 20, readyCountdownMs: 3000, readyTimeoutMs: 30000, idleSeatMs: 300000, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
   const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
   const match = { _id: 'g', state, seats: [{ userId: 'a' }, {}, {}, {}] }
   const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, match)
@@ -167,4 +167,19 @@ test('definition timeout leads with lowest single and passes when responding', (
   const next = definition.applyMove(state, 0, { type: 'play', cards: ['3S'] })
   assert.deepEqual(definition.timeoutMove(next, 1), { type: 'pass' })
   assert.deepEqual(state.seats[0].hand, ['3S', '3H'])
+})
+
+test('public last move identifies bombs and passes without exposing a hand', () => {
+  const definition = require('../services/thirteen/definition')
+  let state = stateFor([['2S', '8S'], ['3S', '3C', '3D', '3H', '9S'], ['4S', '10S'], ['5S', 'JS']])
+  state = definition.applyMove(state, 0, { type: 'play', cards: ['2S'] })
+  assert.equal(definition.publicView(state).trick.isBomb, false)
+  state = definition.applyMove(state, 1, { type: 'play', cards: ['3S', '3C', '3D', '3H'] })
+  const view = definition.publicView(state)
+  assert.equal(view.trick.isBomb, true)
+  assert.deepEqual(view.lastMove, { seat: 1, cards: ['3S', '3C', '3D', '3H'], isBomb: true, sequence: 2 })
+  state = definition.applyMove(state, 2, { type: 'pass' })
+  assert.equal(definition.publicView(state).trick.isBomb, true)
+  assert.deepEqual(definition.publicView(state).lastMove, { seat: 2, cards: [], isBomb: false, sequence: 3 })
+  assert.ok(!JSON.stringify(view).includes('9S'))
 })
