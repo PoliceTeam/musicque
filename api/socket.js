@@ -205,21 +205,21 @@ const initSocket = (server) => {
       }
     });
 
-    let thirteenBindSequence = 0
-    socket.on('thirteen:bind', async (data = {}) => {
-      const sequence = ++thirteenBindSequence
+    let tableGameBindSequence = 0
+    socket.on('table_game:bind', async (data = {}) => {
+      const sequence = ++tableGameBindSequence
       try {
         const user = await resolveUserFromToken(data.token)
-        if (sequence !== thirteenBindSequence || !socket.connected) return
-        for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
-        if (user) socket.join(`thirteen:user:${user._id}`)
-        require('./services/thirteen.service').bindSocket({ user, socketId: socket.id })
+        if (sequence !== tableGameBindSequence || !socket.connected) return
+        for (const room of socket.rooms) if (room.startsWith('table_game:user:')) socket.leave(room)
+        if (user) socket.join(`table_game:user:${user._id}`)
+        for (const service of Object.values(require('./services/tableGame').services)) service.bindSocket({ user, socketId: socket.id })
       } catch (error) {
-        if (sequence === thirteenBindSequence) {
-          for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
-          require('./services/thirteen.service').onSocketDisconnect(socket.id)
+        if (sequence === tableGameBindSequence) {
+          for (const room of socket.rooms) if (room.startsWith('table_game:user:')) socket.leave(room)
+          for (const service of Object.values(require('./services/tableGame').services)) service.onSocketDisconnect(socket.id)
         }
-        console.error('[Thirteen] Bind failed:', error.message)
+        console.error('[TableGame] Bind failed:', error.message)
       }
     })
 
@@ -249,8 +249,8 @@ const initSocket = (server) => {
     })
 
     socket.on('disconnect', () => {
-      thirteenBindSequence++
-      require('./services/thirteen.service').onSocketDisconnect(socket.id)
+      tableGameBindSequence++
+      for (const service of Object.values(require('./services/tableGame').services)) service.onSocketDisconnect(socket.id)
       console.log('Client disconnected', socket.id);
       workspace.leave(socket)
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))

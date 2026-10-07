@@ -68,7 +68,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'ThirteenGame', 'TableGameMatch'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'TableGameMatch'],
       default: undefined,
     },
     referenceId: {

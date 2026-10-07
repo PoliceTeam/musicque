@@ -64,18 +64,20 @@ test('pot split conserves coins and gives rounding remainder to first human', ()
   assert.deepEqual(splitPot(10, ['a']), [{ userId: 'a', amount: 0 }])
   for (const n of [2, 3, 4]) assert.equal(splitPot(7, ['a', 'b', 'c', 'd'].slice(0, n)).reduce((sum, p) => sum + p.amount, 0), 7 * n)
 })
-const service = require('../services/thirteen.service')
+const definition = require('../services/thirteen/definition')
+const { createTableGameService } = require('../services/tableGame/engine')
+const service = createTableGameService(definition)
 const { applyMove } = require('../services/thirteen/engine')
 const stateFor = (hands) => ({ status: 'playing', seats: hands.map((hand) => ({ hand, passed: false, finishedPlace: null })), currentSeat: 0, leaderSeat: 0, trick: null, isFirstGame: false, moves: [], finishOrder: [] })
 test('public configuration defaults and serialization never leak hands', () => {
-  assert.deepEqual(service.publicConfig(), { tableCount: 3, stake: 10, turnMs: 20000, botDelayMs: 1200 })
-  const game = { ...stateFor([['3S'], ['4S'], ['5S'], ['6S']]), _id: 'g' }
-  game.seats[0].userId = 'a'
-  const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, game)
+  assert.deepEqual(service.publicConfig(), { tableCount: 3, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
+  const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
+  const match = { _id: 'g', state, seats: [{ userId: 'a' }, {}, {}, {}] }
+  const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, match)
   assert.ok(!JSON.stringify(payload).includes('"hand":'))
-  assert.deepEqual(service.handFor(game, 'a'), ['3S'])
-  assert.deepEqual(service.handFor(game, 'b'), [])
-  assert.deepEqual(service.handFor(game), [])
+  assert.deepEqual(service.viewFor(match, 'a'), { hand: ['3S'] })
+  assert.equal(service.viewFor(match, 'b'), null)
+  assert.equal(service.viewFor(match), null)
 })
 test('turn advancement skips passed and finished seats and resets the trick', () => {
   let state = stateFor([['3S', '7S'], ['4S'], ['5S'], ['6S']])
@@ -127,4 +129,31 @@ test('four deterministic bots finish a full game without losing cards or stallin
 })
 test('a lower four-pair sequence cannot beat a higher four-pair sequence', () => {
   assert.equal(beats('3S 3H 4S 4H 5S 5H 6S 6H', '4S 4H 5S 5H 6S 6H 7S 7H'), false)
+})
+
+test('definition games terminate with a valid ranking for 200 reproducible seeds', () => {
+  for (let seed = 1; seed <= 200; seed++) {
+    let value = seed
+    const rng = () => { value = (Math.imul(value, 1664525) + 1013904223) >>> 0; return value / 0x100000000 }
+    let state = definition.setup({ rng, seats: Array(4).fill({ isBot: true }), previous: seed % 2 ? null : { winnerSeat: seed % 4 } })
+    const original = JSON.stringify(state)
+    let moves = 0
+    while (!definition.result(state) && moves < 500) {
+      const seat = definition.currentSeat(state)
+      state = definition.applyMove(state, seat, definition.botMove(state, seat))
+      moves++
+    }
+    assert.deepEqual([...definition.result(state).ranking].sort(), [0, 1, 2, 3])
+    assert.ok(moves < 500)
+    assert.equal(definition.currentSeat(state), null)
+    assert.ok(original.includes('playing'))
+    assert.ok(!JSON.stringify(definition.publicView(state)).includes('"hand":'))
+  }
+})
+test('definition timeout leads with lowest single and passes when responding', () => {
+  const state = stateFor([['3S', '3H'], ['4S'], ['5S'], ['6S']])
+  assert.deepEqual(definition.timeoutMove(state, 0), { type: 'play', cards: ['3S'] })
+  const next = definition.applyMove(state, 0, { type: 'play', cards: ['3S'] })
+  assert.deepEqual(definition.timeoutMove(next, 1), { type: 'pass' })
+  assert.deepEqual(state.seats[0].hand, ['3S', '3H'])
 })

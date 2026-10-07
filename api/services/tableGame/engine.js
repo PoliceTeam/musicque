@@ -57,7 +57,7 @@ const createTableGameService = (definition) => {
   const broadcast = (table) => {
     ioRef?.emit('table_game_state', serializeTable(table))
     for (const seat of table.match?.seats || table.seats) if (seat?.userId) {
-      ioRef?.to(`table_game:user:${seat.userId}`).emit('table_game_private', { game: name, tableId: table.tableId, matchId: table.match?._id?.toString() || null, version: table.match?.version ?? 0, view: viewFor(table.match, seat.userId) })
+      ioRef?.to(`table_game:user:${seat.userId}`).emit('table_game_private', { game: name, userId: seat.userId.toString(), tableId: table.tableId, matchId: table.match?._id?.toString() || null, version: table.match?.version ?? 0, view: viewFor(table.match, seat.userId) })
     }
   }
   const enqueue = (table, action) => {

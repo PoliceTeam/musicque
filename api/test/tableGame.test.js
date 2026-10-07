@@ -213,3 +213,33 @@ test('definition validation rejects missing functions and invalid configuration'
   assert.equal(assertDefinition(definition), definition)
   for (const invalid of [{ ...definition, name: '../fake' }, { ...definition, botMove: null }, { ...definition, config: { ...definition.config, turnMs: 0 } }, { ...definition, seats: { min: 4, max: 2 } }]) assert.throws(() => assertDefinition(invalid))
 })
+test('overlapping socket binds keep only the newest authenticated hand room', async (t) => {
+  const h = harness(t)
+  const registry = require('../services/tableGame')
+  registry.services.fake = h.service
+  t.after(() => { delete registry.services.fake })
+  t.mock.method(global, 'setInterval', () => ({}))
+  const auth = require('../services/auth.service')
+  const pending = {}
+  t.mock.method(auth, 'resolveUserFromToken', (token) => new Promise((resolve) => { pending[token] = resolve }))
+  const socketIoPath = require.resolve('socket.io')
+  require(socketIoPath)
+  const original = require.cache[socketIoPath].exports
+  let connected
+  require.cache[socketIoPath].exports = () => ({ on: (_event, fn) => { connected = fn } })
+  t.after(() => { require.cache[socketIoPath].exports = original; delete require.cache[require.resolve('../socket')] })
+  delete require.cache[require.resolve('../socket')]
+  require('../socket').initSocket({})
+  const handlers = {}
+  const socket = { id: 'socket', connected: true, rooms: new Set(['socket']), on: (name, fn) => { handlers[name] = fn }, join(room) { this.rooms.add(room) }, leave(room) { this.rooms.delete(room) } }
+  connected(socket)
+  const first = handlers['table_game:bind']({ token: 'a' })
+  const second = handlers['table_game:bind']({ token: 'b' })
+  pending.b(player('b')); await second
+  pending.a(player('a')); await first
+  assert.deepEqual([...socket.rooms], ['socket', 'table_game:user:b'])
+  const third = handlers['table_game:bind']({ token: 'logout' })
+  pending.logout(null); await third
+  assert.deepEqual([...socket.rooms], ['socket'])
+  assert.ok(h.timers.size > 0)
+})
