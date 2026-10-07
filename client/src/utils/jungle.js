@@ -167,3 +167,68 @@ export const jumpArc = (from, to, t, height = 1.6) => {
 }
 
 export const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2)
+
+// Ăn được ai trên cùng địa hình (chưa xét hang/sông) — dùng cho thẻ hướng dẫn quân.
+export const preyOf = (type) => PIECE_ORDER.filter((other) => {
+  if (type === 'rat' && other === 'elephant') return true
+  if (type === 'elephant' && other === 'rat') return false
+  return PIECES[type].rank >= PIECES[other].rank
+})
+export const predatorsOf = (type) => PIECE_ORDER.filter((other) => preyOf(other).includes(type))
+
+export const PIECE_GUIDE = Object.freeze({
+  rat: {
+    role: 'Nhỏ nhất nhưng là khắc tinh của Voi',
+    abilities: [
+      'Quân duy nhất bơi được dưới sông.',
+      'Ăn được Voi khi cả hai cùng trên cạn.',
+      'Đứng dưới nước thì chặn đường nhảy của Sư tử và Hổ.',
+      'Dưới nước không lên bờ ăn quân được, trên bờ cũng không ăn được quân dưới nước.',
+    ],
+  },
+  cat: {
+    role: 'Quân nhẹ, hợp giữ nhà',
+    abilities: ['Không có năng lực đặc biệt.', 'Đứng gần hang nhà để ăn quân địch sa bẫy (chúng chỉ còn cấp 0).'],
+  },
+  dog: {
+    role: 'Quân nhẹ, hợp giữ nhà',
+    abilities: ['Không có năng lực đặc biệt, không bơi được.', 'Đứng gần hang nhà để ăn quân địch sa bẫy.'],
+  },
+  wolf: {
+    role: 'Quân tầm trung',
+    abilities: ['Không có năng lực đặc biệt.', 'Đủ mạnh để ăn Chó, Mèo, Chuột trên cạn.'],
+  },
+  leopard: {
+    role: 'Quân tầm trung, cơ động',
+    abilities: ['Không nhảy được qua sông — phải đi vòng qua lối giữa hoặc hai mép bàn.'],
+  },
+  tiger: {
+    role: 'Quân tấn công, vượt sông',
+    abilities: [
+      'Nhảy qua sông theo chiều dọc hoặc ngang, ăn luôn quân ở ô đáp nếu cấp nhỏ hơn hoặc bằng.',
+      'Không nhảy được nếu có Chuột (phe nào cũng vậy) đang bơi trên đường bay.',
+    ],
+  },
+  lion: {
+    role: 'Quân tấn công mạnh, vượt sông',
+    abilities: [
+      'Nhảy qua sông theo chiều dọc hoặc ngang, ăn luôn quân ở ô đáp nếu cấp nhỏ hơn hoặc bằng.',
+      'Không nhảy được nếu có Chuột (phe nào cũng vậy) đang bơi trên đường bay.',
+    ],
+  },
+  elephant: {
+    role: 'Mạnh nhất bàn — trừ một con Chuột',
+    abilities: ['Ăn được mọi quân trừ Chuột.', 'Bị Chuột ăn khi cả hai cùng trên cạn — đừng để Chuột địch áp sát.'],
+  },
+})
+
+// Trạng thái hiện tại của quân theo ô đang đứng.
+export const pieceSituation = (piece) => {
+  if (!piece) return null
+  if (piece.weakened) {
+    return { tone: 'danger', text: 'Đang sa bẫy địch: cấp 0, không ăn được ai, quân nào của đối phương cũng ăn được nó. Hãy thoát ra hoặc tiến thẳng vào ổ.' }
+  }
+  if (piece.swimming) return { tone: 'info', text: 'Đang bơi: chỉ đụng được Chuột cùng ở dưới nước, quân trên bờ không ăn được nó.' }
+  if (trapOwner(piece.square) === piece.side) return { tone: 'good', text: 'Đang đứng trong hang nhà: giữ nguyên sức mạnh, chặn đường vào ổ.' }
+  return null
+}

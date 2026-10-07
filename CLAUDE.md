@@ -450,5 +450,11 @@ thư mục vì texture trùng tên `colormap.png`).
   Quân có id cố định `side-type` (mỗi phe mỗi loài một con). Báo/Sói/Chuột mượn model Hổ/Cáo/Koala
   và đổi màu texture bằng canvas (`jungleAssets.js`). Nước sai nhưng "trông như" nước đi vẫn gửi
   server để lấy lý do. Màn chơi dời thẻ Mưa lì xì xuống góc dưới trái (`jungle.css`).
+- HUD người chơi nổi trên khung 3D (`JungleHud`): đối thủ góc trên trái, mình góc dưới phải
+  (khán giả nhìn từ phe Đỏ). Bấm quân bất kỳ mở `JunglePieceCard` ở **đầu cột phải** — cố ý không
+  nổi trên bàn vì ở 1366px nó che cột f–g. Nội dung lấy từ `PIECE_GUIDE` / `preyOf` /
+  `predatorsOf` / `pieceSituation` trong `utils/jungle.js`; đổi luật thì sửa cả ở đó.
+- Nền cỏ và khối viền đất dưới bàn **không được trùng cao độ** — trùng là z-fighting thành vệt
+  nhiễu quanh mép bàn (đã gặp). Ô ổ thú (`tile-dirt` dày 0.1) được kéo `scale y = 2` cho chạm nền.
 - Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
   `canvas.toDataURL()` kiểm tra được.

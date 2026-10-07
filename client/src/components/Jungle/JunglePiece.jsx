@@ -55,7 +55,7 @@ const RankBadge = ({ piece, height }) => (
   </Html>
 )
 
-export const JunglePiece = ({ piece, motion, selected, interactive, outcome, shakeKey, onSelect, onHover }) => {
+export const JunglePiece = ({ piece, motion, selected, inspected, interactive, outcome, shakeKey, onSelect, onHover }) => {
   const model = usePieceModel(piece.type)
   const root = useRef()
   const body = useRef()
@@ -161,16 +161,16 @@ export const JunglePiece = ({ piece, motion, selected, interactive, outcome, sha
     })
 
     if (ring.current) {
-      const pulse = selected ? 1.08 + Math.sin(t * 6) * 0.08 : 1
+      const pulse = selected || inspected ? 1.08 + Math.sin(t * 6) * 0.08 : 1
       ring.current.scale.setScalar(pulse)
-      ring.current.material.opacity = selected ? 0.95 : 0.7
+      ring.current.material.opacity = selected || inspected ? 0.95 : 0.7
     }
   })
 
   const handleOver = (event) => {
     event.stopPropagation()
     onHover?.(piece.square)
-    if (interactive) document.body.style.cursor = 'pointer'
+    document.body.style.cursor = interactive ? 'pointer' : 'help'
   }
   const handleOut = () => {
     onHover?.(null)
@@ -181,7 +181,7 @@ export const JunglePiece = ({ piece, motion, selected, interactive, outcome, sha
     <group ref={root}>
       <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} renderOrder={3}>
         <ringGeometry args={[0.34, 0.44, 40]} />
-        <meshBasicMaterial color={selected ? '#ffd43b' : SIDE_COLOR[piece.side]} transparent depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial color={selected ? '#ffd43b' : inspected ? '#ffffff' : SIDE_COLOR[piece.side]} transparent depthWrite={false} toneMapped={false} />
       </mesh>
       <group ref={body}>
         <group ref={animRoot} position={model.offset} scale={model.scale}>

@@ -8,6 +8,9 @@ import {
   isWater,
   jumpArc,
   looksLikeMove,
+  pieceSituation,
+  predatorsOf,
+  preyOf,
   squareToWorld,
   worldToSquare,
 } from './jungle'
@@ -90,5 +93,23 @@ describe('kết quả và quân bị ăn', () => {
     const to = [0, 0, -2]
     expect(jumpArc(from, to, 0.5)[1]).toBeCloseTo(1.6)
     expect(jumpArc(from, to, 1)).toEqual([0, 0, -2])
+  })
+})
+
+describe('hướng dẫn quân', () => {
+  it('ăn được / bị ăn bởi theo luật nhà', () => {
+    expect(preyOf('rat')).toEqual(['elephant', 'rat'])
+    expect(preyOf('elephant')).not.toContain('rat')
+    expect(preyOf('elephant')).toHaveLength(7)
+    expect(predatorsOf('elephant')).toEqual(['elephant', 'rat'])
+    expect(predatorsOf('rat')).not.toContain('elephant')
+    expect(predatorsOf('lion')).toEqual(['elephant', 'lion'])
+  })
+
+  it('mô tả tình trạng quân theo ô đang đứng', () => {
+    expect(pieceSituation({ side: 'red', square: 'd8', weakened: true }).tone).toBe('danger')
+    expect(pieceSituation({ side: 'red', square: 'b4', swimming: true }).tone).toBe('info')
+    expect(pieceSituation({ side: 'red', square: 'd2' }).tone).toBe('good')
+    expect(pieceSituation({ side: 'red', square: 'd5' })).toBeNull()
   })
 })

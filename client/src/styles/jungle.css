@@ -243,7 +243,8 @@
 .jg-stage__hint {
   position: absolute;
   left: 50%;
-  bottom: 12px;
+  top: 58px;
+  white-space: nowrap;
   transform: translateX(-50%);
   margin: 0;
   font-size: 12px;
@@ -273,7 +274,7 @@
 
 .jg-offer {
   position: absolute;
-  top: 60px;
+  top: 96px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -451,3 +452,145 @@
 
 /* Thẻ Mưa lì xì (toàn cục, cố định góc trên phải) che thẻ đối thủ ở màn chơi: dời xuống góc dưới trái khung bàn. */
 body:has(.jg-page.is-game) .lr-dock { top: auto; bottom: 44px; right: auto; left: 16px; }
+
+/* ---------- HUD người chơi nổi trên khung 3D (gọn: 2 hàng) ---------- */
+.jg-hud {
+  --side: var(--jg-red);
+  position: absolute;
+  z-index: 46;
+  box-sizing: border-box;
+  width: 212px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--jg-surface) 86%, transparent);
+  backdrop-filter: blur(8px);
+  border: 2px solid color-mix(in srgb, var(--side) 25%, transparent);
+  box-shadow: 0 6px 18px rgba(20, 40, 20, 0.16);
+  color: var(--jg-text);
+  pointer-events: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.jg-hud.is-blue { --side: var(--jg-blue); }
+.jg-hud.is-top-left { top: 12px; left: 12px; }
+.jg-hud.is-bottom-right { right: 12px; bottom: 12px; }
+.jg-hud.is-turn { border-color: var(--side); box-shadow: 0 0 0 3px color-mix(in srgb, var(--side) 22%, transparent), 0 8px 20px rgba(20, 40, 20, 0.2); }
+.jg-hud.is-low { animation: jg-hud-alarm 1s ease-in-out infinite; }
+@keyframes jg-hud-alarm { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--jg-red) 35%, transparent); } }
+
+.jg-hud__row { display: flex; align-items: center; gap: 8px; }
+.jg-hud__avatar {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  background: var(--side);
+}
+.jg-hud__who { min-width: 0; flex: 1; line-height: 1.15; }
+.jg-hud__who strong { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jg-hud__tag { font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--side); }
+.jg-hud__time { flex: none; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; color: var(--jg-muted); }
+.jg-hud.is-turn .jg-hud__time { color: var(--side); }
+.jg-hud.is-low .jg-hud__time { color: var(--jg-red); }
+
+.jg-hud__bar { display: block; height: 3px; margin-top: 6px; border-radius: 2px; background: var(--jg-surface-2); overflow: hidden; }
+.jg-hud__bar span { display: block; height: 100%; background: var(--side); transition: width 0.25s linear; }
+.jg-hud.is-low .jg-hud__bar span { background: var(--jg-red); }
+
+.jg-hud__foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; min-height: 18px; }
+.jg-hud__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--jg-muted);
+  background: var(--jg-surface-2);
+}
+.jg-hud__state.is-on { color: #fff; background: var(--side); }
+.jg-hud__state i { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: jg-blink 1s steps(2) infinite; }
+.jg-hud__lost { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0; margin-left: auto; }
+.jg-hud__lost img { width: 18px; height: 18px; object-fit: contain; margin-left: -3px; }
+.jg-hud__away { margin: 5px 0 0; font-size: 11px; font-weight: 800; color: var(--jg-red); }
+
+/* ---------- Thẻ thông tin quân ---------- */
+/* Nằm ở đầu cột phải (không nổi trên bàn) để không che các ô đi được. */
+.jg-pcard {
+  --side: var(--jg-red);
+  position: relative;
+  flex: none;
+  max-height: 58%;
+  overflow-y: auto;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  background: var(--jg-surface-2);
+  border: 1px solid var(--jg-border);
+  border-top: 4px solid var(--side);
+  color: var(--jg-text);
+  animation: jg-pcard-in 0.22s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.jg-pcard.is-blue { --side: var(--jg-blue); }
+@keyframes jg-pcard-in { from { opacity: 0; transform: translateY(-6px) scale(0.97); } }
+.jg-pcard__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--jg-surface-2);
+  color: var(--jg-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.jg-pcard__close:hover { color: var(--jg-text); }
+.jg-pcard__head { display: flex; align-items: center; gap: 12px; padding-right: 22px; }
+.jg-pcard__icon { width: 52px; height: 52px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--jg-surface-2); }
+.jg-pcard__icon img { width: 44px; height: 44px; object-fit: contain; }
+.jg-pcard__owner { display: block; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; color: var(--side); white-space: nowrap; }
+.jg-pcard__head h3 { margin: 0; font-size: 20px; font-weight: 900; color: var(--jg-text); }
+.jg-pcard__head p { margin: 0; font-size: 12px; color: var(--jg-muted); }
+.jg-pcard__rank {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: var(--side);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.jg-pcard__rank small { font-size: 9px; letter-spacing: 0.1em; opacity: 0.85; margin-bottom: 2px; }
+.jg-pcard__rank.is-weak { background: #495057; color: #ffd43b; }
+.jg-pcard__rank s { font-size: 12px; opacity: 0.6; }
+.jg-pcard__situation { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; line-height: 1.4; font-weight: 600; }
+.jg-pcard__situation.is-danger { background: color-mix(in srgb, var(--jg-red) 12%, transparent); color: var(--jg-red); }
+.jg-pcard__situation.is-info { background: color-mix(in srgb, var(--jg-blue) 12%, transparent); color: var(--jg-blue); }
+.jg-pcard__situation.is-good { background: color-mix(in srgb, var(--jg-green) 12%, transparent); color: var(--jg-green); }
+.jg-pcard__facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin: 12px 0 0; align-items: start; }
+.jg-pcard__facts dt { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--jg-muted); padding-top: 4px; }
+.jg-pcard__facts dd { margin: 0; }
+.jg-pcard__chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.jg-pcard__chips em { color: var(--jg-faint); font-style: normal; }
+.jg-pcard__chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px 2px 2px; border-radius: 999px; background: var(--jg-surface-2); border: 1px solid var(--jg-border); font-size: 12px; font-weight: 700; }
+.jg-pcard__chip img { width: 18px; height: 18px; object-fit: contain; }
+.jg-pcard__abilities { margin: 12px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.45; }
+.jg-pcard__abilities li + li { margin-top: 3px; }
+.jg-pcard__abilities li.is-general { color: var(--jg-muted); }
+.jg-pcard__moves { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed var(--jg-border); font-size: 12px; font-weight: 700; color: var(--jg-green); }
+
+.jg-side__tip { margin: 0; padding: 12px 14px; border-radius: 14px; border: 1px dashed var(--jg-border); color: var(--jg-muted); font-size: 13px; line-height: 1.45; }

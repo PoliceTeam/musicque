@@ -67,7 +67,8 @@ const Tile = ({ square }) => {
   const [x, , z] = squareToWorld(square)
   const den = denOwner(square)
   if (isWater(square)) return <Prop name='water' color={WATER_TINT} position={[x, 0, z]} />
-  if (den) return <Prop name='denTile' position={[x, 0.1, z]} />
+  // tile-dirt chỉ dày 0.1: kéo cao gấp đôi cho chạm nền thay vì treo lơ lửng để lộ khe.
+  if (den) return <Prop name='denTile' position={[x, 0, z]} scale={[1, 2, 1]} />
   if (trapOwner(square)) return <Prop name='trapTile' position={[x, 0, z]} />
   return <Prop name='tile' position={[x, 0, z]} />
 }
@@ -114,13 +115,14 @@ export const JungleScenery = ({ sprungTraps = new Set(), winner = null }) => {
 
   return (
     <group>
-      {/* Nền cỏ lớn + viền đất dưới bàn */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+      {/* Nền cỏ lớn + viền đất dưới bàn. Mặt trên viền đất phải cao hơn hẳn mặt cỏ
+          (không được trùng cao độ), nếu không hai mặt z-fight thành vệt nhiễu quanh mép bàn. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
         <circleGeometry args={[16, 48]} />
         <meshStandardMaterial color='#79c46a' roughness={1} />
       </mesh>
-      <mesh position={[0, -0.06, 0]} receiveShadow>
-        <boxGeometry args={[COLS + 0.5, 0.1, ROWS + 0.5]} />
+      <mesh position={[0, -0.04, 0]} receiveShadow>
+        <boxGeometry args={[COLS + 0.5, 0.08, ROWS + 0.5]} />
         <meshStandardMaterial color='#b98a5a' roughness={1} />
       </mesh>
 

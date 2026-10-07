@@ -15,50 +15,17 @@ import {
   PIECES,
   SIDE_LABEL,
   capturedPieces,
-  clockRemaining,
   describeResult,
-  formatClock,
   mySideOf,
+  pieceId,
 } from '../../utils/jungle'
 import JungleBoard3D, { JungleLoading } from './JungleBoard3D'
+import JunglePlayerHud from './JungleHud'
+import JunglePieceCard from './JunglePieceCard'
 import { iconUrl } from './jungleAssets'
 import { useJungleGame, useNow } from './useJungle'
 
 const errorText = (error) => error.response?.data?.message || 'Có lỗi xảy ra, thử lại nhé'
-const LOW_TIME_MS = 60_000
-
-const PlayerCard = ({ game, side, isMe, receivedAt, now, lost }) => {
-  const player = game[side]
-  const running = game.status === 'playing' && game.board?.turn === side
-  const remaining = clockRemaining(game.clock, side, receivedAt, now)
-  const away = game.away?.[side]
-  const awayLeft = away ? Math.max(0, game.disconnectMs - (now - Date.parse(away))) : null
-  return (
-    <div className={`jg-player is-${side}${running ? ' is-turn' : ''}${isMe ? ' is-me' : ''}`}>
-      <div className='jg-player__id'>
-        <span className='jg-player__swatch' />
-        <div>
-          <strong>{player?.displayName || 'Đang chờ…'}{isMe && <em> · bạn</em>}</strong>
-          <small>Phe {SIDE_LABEL[side]}{running ? ' · đang đi' : ''}</small>
-        </div>
-        {game.clock && (
-          <span className={`jg-clock${running ? ' is-running' : ''}${remaining !== null && remaining < LOW_TIME_MS ? ' is-low' : ''}`}>
-            {formatClock(remaining)}
-          </span>
-        )}
-      </div>
-      {awayLeft !== null && (
-        <p className='jg-player__away'>Mất kết nối · xử thua sau {formatClock(awayLeft)}</p>
-      )}
-      <div className='jg-player__lost' aria-label='Quân đã mất'>
-        {lost.length === 0 && <span className='jg-player__none'>Chưa mất quân nào</span>}
-        {lost.map((type) => (
-          <img key={type} src={iconUrl(type)} alt={PIECES[type].name} title={PIECES[type].name} className={`is-${type}`} />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const MoveLog = ({ moves }) => {
   const ref = useRef()
@@ -116,6 +83,7 @@ const JungleGameView = ({ gameId }) => {
   const now = useNow(250)
   const [busy, setBusy] = useState(false)
   const [resultHidden, setResultHidden] = useState(false)
+  const [inspectedId, setInspectedId] = useState(null)
   const settledRef = useRef(null)
 
   const mySide = mySideOf(game, user?._id)
@@ -129,7 +97,16 @@ const JungleGameView = ({ gameId }) => {
     }
   }, [game?.status, game?.id, refreshBalance])
 
-  useEffect(() => { setResultHidden(false) }, [gameId])
+  useEffect(() => {
+    setResultHidden(false)
+    setInspectedId(null)
+  }, [gameId])
+
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === 'Escape') setInspectedId(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const call = useCallback(async (request, { silent = false } = {}) => {
     setBusy(true)
@@ -217,6 +194,10 @@ const JungleGameView = ({ gameId }) => {
   const viewer = mySide || 'red'
   const opponent = viewer === 'red' ? 'blue' : 'red'
   const lost = capturedPieces(game.board?.pieces)
+  const inspected = inspectedId ? game.board?.pieces.find((piece) => pieceId(piece) === inspectedId) || null : null
+  const inspectedMoves = inspected && myTurn && inspected.side === mySide
+    ? (game.board?.legalMoves || []).filter((move) => move.from === inspected.square).length
+    : null
   const offerFromOpponent = playing && mySide && game.drawOfferBy === opponent
   const myOfferPending = playing && mySide && game.drawOfferBy === mySide
 
@@ -229,8 +210,17 @@ const JungleGameView = ({ gameId }) => {
   return (
     <div className='jg-game'>
       <div className='jg-stage'>
-        <JungleBoard3D game={game} mySide={mySide} canAct={Boolean(myTurn) && !busy} onMove={onMove} />
+        <JungleBoard3D
+          game={game}
+          mySide={mySide}
+          canAct={Boolean(myTurn) && !busy}
+          onMove={onMove}
+          inspectedId={inspected ? inspectedId : null}
+          onInspect={setInspectedId}
+        />
         <JungleLoading />
+        <JunglePlayerHud game={game} side={opponent} isMe={false} corner='top-left' receivedAt={receivedAt} now={now} lost={lost[opponent]} />
+        <JunglePlayerHud game={game} side={viewer} isMe={Boolean(mySide)} corner='bottom-right' receivedAt={receivedAt} now={now} lost={lost[viewer]} />
         <div className={`jg-turn${myTurn ? ' is-mine' : ''}`}>{status}</div>
         {offerFromOpponent && (
           <div className='jg-offer'>
@@ -242,16 +232,19 @@ const JungleGameView = ({ gameId }) => {
         {game.result && !resultHidden && (
           <ResultOverlay game={game} mySide={mySide} onClose={() => setResultHidden(true)} onRematch={rematch} />
         )}
-        <p className='jg-stage__hint'>Kéo để xoay bàn · cuộn để phóng to · Esc để bỏ chọn</p>
+        <p className='jg-stage__hint'>Bấm quân để xem thông tin · kéo xoay bàn · cuộn phóng to</p>
       </div>
 
       <aside className='jg-side'>
-        <PlayerCard game={game} side={opponent} isMe={false} receivedAt={receivedAt} now={now} lost={lost[opponent]} />
+        {inspected ? (
+          <JunglePieceCard piece={inspected} mySide={mySide} moveCount={inspectedMoves} onClose={() => setInspectedId(null)} />
+        ) : (
+          <p className='jg-side__tip'>💡 Bấm vào bất kỳ quân nào trên bàn để xem nó là con gì, ăn được ai và có năng lực gì.</p>
+        )}
         <div className='jg-side__log'>
           <h3>Diễn biến{game.board && <small> · {game.board.pliesSinceCapture}/100 nước chưa ăn quân</small>}</h3>
           <MoveLog moves={game.moves || []} />
         </div>
-        <PlayerCard game={game} side={viewer} isMe={Boolean(mySide)} receivedAt={receivedAt} now={now} lost={lost[viewer]} />
         {playing && mySide && (
           <div className='jg-side__actions'>
             {game.mode === 'pvp' && (

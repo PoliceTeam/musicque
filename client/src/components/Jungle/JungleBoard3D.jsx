@@ -88,7 +88,7 @@ export const JungleLoading = () => {
   )
 }
 
-const JungleBoard3D = ({ game, mySide, canAct, onMove }) => {
+const JungleBoard3D = ({ game, mySide, canAct, onMove, inspectedId, onInspect }) => {
   const viewerSide = mySide || 'red'
   const pieces = useMemo(() => game?.board?.pieces || [], [game])
   const legalMoves = useMemo(() => game?.board?.legalMoves || [], [game])
@@ -226,7 +226,10 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove }) => {
       camera={{ position: CAMERA[viewerSide], fov: 40, near: 0.1, far: 80 }}
       // DEV giữ buffer để công cụ chụp màn hình/kiểm thử đọc được khung hình WebGL.
       gl={{ antialias: true, preserveDrawingBuffer: import.meta.env.DEV }}
-      onPointerMissed={() => setSelected(null)}
+      onPointerMissed={() => {
+        setSelected(null)
+        onInspect?.(null)
+      }}
     >
       <color attach='background' args={['#bfe3f7']} />
       <fog attach='fog' args={['#bfe3f7', 20, 38]} />
@@ -273,10 +276,15 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove }) => {
                 piece={piece}
                 motion={event?.id === id ? event : null}
                 selected={selected === piece.square}
+                inspected={inspectedId === id}
                 interactive={canAct && (piece.side === mySide || Boolean(selected))}
                 outcome={outcomeFor(piece.side)}
                 shakeKey={shakes[id] || 0}
-                onSelect={(p) => handleSquare(p.square)}
+                onSelect={(p) => {
+                  // Quân nào cũng mở được thẻ thông tin; quân mình thì còn được chọn để đi.
+                  if (p.side !== mySide || !selected || p.square === selected) onInspect?.(id)
+                  handleSquare(p.square)
+                }}
                 onHover={setHover}
               />
             )
