@@ -510,23 +510,52 @@ Unchanged from the previous version of this section:
   - about 1.15 m above the floor and about 0.5 m behind my table edge;
   - looking slightly down at the table centre;
   - FOV about 55° vertical.
-- No OrbitControls. Add only subtle head-look: the mouse position offsets yaw by ±4° and pitch by
-  ±3°, damped. When `prefers-reduced-motion` is set, turn it off.
+- **The camera is completely fixed.** No OrbitControls, no mouse head-look, no drag, no zoom and no
+  scroll-to-move. Only scripted effects (the bomb shake) may move it briefly, and it always
+  returns to the exact same pose.
 - The across seat is in the middle of the view. The left and right seats are at about ±70°, so
   they appear partially at the screen edges, as at a real table. Tune the FOV and seat angles so
   each opponent's head, hand fan and play area are at least partly visible at 16:9.
 
 ### My hand — held up in front of the camera
-- The hand is a group parented to the camera, like a first-person weapon. It is a fan of my cards:
-  - placed about 0.35–0.40 m in front of the eyes, in the lower part of the view;
-  - tilted toward the eyes about 60–70° from the table plane;
-  - spread on an arc, sorted by value, with ranks and suits legible.
-- Hover nudges a card up. Clicking toggles selection, which pulls the card up and out of the fan
-  by about 3 cm, with a glow.
+- The hand is a group parented to the camera, like a first-person weapon. It is placed about
+  0.35–0.40 m in front of the eyes, in the lower part of the view, and tilted toward the eyes
+  about 60–70° from the table plane.
+- **Fan layout — a true fan, deterministic, symmetric.** Write it as a pure function
+  `fanLayout(count, opts)` in `components/CardTable3D/fanLayout.js` and unit-test it:
+  - All cards lie in **one plane** (the hand plane) and rotate around **one shared pivot** below
+    the hand centre, like fingers holding a real fan. Card *i* gets angle
+    `(i - (count-1)/2) * step`. The pivot is about 1.2 card heights below the card centres.
+  - `step` adapts to `count`, so the total spread is at most about 50°. The horizontal distance
+    between neighbouring cards' top-left corners must be **≥ 1.5 cm**, so the rank and suit index
+    of every card stays visible.
+  - The fan is centred horizontally in view and symmetric. No per-card random tilt, and no
+    vertical drift between cards.
+  - Cards are sorted by game value, left = lowest.
+- **Overlap order — a later card always covers the previous one** (card *i+1* on top of card
+  *i*), so each card shows its top-left index, as in a real hand:
+  - Offset each card toward the camera by `i * 0.0005 m` along the hand-plane normal.
+  - Also set `renderOrder = baseOrder + i` on both the front and back meshes.
+  - Use `material.polygonOffset` with factor/units that decrease with *i*, to kill
+    z-fighting.
+  - Selection or hover lift moves a card **within the hand plane** (up along its own axis) and
+    must **not** change its depth order.
+  - The same overlap rule applies to the trick on the table and to opponents' fans: later cards
+    on top.
+- Hover nudges a card up by about 1 cm. Clicking toggles selection, which pulls the card up
+  about 3 cm, with a glow.
 - Playing: the selected cards leave the camera-parented group. Convert them to world space, then
-  arc down onto the trick area. The rest of the fan re-spreads.
+  arc down onto the trick area. The rest of the fan re-spreads, tweening into the new
+  `fanLayout(count - n)`.
 - A "Hạ bài" toggle in the action bar lowers the fan so the table is fully visible; clicking
   again raises it. The fan must not hide the trick area in the default pose.
+- **Tests for `fanLayout`:**
+  - symmetric around 0;
+  - equal angular step;
+  - every card at the same plane distance;
+  - index spacing ≥ 1.5 cm for every count from 1 to 13;
+  - depth offset strictly increasing with *i*;
+  - total spread ≤ 50°.
 
 ### Opponents — seated chibi characters (approach A: procedural pose)
 - Opponents use `client/public/models/chibi.glb`:

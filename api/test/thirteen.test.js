@@ -150,6 +150,17 @@ test('definition games terminate with a valid ranking for 200 reproducible seeds
     assert.ok(!JSON.stringify(definition.publicView(state)).includes('"hand":'))
   }
 })
+test('remaining hands are public only after the complete result', () => {
+  const state = definition.setup({ rng: () => 0.4, previous: null })
+  assert.equal(definition.publicView(state).remainingHands, undefined)
+  const partial = { ...state, finishOrder: [0, 1, 2] }
+  assert.equal(definition.publicView(partial).remainingHands, undefined)
+  const finished = { ...state, finishOrder: [0, 1, 2, 3] }
+  const reveal = definition.publicView(finished).remainingHands
+  assert.deepEqual(reveal, finished.seats.map((seat) => seat.hand))
+  reveal[0].pop()
+  assert.equal(finished.seats[0].hand.length, 13)
+})
 test('definition timeout leads with lowest single and passes when responding', () => {
   const state = stateFor([['3S', '3H'], ['4S'], ['5S'], ['6S']])
   assert.deepEqual(definition.timeoutMove(state, 0), { type: 'play', cards: ['3S'] })

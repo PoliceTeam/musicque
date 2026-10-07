@@ -10,6 +10,8 @@ import './styles/xiangqi.css'
 import './styles/wordchain.css'
 import './styles/redlight.css'
 import './styles/lottery.css'
+import './styles/thirteen.css'
+import './styles/card-table.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

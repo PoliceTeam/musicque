@@ -147,7 +147,7 @@ const createTableGameService = (definition) => {
     table.timer = null
     if (!table.seats.some((s) => s?.userId === table.hostId)) table.hostId = table.seats.find((s) => s)?.userId || null
     for (const seat of table.seats) if (seat && !hasSockets(seat.userId)) scheduleDisconnect(seat.userId)
-    ioRef?.emit('table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), ranking, payouts })
+    ioRef?.emit('table_game_result', { game: name, tableId: table.tableId, matchId: game._id.toString(), ranking, payouts, publicView: definition.publicView(game.state) })
     broadcast(table)
   }
   const recover = async (table) => {

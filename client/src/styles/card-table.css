@@ -1,0 +1,16 @@
+.card-table-surface { height: 520px; margin: 24px 0; border-radius: 16px; overflow: hidden; background: #94a3a6; }
+.card-table-seat { padding: 8px 12px; border-radius: 8px; background: #123329; color: white; text-align: center; white-space: nowrap; font-size: 12px; min-width: 76px; pointer-events: none; }
+.card-table-seat span { display: block; margin-top: 3px; }
+.card-table-seat.is-turn { outline: 2px solid #48e487; outline-offset: 3px; }
+@media (max-width: 700px) { .card-table-surface { height: 380px; } }
+
+.card-table-seat { position: relative; border: 3px solid transparent; background: linear-gradient(#123329, #123329) padding-box, linear-gradient(#385348, #385348) border-box; }
+.card-table-seat.is-turn { outline: none; background: linear-gradient(#123329, #123329) padding-box, conic-gradient(#72edb5 var(--turn-progress, 100%), #385348 0) border-box; }
+.card-table-seat em { font-size: 9px; font-style: normal; color: #b5c9ff; margin-left: 6px; }
+.card-table-seat.has-passed { opacity: 0.6; }
+.card-table-pass, .card-table-rank { display: block; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); border-radius: 12px; padding: 5px 10px; background: #fff8e5; color: #183128; white-space: nowrap; }
+.card-table-pass { animation: card-table-pass 800ms ease-out forwards; }
+.card-table-rank { background: #d9f5b6; animation: card-table-rank 350ms ease-out; }
+@keyframes card-table-pass { 0% { opacity: 0; transform: translateX(-50%) scale(0.6); } 25% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+@keyframes card-table-rank { from { transform: translateX(-50%) scale(0.5); } to { transform: translateX(-50%) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .card-table-pass, .card-table-rank { animation: none; } }

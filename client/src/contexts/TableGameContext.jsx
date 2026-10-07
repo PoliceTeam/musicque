@@ -30,6 +30,7 @@ export const TableGameProvider = ({ game, children }) => {
   const [privateViews, setPrivateViews] = useState({})
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
+  const closeResult = useCallback(() => setResult(null), [])
   const busyRef = useRef(false)
   const userId = user?._id
   const userRef = useRef(userId)
@@ -102,5 +103,5 @@ export const TableGameProvider = ({ game, children }) => {
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult: () => setResult(null), sit: (id) => action('sit', id), leave: (id) => action('leave', id), start: (id) => action('start', id), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id) => action('sit', id), leave: (id) => action('leave', id), start: (id) => action('start', id), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }

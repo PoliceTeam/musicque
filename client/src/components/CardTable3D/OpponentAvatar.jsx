@@ -15,6 +15,11 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       if (!node.isMesh) return
       node.frustumCulled = false
       const tint = (material) => {
+        // Match the existing Chibi overlay: exported BLEND skin needs opaque depth writes.
+        material.side = THREE.DoubleSide
+        material.transparent = false
+        material.depthWrite = true
+        material.needsUpdate = true
         if (material.name !== 'body') return material
         if (!materials.has(material)) {
           const outfit = material.clone()
@@ -22,7 +27,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
           outfit.onBeforeCompile = (shader) => {
             shader.uniforms.outfitTint = { value: color }
             shader.fragmentShader = 'uniform vec3 outfitTint;\n' + shader.fragmentShader
-            shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat clothMask = step(diffuseColor.r + 0.04, diffuseColor.b);\ndiffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * outfitTint, clothMask);')
+            shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat clothMask = step(0.35, diffuseColor.g - diffuseColor.b) * step(0.3, diffuseColor.r - diffuseColor.b);\ndiffuseColor.rgb = mix(diffuseColor.rgb, outfitTint * max(diffuseColor.r, diffuseColor.g), clothMask * 0.6);')
           }
           materials.set(material, outfit)
         }
@@ -33,7 +38,9 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const rig = prepareRig(model)
     model.updateMatrixWorld(true)
     const hipY = rig.get('mixamorigHips').bone.getWorldPosition(new THREE.Vector3()).y
-    return { model, rig, hipOffset: 0.45 - hipY, hold: poseTargets(rig, poses.seated, poses.holdCards, poses.idle), reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
+    const hold = poseTargets(rig, poses.seated, poses.holdCards, poses.idle)
+    blendPose(rig, hold, 1)
+    return { model, rig, hipOffset: 0.45 - hipY, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot])
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()

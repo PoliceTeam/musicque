@@ -1,5 +1,0 @@
-.card-table-surface { height: 520px; margin: 24px 0; border-radius: 16px; overflow: hidden; background: #94a3a6; }
-.card-table-seat { padding: 8px 12px; border-radius: 8px; background: #123329; color: white; text-align: center; white-space: nowrap; font-size: 12px; min-width: 76px; pointer-events: none; }
-.card-table-seat span { display: block; margin-top: 3px; }
-.card-table-seat.is-turn { outline: 2px solid #48e487; outline-offset: 3px; }
-@media (max-width: 700px) { .card-table-surface { height: 380px; } }

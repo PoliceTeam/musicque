@@ -39,6 +39,7 @@ module.exports = {
     leaderSeat: state.leaderSeat,
     trick: state.trick ? { cards: [...state.trick.cards], type: state.trick.type, bySeat: state.trick.bySeat } : null,
     mustInclude: mustIncludeFor(state) || null,
+    ...(state.finishOrder.length === 4 ? { remainingHands: state.seats.map((seat) => [...seat.hand]) } : {}),
   }),
   result: (state) => state.finishOrder.length === 4 ? { ranking: [...state.finishOrder] } : null,
   payout: splitPot,

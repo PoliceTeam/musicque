@@ -47,6 +47,10 @@ Keep `publicView` free of private fields and put only the viewer's secrets in
 `playerView`. The shared socket emits `table_game_state`, `table_game_private` and
 `table_game_result`, each tagged with the definition name. `table_game:bind { token }`
 joins `table_game:user:<id>` after token resolution, with stale binds ignored.
+The result event also carries the definition's final `publicView` for the client
+to retain its finished scene after the table returns to waiting. Thirteen exposes
+`remainingHands` only when all four places are known; before that its public view
+never contains hands.
 
 Waiting users leave automatically after 60 seconds disconnected; re-binding cancels
 that grace timer. Active matches persist through restart and resume their deadlines.
@@ -58,9 +62,13 @@ would need shared table ownership and scheduling.
 
 `client/src/components/CardTable3D/` provides `useDeck`, `Card3D`, `TableScene` and
 `SeatMarker`. The scene measures the dinner-table cloth, supplies positions for
-2–4 seats, and handles WebGL/reduced-motion fallback. Cards use the existing deck
-GLB at real scale. Thirteen supplies its own fan layout, trick cards and selection
-rules. Keep keyboard controls in the DOM alongside the scene.
+2–4 seats, and handles WebGL fallback. Reduced motion keeps the 3D scene and snaps animations. Cards use the existing deck
+GLB at real scale. Thirteen supplies its own camera-parented fan, trick cards and
+selection rules. `OpponentAvatar` clones the chibi skeleton and blends the named
+maps in `poses.js`; each clone has independent bones and outfit tint. Card-space
+helpers preserve world poses when cards leave the camera or a character's hand.
+The shared fan pivot grows beyond 1.2 card heights for larger hands to maintain 1.5 cm index spacing within a 50° spread. The supplied chibi has nine skinned mesh parts per character; those parts share source geometry and materials.
+Keep keyboard controls in a visually hidden checkbox list alongside the scene.
 
 Generic card IDs and mesh-name mapping live in `utils/cards.js`; clock-offset and
 countdown helpers live in `utils/tableGame.js`. Run `api/test/tableGame.test.js` for

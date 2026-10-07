@@ -99,8 +99,9 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
   hai người `100/0`, ba người `70/30/0`, bốn người `60/30/10/0` phần trăm.
 - Ván đầu người giữ 3 bích đi trước; các ván sau ghế thắng trước mở bài.
   Hết lượt 20 giây sẽ tự bỏ lượt, hoặc đánh lá thấp nhất khi đang mở vòng.
-- Bàn 3D dùng mô hình bàn ăn và bộ bài thật; có điều khiển chọn bài bằng bàn
-  phím và giao diện thay thế khi không dùng được WebGL hoặc giảm chuyển động.
+- Chơi trong bàn 3D toàn màn hình, nhìn từ ghế của mình, cầm bài trước mắt và
+  đối đầu nhân vật chibi. Có hiệu ứng chia, đánh, lật, gom bài và chọn bài bằng
+  bàn phím. Giảm chuyển động sẽ bỏ hiệu ứng; thiếu WebGL có giao diện thay thế.
 - Server giữ riêng bài từng người, kiểm tra luật và thanh toán chống trùng.
   Tải lại trang hoặc khởi động lại API sẽ khôi phục ván đang chơi.
 - Engine dùng chung cho các trò chơi bàn khác: xem

@@ -18,7 +18,7 @@ describe('ThirteenHud', () => {
     expect(play).toBeEnabled()
     fireEvent.click(play)
     expect(props.action).toHaveBeenCalledWith('play')
-    fireEvent.click(screen.getByRole('button', { name: 'Chọn 4S' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn 4S' }))
     expect(props.toggleCard).toHaveBeenCalledWith('4S')
   })
   it('requires beating the trick and exposes pass for a response', () => {

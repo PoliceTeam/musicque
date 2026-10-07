@@ -1,9 +1,24 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Html } from '@react-three/drei'
-export default function SeatMarker({ seat, position, active, own }) {
-  const [x, y, z] = position
-  return <>
-    {active && <mesh position={[x, y + 0.001, z]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.068, 0.073, 48]} /><meshBasicMaterial color='#77d9a0' transparent opacity={0.7} /></mesh>}
-    <Html position={own ? [0.5, y + 0.09, 0.44] : [x * 1.34, y + 0.1, z * 1.34]} center><div className={`card-table-seat ${active ? 'is-turn' : ''}`}><strong>{seat.username}</strong><span>{seat.finishedPlace ? `Hạng ${seat.finishedPlace}` : seat.handCount != null ? `${seat.handCount} lá` : ''}</span></div></Html>
-  </>
+import { useFrame } from '@react-three/fiber'
+const RANKS = ['Nhất', 'Nhì', 'Ba', 'Bét']
+export default function SeatMarker({ seat, position, active, turnDeadlineAt, serverNow, turnMs = 20000 }) {
+  const tag = useRef(), timer = useRef()
+  const [count, setCount] = useState(seat.handCount ?? 0)
+  const offset = useRef(Date.now() - serverNow)
+  useEffect(() => {
+    offset.current = Date.now() - serverNow
+    const timeout = window.setTimeout(() => setCount(seat.handCount ?? 0), window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 730)
+    return () => window.clearTimeout(timeout)
+  }, [seat.handCount, serverNow])
+  useFrame(() => {
+    const remaining = active && turnDeadlineAt ? Math.max(0, new Date(turnDeadlineAt).getTime() - Date.now() + offset.current) : 0
+    if (timer.current) timer.current.textContent = active ? `${Math.ceil(remaining / 1000)}s` : ''
+    tag.current?.style.setProperty('--turn-progress', `${Math.min(100, remaining / turnMs * 100)}%`)
+  })
+  return <Html position={position} center zIndexRange={[20, 0]}><div ref={tag} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''}`}>
+    <strong>{seat.username}{seat.isBot && <em>BOT</em>}</strong><span>{count} lá <b ref={timer} /></span>
+    {seat.passed && <b className='card-table-pass'>Bỏ lượt</b>}
+    {seat.finishedPlace && <b className='card-table-rank'>{RANKS[seat.finishedPlace - 1]}</b>}
+  </div></Html>
 }

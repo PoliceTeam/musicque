@@ -2,7 +2,7 @@ import { Euler, Quaternion } from 'three'
 // Relative to the GLB bind pose; replace these maps with sitting clips if needed.
 export const poses = {
   seated: { 'mixamorig:Hips': [0, 0, 0], 'mixamorig:LeftUpLeg': [-Math.PI / 2, 0, 0], 'mixamorig:RightUpLeg': [-Math.PI / 2, 0, 0], 'mixamorig:LeftLeg': [Math.PI / 2, 0, 0], 'mixamorig:RightLeg': [Math.PI / 2, 0, 0] },
-  holdCards: { 'mixamorig:LeftShoulder': [0, 0, 0], 'mixamorig:RightShoulder': [0, 0, 0], 'mixamorig:LeftArm': [-1, 0, 0], 'mixamorig:RightArm': [-1, 0, 0], 'mixamorig:LeftForeArm': [-1.5, 0, 0], 'mixamorig:RightForeArm': [-1.5, 0, 0], 'mixamorig:LeftHand': [0, 0, -0.12], 'mixamorig:RightHand': [0, 0, 0.12] },
+  holdCards: { 'mixamorig:LeftShoulder': [0, 0, 0], 'mixamorig:RightShoulder': [0, 0, 0], 'mixamorig:LeftArm': [-1, 0, 1], 'mixamorig:RightArm': [-1, 0, -1], 'mixamorig:LeftForeArm': [-1, 0, 0], 'mixamorig:RightForeArm': [-1, 0, 0], 'mixamorig:LeftHand': [0, 0, -0.12], 'mixamorig:RightHand': [0, 0, 0.12] },
   reachPlay: { 'mixamorig:RightArm': [-0.8, 0, -1.15], 'mixamorig:RightForeArm': [-0.15, 0, 0], 'mixamorig:RightHand': [0, 0, 0] },
   idle: { 'mixamorig:Spine': [0.01, 0, 0], 'mixamorig:Spine1': [0.01, 0, 0], 'mixamorig:Spine2': [0, 0, 0], 'mixamorig:Neck': [0, 0, 0], 'mixamorig:Head': [0, 0.03, 0] },
 }

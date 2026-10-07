@@ -1,7 +1,7 @@
 import React from 'react'
 import { Modal } from 'antd'
 export default function ThirteenRulesModal({ open, onClose }) {
-  return <Modal title='Luật Tiến Lên Miền Nam' open={open} onCancel={onClose} footer={null}>
+  return <Modal zIndex={1300} title='Luật Tiến Lên Miền Nam' open={open} onCancel={onClose} footer={null}>
     <p>Mỗi người có 13 lá. Thứ tự: 3 → 4 → … → A → 2; chất: ♠ → ♣ → ♦ → ♥.</p>
     <p>Đánh lá lẻ, đôi, bộ ba, tứ quý, sảnh từ 3 lá hoặc từ 3 đôi thông. Sảnh và đôi thông không chứa 2. Bài cùng loại, cùng số lá và lớn hơn mới đè được.</p>
     <p>Ba đôi thông chặt một lá 2. Tứ quý chặt một lá 2, đôi 2 hoặc ba đôi thông. Bốn đôi thông chặt tứ quý, đôi 2, một lá 2 hoặc ba đôi thông. Bộ chặt cùng loại phải lớn hơn.</p>

@@ -12,8 +12,9 @@ describe('procedural seated poses', () => {
   it('blends from the current bone orientation and preserves the bind pose', () => {
     const scene = new Group(), bone = new Bone(); bone.name = 'mixamorigRightArm'; scene.add(bone)
     const rig = prepareRig(scene), targets = poseTargets(rig, poses.holdCards)
+    const angle = bone.quaternion.angleTo(targets.get(bone.name))
     blendPose(rig, targets, 0.5)
-    expect(bone.quaternion.angleTo(targets.get(bone.name))).toBeCloseTo(0.5)
+    expect(bone.quaternion.angleTo(targets.get(bone.name))).toBeCloseTo(angle / 2)
     expect(rig.get(bone.name).rest.w).toBe(1)
     blendPose(rig, targets, 1)
     expect(bone.quaternion.angleTo(targets.get(bone.name))).toBeCloseTo(0)
