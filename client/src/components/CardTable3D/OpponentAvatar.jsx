@@ -5,7 +5,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig } from './poses'
 import SeatMarker from './SeatMarker'
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, children }) {
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, clipHeight = 0.775, children }) {
   const { scene } = useGLTF('/models/chibi.glb')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
@@ -21,6 +21,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         if (material.name !== 'body') return material
         if (!materials.has(material)) {
           const outfit = material.clone()
+          outfit.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), -clipHeight)]
           const color = new THREE.Color(seat.isBot ? '#9bb9ec' : '#b3d9c3')
           outfit.onBeforeCompile = (shader) => {
             shader.uniforms.outfitTint = { value: color }
@@ -47,7 +48,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       }
     })
     return { model, rig, hipOffset: 0.45 - hipY, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
-  }, [scene, seat.isBot])
+  }, [scene, seat.isBot, clipHeight])
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)

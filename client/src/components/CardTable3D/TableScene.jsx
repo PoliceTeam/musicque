@@ -38,8 +38,8 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
   const seatCount = seats.length
   const characterPositions = useMemo(() => Array.from({ length: seatCount }, (_, i) => {
     const relative = (i - anchor + seatCount) % seatCount
-    const angle = seatCount === 4 ? [0, 100, 180, 260][relative] * Math.PI / 180 : relative * Math.PI * 2 / seatCount
-    return [-Math.sin(angle) * 0.94, 0, Math.cos(angle) * 0.94]
+    const angle = seatCount === 4 ? [0, 130, 180, 230][relative] * Math.PI / 180 : relative * Math.PI * 2 / seatCount
+    return [-Math.sin(angle) * 1.05, 0, Math.cos(angle) * 1.05]
   }), [anchor, seatCount])
   const seatPositions = useMemo(() => characterPositions.map(([x, , z]) => [x * 0.6, surfaceY, z * 0.6]), [characterPositions, surfaceY])
   return <>
@@ -73,7 +73,7 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
     <Suspense fallback={<div className='card-table-surface' role='status'>Đang tải bàn bài...</div>}>
       <div className='card-table-surface'>
-        <Canvas dpr={dpr} gl={{ antialias: true, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 55 : 40, near: 0.01, far: 10 }} onCreated={({ camera }) => camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1)}>
+        <Canvas dpr={dpr} gl={{ antialias: true, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 55 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1) }}>
           <PerformanceMonitor onDecline={() => setDpr(1)} onFallback={() => setDpr(1)} />
           {showPerf && firstPerson && <Stats className='card-table-stats' />}
           <TableSurface {...props} firstPerson={firstPerson} />
