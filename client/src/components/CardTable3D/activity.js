@@ -3,6 +3,7 @@ export const AnimationContext = createContext(null)
 const idle = { start() {}, stop() {}, step: delta => delta }
 export const createAnimationActivity = (invalidate) => {
   const active = new Set()
+  if (import.meta.env.DEV) window.__thirteenActiveAnimations = active
   return {
     start(key) { active.add(key); invalidate() },
     stop(key) { active.delete(key) },

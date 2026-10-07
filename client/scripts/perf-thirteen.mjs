@@ -41,6 +41,7 @@ const instrument = `(() => {
     contextsCreated: contexts.size,
     liveContexts: [...contexts].filter(gl => !gl.isContextLost()).length,
     draws,
+    activeAnimations: window.__thirteenActiveAnimations?.size || 0,
     renderers: [...(window.__thirteenRenderers || [])].map(gl => ({ connected: gl.domElement.isConnected, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frameDraws: gl.info.render.calls, dpr: gl.getPixelRatio() }))
   });
 })();`
@@ -93,7 +94,10 @@ try {
   await until('document.querySelector(".th-game canvas")')
   await pause(4000)
   const idle = []
-  for (let i = 0; i < 3; i++) { const before = await sample(); await pause(1000); const after = await sample(); idle.push({ ...after, drawsPerSecond: after.draws - before.draws }) }
+  for (let i = 0; i < 12 && idle.length < 3; i++) {
+    const before = await sample(); await pause(1000); const after = await sample()
+    if (before.activeAnimations === 0 && after.activeAnimations === 0) idle.push({ ...after, drawsPerSecond: after.draws - before.draws })
+  }
   const cycles = []
   for (let i = 0; i < 5; i++) {
     await evaluate(`document.querySelector('[aria-label="Thu nhỏ"], [aria-label="Đóng"]').click()`)
