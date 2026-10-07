@@ -9,7 +9,7 @@ import SeatMarker from './SeatMarker'
 const AVATAR_SCALE = 0.85
 const CHAIR_HEIGHT = 0.63
 export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, clipHeight = 0.775, children }) {
-  const { scene } = useTableGLTF('/models/chibi.glb')
+  const { scene } = useTableGLTF('/models/chibi.glb?v=1')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
     const model = clone(scene)

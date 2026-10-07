@@ -1,11 +1,11 @@
 import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { PerformanceMonitor, Stats, useGLTF } from '@react-three/drei'
+import { PerformanceMonitor, Stats } from '@react-three/drei'
 import * as THREE from 'three'
 import ErrorBoundary from '../ErrorBoundary'
 import { AnimationActivity } from './AnimationActivity'
 import { useAnimationActivity } from './activity'
-import { clearTableAssets, useTableGLTF } from './assets'
+import { clearTableAssets, releaseTextureImage, useTableGLTF } from './assets'
 import SeatMarker from './SeatMarker'
 function FixedCamera() {
   const base = useMemo(() => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(0, 1.15, 1.16), new THREE.Vector3(0, 0.785, -0.03), new THREE.Vector3(0, 1, 0))), [])
@@ -36,7 +36,7 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
     if (dpr > 1) return
     tableModel.traverse(node => {
       for (const material of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) {
-        if (material.normalMap) { material.normalMap.image?.close?.(); material.normalMap.dispose(); material.normalMap = null; material.needsUpdate = true }
+        if (material.normalMap) { releaseTextureImage(material.normalMap); material.normalMap.dispose(); material.normalMap = null; material.needsUpdate = true }
       }
     })
   }, [tableModel, dpr])
@@ -97,9 +97,6 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   const [dpr, setDpr] = useState([1, 1.25])
   const showPerf = import.meta.env.DEV && new URLSearchParams(window.location.search).get('perf') === '1'
   const supported = useMemo(canRender3D, [])
-  useEffect(() => {
-    if (supported) { useGLTF.preload('/models/deck-of-cards.glb?v=webp1'); useGLTF.preload('/models/dinner-table.glb?v=webp1'); if (firstPerson) useGLTF.preload('/models/chibi.glb') }
-  }, [supported, firstPerson])
   if (!supported) return fallback
   if (contextLost) return <div>{fallback}<button className='sp-btn' onClick={() => window.location.reload()}>Tải lại</button></div>
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
