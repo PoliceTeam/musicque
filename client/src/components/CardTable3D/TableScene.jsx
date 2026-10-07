@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import ErrorBoundary from '../ErrorBoundary'
 import { AnimationActivity } from './AnimationActivity'
 import { useAnimationActivity } from './activity'
+import { clearTableAssets, useTableGLTF } from './assets'
 import SeatMarker from './SeatMarker'
 function FixedCamera() {
   const base = useMemo(() => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(0, 1.15, 1.16), new THREE.Vector3(0, 0.785, -0.03), new THREE.Vector3(0, 1, 0))), [])
@@ -28,7 +29,7 @@ function TurnRing({ position, reducedMotion }) {
   return position && <mesh ref={ref} position={initialPosition.current} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.09, 0.097, 64]} /><meshBasicMaterial color='#72edb5' transparent depthWrite={false} /></mesh>
 }
 function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, firstPerson, children }) {
-  const { scene } = useGLTF('/models/dinner-table.glb?v=webp1')
+  const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false
   const surfaceY = useMemo(() => {
@@ -57,16 +58,33 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
     {children({ surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson })}
   </>
 }
+let supported3D
 const canRender3D = () => {
-  try {
-    const canvas = document.createElement('canvas')
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-    if (!gl) return false
-    gl.getExtension('WEBGL_lose_context')?.loseContext()
-    return true
-  } catch { return false }
+  // Feature detection avoids creating a second GPU context just to probe support.
+  supported3D ??= Boolean(window.WebGLRenderingContext || window.WebGL2RenderingContext)
+  return supported3D
+}
+function RendererLifetime({ onContextLost }) {
+  const gl = useThree(state => state.gl)
+  useEffect(() => {
+    let disposing = false
+    const lost = event => { if (!disposing) { event.preventDefault(); onContextLost() } }
+    gl.domElement.addEventListener('webglcontextlost', lost)
+    if (import.meta.env.DEV) (window.__thirteenRenderers ||= new Set()).add(gl)
+    return () => {
+      disposing = true
+      gl.domElement.removeEventListener('webglcontextlost', lost)
+      if (import.meta.env.DEV) window.__thirteenRenderers?.delete(gl)
+      gl.dispose()
+      gl.forceContextLoss()
+    }
+  }, [gl, onContextLost])
+  return null
 }
 export default function TableScene({ fallback, firstPerson = false, ...props }) {
+  const [contextLost, setContextLost] = useState(false)
+  const onContextLost = React.useCallback(() => setContextLost(true), [])
+  useEffect(() => clearTableAssets, [])
   const [dpr, setDpr] = useState([1, 1.5])
   const showPerf = import.meta.env.DEV && new URLSearchParams(window.location.search).get('perf') === '1'
   const supported = useMemo(canRender3D, [])
@@ -74,10 +92,12 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
     if (supported) { useGLTF.preload('/models/deck-of-cards.glb?v=webp1'); useGLTF.preload('/models/dinner-table.glb?v=webp1'); if (firstPerson) useGLTF.preload('/models/chibi.glb') }
   }, [supported, firstPerson])
   if (!supported) return fallback
+  if (contextLost) return <div>{fallback}<button className='sp-btn' onClick={() => window.location.reload()}>Tải lại</button></div>
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
     <Suspense fallback={<div className='card-table-surface' role='status'>Đang tải bàn bài...</div>}>
       <div className='card-table-surface'>
         <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: true, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1) }}>
+          <RendererLifetime onContextLost={onContextLost} />
           <PerformanceMonitor onDecline={() => setDpr(1)} onFallback={() => setDpr(1)} />
           {showPerf && firstPerson && <Stats className='card-table-stats' />}
           <AnimationActivity><TableSurface {...props} firstPerson={firstPerson} /></AnimationActivity>

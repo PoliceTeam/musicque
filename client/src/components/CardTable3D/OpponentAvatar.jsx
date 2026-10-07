@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
+import { useTableGLTF } from './assets'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig } from './poses'
@@ -9,7 +9,7 @@ import SeatMarker from './SeatMarker'
 const AVATAR_SCALE = 0.85
 const CHAIR_HEIGHT = 0.63
 export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, clipHeight = 0.775, children }) {
-  const { scene } = useGLTF('/models/chibi.glb')
+  const { scene } = useTableGLTF('/models/chibi.glb')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
     const model = clone(scene)

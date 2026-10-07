@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom'
 import UserMenu from '../components/Auth/UserMenu'
 import { useAuth } from '../contexts/AuthContext'
 import { ThirteenProvider, useThirteen } from '../contexts/ThirteenContext'
-import ThirteenTable3D from '../components/Thirteen/ThirteenTable3D'
+import { clearTableAssets } from '../components/CardTable3D/assets'
 import ThirteenOverlay from '../components/Thirteen/ThirteenOverlay'
 import ThirteenRulesModal from '../components/Thirteen/ThirteenRulesModal'
 function ThirteenContent() {
+  useEffect(() => clearTableAssets, [])
   const { user } = useAuth()
   const state = useThirteen()
   const { tables, currentTable, config, action, busy } = state
@@ -58,7 +59,6 @@ function ThirteenContent() {
       {lobby}
       {playing && <Button className='sp-btn sp-btn--primary thirteen-enter' onClick={() => { setDealOnMount(false); setOverlayOpen(true) }}>Vào bàn</Button>}
       {!tables.length && <p role='status'>Đang tải bàn chơi...</p>}
-      {seated && <ThirteenTable3D table={currentTable} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} userId={user?._id} preview />}
 
     </main>
     {seated && <ThirteenOverlay key={userId} {...state} table={finalTable} userId={userId} open={overlayOpen} onClose={closeOverlay} dealOnMount={dealOnMount} turnMs={config.turnMs} />}

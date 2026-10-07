@@ -57,7 +57,7 @@ const evaluate = async expression => {
 }
 const until = async (expression, timeout = 20000) => {
   const deadline = Date.now() + timeout
-  while (Date.now() < deadline) { if (await evaluate(expression)) return; await pause(150) }
+  while (Date.now() < deadline) { if (await evaluate(`Boolean(${expression})`)) return; await pause(150) }
   throw new Error('Timed out waiting for UI')
 }
 const sample = async () => {

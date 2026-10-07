@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
+import { useTableGLTF } from './assets'
 import * as THREE from 'three'
 import { RANKS, SUITS, cardNodeName } from '../../utils/cards'
 export const useDeck = () => {
-  const { scene } = useGLTF('/models/deck-of-cards.glb?v=webp1')
+  const { scene } = useTableGLTF('/models/deck-of-cards.glb?v=webp1')
   const gl = useThree(state => state.gl)
   useEffect(() => {
     const anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
