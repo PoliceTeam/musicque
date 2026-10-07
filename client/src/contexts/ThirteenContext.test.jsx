@@ -1,12 +1,12 @@
 import React from 'react'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PlaylistContext } from './PlaylistContext'
 import { ThirteenProvider, useThirteen } from './ThirteenContext'
 import { tableGameApi } from '../services/api'
 const mocks = vi.hoisted(() => ({ user: null, tables: [], table: null, handlers: {}, refreshBalance: vi.fn(), requireAuth: vi.fn() }))
 vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mocks.user, refreshBalance: mocks.refreshBalance, requireAuth: mocks.requireAuth }) }))
-vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: async () => ({ data: mocks.table }) } }))
+vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: async () => ({ data: mocks.table }), action: vi.fn(async () => ({ data: mocks.table })), create: vi.fn(async () => ({ data: mocks.table })), quickJoin: vi.fn(async () => ({ data: mocks.table })) } }))
 function Probe() {
   const { currentTable, myHand } = useThirteen()
   return <div>{currentTable ? `Bàn ${currentTable.tableId}` : 'Phòng chờ'}<output>{myHand.join(',')}</output></div>
@@ -49,4 +49,31 @@ it('watches only the mounted game, re-watches on reconnect and unwatches on exit
   expect(socket.emit).toHaveBeenCalledWith('table_game:watch', { game: 'thirteen' })
   view.unmount()
   expect(socket.emit).toHaveBeenCalledWith('table_game:unwatch', { game: 'thirteen' })
+})
+
+function ActionProbe() {
+  const { tables, action } = useThirteen()
+  return <div><output aria-label='Room count'>{tables.length}</output><button onClick={() => action('quickJoin')}>Quick join</button><button onClick={() => action('create', 'private')}>Create private</button></div>
+}
+it('quick join and create send authenticated API requests with independent request keys', async () => {
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  mocks.tables = []
+  mocks.table = { game: 'thirteen', tableId: 'K7Q2', code: 'K7Q2', seats: [{ userId: 'a' }, null, null, null], serverNow: Date.now(), status: 'waiting' }
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  fireEvent.click(screen.getByText('Quick join'))
+  await waitFor(() => expect(tableGameApi.quickJoin).toHaveBeenCalledWith('thirteen', { requestKey: expect.any(String) }))
+  await waitFor(() => expect(mocks.refreshBalance).toHaveBeenCalled())
+  fireEvent.click(screen.getByText('Create private'))
+  await waitFor(() => expect(tableGameApi.create).toHaveBeenCalledWith('thirteen', { visibility: 'private', requestKey: expect.any(String) }))
+  expect(tableGameApi.create.mock.calls.at(-1)[1].requestKey).not.toBe(tableGameApi.quickJoin.mock.calls.at(-1)[1].requestKey)
+})
+it('reconnect replaces rooms deleted while the viewer was offline', async () => {
+  mocks.user = null
+  mocks.tables = [{ game: 'thirteen', tableId: 'K7Q2', visibility: 'public', seats: [null, null, null, null], serverNow: Date.now() }]
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('1'))
+  mocks.tables = []
+  act(() => mocks.handlers.connect())
+  await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('0'))
 })

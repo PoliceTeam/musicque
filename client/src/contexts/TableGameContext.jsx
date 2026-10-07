@@ -57,18 +57,16 @@ export const TableGameProvider = ({ game, children }) => {
     }
     if (table.startError && table.startError !== previous?.startError) toast(ERROR_COPY[table.startError] || 'Không bắt đầu được ván. Hãy sẵn sàng lại.', 'error')
     tablesRef.current = table.deleted ? tablesRef.current.filter(t => t.tableId !== table.tableId) : [...tablesRef.current.filter(t => t.tableId !== table.tableId), publicTable]
-    setTables((current) => {
-      const old = current.find((t) => t.tableId === table.tableId)
-      if (old && old.serverNow > table.serverNow) return current
-      if (table.deleted) return current.filter(t => t.tableId !== table.tableId)
-      return [...current.filter((t) => t.tableId !== table.tableId), publicTable].sort((a, b) => String(a.tableId).localeCompare(String(b.tableId)))
-    })
+    setTables([...tablesRef.current].sort((a, b) => String(a.tableId).localeCompare(String(b.tableId))))
     if (view) setPrivateViews((current) => ({ ...current, [table.tableId]: { tableId: table.tableId, matchId: table.matchId, version: table.version, userId, view } }))
   }, [userId])
   const load = useCallback(async () => {
     try {
+      const knownTables = tablesRef.current
       const [{ data: nextTables }, { data: nextConfig }] = await Promise.all([tableGameApi.tables(game), tableGameApi.config(game)])
       if (userRef.current !== userId) return
+      tablesRef.current = tablesRef.current.filter(table => nextTables.some(next => next.tableId === table.tableId) || !knownTables.includes(table))
+      setTables(tablesRef.current)
       nextTables.forEach(acceptTable)
       setConfig(nextConfig)
       const seated = nextTables.find((t) => userId && t.seats.some((s) => s?.userId === userId))

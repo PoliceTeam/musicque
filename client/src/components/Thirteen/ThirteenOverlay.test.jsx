@@ -145,3 +145,10 @@ it('uses only corner icons and announces the wall-board information accessibly',
   rerender(<ThirteenOverlay {...props} open table={{ ...table, code: 'FQ8X', status: 'finished', pot: 0 }} />)
   expect(announcement).toHaveTextContent('Bàn FQ8X, kết thúc, ván tập')
 })
+
+it('puts joinable rooms before full and playing rooms', () => {
+  const room = (code, status, count) => ({ ...table, tableId: code, code, status, visibility: 'public', seats: Array.from({ length: 4 }, (_, i) => i < count ? { userId: `guest-${i}`, username: `Guest ${i}` } : null) })
+  mocks.state = { ...props, tables: [room('FULL', 'waiting', 4), room('PLAY', 'playing', 4), room('OPEN', 'waiting', 2)], currentTable: null, config: { stake: 10 }, closeResult: vi.fn() }
+  const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+  expect([...container.querySelectorAll('.thirteen-lobby h2')].map(node => node.textContent)).toEqual(['Bàn OPEN', 'Bàn FULL', 'Bàn PLAY'])
+})

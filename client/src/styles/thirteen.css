@@ -85,7 +85,7 @@ button.thirteen-card { cursor: pointer; }
 @media (max-width: 700px) { .thirteen-hero { flex-wrap: wrap; } .thirteen-hero form { margin-left: 0; } }
 .thirteen-last-play { position: absolute; bottom: calc(100% + 42px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; width: max-content; max-width: calc(100vw - 32px); padding: 7px 10px; border: 1px solid var(--sp-border); border-radius: 16px; background: color-mix(in srgb, var(--sp-surface) 94%, transparent); font-size: 12px; }
 .thirteen-mini-card { display: inline-grid; place-items: center; min-width: 24px; height: 32px; padding: 0 3px; border: 1px solid var(--sp-border); border-radius: 4px; color: var(--sp-text); background: var(--sp-surface-2); font-weight: 700; }
-.thirteen-mini-card.is-red, .thirteen-bomb-badge { color: var(--sp-danger, #e5484d); }
+.thirteen-mini-card.is-red, .thirteen-bomb-badge { color: var(--sp-red); }
 .thirteen-bomb-badge { padding: 3px 6px; border-radius: 8px; background: var(--sp-surface-2); }
 .thirteen-pass-notice { margin-left: 5px; color: var(--sp-text-muted); }
 

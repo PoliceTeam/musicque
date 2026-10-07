@@ -54,7 +54,8 @@ function ThirteenContent() {
   const finalTable = state.result && lastMatch?.matchId === state.result.matchId && currentTable?.status === 'finished' ? {
     ...currentTable, ...state.result.publicView, matchId: lastMatch.matchId, pot: lastMatch.pot, seats: currentTable.seats.map((seat, i) => seat ? { ...state.result.publicView?.seats?.[i], ...seat } : null), status: 'finished', currentSeat: null,
   } : currentTable
-  const publicTables = tables.filter(table => table.visibility !== 'private').sort((a, b) => Number(['playing', 'settling'].includes(a.status)) - Number(['playing', 'settling'].includes(b.status)) || b.seats.filter(Boolean).length - a.seats.filter(Boolean).length)
+  const joinable = table => ['waiting', 'finished'].includes(table.status) && table.seats.some(seat => !seat)
+  const publicTables = tables.filter(table => table.visibility !== 'private').sort((a, b) => Number(joinable(b)) - Number(joinable(a)) || b.seats.filter(Boolean).length - a.seats.filter(Boolean).length)
   return <div className='thirteen-page'>
     <header className='thirteen-header'><Link to='/' className='sp-btn sp-btn--ghost'>← Về trang chủ</Link><div><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Luật chơi</Button><UserMenu /></header>
     <main>
