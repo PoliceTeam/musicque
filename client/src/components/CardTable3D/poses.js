@@ -8,12 +8,12 @@ export const poses = {
 }
 export const prepareRig = (scene) => {
   const rig = new Map()
-  scene.traverse((bone) => { if (bone.isBone) rig.set(bone.name.replace(':', ''), { bone, rest: bone.quaternion.clone() }) })
+  scene.traverse((bone) => { if (bone.isBone) rig.set(bone.name.replace(':', ''), { bone, rest: bone.quaternion.clone().normalize() }) })
   return rig
 }
 export const poseTargets = (rig, ...maps) => new Map([...rig].map(([name, { rest }]) => {
   const rotation = Object.assign({}, ...maps)[name.replace('mixamorig', 'mixamorig:')] || [0, 0, 0]
-  return [name, rest.clone().multiply(new Quaternion().setFromEuler(new Euler(...rotation)))]
+  return [name, rest.clone().multiply(new Quaternion().setFromEuler(new Euler(...rotation))).normalize()]
 }))
 export const blendPose = (rig, targets, alpha, epsilon = 1e-4) => {
   let settled = true

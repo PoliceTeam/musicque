@@ -94,7 +94,7 @@ try {
   await until('document.querySelector(".th-game canvas")')
   await pause(4000)
   const idle = []
-  for (let i = 0; i < 12 && idle.length < 3; i++) {
+  for (let i = 0; i < 60 && idle.length < 3; i++) {
     const before = await sample(); await pause(1000); const after = await sample()
     if (before.activeAnimations === 0 && after.activeAnimations === 0) idle.push({ ...after, drawsPerSecond: after.draws - before.draws })
   }

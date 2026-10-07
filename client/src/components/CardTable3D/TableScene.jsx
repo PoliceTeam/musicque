@@ -7,6 +7,8 @@ import { AnimationActivity } from './AnimationActivity'
 import { useAnimationActivity } from './activity'
 import { clearTableAssets, releaseTextureImage, useTableGLTF } from './assets'
 import SeatMarker from './SeatMarker'
+import OfficeRoom from './OfficeRoom'
+import { chairPlacement } from './chair'
 function FixedCamera() {
   const base = useMemo(() => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(0, 1.15, 1.16), new THREE.Vector3(0, 0.785, -0.03), new THREE.Vector3(0, 1, 0))), [])
   const camera = useThree(state => state.camera)
@@ -52,15 +54,14 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
   const seatCount = seats.length
   const characterPositions = useMemo(() => Array.from({ length: seatCount }, (_, i) => {
     const relative = (i - anchor + seatCount) % seatCount
-    const angle = relative * Math.PI * 2 / seatCount
-    return [-Math.sin(angle) * 0.95, 0, Math.cos(angle) * 0.95]
+    return chairPlacement(relative).position
   }), [anchor, seatCount])
   const seatPositions = useMemo(() => characterPositions.map(([x, , z]) => [x * 0.6, surfaceY, z * 0.6]), [characterPositions, surfaceY])
   return <>
     {firstPerson && <FixedCamera />}
-    <color attach='background' args={['#94a3a6']} />
-    <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#637275' />
-    <directionalLight position={[2, 4, 3]} intensity={2} />
+    {firstPerson ? <OfficeRoom /> : <color attach='background' args={['#94a3a6']} />}
+    <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#80766a' />
+    <directionalLight position={[2, 4, 3]} color='#fff2dc' intensity={1.7} />
     <primitive object={tableModel} dispose={null} />
     {!firstPerson && seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={[seatPositions[i][0] * 1.2, surfaceY + 0.1, seatPositions[i][2] * 1.2]} active={currentSeat === i} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} />)}
     <TurnRing position={seatPositions[currentSeat]} own={mySeat === currentSeat} deadline={turnDeadlineAt} serverNow={serverNow} reducedMotion={reducedMotion} />

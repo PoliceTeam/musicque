@@ -23,3 +23,9 @@ The imported records retain their source classification and first suggested
 move; gameplay after that move is generated dynamically by the NPC engine.
 The source project is licensed under the **MIT License**; its license is kept
 at `api/data/xiangqi/LICENSE-source.txt`.
+
+## Thirteen room background
+
+`client/public/backgrounds/office-lounge.webp` is a resized, WebP-encoded copy of the
+tonemapped panorama of [Poly Haven Studio](https://polyhaven.com/a/poly_haven_studio)
+from Poly Haven, licensed **CC0 1.0**.

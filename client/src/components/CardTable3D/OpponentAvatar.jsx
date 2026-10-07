@@ -6,9 +6,9 @@ import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig } from './poses'
 import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
+import { CHAIR_HEIGHT } from './chair'
 const AVATAR_SCALE = 0.85
-const CHAIR_HEIGHT = 0.63
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, clipHeight = 0.775, children }) {
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, children }) {
   const { scene } = useTableGLTF('/models/chibi.glb?v=1')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
@@ -30,7 +30,6 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         if (material.name !== 'body') return material
         if (!materials.has(material)) {
           const outfit = material.clone()
-          outfit.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), -clipHeight)]
           const color = new THREE.Color(seat.isBot ? '#9bb9ec' : '#b3d9c3')
           outfit.customProgramCacheKey = () => 'thirteen-outfit-v1'
           outfit.onBeforeCompile = (shader) => {
@@ -50,6 +49,27 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const hold = poseTargets(rig, poses.seated, poses.holdCards, poses.idle)
     blendPose(rig, hold, 1)
     model.updateMatrixWorld(true)
+    let pelvisBottom = hipY
+    const vertex = new THREE.Vector3()
+    model.traverse(node => {
+      if (node.isSkinnedMesh) {
+        const hipsIndex = node.skeleton.bones.indexOf(rig.get('mixamorigHips').bone)
+        const positions = node.geometry.attributes.position, indices = node.geometry.attributes.skinIndex, weights = node.geometry.attributes.skinWeight
+        for (let i = 0; i < positions.count; i++) {
+          let hipWeight = 0
+          for (let j = 0; j < 4; j++) if (indices.getComponent(i, j) === hipsIndex) hipWeight += weights.getComponent(i, j)
+          if (hipWeight < 0.5) continue
+          vertex.fromBufferAttribute(positions, i); node.applyBoneTransform(i, vertex); node.localToWorld(vertex)
+          pelvisBottom = Math.min(pelvisBottom, vertex.y)
+        }
+      }
+    })
+    // Extend the short chibi torso while keeping its pelvis on the physical chair.
+    const spine = rig.get('mixamorigSpine').bone
+    const spinePosition = spine.getWorldPosition(new THREE.Vector3())
+    spinePosition.y += Math.max(0, 0.63 - (CHAIR_HEIGHT + (hipY - pelvisBottom) * AVATAR_SCALE)) / AVATAR_SCALE
+    spine.position.copy(spine.parent.worldToLocal(spinePosition))
+    model.updateMatrixWorld(true)
     model.traverse(node => {
       if (node.isSkinnedMesh) {
         node.computeBoundingSphere()
@@ -57,8 +77,8 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         node.boundingSphere.radius *= 2
       }
     })
-    return { model, rig, hipOffset: CHAIR_HEIGHT - hipY * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
-  }, [scene, seat.isBot, clipHeight])
+    return { model, rig, hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
+  }, [scene, seat.isBot])
   const activity = useAnimationActivity()
   useEffect(() => { activity.start() }, [activity, playedKey, seat.passed])
   const initialized = useRef(false)
@@ -92,7 +112,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     handAnchor.position.y -= !reducedMotion && passElapsed.current < 800 ? 0.03 * Math.sin(Math.PI * passElapsed.current / 800) : 0
     handAnchor.quaternion.copy(orientation)
     handAnchor.updateWorldMatrix(true, false)
-    if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.41 }
+    if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)
   return <>
     <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>

@@ -21,3 +21,12 @@ describe('procedural seated poses', () => {
     expect(bone.quaternion.angleTo(targets.get(bone.name))).toBeCloseTo(0)
   })
 })
+
+it('settles pose blends from imprecise imported bind quaternions', () => {
+  const scene = new Group(), bone = new Bone(); bone.name = 'mixamorigRightArm'; bone.quaternion.w = 0.99999995; scene.add(bone)
+  const rig = prepareRig(scene), target = poseTargets(rig, poses.holdCards)
+  let settled = false
+  for (let frame = 0; frame < 300; frame++) settled = blendPose(rig, target, 0.2)
+  expect(settled).toBe(true)
+  expect(bone.quaternion.length()).toBeCloseTo(1, 10)
+})
