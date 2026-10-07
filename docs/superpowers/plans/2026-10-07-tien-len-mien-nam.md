@@ -437,3 +437,99 @@ Commits:
 - `docs(table-game): add engine guide`
 
 Run all API and client tests, lint on touched files, and the build.
+
+## Task 8 — Full 3D play view + card animations
+
+**Goal:** while seated at a playing table, the whole play experience is the 3D scene, similar to the
+user's close-up reference. The only DOM is a slim HUD overlaid on the canvas (Play/Pass, timer,
+pot, rules). Nothing in the HUD may duplicate the hand.
+
+This task supersedes visual fixes V1–V4, which become part of it.
+
+### Layout
+- Seated in a `playing` (or `settling`) match: the canvas fills the content area, with
+  `height: calc(100vh - header)` and a minimum of 560px. Hide the lobby behind a small
+  "Bàn khác" switcher overlay.
+- Waiting or not seated: show the lobby as today, with the 3D table as a smaller preview.
+- Remove the DOM hand buttons (`3♠ 4♦ …`) from the 3D view. Hand selection happens only by
+  clicking cards in 3D (raycast `onClick`, `onPointerOver` → hover lift + pointer cursor).
+- **Accessibility:** keep a visually hidden list of hand cards with checkboxes, so keyboard and
+  screen-reader users can still select. It is `sr-only`, not shown.
+- Seat name, card count and timer ring are drawn in 3D (drei `Html` anchored at seat positions,
+  offset outward so nothing overlaps cards, or `Text`). My own label goes under the hand, never
+  on top of it.
+- `ThirteenFallback2D` remains **only** for no-WebGL or a 3D error-boundary failure.
+
+### Camera
+- Seated perspective behind and above my seat, close enough that my fanned hand fills roughly the
+  lower third of the view with legible ranks and suits.
+- The trick in the centre is clearly readable.
+- Allow a subtle `OrbitControls` (drei) with tight limits: azimuth ±15°, polar ±10°, no pan,
+  zoom within a small range. Damped.
+
+### Animations (no new deps — `useFrame` + easing helpers in `CardTable3D/anim.js`)
+Use a small reusable animation layer in `components/CardTable3D/`:
+- `anim.js`:
+  - easing (`easeOutCubic`, `easeInOutQuad`, `easeOutBack`)
+  - `bezierArc(from, to, height)`
+  - a `tween` helper that drives position, quaternion (slerp) and scale over time
+- `Card3D` accepts a target `{position, rotation, faceUp}` and animates to it. A change of
+  `faceUp` flips the card over 180° mid-flight.
+- `useCardTransitions(prev, next)` diffs card locations (deck / seat hand / trick / discard)
+  per `cardId`, or per opaque slot for face-down opponent cards, and assigns from→to with a
+  stagger.
+
+Effects (durations as config constants; all skippable when `prefers-reduced-motion` is set, which
+snaps cards to their targets instantly):
+1. **Shuffle + deal** at match start:
+   - A face-down deck sits at the table centre and does a quick riffle wobble (~0.6s).
+   - Then cards are dealt one at a time, round-robin, to the 4 seats (~35ms stagger, arcing
+     flight, slight spin).
+   - Mine flip face-up as they land and then sort into the fan.
+   - Opponents' cards stack face-down at their seat.
+2. **Hover / select:**
+   - Hovering a card in my hand lifts it slightly.
+   - Selecting lifts it further and tilts it toward the camera.
+   - Selected cards get a soft outline/emissive glow.
+3. **Play (me):** the selected cards fly in an arc from the hand to the trick area, landing fanned
+   with a slight random rotation. The remaining hand re-fans smoothly.
+4. **Play (opponent):** the cards leave the opponent's stack face-down, flip face-up mid-arc and
+   land on the trick. The stack count updates when they land.
+5. **Previous trick:** when a new combo is played on top, the previous one slides partly under
+   and dims slightly, keeping at most 2 combos visible. When the trick resets (everyone passed),
+   all trick cards sweep into a face-down discard pile at the side.
+6. **Pass:** a short "Bỏ lượt" chip pops at that seat (scale-in, fade-out ~0.8s), and the seat
+   dims until the trick resets.
+7. **Chặt (bomb):** a stronger landing with a brief camera shake (~250ms, small amplitude) and a
+   red flash ring on the trick.
+8. **Turn change:** the timer ring moves to the new seat. In the last 5s of my turn the ring pulses.
+9. **Finish:**
+   - A player who empties their hand gets a rank badge ("Nhất/Nhì/Ba/Bét") that pops at the seat.
+   - At match end, the remaining hands flip face-up on the table so everyone sees them.
+   - Confetti-like card burst for the top human: a few cards spin up and fall, done with
+     instanced meshes, cheap.
+
+### Rules for the animation layer
+- Server state stays the source of truth. Animations only interpolate between consecutive
+  received states. If a new state arrives mid-animation, retarget from the current pose, never
+  jump back.
+- On reload or join mid-match, render the current state with no deal animation.
+- Never reveal hidden info. Opponents' cards are face-down until the server state shows them in
+  the trick or the final reveal.
+  - **Server change needed for the end reveal:** after `result`, `publicView` may include the
+    remaining hands of all seats. Add that to the Thirteen definition and its test. Before the
+    result, it must still be absent; the existing sentinel test enforces this.
+- Performance:
+  - Share geometry and materials across clones.
+  - No per-frame React state; animate refs in `useFrame`.
+  - Target 60fps on a laptop iGPU. Limit `dpr` to `[1, 2]`.
+
+### Tests
+- `anim.js` easing and bezier helpers have unit tests.
+- `useCardTransitions` diff logic has unit tests (deal, play, trick reset, mid-animation
+  retarget). Extract it as a pure function that is tested.
+- `ThirteenHud.test.jsx` is still green after the DOM hand is removed.
+- Visual verification: a headless screenshot sequence at deal, mid-play and trick reset.
+
+Commit: `feat(thirteen): full 3D play view with card animations` (split into 2–3 commits if large,
+for example `feat(card-table-3d): add animation layer`).
