@@ -446,26 +446,125 @@ pot, rules). Nothing in the HUD may duplicate the hand.
 
 This task supersedes visual fixes V1–V4, which become part of it.
 
-### Layout
-- Seated in a `playing` (or `settling`) match: the canvas fills the content area, with
-  `height: calc(100vh - header)` and a minimum of 560px. Hide the lobby behind a small
-  "Bàn khác" switcher overlay.
-- Waiting or not seated: show the lobby as today, with the 3D table as a smaller preview.
-- Remove the DOM hand buttons (`3♠ 4♦ …`) from the 3D view. Hand selection happens only by
-  clicking cards in 3D (raycast `onClick`, `onPointerOver` → hover lift + pointer cursor).
-- **Accessibility:** keep a visually hidden list of hand cards with checkboxes, so keyboard and
-  screen-reader users can still select. It is `sr-only`, not shown.
-- Seat name, card count and timer ring are drawn in 3D (drei `Html` anchored at seat positions,
-  offset outward so nothing overlaps cards, or `Text`). My own label goes under the hand, never
-  on top of it.
-- `ThirteenFallback2D` remains **only** for no-WebGL or a 3D error-boundary failure.
+### Layout — full-screen game overlay (follow the existing game-overlay pattern)
+Other games (`RedLightOverlay`, `BilliardsOverlay`, `ChohanOverlay`) play inside a
+`createPortal` overlay. The pieces:
+- a fixed `inset: 0` backdrop, z-index 1200 (the rules modal goes above it at 1300)
+- `<section role="dialog" aria-modal="true" aria-labelledby=…>`
+- a header with an eyebrow, the title, a "?" rules button and a "✕" close button
+- `Escape` closes
+- the backdrop does not close the overlay while a round is in progress
+- CSS in `client/src/styles/<game>.css`, imported in `main.jsx`
 
-### Camera
-- Seated perspective behind and above my seat, close enough that my fanned hand fills roughly the
-  lower third of the view with legible ranks and suits.
-- The trick in the centre is clearly readable.
-- Allow a subtle `OrbitControls` (drei) with tight limits: azimuth ±15°, polar ±10°, no pan,
-  zoom within a small range. Damped.
+Thirteen follows the same pattern, but the play surface is **full-bleed, the full viewport**:
+- New `components/Thirteen/ThirteenOverlay.jsx`, rendered with `createPortal`.
+  - Backdrop `.th-overlay`: `position: fixed; inset: 0; z-index: 1200`.
+  - The `<section class="th-game" role="dialog" aria-modal="true">` fills `100vw × 100dvh`, with
+    no max-width, no padding and no border radius.
+  - The R3F canvas fills the whole section.
+  - A slim translucent header floats over the top of the canvas: eyebrow `BÀN <n> · ĐANG CHƠI`,
+    title "Tiến Lên Miền Nam", pot, the "?" rules button and the "✕" button.
+  - The action bar (Đánh bài / Bỏ lượt + turn timer) floats at the bottom centre over the
+    canvas.
+  - Use the `sp-*` tokens so light and dark themes both work. The 3D scene background stays the
+    blue-grey reference colour in both themes.
+- Open and close behaviour:
+  - Opens automatically when my table's match becomes `playing`. The deal animation starts
+    after it opens.
+  - Can be reopened from the lobby with "Vào bàn" while my match is playing.
+  - "✕" or `Escape` closes it back to the `/thirteen` lobby. I stay seated and the timer keeps
+    playing for me, like leaving mid-game today.
+  - Show a confirm hint in the header ("Bạn vẫn ngồi bàn; hết giờ sẽ tự đánh"), not a browser
+    dialog.
+  - While open, lock body scroll the same way `BilliardsOverlay` does.
+  - After the result is shown, the overlay stays open on the final reveal with a "Ván mới"
+    button for the host, and "Về sảnh" for everyone.
+- The `/thirteen` route page stays the lobby, like `XiangqiPage`: table list, sit, leave,
+  start, and the 3D table as a small preview. It is no longer the place where the game is
+  played.
+- Move styles to the repo convention:
+  - `components/Thirteen/thirteen.css` → `client/src/styles/thirteen.css`
+  - `components/CardTable3D/card-table.css` → `client/src/styles/card-table.css`
+  - Import both in `client/src/main.jsx` next to the other game styles, and drop the
+    component-level CSS imports.
+- Arcade tile in `WorkspacePage` and the promo on `HomePage`: keep navigating to `/thirteen`.
+  The overlay is opened from there, not from the workspace `activeGame` switch, because the
+  game needs the lobby first.
+
+Unchanged from the previous version of this section:
+- Remove the DOM hand buttons. Hand selection happens only by clicking 3D cards (raycast
+  `onClick`, plus `onPointerOver` → hover lift and pointer cursor).
+- Keep an `sr-only` checkbox list of hand cards for keyboard and screen-reader users.
+- Seat name, card count and timer ring are drawn in 3D (drei `Html` anchored at seat positions,
+  offset outward). My own label goes under the hand, never on top of it.
+- `ThirteenFallback2D` is only for no-WebGL or an error-boundary failure. Render it inside the
+  same overlay.
+- Test `ThirteenOverlay.test.jsx` in the style of `RedLightOverlay.test.jsx`:
+  - it opens when the match is playing
+  - `Escape` and ✕ close it
+  - the rules button opens the rules modal
+  - the action bar is disabled when it is not my turn
+
+### Camera — first-person seat, "real card table" view (REVISED)
+- The camera is my seated eyes:
+  - about 1.15 m above the floor and about 0.5 m behind my table edge;
+  - looking slightly down at the table centre;
+  - FOV about 55° vertical.
+- No OrbitControls. Add only subtle head-look: the mouse position offsets yaw by ±4° and pitch by
+  ±3°, damped. When `prefers-reduced-motion` is set, turn it off.
+- The across seat is in the middle of the view. The left and right seats are at about ±70°, so
+  they appear partially at the screen edges, as at a real table. Tune the FOV and seat angles so
+  each opponent's head, hand fan and play area are at least partly visible at 16:9.
+
+### My hand — held up in front of the camera
+- The hand is a group parented to the camera, like a first-person weapon. It is a fan of my cards:
+  - placed about 0.35–0.40 m in front of the eyes, in the lower part of the view;
+  - tilted toward the eyes about 60–70° from the table plane;
+  - spread on an arc, sorted by value, with ranks and suits legible.
+- Hover nudges a card up. Clicking toggles selection, which pulls the card up and out of the fan
+  by about 3 cm, with a glow.
+- Playing: the selected cards leave the camera-parented group. Convert them to world space, then
+  arc down onto the trick area. The rest of the fan re-spreads.
+- A "Hạ bài" toggle in the action bar lowers the fan so the table is fully visible; clicking
+  again raises it. The fan must not hide the trick area in the default pose.
+
+### Opponents — seated chibi characters (approach A: procedural pose)
+- Opponents use `client/public/models/chibi.glb`:
+  - skinned, Mixamo rig with `mixamorig:*` bones, about 1.09 m tall;
+  - no sit animation, so build a sitting pose procedurally.
+- Clone one per seat with `SkeletonUtils.clone` from `three/examples/jsm/utils/SkeletonUtils.js`
+  (bundled with three, so no new dependency). Share materials, but give each one its own
+  tinted clone of the outfit material.
+- Put the pose data in `components/CardTable3D/poses.js`, as named bone → Euler rotation maps:
+  - `seated`: hips lowered to chair height (about 0.45 m); thighs (`mixamorig:LeftUpLeg` /
+    `RightUpLeg`) rotated forward about 90°; knees (`LeftLeg` / `RightLeg`) bent back about 90°.
+  - `holdCards`: both arms forward and bent, forearms raised, hands meeting in front of the chest.
+  - `reachPlay`: the right arm extended toward the table centre.
+  - `idle`: a breathing offset on Spine/Spine1 plus occasional small head turns.
+
+  Apply the poses with a small blend helper (slerp per bone) in `useFrame`. Keep the pose data
+  separate, so it can later be swapped for Mixamo "Sitting Idle" clips (approach B) without
+  touching the scene code. Unit-test that every bone name in `poses.js` exists in the GLB rig;
+  load the GLB JSON in the test.
+- Each opponent holds a fan of face-down cards, one per card in their hand count. The fan is
+  attached to the `mixamorig:RightHand` bone, or to a group that follows it. The count updates
+  as they play.
+- Playing animation for an opponent:
+  1. Blend to `reachPlay` (about 250 ms).
+  2. The cards detach from the hand fan, arc to the trick and flip face-up mid-flight.
+  3. Blend back to `holdCards`.
+- Bots use a different outfit tint and a "BOT" name tag. Humans get a name tag with their name.
+  Tags use drei `Html` above the head, offset so they never cover cards.
+- The turn indicator is a soft ring on the table in front of the active seat, plus a timer ring
+  around their name tag. In my last 5 s, my ring pulses.
+- Pass shows a "Bỏ lượt" speech-bubble chip above the head, and the character briefly lowers
+  their cards.
+- Finish: the rank badge pops above the head. At match end each character lays its fan
+  face-up on the table in front of them; this is the final reveal.
+- No chair model. The tablecloth hides the legs; add a simple dark chair-back silhouette only if
+  the characters look like they are floating.
+- Performance: 3 skinned meshes plus 52 cards. Update the animation mixer only when needed. Keep
+  `dpr` at `[1, 2]`.
 
 ### Animations (no new deps — `useFrame` + easing helpers in `CardTable3D/anim.js`)
 Use a small reusable animation layer in `components/CardTable3D/`:
@@ -485,16 +584,15 @@ snaps cards to their targets instantly):
    - A face-down deck sits at the table centre and does a quick riffle wobble (~0.6s).
    - Then cards are dealt one at a time, round-robin, to the 4 seats (~35ms stagger, arcing
      flight, slight spin).
-   - Mine flip face-up as they land and then sort into the fan.
-   - Opponents' cards stack face-down at their seat.
+   - Mine fly up into my camera-held fan, flipping face-up as they arrive, then sort.
+   - Opponents' cards fly into their characters' hand fans.
 2. **Hover / select:**
    - Hovering a card in my hand lifts it slightly.
    - Selecting lifts it further and tilts it toward the camera.
    - Selected cards get a soft outline/emissive glow.
 3. **Play (me):** the selected cards fly in an arc from the hand to the trick area, landing fanned
    with a slight random rotation. The remaining hand re-fans smoothly.
-4. **Play (opponent):** the cards leave the opponent's stack face-down, flip face-up mid-arc and
-   land on the trick. The stack count updates when they land.
+4. **Play (opponent):** see the Opponents section (reach pose → arc → flip → land).
 5. **Previous trick:** when a new combo is played on top, the previous one slides partly under
    and dims slightly, keeping at most 2 combos visible. When the trick resets (everyone passed),
    all trick cards sweep into a face-down discard pile at the side.

@@ -1,0 +1,73 @@
+import React, { useEffect, useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import * as THREE from 'three'
+import { blendPose, poses, poseTargets, prepareRig } from './poses'
+import SeatMarker from './SeatMarker'
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, children }) {
+  const { scene } = useGLTF('/models/chibi.glb')
+  const yaw = Math.atan2(-position[0], -position[2])
+  const avatar = useMemo(() => {
+    const model = clone(scene)
+    const materials = new Map()
+    model.traverse((node) => {
+      if (!node.isMesh) return
+      node.frustumCulled = false
+      const tint = (material) => {
+        if (material.name !== 'body') return material
+        if (!materials.has(material)) {
+          const outfit = material.clone()
+          const color = new THREE.Color(seat.isBot ? '#9bb9ec' : '#b3d9c3')
+          outfit.onBeforeCompile = (shader) => {
+            shader.uniforms.outfitTint = { value: color }
+            shader.fragmentShader = 'uniform vec3 outfitTint;\n' + shader.fragmentShader
+            shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat clothMask = step(diffuseColor.r + 0.04, diffuseColor.b);\ndiffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * outfitTint, clothMask);')
+          }
+          materials.set(material, outfit)
+        }
+        return materials.get(material)
+      }
+      node.material = Array.isArray(node.material) ? node.material.map(tint) : tint(node.material)
+    })
+    const rig = prepareRig(model)
+    model.updateMatrixWorld(true)
+    const hipY = rig.get('mixamorigHips').bone.getWorldPosition(new THREE.Vector3()).y
+    return { model, rig, hipOffset: 0.45 - hipY, hold: poseTargets(rig, poses.seated, poses.holdCards, poses.idle), reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
+  }, [scene, seat.isBot])
+  const handAnchor = useMemo(() => new THREE.Group(), [])
+  const headAnchor = useRef()
+  const elapsed = useRef(Infinity)
+  const lastPlay = useRef(playedKey)
+  const head = avatar.rig.get('mixamorigHead').bone
+  const hand = avatar.rig.get('mixamorigRightHand').bone
+  const orientation = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), [yaw])
+  const idleRotation = useMemo(() => new THREE.Quaternion(), [])
+  const idleEuler = useMemo(() => new THREE.Euler(), [])
+  spaces.current[`seat:${seatIndex}`] = handAnchor
+  useEffect(() => () => { avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
+  useFrame(({ clock }, delta) => {
+    if (playedKey !== lastPlay.current) { if (playedKey) elapsed.current = 0; lastPlay.current = playedKey }
+    elapsed.current += delta * 1000
+    const reaching = elapsed.current < 650 && !reducedMotion
+    blendPose(avatar.rig, reaching ? avatar.reach : avatar.hold, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
+    if (!reducedMotion) {
+      idleEuler.set(Math.sin(clock.elapsedTime * 1.6 + seatIndex) * 0.008, 0, 0)
+      idleRotation.setFromEuler(idleEuler)
+      avatar.rig.get('mixamorigSpine1').bone.quaternion.multiply(idleRotation)
+      idleEuler.set(0, Math.sin(clock.elapsedTime * 0.45 + seatIndex) * 0.035, 0)
+      avatar.rig.get('mixamorigHead').bone.quaternion.multiply(idleRotation.setFromEuler(idleEuler))
+    }
+    avatar.model.updateWorldMatrix(true, true)
+    hand.getWorldPosition(handAnchor.position)
+    handAnchor.position.y -= seat.passed ? 0.03 : 0
+    handAnchor.quaternion.copy(orientation)
+    handAnchor.updateWorldMatrix(true, true)
+    if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
+  }, -1)
+  return <>
+    <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]}><primitive object={avatar.model} dispose={null} /></group>
+    <primitive object={handAnchor}>{children}</primitive>
+    <group ref={headAnchor}><SeatMarker seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
+  </>
+}
