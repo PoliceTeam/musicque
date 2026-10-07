@@ -21,7 +21,7 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
       const tilt = camera ? 1.35 : held ? Math.PI / 2 : 0
       const planeX = (hand ? -Math.PI / 2 : Math.PI / 2) + tilt
       const point = new Vector3(...fan[j].position).add(new Vector3(0, 0, hand ? fan[j].depth : -fan[j].depth)).applyEuler(new Euler(planeX, 0, 0))
-      const base = camera ? [0, -0.095, -0.37] : held ? [0, -0.015, 0.13] : seatPositions[i].map((value, axis) => value + (axis === 1 ? 0.005 : 0))
+      const base = camera ? [0, -0.095, -0.37] : held ? [0, 0, 0] : seatPositions[i].map((value, axis) => value + (axis === 1 ? 0.005 : 0))
       const position = point.add(new Vector3(...base)).toArray()
       cards.push({ id: hand ? `card:${hand[j]}` : `opaque:${i}:${j}`, cardId: hand?.[j] || 'AS', zone: 'hand', seat: i, faceUp: Boolean(hand), position, space: camera ? 'camera' : held ? `seat:${i}` : 'world', tilt, rotation: fan[j].rotation, order: fan[j].order, dealIndex: j * table.seats.length + ((i - anchor + table.seats.length) % table.seats.length) })
     }

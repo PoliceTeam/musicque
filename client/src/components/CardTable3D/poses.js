@@ -1,4 +1,4 @@
-import { Euler, Quaternion } from 'three'
+import { Euler, Quaternion, Vector3 } from 'three'
 // Relative to the GLB bind pose; replace these maps with sitting clips if needed.
 export const poses = {
   seated: { 'mixamorig:Hips': [0, 0, 0], 'mixamorig:LeftUpLeg': [-Math.PI / 2, 0, 0], 'mixamorig:RightUpLeg': [-Math.PI / 2, 0, 0], 'mixamorig:LeftLeg': [Math.PI / 2, 0, 0], 'mixamorig:RightLeg': [Math.PI / 2, 0, 0] },
@@ -25,4 +25,21 @@ export const blendPose = (rig, targets, alpha, epsilon = 1e-4) => {
     else quaternion.copy(target)
   }
   return settled
+}
+
+// Metre-space grip calibrated against the GLB's holdCards wrist orientation.
+export const HAND_GRIP = { position: [-0.0036162643, 0.0107896604, 0.0058741689], rotation: [-0.5151982317, 0.4261955690, 0.8638876674] }
+const gripRotation = new Quaternion().setFromEuler(new Euler(...HAND_GRIP.rotation))
+const gripPosition = new Vector3(), wristRotation = new Quaternion()
+export function updateHandAnchor(hand, anchor) {
+  hand.updateWorldMatrix(true, false)
+  hand.getWorldQuaternion(wristRotation)
+  hand.getWorldPosition(anchor.position)
+  anchor.position.add(gripPosition.fromArray(HAND_GRIP.position).applyQuaternion(wristRotation))
+  anchor.quaternion.copy(wristRotation).multiply(gripRotation)
+}
+export const playPosePhase = (elapsed, out = {}) => {
+  out.reaching = elapsed >= 150 && elapsed < 450
+  out.progress = elapsed < 150 ? 0 : Math.min(1, (elapsed - (out.reaching ? 150 : 450)) / 300)
+  return out
 }

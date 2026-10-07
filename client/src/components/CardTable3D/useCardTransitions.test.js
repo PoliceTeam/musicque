@@ -43,9 +43,9 @@ it('gives a bomb a stronger, faster landing after the opponent reach delay', () 
   const next = { ...snapshot([card('9S', 'trick', 1)]), trickKey: 'bomb' }
   const normal = diffCardTransitions(previous, next).cards[0]
   const bomb = diffCardTransitions(previous, next, () => true).cards[0]
-  expect(bomb.delay).toBe(250)
+  expect(bomb.delay).toBe(450)
   expect(bomb.height).toBeGreaterThan(normal.height)
-  expect(bomb.duration).toBeLessThan(normal.duration)
+  expect(bomb.duration).toBeLessThanOrEqual(normal.duration + 10)
 })
 
 it('slides the previous display combo back onto the cloth and removes its display tilt', () => {
@@ -55,4 +55,12 @@ it('slides the previous display combo back onto the cloth and removes its displa
   expect(under).toMatchObject({ tilt: 0, dim: true, scale: 1.4, position: [0, 0.791, -0.06] })
   expect(under.from.tilt).toBe(0.61)
   expect(under.duration).toBeGreaterThan(0)
+})
+
+it('waits for the reach peak before opponent release and gives my own cards a short pause', () => {
+  const old = {...snapshot([card('3S','hand'),card('opaque:1:0','hand',1)]), anchor:0}
+  const next = {...snapshot([card('3S','trick'),card('4S','trick',1)]), anchor:0}
+  const cards = diffCardTransitions(old,next).cards
+  expect(cards[0]).toMatchObject({delay:180,duration:350})
+  expect(cards[1]).toMatchObject({delay:450,duration:350})
 })

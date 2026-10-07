@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { Bone, Group } from 'three'
-import { poses, prepareRig, poseTargets, blendPose } from './poses'
+import { Bone, Euler, Group, Quaternion, Vector3 } from 'three'
+import { poses, prepareRig, poseTargets, blendPose, HAND_GRIP, updateHandAnchor, playPosePhase } from './poses'
 describe('procedural seated poses', () => {
   it('uses only bones present in the supplied chibi GLB', () => {
     const bytes = readFileSync('public/models/chibi.glb')
@@ -29,4 +29,26 @@ it('settles pose blends from imprecise imported bind quaternions', () => {
   for (let frame = 0; frame < 300; frame++) settled = blendPose(rig, target, 0.2)
   expect(settled).toBe(true)
   expect(bone.quaternion.length()).toBeCloseTo(1, 10)
+})
+
+it('attaches the fan to the full wrist transform and keeps its calibrated palm offset', () => {
+  const root = new Group(), hand = new Bone(), anchor = new Group()
+  root.position.set(1,0.6,-1); root.rotation.y = Math.PI / 2; root.add(hand)
+  hand.position.set(0.1,0.2,0); hand.rotation.set(0.4,0.2,-0.3)
+  updateHandAnchor(hand,anchor)
+  const wrist = hand.getWorldQuaternion(new Quaternion())
+  const expected = hand.getWorldPosition(new Vector3()).add(new Vector3(...HAND_GRIP.position).applyQuaternion(wrist))
+  expect(anchor.position.distanceTo(expected)).toBeLessThan(1e-10)
+  expect(anchor.quaternion.angleTo(wrist.clone().multiply(new Quaternion().setFromEuler(new Euler(...HAND_GRIP.rotation))))).toBeLessThan(1e-7)
+  expect(anchor.position.distanceTo(hand.getWorldPosition(new Vector3()))).toBeLessThan(0.015)
+  hand.rotation.z += 0.5; updateHandAnchor(hand,anchor)
+  expect(anchor.quaternion.angleTo(wrist)).toBeGreaterThan(0.1)
+})
+it('holds during the lift, reaches at release time, and returns over 300ms', () => {
+  expect(playPosePhase(0)).toEqual({reaching:false,progress:0})
+  expect(playPosePhase(150)).toEqual({reaching:true,progress:0})
+  expect(playPosePhase(300)).toEqual({reaching:true,progress:0.5})
+  expect(playPosePhase(450)).toEqual({reaching:false,progress:0})
+  expect(playPosePhase(600)).toEqual({reaching:false,progress:0.5})
+  expect(playPosePhase(750)).toEqual({reaching:false,progress:1})
 })

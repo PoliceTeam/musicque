@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useTableGLTF } from './assets'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
-import { blendPose, poses, poseTargets, prepareRig } from './poses'
+import { blendPose, poses, poseTargets, prepareRig, updateHandAnchor, playPosePhase } from './poses'
 import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 import { CHAIR_HEIGHT } from './chair'
@@ -81,36 +81,45 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   }, [scene, seat.isBot])
   const activity = useAnimationActivity()
   useEffect(() => { activity.start() }, [activity, playedKey, seat.passed])
+  const phase = useMemo(() => ({}), [])
   const initialized = useRef(false)
   const handAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
   const lastPlay = useRef(playedKey)
   const lastPassed = useRef(seat.passed), passElapsed = useRef(Infinity)
-  const blending = useRef(false), lastReach = useRef(false)
+  const interrupted = useRef(null), wasMoving = useRef(false)
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
-  const orientation = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), [yaw])
   spaces.current[`seat:${seatIndex}`] = handAnchor
   useEffect(() => () => { avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
   useFrame((_, delta) => {
     delta = activity.step(delta)
-    if (playedKey !== lastPlay.current) { if (playedKey) elapsed.current = 0; lastPlay.current = playedKey }
+    if (playedKey !== lastPlay.current) {
+      if (!playedKey && elapsed.current < 750) interrupted.current = { elapsed: 0, from: new Map([...avatar.rig].map(([name, { bone }]) => [name, bone.quaternion.clone()])) }
+      if (playedKey) { elapsed.current = 0; interrupted.current = null }
+      lastPlay.current = playedKey
+    }
     if (seat.passed !== lastPassed.current) { passElapsed.current = seat.passed ? 0 : Infinity; lastPassed.current = seat.passed }
     passElapsed.current += delta * 1000
     elapsed.current += delta * 1000
-    const reaching = elapsed.current < 650 && !reducedMotion
-    const target = reaching ? avatar.reach : avatar.hold
-    if (reaching !== lastReach.current) { blending.current = true; lastReach.current = reaching }
-    const wasBlending = blending.current
-    if (blending.current) blending.current = !blendPose(avatar.rig, target, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
-    if (initialized.current && !reaching && !blending.current && !wasBlending && passElapsed.current >= 800) { activity.stop(); return }
+    const moving = !reducedMotion && (elapsed.current < 750 || interrupted.current)
+    if (moving) {
+      playPosePhase(elapsed.current, phase)
+      const from = interrupted.current?.from || (phase.reaching ? avatar.hold : elapsed.current < 150 ? avatar.hold : avatar.reach)
+      const to = phase.reaching && !interrupted.current ? avatar.reach : avatar.hold
+      if (interrupted.current) interrupted.current.elapsed += delta * 1000
+      const progress = interrupted.current ? Math.min(1, interrupted.current.elapsed / 100) : phase.progress
+      const eased = progress * progress * (3 - 2 * progress)
+      for (const [name, target] of to) avatar.rig.get(name).bone.quaternion.slerpQuaternions(from.get(name), target, eased)
+      if (interrupted.current && progress === 1) { interrupted.current = null; elapsed.current = Infinity }
+    } else if (initialized.current && !wasMoving.current && passElapsed.current >= 800) { activity.stop(); return }
+    else blendPose(avatar.rig, avatar.hold, 1)
+    wasMoving.current = Boolean(moving)
     initialized.current = true
-    hand.updateWorldMatrix(true, false)
     head.updateWorldMatrix(true, false)
-    hand.getWorldPosition(handAnchor.position)
+    updateHandAnchor(hand, handAnchor)
     handAnchor.position.y -= !reducedMotion && passElapsed.current < 800 ? 0.03 * Math.sin(Math.PI * passElapsed.current / 800) : 0
-    handAnchor.quaternion.copy(orientation)
     handAnchor.updateWorldMatrix(true, false)
     if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)

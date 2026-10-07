@@ -2,8 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useFrame } from '@react-three/fiber'
 import { DoubleSide, MeshBasicMaterial, PlaneGeometry } from 'three'
 import { useAnimationActivity } from './activity'
-import { sameCardTarget, tween } from './anim'
-import { applyWorldPose, createPose, readWorldPose, worldPose } from './cardSpaces'
+import { sameCardTarget, tween, motionTiming } from './anim'
+import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose } from './cardSpaces'
 const glowGeometry = new PlaneGeometry(0.064, 0.095)
 const glowMaterial = new MeshBasicMaterial({ color: '#72edb5', transparent: true, opacity: 0.55, side: DoubleSide, depthWrite: false })
 const dimGeometry = new PlaneGeometry(0.058, 0.089)
@@ -27,8 +27,10 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     clone.traverse(mesh => { if (mesh.isMesh) mesh.renderOrder = target.order ?? 0 })
     const to = worldPose(target, spaces)
     const initial = motion.current ? readWorldPose(ref.current) : poseStore?.current.get(from?.id || poseId) || worldPose(from || target, spaces)
+    const interrupted = motion.current && !motion.current.done
+    const { wait, travel } = motionTiming(delay, duration, interrupted, reducedMotion)
     const flip = Boolean(from && from.faceUp !== target.faceUp)
-    motion.current = { sample: tween(initial, to, { duration: reducedMotion ? 0 : duration, height: reducedMotion ? 0 : height, flip }), elapsed: reducedMotion || motion.current ? 0 : -delay, target, from, to, duration: reducedMotion ? 0 : duration, height: reducedMotion ? 0 : height, flip, pending: !reducedMotion && !motion.current && delay > 0, done: false }
+    motion.current = { sample: tween(initial, to, { duration: travel, height: reducedMotion ? 0 : height, flip }), elapsed: -wait, target, from, to, duration: travel, height: reducedMotion ? 0 : height, flip, pending: wait > 0, done: false }
     applyWorldPose(ref.current, motion.current.sample(0, scratch.sample))
   }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch, activity])
   useFrame((_, delta) => {
@@ -45,11 +47,19 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     animation.elapsed += delta * 1000
     const destination = worldPose(animation.target, spaces, scratch.destination)
     let pose = animation.sample(animation.elapsed, scratch.sample)
-    if (animation.elapsed < 0 && animation.from?.space?.startsWith('seat:')) pose = worldPose(animation.from, spaces, scratch.sample)
+    if (animation.elapsed < 0 && animation.from?.space?.startsWith('seat:')) {
+      pose = worldPose(animation.from, spaces, scratch.sample)
+      liftWorldPose(pose, 0.02 * Math.min(1, (delay + animation.elapsed) / 150))
+    }
     else if (animation.elapsed >= 0 && animation.pending) {
       animation.pending = false
       // The sampler owns this destination; keep it separate from the next frame's scratch.
       animation.to = { position: [...destination.position], quaternion: [...destination.quaternion], scale: destination.scale }
+      if (animation.from?.space?.startsWith('seat:')) {
+        const released = worldPose(animation.from, spaces, scratch.sample)
+        liftWorldPose(released, 0.02)
+        applyWorldPose(ref.current, released)
+      }
       animation.sample = tween(readWorldPose(ref.current), animation.to, { duration: animation.duration, height: animation.height, flip: animation.flip })
       animation.elapsed = 0
       pose = animation.sample(0, scratch.sample)

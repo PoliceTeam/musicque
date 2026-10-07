@@ -44,3 +44,10 @@ describe('card performance helpers', () => {
     expect(out.done).toBe(true)
   })
 })
+
+it('compresses interrupted plays to 100ms without another release wait, and snaps reduced motion', async () => {
+  const {motionTiming} = await import('./anim')
+  expect(motionTiming(450,350,false,false)).toEqual({wait:450,travel:350})
+  expect(motionTiming(450,350,true,false)).toEqual({wait:0,travel:100})
+  expect(motionTiming(450,350,false,true)).toEqual({wait:0,travel:0})
+})
