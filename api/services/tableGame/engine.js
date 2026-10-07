@@ -66,7 +66,7 @@ const createTableGameService = (definition) => {
     return result
   }
   const validateKey = (key) => {
-    if (typeof key !== 'string' || !key.length || key.length > 100) throw new TableGameError('Invalid request key', 400, 'INVALID_REQUEST_KEY')
+    if (typeof key !== 'string' || !key.length || key.length > 100 || key.startsWith('timer:')) throw new TableGameError('Invalid request key', 400, 'INVALID_REQUEST_KEY')
   }
   const waiting = (table) => {
     if (table.match || table.fundingMatch) throw new TableGameError('Table is playing', 409, 'TABLE_PLAYING')
@@ -79,20 +79,46 @@ const createTableGameService = (definition) => {
     }
     await Game.updateOne({ _id: game._id }, { $set: { status: 'aborted', fundingPending: false } })
   }
-  const schedule = (table) => {
+  const abort = async (table) => {
+    const game = table.match
+    await Game.updateOne({ _id: game._id }, { $set: { status: 'aborted', fundingPending: true } })
+    clearTimeout(table.timer)
+    table.match = null
+    table.fundingMatch = game
+    try { await refund(game); table.fundingMatch = null } catch (error) {
+      console.error('[TableGame] Abort refund failed:', error.message)
+      scheduleRefundRetry(table, game)
+    }
+    broadcast(table)
+  }
+  const isRuleFailure = (error) => error instanceof TableGameError && !['MOVE_CONFLICT', 'GAME_INACTIVE'].includes(error.code)
+  const schedule = (table, failures = 0) => {
     clearTimeout(table.timer)
     if (table.match?.status !== 'playing') return
     const game = table.match
     const bot = game.seats[definition.currentSeat(game.state)].isBot
-    const delay = bot ? Math.min(botDelayMs, Math.max(0, new Date(game.turnDeadlineAt) - Date.now())) : Math.max(0, new Date(game.turnDeadlineAt) - Date.now())
+    const delay = failures ? 1000 : bot ? Math.min(botDelayMs, Math.max(0, new Date(game.turnDeadlineAt) - Date.now())) : Math.max(0, new Date(game.turnDeadlineAt) - Date.now())
     table.timer = setTimeout(() => enqueue(table, async () => {
       if (table.match?._id.toString() !== game._id.toString() || table.match.version !== game.version) return
       const seat = definition.currentSeat(game.state)
-      const move = bot ? definition.botMove(game.state, seat) : definition.timeoutMove(game.state, seat)
-      await moveInternal(table, seat, move, `timer:${game._id}:${game.version}`)
+      const candidates = failures >= 3 ? [() => definition.timeoutMove(game.state, seat), () => ({ type: 'pass' })] : [() => bot ? definition.botMove(game.state, seat) : definition.timeoutMove(game.state, seat)]
+      for (const candidate of candidates) {
+        try {
+          let move
+          try { move = candidate() } catch (error) { throw new TableGameError(error.message, 409, 'INVALID_MOVE') }
+          await moveInternal(table, seat, move, `timer:${game._id}:${game.version}`)
+          return
+        } catch (error) {
+          if (failures < 3 || !isRuleFailure(error)) throw error
+          console.error('[TableGame] Automatic fallback failed:', error.message)
+        }
+      }
+      console.error('[TableGame] Aborting match after invalid automatic moves:', game._id.toString())
+      await abort(table)
     }).catch((error) => {
       console.error('[TableGame] Timer failed:', error.message)
       if (table.match?.status === 'settling' || table.match?._id.toString() !== game._id.toString()) return
+      if (isRuleFailure(error)) { schedule(table, failures + 1); return }
       clearTimeout(table.timer)
       table.timer = setTimeout(() => enqueue(table, () => recover(table)).catch((err) => {
         console.error('[TableGame] Recovery failed:', err.message)
@@ -106,6 +132,11 @@ const createTableGameService = (definition) => {
     const game = table.match
     const ranking = definition.result(game.state).ranking.map((seat) => ({ seat, ...serializeTable(table).seats[seat] }))
     const payouts = definition.payout(game.stake, ranking.filter((seat) => seat.userId).map((seat) => seat.userId))
+    const humans = new Set(game.seats.filter((seat) => seat.userId).map((seat) => seat.userId.toString()))
+    if (!Array.isArray(payouts) || payouts.some((payout) => !payout || !humans.has(payout.userId) || !Number.isSafeInteger(payout.amount) || payout.amount < 0) || new Set(payouts.map((payout) => payout.userId)).size !== payouts.length || payouts.reduce((sum, payout) => sum + payout.amount, 0) > game.stake * game.humanCount) {
+      console.error('[TableGame] Invalid payouts; match remains settling:', game._id.toString())
+      return
+    }
     for (const payout of payouts) if (payout.amount) await coins.creditOnce(payout.userId, payout.amount, transaction(game, payout, 'payout'))
     await Game.updateOne({ _id: game._id, status: 'settling' }, { $set: { status: 'settled' } })
     table.lastWinnerSeat = definition.result(game.state).ranking[0]
@@ -137,6 +168,7 @@ const createTableGameService = (definition) => {
     let next
     try { next = definition.applyMove(game.state, seat, move) } catch (error) { throw new TableGameError(error.message, 409, error.code || 'INVALID_MOVE') }
     const status = definition.result(next) ? 'settling' : 'playing'
+    if (status === 'playing' && definition.currentSeat(next) == null) throw new TableGameError('Unfinished game has no current seat', 409, 'INVALID_MOVE')
     const fields = { state: next, status, turnDeadlineAt: status === 'playing' ? new Date(Date.now() + turnMs) : null }
     const updated = await Game.findOneAndUpdate({ _id: game._id, version: game.version, status: 'playing' }, { $set: fields, $inc: { version: 1 }, $push: { moves: { requestKey, seat, move, at: new Date() } } }, { new: true }).lean()
     if (!updated) { await recover(table); throw new TableGameError('Move conflict', 409, 'MOVE_CONFLICT') }
@@ -195,6 +227,7 @@ const createTableGameService = (definition) => {
   }
   const start = (userId, tableId, requestKey) => {
     validateKey(requestKey)
+    requestKey = `u:${userId}:${requestKey}`
     const table = tableFor(tableId)
     return enqueue(table, async () => {
       if (table.hostId !== userId.toString()) throw new TableGameError('Only the host can start', 403, 'HOST_REQUIRED')
@@ -225,6 +258,7 @@ const createTableGameService = (definition) => {
   }
   const move = (userId, tableId, move, requestKey) => {
     validateKey(requestKey)
+    requestKey = `u:${userId}:${requestKey}`
     const table = tableFor(tableId)
     return enqueue(table, async () => {
       if (await Game.exists({ game: name, tableId: table.tableId, 'moves.requestKey': requestKey })) {

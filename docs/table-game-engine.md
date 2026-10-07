@@ -24,16 +24,23 @@ definition and `api/services/tableGame/definition.js` for the validated contract
 The router provides `GET /config`, `GET /tables`, `GET /tables/:id` and
 `POST /tables/:id/{sit,leave,start,move}`. Mutations require authentication and a
 `requestKey`; move also requires `move`. Keys must be unique across matches at a
-table. Repeating an applied request returns the current snapshot without applying
+table for that user. Client keys are stored as `u:<userId>:<key>`; the `timer:`
+prefix is reserved for engine moves and rejected in client requests.
+Repeating an applied request returns the current snapshot without applying
 it twice. An authenticated table snapshot contains only that user's `myView`.
 
 ## Lifecycle and privacy
 
 The engine owns seats, host handoff, bots, turn deadlines, per-table queues, version
 checks and recovery. Fewer than two humans makes a practice match with zero stake.
+Tables always fill to `seats.max` with bots, even when `seats.min` is smaller.
 Funding is recorded before debits; partial failure refunds charged users and retries
 failed refunds. Settlement uses idempotent payouts and a guarded retry. Operation
 keys are `<name>:<stake|payout|refund>:<matchId>:<userId>`.
+Invalid automatic moves retry three times, then fall back to `timeoutMove` and
+`{ type: 'pass' }`. If neither is legal, the engine aborts and refunds the match.
+Payouts must be non-negative integers for distinct seated humans and total no more
+than the pot; invalid payouts leave the match settling without crediting anyone.
 
 `TableGameMatch.state` includes hidden information and is never broadcast directly.
 Keep `publicView` free of private fields and put only the viewer's secrets in

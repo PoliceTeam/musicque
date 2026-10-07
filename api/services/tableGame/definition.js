@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} TableGameDefinition
  * @property {string} name Route/ledger namespace (lowercase ASCII).
- * @property {{min:number,max:number}} seats Total humans plus bots required to play.
+ * @property {{min:number,max:number}} seats Tables always fill to max with bots, even when min is smaller.
  * @property {{tableCount:number,stake:number,turnMs:number,botDelayMs:number}} config
  * @property {{stake:string,payout:string,refund:string}} ledger Registered coin types.
  * @property {function({seats:Array,rng:Function,previous:Object|null}):Object} setup

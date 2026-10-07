@@ -31,7 +31,7 @@ const definition = {
   payout: (stake, ids) => ids.map((userId, i) => ({ userId, amount: i === 0 ? stake * ids.length : 0 })),
 }
 const fixture = (status = 'playing') => ({ _id: 'g1', game: 'fake', tableId: 1, status, version: 0, seats: ['a', 'b', null, null].map((userId, i) => ({ userId, username: userId || `Bot ${i}`, isBot: !userId })), state: { ...definition.setup({ previous: null }), finishOrder: status === 'settling' || status === 'settled' ? [0, 1, 2, 3] : [] }, moves: [], stake: 10, humanCount: 2, turnDeadlineAt: new Date(Date.now() + 20000) })
-const harness = (t, records = []) => {
+const harness = (t, records = [], gameDefinition = definition) => {
   const timers = new Map()
   const operations = new Set()
   const debits = []
@@ -77,8 +77,8 @@ const harness = (t, records = []) => {
     credits.push({ userId, amount, ...tx })
     return { polites: 110 }
   })
-  const service = createTableGameService(definition)
-  const io = { emit: (event, data) => emitted.push({ event, data }), to: () => ({ emit() {} }) }
+  const service = createTableGameService(gameDefinition)
+  const io = { emit: (event, data) => emitted.push({ room: null, event, data: clone(data) }), to: (room) => ({ emit: (event, data) => emitted.push({ room, event, data: clone(data) }) }) }
   service.init(io)
   const fire = async (timer) => { timers.delete(timer); await timer.fn(); await new Promise(setImmediate) }
   return { service, io, records, timers, credits, debits, emitted, fire, failDebit: (id) => { debitFailure = id }, failCredit: (n) => { creditFailures = n } }
@@ -132,7 +132,7 @@ test('settlement retries are idempotent and a stale retry leaves the next game t
 })
 test('old and current duplicate request keys never apply another move', async (t) => {
   const old = fixture('settled')
-  old.moves = [{ requestKey: 'old-key', seat: 0, cards: ['3S'] }]
+  old.moves = [{ requestKey: 'u:a:old-key', seat: 0, cards: ['3S'] }]
   const active = { ...fixture(), _id: 'g2' }
   active.state.seats[0].hand = ['3S', '7S']
   const h = harness(t, [old, active])
@@ -142,7 +142,9 @@ test('old and current duplicate request keys never apply another move', async (t
   await h.service.move('a', 1, { card: '3S' }, 'new-key')
   await h.service.move('a', 1, { card: '3S' }, 'new-key')
   assert.equal(h.records[1].version, 1)
-  await assert.rejects(h.service.move('b', 1, { pass: true }, 'old-key'), { code: 'INVALID_REQUEST_KEY' })
+  await h.service.move('b', 1, { pass: true }, 'new-key')
+  assert.equal(h.records[1].version, 2)
+  assert.deepEqual(h.records[1].moves.map((move) => move.requestKey), ['u:a:new-key', 'u:b:new-key'])
 })
 test('human timeout leads with the lowest single and then auto-passes on a response', async (t) => {
   const game = fixture()
@@ -192,11 +194,93 @@ test('public state never contains hidden fields, and private views are seat-scop
   const h = harness(t, [fixture()])
   await h.service.resume(h.io)
   assert.ok(!JSON.stringify(h.service.listTables()).includes('PRIVATE_SENTINEL'))
-  assert.ok(!JSON.stringify(h.emitted).includes('PRIVATE_SENTINEL'))
+  assert.ok(!JSON.stringify(h.emitted.filter((event) => event.room === null)).includes('PRIVATE_SENTINEL'))
   assert.equal(h.service.getTable(1).myView, null)
   assert.equal(h.service.getTable(1, 'outsider').myView, null)
   assert.deepEqual(h.service.getTable(1, 'a').myView.hand, ['3S'])
   assert.deepEqual(h.service.getTable(1, 'b').myView.hand, ['4S'])
+  for (const event of h.emitted.filter((event) => event.event === 'table_game_private')) {
+    assert.equal(event.room, `table_game:user:${event.data.userId}`)
+    assert.deepEqual(event.data.view.hand, event.data.userId === 'a' ? ['3S'] : ['4S'])
+    assert.equal(event.data.view.secret, 'PRIVATE_SENTINEL')
+  }
+  for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find((timer) => timer.ms <= 20000))
+  const result = h.emitted.find((event) => event.event === 'table_game_result')
+  assert.ok(result)
+  assert.equal(result.room, null)
+  assert.ok(!JSON.stringify(result.data).includes('PRIVATE_SENTINEL'))
+  assert.ok(result.data.ranking.every((seat) => !('hand' in seat) && !('secret' in seat)))
+  assert.equal(h.records[0].status, 'settled')
+})
+test('client keys cannot reserve a timer key, including after resume', async (t) => {
+  const h = harness(t, [fixture()])
+  await h.service.resume(h.io)
+  await assert.rejects(async () => h.service.move('a', 1, { card: '3S' }, 'timer:g1:1'), { code: 'INVALID_REQUEST_KEY' })
+  assert.equal(h.records[0].version, 0)
+  await h.service.move('a', 1, { card: '3S' }, 'u:a:timer:g1:1')
+  assert.equal(h.records[0].moves[0].requestKey, 'u:a:u:a:timer:g1:1')
+  await h.service.resume(h.io)
+  await h.fire([...h.timers.values()].find((timer) => timer.ms <= 20000))
+  assert.equal(h.records[0].version, 2)
+  assert.equal(h.records[0].moves[1].requestKey, 'timer:g1:1')
+  assert.equal(h.records[0].moves[1].seat, 1)
+})
+test('invalid automatic moves fall back after three failures or abort and refund', async (t) => {
+  for (const mode of ['timeout', 'pass', 'abort']) await t.test(mode, async (t) => {
+    let attempts = 0
+    const gameDefinition = {
+      ...definition,
+      setup: (args) => ({ ...definition.setup(args), currentSeat: mode === 'timeout' ? 2 : 0 }),
+      botMove: () => { attempts++; throw new GameRuleError('Broken bot') },
+      timeoutMove: mode === 'timeout' ? definition.timeoutMove : () => { attempts++; return { card: 'invalid' } },
+      applyMove: (state, seat, move) => {
+        if (mode === 'abort') throw new GameRuleError('No legal automatic move')
+        return definition.applyMove(state, seat, move.type === 'pass' ? { pass: true } : move)
+      },
+    }
+    const h = harness(t, [], gameDefinition)
+    await h.service.sit(player('a'), 1, 'a')
+    await h.service.sit(player('b'), 1, 'b')
+    await h.service.start('a', 1, 'start')
+    for (let i = 0; i < 3; i++) {
+      await h.fire([...h.timers.values()].find((timer) => timer.ms <= 20000))
+      assert.equal(h.records[0].version, 0)
+    }
+    assert.equal(attempts, 3)
+    if (mode === 'abort') h.failCredit(1)
+    await h.fire([...h.timers.values()].find((timer) => timer.ms === 1000))
+    if (mode === 'abort') {
+      assert.equal(h.records[0].status, 'aborted')
+      assert.equal(h.records[0].fundingPending, true)
+      await h.fire([...h.timers.values()].find((timer) => timer.ms === 1000))
+      assert.equal(h.records[0].fundingPending, false)
+      assert.deepEqual(h.credits.map((credit) => [credit.userId, credit.amount, credit.type]), [['a', 10, 'thirteen_refund'], ['b', 10, 'thirteen_refund']])
+      assert.equal(h.timers.size, 0)
+      assert.equal(h.service.getTable(1).status, 'waiting')
+    } else {
+      assert.equal(h.records[0].version, 1)
+      assert.deepEqual(h.records[0].moves[0].move, mode === 'timeout' ? { card: '5S' } : { type: 'pass' })
+    }
+  })
+})
+test('invalid payouts leave settlement pending without crediting any user', async (t) => {
+  const invalid = [null, [{ userId: 'a', amount: -1 }], [{ userId: 'a', amount: 0.5 }], [{ userId: 'a', amount: 21 }], [{ userId: 'outsider', amount: 20 }], [{ userId: 'a', amount: 10 }, { userId: 'b', amount: NaN }], [{ userId: 'a', amount: 5 }, { userId: 'a', amount: 5 }]]
+  for (const [index, payouts] of invalid.entries()) await t.test(String(index), async (t) => {
+    const h = harness(t, [fixture('settling')], { ...definition, payout: () => payouts })
+    await h.service.resume(h.io)
+    assert.equal(h.credits.length, 0)
+    assert.equal(h.records[0].status, 'settling')
+    assert.equal(h.service.getTable(1).status, 'settling')
+    assert.ok(!h.emitted.some((event) => event.event === 'table_game_result'))
+  })
+})
+test('unfinished state with no current seat is rejected before persistence', async (t) => {
+  const h = harness(t, [fixture()], { ...definition, currentSeat: (state) => state.moves.length ? null : state.currentSeat })
+  await h.service.resume(h.io)
+  await assert.rejects(h.service.move('a', 1, { card: '3S' }, 'move'), { code: 'INVALID_MOVE' })
+  assert.equal(h.records[0].version, 0)
+  assert.equal(h.records[0].moves.length, 0)
+  assert.deepEqual(h.records[0].state.seats[0].hand, ['3S'])
 })
 test('bots get their delay and a resumed playing match preserves its deadline', async (t) => {
   const game = fixture()
