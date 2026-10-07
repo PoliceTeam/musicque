@@ -2,7 +2,7 @@
 
 **Goal:** Add a real-time multiplayer Tiến Lên Miền Nam card game (2–4 humans, bots fill empty
 seats) with a fixed Polite Coins buy-in split by finishing rank, rendered as a full 3D table
-using `client/public/models/deck-of-cards.glb`, on its own route `/tien-len`.
+using `client/public/models/deck-of-cards.glb`, on its own route `/thirteen`.
 
 **Branch:** `feat/tien-len-mien-nam` (already created; GLB asset already copied).
 
@@ -176,7 +176,7 @@ Commit: `feat(tien-len): add bot strategy and pot split`.
 - In `api/socket.js`, add `tienlen:bind {token}`. Resolve the user with
   `resolveUserFromToken`, then `socket.join('tienlen:user:<id>')`.
 - Add `api/controllers/tienLen.controller.js` and `api/routes/tienLen.routes.js`, mounted at
-  `/api/tien-len` in `api/app.js`:
+  `/api/thirteen` in `api/app.js`:
   - `GET /config`, public
   - `GET /tables`, public
   - `GET /tables/:id`, optional auth; includes `myHand` when seated
@@ -227,7 +227,7 @@ Commit: `feat(tien-len): add client state and rules mirror`.
 
 ## Task 5 — 3D table + page
 
-- `client/src/pages/TienLenPage.jsx`. Add the route `/tien-len` in `App.jsx`, lazily
+- `client/src/pages/TienLenPage.jsx`. Add the route `/thirteen` in `App.jsx`, lazily
   loaded like `XiangqiPage`.
   - Layout: a lobby list of tables with seats, a Sit/Leave/Start button, and the stake
     note. Once seated, show the table view.
@@ -257,8 +257,8 @@ Commit: `feat(tien-len): add client state and rules mirror`.
     is unavailable, `prefers-reduced-motion` is set, or the 3D ErrorBoundary catches.
   - `TienLenRulesModal.jsx`: a short summary in Vietnamese.
   - `TienLenPromo.jsx`: a card on HomePage next to `XiangqiPromo` that links to
-    `/tien-len`. Also add an arcade tile in `WorkspacePage.jsx` that navigates to
-    `/tien-len`.
+    `/thirteen`. Also add an arcade tile in `WorkspacePage.jsx` that navigates to
+    `/thirteen`.
 - Tests: `TienLenHud.test.jsx` checks that Play is disabled for an invalid selection,
   enabled for a valid one, and that the Pass button is hidden when leading.
 
