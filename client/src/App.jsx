@@ -16,6 +16,7 @@ import { useTheme } from './contexts/ThemeContext'
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
+const ThirteenPage = lazy(() => import('./pages/ThirteenPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
@@ -49,6 +50,7 @@ function AppContent() {
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       <Route path='/' element={<HomePage />} />
+                      <Route path='/thirteen' element={<ThirteenPage />} />
                       <Route path='/login' element={<LoginPage initialMode='login' />} />
                       <Route path='/register' element={<LoginPage initialMode='register' />} />
                       <Route

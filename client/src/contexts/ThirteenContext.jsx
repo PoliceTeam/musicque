@@ -33,9 +33,9 @@ export const ThirteenProvider = ({ children }) => {
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const userId = user?._id
-  const currentTable = tables.find((t) => t.seats.some((s) => s?.userId === userId)) || tables.find((t) => t.tableId === tableId) || null
+  const currentTable = tables.find((t) => userId && t.seats.some((s) => s?.userId === userId)) || tables.find((t) => t.tableId === tableId) || null
   const privateHand = privateHands[currentTable?.tableId]
-  const myHand = privateHand?.gameId === currentTable?.gameId && privateHand?.version === currentTable?.version ? privateHand.hand : []
+  const myHand = userId && privateHand && currentTable && privateHand.gameId === currentTable.gameId && privateHand?.version === currentTable?.version ? privateHand.hand : []
   const acceptTable = useCallback((table) => {
     const { myHand: hand, ...publicTable } = table
     setTables((current) => {
@@ -50,7 +50,7 @@ export const ThirteenProvider = ({ children }) => {
       const [{ data: nextTables }, { data: nextConfig }] = await Promise.all([thirteenApi.tables(), thirteenApi.config()])
       nextTables.forEach(acceptTable)
       setConfig(nextConfig)
-      const seated = nextTables.find((t) => t.seats.some((s) => s?.userId === userId))
+      const seated = nextTables.find((t) => userId && t.seats.some((s) => s?.userId === userId))
       if (seated) acceptTable((await thirteenApi.table(seated.tableId)).data)
     } catch { message.error('Không tải được bàn chơi. Hãy tải lại trang.') }
   }, [userId, acceptTable])

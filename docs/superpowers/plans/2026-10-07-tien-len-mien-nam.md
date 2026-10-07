@@ -249,7 +249,27 @@ Commit: `feat(thirteen): add client state and rules mirror`.
     - Opponents sit left, top and right, shown as face-down stacks with a count label.
     - The current trick sits in the center. Animate the transition when the trick changes
       with simple lerp in `useFrame`. No new dependencies.
-    - Show a green felt plane, and highlight the current turn.
+    - **Scene reference (the user's expected look):**
+      - A round table with a green/white gingham tablecloth on a dark pedestal, seen at
+        a 3/4 angle from the player's seat, against a flat muted blue-grey background
+        (about `#94a3a6`).
+      - Cards lie flat on the cloth at real-world scale.
+    - Table model: `client/public/models/dinner-table.glb`.
+      - It is a single mesh `Table` with a PBR material (BaseColor/Normal/ORM).
+      - Units are meters: diameter about 1.32, height 0.785, origin on the floor at the
+        pedestal center.
+      - The cloth top is at about `y = 0.785`. Measure it with `Box3` or a downward
+        raycast at the center rather than hardcoding, then put cards a hair above it.
+      - Do not add a felt plane. The tablecloth is the surface.
+    - Seats sit around the round table: me at the near edge, opponents at left, far and
+      right edges.
+      - The camera sits behind and above my seat, looking at the table center, close
+        enough that my hand is readable.
+      - Use soft hemisphere + directional lighting, so the cloth reads like the
+        reference.
+      - Do not use a drei `Environment` HDR. It comes from a CDN and may be blocked.
+    - Highlight the current turn with a subtle glow or ring at that seat's edge.
+    - Load both GLBs with `useGLTF` and preload them on the page only.
   - `ThirteenHud.jsx` uses antd + `sp-*` classes and works in light and dark mode:
     - Play / Pass buttons, with Play disabled when `classify` fails or the move cannot
       beat.

@@ -1,0 +1,36 @@
+.thirteen-page { min-height: 100vh; background: var(--sp-bg); color: var(--sp-text); padding: 24px; }
+.thirteen-page main { max-width: 1200px; margin: 32px auto; }
+.thirteen-header, .thirteen-heading, .thirteen-status, .thirteen-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.thirteen-header { max-width: 1200px; margin: auto; }
+.thirteen-heading h1 { font-size: clamp(28px, 4vw, 48px); margin: 8px 0; letter-spacing: -1.5px; }
+.thirteen-heading p, .thirteen-stake { color: var(--sp-text-muted); }
+.thirteen-stake { margin: 24px 0; }
+.thirteen-lobby { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.thirteen-lobby section { padding: 20px; }
+.thirteen-lobby h2 { margin: 0; }
+.thirteen-lobby ul { list-style: none; padding: 0; line-height: 1.8; }
+.thirteen-surface { height: 520px; margin: 24px 0; border-radius: 16px; overflow: hidden; background: #94a3a6; }
+.thirteen-surface--flat { height: 340px; padding: 32px; background: #31534e; color: white; display: flex; flex-direction: column; justify-content: space-around; }
+.thirteen-opponents { display: flex; justify-content: space-between; gap: 12px; }
+.thirteen-opponents > div, .thirteen-seat-label { padding: 8px 12px; border-radius: 8px; background: #123329; color: white; }
+.thirteen-seat-label { text-align: center; white-space: nowrap; font-size: 12px; min-width: 76px; pointer-events: none; }
+.thirteen-seat-label span, .thirteen-opponents span { display: block; margin-top: 3px; }
+.thirteen-page .is-turn { outline: 2px solid #48e487; outline-offset: 3px; }
+.thirteen-hud { padding: 24px; margin-top: 16px; }
+.thirteen-hud:empty { display: none; }
+.thirteen-ranks { display: flex; flex-wrap: wrap; list-style: none; padding: 0; gap: 20px; font-size: 13px; }
+.thirteen-ranks li { padding: 4px; border-radius: 4px; }
+.thirteen-hand, .thirteen-trick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 16px 0; }
+.thirteen-card { background: #fffaf0; color: #17251e; border: 1px solid #a9b2ac; border-radius: 6px; min-width: 48px; padding: 16px 8px; font-size: 22px; font-weight: 700; box-shadow: 0 2px 3px #0002; }
+button.thirteen-card { cursor: pointer; }
+.thirteen-card.is-red { color: #b52a34; }
+.thirteen-card.is-selected { transform: translateY(-8px); outline: 3px solid #1db954; }
+.thirteen-card:focus-visible { outline: 3px solid #1db954; outline-offset: 4px; }
+.thirteen-actions { justify-content: flex-start; }
+.thirteen-actions span { color: var(--sp-text-muted); font-size: 13px; }
+.thirteen-promo { display: flex; align-items: center; gap: 12px; padding: 16px; color: var(--sp-text); text-decoration: none; margin: 16px 0; }
+.thirteen-promo > span { font-size: 36px; color: var(--sp-green); }
+.thirteen-promo p { margin: 4px 0 0; color: var(--sp-text-muted); font-size: 12px; }
+.thirteen-promo b { margin-left: auto; font-size: 12px; }
+@media (max-width: 700px) { .thirteen-lobby { grid-template-columns: 1fr; } .thirteen-page { padding: 16px; } .thirteen-surface { height: 380px; } }
+@media (prefers-reduced-motion: reduce) { .thirteen-card { transition: none; } }
