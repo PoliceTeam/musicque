@@ -12,6 +12,8 @@ admin runs the playback session. It has accreted several unrelated side widgets
 The repo is a **multi-service monorepo with no workspace tooling** — no root `package.json`.
 Each service installs and runs independently.
 
+Reusable table games: see [docs/table-game-engine.md](docs/table-game-engine.md) for the definition contract, lifecycle and client scene.
+
 | Directory | Stack | Dev port | Docker port |
 |---|---|---|---|
 | `api/` | Node + Express + Mongoose + Socket.IO (CommonJS) | 5000 | 5001 |

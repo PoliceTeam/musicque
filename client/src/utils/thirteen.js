@@ -26,5 +26,3 @@ export const canBeat = (play, current) => {
   return false
 }
 export const isValidLead = (cards, { mustInclude } = {}) => Boolean(classify(cards) && (!mustInclude || cards.includes(mustInclude)))
-
-
