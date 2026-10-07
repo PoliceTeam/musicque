@@ -12,9 +12,8 @@
 .thirteen-surface { height: 520px; margin: 24px 0; border-radius: 16px; overflow: hidden; background: #94a3a6; }
 .thirteen-surface--flat { height: 340px; padding: 32px; background: #31534e; color: white; display: flex; flex-direction: column; justify-content: space-around; }
 .thirteen-opponents { display: flex; justify-content: space-between; gap: 12px; }
-.thirteen-opponents > div, .thirteen-seat-label { padding: 8px 12px; border-radius: 8px; background: #123329; color: white; }
-.thirteen-seat-label { text-align: center; white-space: nowrap; font-size: 12px; min-width: 76px; pointer-events: none; }
-.thirteen-seat-label span, .thirteen-opponents span { display: block; margin-top: 3px; }
+.thirteen-opponents > div { padding: 8px 12px; border-radius: 8px; background: #123329; color: white; }
+.thirteen-opponents span { display: block; margin-top: 3px; }
 .thirteen-page .is-turn { outline: 2px solid #48e487; outline-offset: 3px; }
 .thirteen-hud { padding: 24px; margin-top: 16px; }
 .thirteen-hud:empty { display: none; }

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button, Modal } from 'antd'
-import { classify, canBeat, isValidLead, syncThirteenTimer, getThirteenRemaining } from '../../utils/thirteen'
+import { syncTableGameTimer, getTableGameRemaining } from '../../utils/tableGame'
+import { classify, canBeat, isValidLead } from '../../utils/thirteen'
 const SUIT_LABELS = { S: '♠', C: '♣', D: '♦', H: '♥' }
 export default function ThirteenHud({ table, userId, myHand, selectedCards, toggleCard, action, busy, result, closeResult }) {
   const [now, setNow] = useState(Date.now())
-  const sync = useMemo(() => syncThirteenTimer(table), [table])
+  const sync = useMemo(() => syncTableGameTimer(table), [table])
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(interval)
@@ -13,11 +14,11 @@ export default function ThirteenHud({ table, userId, myHand, selectedCards, togg
   const myTurn = table?.status === 'playing' && seat >= 0 && table.currentSeat === seat
   const combo = classify(selectedCards)
   const valid = selectedCards.every((c) => myHand.includes(c)) && (table?.trick ? canBeat(combo, classify(table.trick.cards)) : isValidLead(selectedCards, { mustInclude: table?.mustInclude }))
-  const remaining = getThirteenRemaining(table, sync, now)
+  const remaining = getTableGameRemaining(table, sync, now)
   return <section className='sp-panel thirteen-hud' aria-label='Điều khiển bàn bài'>
     {table && <>
       <div className='thirteen-status'><strong>{table.status === 'playing' ? `Lượt: ${table.seats[table.currentSeat]?.username}` : table.status === 'settling' ? 'Đang chia thưởng...' : 'Chờ chủ bàn bắt đầu'}</strong><span role='timer'>{remaining}s</span><span>Quỹ thưởng: <b>{table.pot} PC</b></span></div>
-      <ol className='thirteen-ranks'>{table.seats.map((s, i) => s && <li key={i} className={table.currentSeat === i ? 'is-turn' : ''}>{s.username} · {s.finishedPlace ? `Hạng ${s.finishedPlace}` : `${s.handCount} lá`}{s.passed ? ' · Đã bỏ lượt' : ''}</li>)}</ol>
+      <ol className='thirteen-ranks'>{table.seats.map((s, i) => s && <li key={i} className={table.currentSeat === i ? 'is-turn' : ''}>{s.username} · {s.finishedPlace ? `Hạng ${s.finishedPlace}` : `${s.handCount || 0} lá`}{s.passed ? ' · Đã bỏ lượt' : ''}</li>)}</ol>
       <div className='thirteen-hand' aria-label='Bài của bạn'>
         {myHand.map((card) => <button type='button' key={card} aria-label={`Chọn ${card}`} aria-pressed={selectedCards.includes(card)} onClick={() => toggleCard(card)} className={`thirteen-card ${selectedCards.includes(card) ? 'is-selected' : ''} ${/[DH]$/.test(card) ? 'is-red' : ''}`}>{card.slice(0, -1)}{SUIT_LABELS[card.slice(-1)]}</button>)}
       </div>

@@ -1,12 +1,4 @@
-const RANKS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2']
-const SUITS = ['S', 'C', 'D', 'H']
-const cardValue = (card) => {
-  if (typeof card !== 'string') return -1
-  const rank = RANKS.indexOf(card.slice(0, -1))
-  const suit = SUITS.indexOf(card.slice(-1))
-  return rank < 0 || suit < 0 ? -1 : rank * 4 + suit
-}
-const sortHand = (hand) => [...hand].sort((a, b) => cardValue(a) - cardValue(b))
+import { cardValue, sortHand } from './cards'
 export const classify = (cards) => {
   if (!Array.isArray(cards) || !cards.length || cards.length > 13 || new Set(cards).size !== cards.length || cards.some((card) => cardValue(card) < 0)) return null
   const sorted = sortHand(cards)
@@ -36,11 +28,3 @@ export const canBeat = (play, current) => {
 export const isValidLead = (cards, { mustInclude } = {}) => Boolean(classify(cards) && (!mustInclude || cards.includes(mustInclude)))
 
 
-export const cardNodeName = (cardId) => {
-  if (cardValue(cardId) < 0) return null
-  const suit = { S: 'Spade', C: 'Club', D: 'Diamond', H: 'Heart' }[cardId.slice(-1)]
-  const rank = cardId.slice(0, -1)
-  return `${suit}_${{ A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' }[rank] || rank}`
-}
-export const syncThirteenTimer = (table, now = Date.now()) => ({ offset: (table?.serverNow ?? now) - now })
-export const getThirteenRemaining = (table, sync, now = Date.now()) => table?.turnDeadlineAt ? Math.max(0, Math.ceil((new Date(table.turnDeadlineAt).getTime() - now - (sync?.offset || 0)) / 1000)) : 0
