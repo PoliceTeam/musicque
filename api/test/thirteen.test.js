@@ -125,3 +125,6 @@ test('four deterministic bots finish a full game without losing cards or stallin
   assert.equal(new Set(played).size, played.length)
   assert.equal(played.length + state.seats.reduce((sum, p) => sum + p.hand.length, 0), 52)
 })
+test('a lower four-pair sequence cannot beat a higher four-pair sequence', () => {
+  assert.equal(beats('3S 3H 4S 4H 5S 5H 6S 6H', '4S 4H 5S 5H 6S 6H 7S 7H'), false)
+})

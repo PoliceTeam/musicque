@@ -58,8 +58,8 @@ export const ThirteenProvider = ({ children }) => {
     setPrivateHands({})
     setSelectedCards([])
     setResult(null)
-    load()
-  }, [load])
+    if (!socket) load()
+  }, [load, socket])
   useEffect(() => {
     if (!socket) return undefined
     const bind = () => { socket.emit('thirteen:bind', { token: getStoredToken() }); load() }

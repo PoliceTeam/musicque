@@ -27,3 +27,22 @@ describe('Thirteen rules mirror', () => {
     expect(getThirteenRemaining(null, sync)).toBe(0)
   })
 })
+it('mirrors the complete API bomb hierarchy including negative cases', () => {
+  const beats = (a, b) => canBeat(classify(a.split(' ')), classify(b.split(' ')))
+  const lowPairs = '3S 3H 4S 4H 5S 5H'
+  const pairs = '4S 4H 5S 5H 6S 6H'
+  const fourPairs = '3S 3H 4S 4H 5S 5H 6S 6H'
+  const highFourPairs = '4S 4H 5S 5H 6S 6H 7S 7H'
+  const quad = '7S 7C 7D 7H'
+  expect(beats(pairs, '2S')).toBe(true)
+  expect(beats(pairs, lowPairs)).toBe(true)
+  expect(beats(pairs, '2S 2H')).toBe(false)
+  expect(beats(pairs, quad)).toBe(false)
+  for (const top of ['2S', '2S 2H', pairs, '6S 6C 6D 6H']) expect(beats(quad, top)).toBe(true)
+  expect(beats(quad, '8S 8C 8D 8H')).toBe(false)
+  expect(beats(quad, fourPairs)).toBe(false)
+  for (const top of ['2S', '2S 2H', pairs, quad]) expect(beats(fourPairs, top)).toBe(true)
+  expect(beats(highFourPairs, fourPairs)).toBe(true)
+  expect(beats(fourPairs, highFourPairs)).toBe(false)
+  for (const bomb of [pairs, quad, fourPairs]) expect(beats(bomb, 'AS')).toBe(false)
+})

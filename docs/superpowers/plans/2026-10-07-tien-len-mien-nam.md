@@ -302,3 +302,138 @@ Commit: `feat(thirteen): add 3D table page`.
   - the payout is credited and appears in the admin coin economy.
 
 Commit: `docs(thirteen): document game and env vars`.
+
+## Task 7 — Extract a reusable table-game engine (Thirteen becomes its first game)
+
+**Goal:** future card and board games (Phỏm, Xì dách, Sâm, Caro…) plug in a pure game definition
+and get tables, seats, bots, timers, PC stakes, hidden info, persistence and resume for
+free. This is an in-house version of the boardgame.io model, built on our own JWT, `coins.service`,
+the shared socket and Mongo. **Do not add boardgame.io.**
+
+This task **absorbs the Tasks 1–4 review fixes**. Implement them inside the engine, not in the old
+`thirteen.service.js`:
+- settle guard / no double timers
+- refund retry
+- bind race
+- lead by `lastWinnerSeat`
+- ghost seats and host handoff
+- cross-game requestKey check
+- per-payout `playerWinProfit`
+- the tests
+
+Skip the separate fix commit.
+
+### API: `api/services/tableGame/`
+- `definition.js` documents and validates the game-definition contract (JSDoc typedef plus
+  `assertDefinition`). The fields are below. Everything except `name` and `config` is a pure
+  function, so a game is unit-testable without Mongo.
+  ```
+  {
+    name: 'thirteen',                         // used in routes, events, operation keys
+    seats: { min: 2, max: 4 },                // min = humans+bots needed to start
+    config: { tableCount, stake, turnMs, botDelayMs },  // read from env by the game module
+    ledger: { stake: 'thirteen_stake', payout: 'thirteen_payout', refund: 'thirteen_refund' },
+    setup({ seats, rng, previous }) -> state           // previous = { winnerSeat } | null
+    currentSeat(state) -> seat | null                  // null = game over
+    applyMove(state, seat, move) -> state              // throws GameRuleError on illegal move
+    timeoutMove(state, seat) -> move                   // auto move on turn timeout
+    botMove(state, seat) -> move
+    playerView(state, seat) -> object                  // private info for that seat only
+    publicView(state) -> object                        // what everyone sees (no hidden info)
+    result(state) -> { ranking: [seat...] } | null     // non-null = finished
+    payout(stake, humanUserIdsInRankOrder) -> [{ userId, amount }]
+  }
+  ```
+- `engine.js` has `createTableGameService(definition)` and owns all generic behaviour:
+  - In-memory waiting tables, `sit`/`leave`, the host rules and handoff, and the disconnect
+    grace period.
+  - Bots filling empty seats. The practice rule applies: with fewer than 2 humans there is
+    no stake.
+  - Stake `debitOnce`, rollback refund, the refund retry, and `creditOnce` payouts. Use the
+    definition's `ledger` types and the operation keys `<name>:<stake|payout|refund>:<matchId>:<userId>`.
+  - The per-table promise queue, version CAS, requestKey idempotency (including the
+    cross-match check), one timer per table, and the settle guard.
+  - `resume(io)`.
+  - Broadcasts on the shared bus:
+    - `table_game_state` → `{ game, tableId, ...publicView, seats, serverNow }` to everyone.
+    - `table_game_private` → `{ game, tableId, view }` to `table_game:user:<id>` per human.
+    - `table_game_result` → `{ game, tableId, matchId, ranking, payouts }`.
+  - `getTable(tableId, userId)` includes `myView`.
+- `api/models/tableGameMatch.model.js` replaces `thirteenGame.model.js`. It holds:
+  - `game` (the definition name) and `tableId`
+  - `status` and `fundingPending`
+  - `seats` = `{userId, username, isBot}`
+  - `state` (Mixed, the definition's state, including hidden info)
+  - `version`, `stake`, `humanCount`, `turnDeadlineAt`
+  - `moves[{requestKey, seat, move, at}]` and `startRequestKey`
+
+  Indexes: `{game, tableId, status}` and `{game, tableId, 'moves.requestKey'}`. Set
+  `referenceType: 'TableGameMatch'` and remove `ThirteenGame` from the enum.
+- `router.js` has `createTableGameRouter(service)`, which provides the same endpoints Task 3
+  defined (`/config`, `/tables`, `/tables/:id`, `sit|leave|start|move`) through a generic
+  controller.
+  - `POST /tables/:id/move` takes `{ move, requestKey }`. For Thirteen, `move` is
+    `{ type: 'play', cards }` or `{ type: 'pass' }`.
+  - Keep the four-file shape: a thin `controllers/tableGame.controller.js` factory and
+    `routes/thirteen.routes.js` that mounts it.
+- In `api/socket.js`, replace `thirteen:bind` with one generic handler: `table_game:bind {token}`
+  joins `table_game:user:<id>`. Resolve the token first, then leave and join synchronously,
+  with a per-socket bind sequence.
+- Add a registry: `api/services/tableGame/index.js` exports `register(definition)`,
+  `resumeAll(io)` and `services` by name. `server.js` calls `resumeAll` once.
+
+### Thirteen as a definition
+- `api/services/thirteen/definition.js` adapts the existing pure modules (cards, rules,
+  engine, bot, payout) to the contract. Delete `api/services/thirteen.service.js` and
+  `thirteenGame.model.js`.
+- The rules and engine tests stay. Add definition-level tests: a full game simulated with
+  bots only through `applyMove` and `botMove` always terminates with a valid ranking, over
+  200 seeds.
+
+### Engine tests (`api/test/tableGame.test.js`)
+Use a tiny fake definition, e.g. "highest card wins" with 1 move each, plus mocked model and
+coins in the style of `wordChain.test.js`. Cover:
+- stake rollback on partial debit failure, and the refund retry
+- practice with 1 human
+- settlement idempotency and the guard
+- duplicate requestKey, both within a match and across matches
+- timer auto-move and bot scheduling
+- host handoff and the disconnect grace period
+- `publicView` never containing private fields, using a sentinel
+- `resume` for both `playing` and `settling`
+
+### Client
+- `client/src/contexts/TableGameContext.jsx`:
+  - Use the shared socket.
+  - `table_game:bind` on connect and on login.
+  - Filter events by `game`.
+  - Expose `useTableGame(gameName)` → `{ tables, table, myView, sit, leave, start, move }`.
+  - Load once (this also fixes the double load).
+
+  Make `ThirteenContext` a thin wrapper over it, or remove it.
+- `client/src/components/CardTable3D/` holds the reusable 3D pieces for any card game. Move
+  them out of `components/Thirteen/`:
+  - `useDeck()`: loads `deck-of-cards.glb` and maps `cardId` to the centered geometry and
+    materials.
+  - `Card3D`: one card with lerp to target, a face-up/face-down prop and a selection lift.
+  - `TableScene`: dinner-table.glb, the measured cloth height, lighting, background, camera,
+    and seat anchor positions for 2–4 seats.
+  - `SeatMarker` / turn highlight.
+
+  `components/Thirteen/` keeps only what is specific to Thirteen: hand fan and selection
+  rules, the HUD and the rules modal.
+- Move the generic `cardNodeName` and countdown helpers from `utils/thirteen.js` to
+  `utils/cards.js` and `utils/tableGame.js`, with tests.
+
+### Docs
+Add a short `docs/table-game-engine.md` that explains how to add a new game: the contract,
+registering ledger types, the routes file, the client hook and the 3D components, using
+Thirteen as the worked example. Add a single line in CLAUDE.md that points to it.
+
+Commits:
+- `refactor(table-game): extract reusable table game engine`
+- `refactor(thirteen): port thirteen onto table game engine`
+- `refactor(card-table-3d): extract reusable 3D card table`
+- `docs(table-game): add engine guide`
+
+Run all API and client tests, lint on touched files, and the build.

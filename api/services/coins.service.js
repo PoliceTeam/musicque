@@ -439,6 +439,9 @@ async function getEconomyStats(period = '30d') {
                 thirteenPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'thirteen_payout'] }, '$amount', 0] },
                 },
+                thirteenWinProfit: {
+                  $sum: { $cond: [{ $eq: ['$type', 'thirteen_payout'] }, { $max: [0, { $subtract: ['$amount', { $ifNull: ['$metadata.stake', 0] }] }] }, 0] },
+                },
                 xiangqiWagered: {
                   $sum: { $cond: [{ $eq: ['$type', 'xiangqi_bet'] }, { $abs: '$amount' }, 0] },
                 },
@@ -525,6 +528,7 @@ async function getEconomyStats(period = '30d') {
                 chohanPayout: 1,
                 thirteenWagered: 1,
                 thirteenPayout: 1,
+                thirteenWinProfit: 1,
                 xiangqiWagered: 1,
                 xiangqiPayout: 1,
                 wordChainSpent: 1,
@@ -614,6 +618,7 @@ async function getEconomyStats(period = '30d') {
     chohanRefund: 0,
     thirteenWagered: 0,
     thirteenPayout: 0,
+    thirteenWinProfit: 0,
     xiangqiWagered: 0,
     xiangqiPayout: 0,
     xiangqiRefund: 0,
@@ -653,7 +658,7 @@ async function getEconomyStats(period = '30d') {
         - totals.coreBonus
         - totals.refunded,
       playerWinProfit:
-        Math.max(0, (totals.thirteenPayout || 0) - (totals.thirteenWagered || 0))
+        (totals.thirteenWinProfit || 0)
         + totals.chohanPayout / 2
         + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered)
         + Math.max(0, totals.wordChainPayout - totals.wordChainSpent)

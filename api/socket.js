@@ -205,12 +205,20 @@ const initSocket = (server) => {
       }
     });
 
+    let thirteenBindSequence = 0
     socket.on('thirteen:bind', async (data = {}) => {
+      const sequence = ++thirteenBindSequence
       try {
-        for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
         const user = await resolveUserFromToken(data.token)
+        if (sequence !== thirteenBindSequence || !socket.connected) return
+        for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
         if (user) socket.join(`thirteen:user:${user._id}`)
+        require('./services/thirteen.service').bindSocket({ user, socketId: socket.id })
       } catch (error) {
+        if (sequence === thirteenBindSequence) {
+          for (const room of socket.rooms) if (room.startsWith('thirteen:user:')) socket.leave(room)
+          require('./services/thirteen.service').onSocketDisconnect(socket.id)
+        }
         console.error('[Thirteen] Bind failed:', error.message)
       }
     })
@@ -241,6 +249,8 @@ const initSocket = (server) => {
     })
 
     socket.on('disconnect', () => {
+      thirteenBindSequence++
+      require('./services/thirteen.service').onSocketDisconnect(socket.id)
       console.log('Client disconnected', socket.id);
       workspace.leave(socket)
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))

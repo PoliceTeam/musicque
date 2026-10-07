@@ -3,6 +3,7 @@ const User = require('../models/user.model')
 const coins = require('./coins.service')
 const { deal } = require('./thirteen/cards')
 const { chooseMove } = require('./thirteen/bot')
+const { classify } = require('./thirteen/rules')
 const { splitPot } = require('./thirteen/payout')
 const { applyMove, mustIncludeFor } = require('./thirteen/engine')
 const TABLE_COUNT = Number(process.env.THIRTEEN_TABLE_COUNT || 3)
@@ -16,9 +17,12 @@ class ThirteenError extends Error {
     this.code = code
   }
 }
-const tables = Array.from({ length: TABLE_COUNT }, (_, i) => ({ tableId: i + 1, seats: Array(4).fill(null), hostId: null, lastWinnerSeat: null, hasPlayed: false, game: null, timer: null, queue: Promise.resolve() }))
+const tables = Array.from({ length: TABLE_COUNT }, (_, i) => ({ tableId: i + 1, seats: Array(4).fill(null), hostId: null, lastWinnerSeat: null, hasPlayed: false, game: null, fundingGame: null, timer: null, queue: Promise.resolve() }))
 let ioRef = null
 let ready = true
+const sockets = new Map()
+const disconnectTimers = new Map()
+const DISCONNECT_GRACE_MS = 60000
 const publicConfig = () => ({ tableCount: TABLE_COUNT, stake: STAKE_PC, turnMs: TURN_MS, botDelayMs: BOT_DELAY_MS })
 const tableFor = (id) => {
   if (!ready) throw new ThirteenError('Tables are recovering', 503, 'RECOVERING')
@@ -62,9 +66,9 @@ const validateKey = (key) => {
   if (typeof key !== 'string' || !key.length || key.length > 100) throw new ThirteenError('Invalid request key', 400, 'INVALID_REQUEST_KEY')
 }
 const waiting = (table) => {
-  if (table.game) throw new ThirteenError('Table is playing', 409, 'TABLE_PLAYING')
+  if (table.game || table.fundingGame) throw new ThirteenError('Table is playing', 409, 'TABLE_PLAYING')
 }
-const transaction = (game, seat, kind) => ({ type: `thirteen_${kind}`, operationKey: `thirteen:${kind === 'stake' ? 'stake' : kind}:${game._id}:${seat.userId}`, referenceType: 'ThirteenGame', referenceId: game._id })
+const transaction = (game, seat, kind) => ({ type: `thirteen_${kind}`, operationKey: `thirteen:${kind}:${game._id}:${seat.userId}`, referenceType: 'ThirteenGame', referenceId: game._id, metadata: { stake: game.stake } })
 const refund = async (game) => {
   for (const seat of game.seats.filter((s) => s.userId)) {
     const charged = await User.exists({ _id: seat.userId, appliedCoinOperations: transaction(game, seat, 'stake').operationKey })
@@ -81,14 +85,21 @@ const schedule = (table) => {
   table.timer = setTimeout(() => enqueue(table, async () => {
     if (table.game?._id.toString() !== game._id.toString() || table.game.version !== game.version) return
     const hand = game.seats[game.currentSeat].hand
-    const cards = bot ? chooseMove(hand, game.trick ? require('./thirteen/rules').classify(game.trick.cards) : null, { mustInclude: mustIncludeFor(game) }) : game.trick ? null : [hand[0]]
+    const cards = bot ? chooseMove(hand, game.trick ? classify(game.trick.cards) : null, { mustInclude: mustIncludeFor(game) }) : game.trick ? null : [hand[0]]
     await moveInternal(table, game.currentSeat, cards, `timer:${game._id}:${game.version}`)
   }).catch((error) => {
     console.error('[Thirteen] Timer failed:', error.message)
-    table.timer = setTimeout(() => enqueue(table, () => recover(table)).catch((err) => console.error('[Thirteen] Recovery failed:', err.message)), 1000)
+    if (table.game?.status === 'settling' || table.game?._id.toString() !== game._id.toString()) return
+    clearTimeout(table.timer)
+    table.timer = setTimeout(() => enqueue(table, () => recover(table)).catch((err) => {
+      console.error('[Thirteen] Recovery failed:', err.message)
+      if (table.game?.status === 'settling') scheduleSettlementRetry(table)
+      else schedule(table)
+    }), 1000)
   }), delay)
 }
 const settle = async (table) => {
+  if (table.game?.status !== 'settling') return
   const game = table.game
   const ranking = game.finishOrder.map((seat) => ({ seat, ...serializeTable(table).seats[seat] }))
   const payouts = splitPot(game.stake, ranking.filter((seat) => seat.userId).map((seat) => seat.userId))
@@ -99,6 +110,9 @@ const settle = async (table) => {
   table.seats = game.seats.map((seat) => seat.userId ? { userId: seat.userId.toString(), username: seat.username } : null)
   table.game = null
   clearTimeout(table.timer)
+  table.timer = null
+  if (!table.seats.some((s) => s?.userId === table.hostId)) table.hostId = table.seats.find((s) => s)?.userId || null
+  for (const seat of table.seats) if (seat && !hasSockets(seat.userId)) scheduleDisconnect(seat.userId)
   ioRef?.emit('thirteen_result', { tableId: table.tableId, gameId: game._id.toString(), ranking, payouts })
   broadcast(table)
 }
@@ -129,10 +143,23 @@ const moveInternal = async (table, seat, cards, requestKey) => {
   } else schedule(table)
 }
 const scheduleSettlementRetry = (table) => {
+  if (table.game?.status !== 'settling') return
   clearTimeout(table.timer)
   table.timer = setTimeout(() => enqueue(table, () => settle(table)).catch((error) => {
     console.error('[Thirteen] Settlement failed:', error.message)
     scheduleSettlementRetry(table)
+  }), 1000)
+}
+const scheduleRefundRetry = (table, game) => {
+  if (table.fundingGame?._id.toString() !== game._id.toString()) return
+  clearTimeout(table.timer)
+  table.timer = setTimeout(() => enqueue(table, async () => {
+    await refund(game)
+    table.fundingGame = null
+    broadcast(table)
+  }).catch((error) => {
+    console.error('[Thirteen] Refund failed:', error.message)
+    scheduleRefundRetry(table, game)
   }), 1000)
 }
 const sit = (user, tableId, requestKey) => {
@@ -156,8 +183,8 @@ const leave = (userId, tableId, requestKey) => {
   const table = tableFor(tableId)
   return enqueue(table, async () => {
     waiting(table)
+    handoffHost(table, userId)
     table.seats = table.seats.map((s) => s?.userId === userId.toString() ? null : s)
-    if (table.hostId === userId.toString()) table.hostId = table.seats.find((s) => s)?.userId || null
     broadcast(table)
     return snapshot(table, userId)
   })
@@ -174,13 +201,18 @@ const start = (userId, tableId, requestKey) => {
     let botCount = 0
     const seats = table.seats.map((seat, i) => ({ ...(seat || { userId: null, username: `Bot ${++botCount}`, isBot: true }), hand: hands[i], passed: false, finishedPlace: null }))
     const humanCount = seats.filter((s) => s.userId).length
-    const currentSeat = table.hasPlayed && table.seats[table.lastWinnerSeat] ? table.lastWinnerSeat : table.hasPlayed ? table.seats.findIndex((s) => s) : seats.findIndex((s) => s.hand.includes('3S'))
+    const currentSeat = table.hasPlayed ? table.lastWinnerSeat : seats.findIndex((s) => s.hand.includes('3S'))
     const game = await Game.create({ tableId: table.tableId, status: 'aborted', fundingPending: true, seats, currentSeat, leaderSeat: currentSeat, isFirstGame: !table.hasPlayed, finishOrder: [], stake: humanCount >= 2 ? STAKE_PC : 0, humanCount, startRequestKey: requestKey })
+    table.fundingGame = game
     try {
       for (const seat of seats.filter((s) => s.userId)) if (game.stake && !await coins.debitOnce(seat.userId, game.stake, transaction(game, seat, 'stake'))) throw new ThirteenError(`Insufficient coins for ${seat.username}`, 409, 'INSUFFICIENT_COINS')
       table.game = await Game.findOneAndUpdate({ _id: game._id, fundingPending: true }, { $set: { status: 'playing', fundingPending: false, turnDeadlineAt: new Date(Date.now() + TURN_MS) } }, { new: true }).lean()
+      table.fundingGame = null
     } catch (error) {
-      await refund(game)
+      try { await refund(game); table.fundingGame = null } catch (refundError) {
+        console.error('[Thirteen] Start refund failed:', refundError.message)
+        scheduleRefundRetry(table, game)
+      }
       throw error
     }
     broadcast(table)
@@ -192,15 +224,61 @@ const move = (userId, tableId, cards, requestKey) => {
   validateKey(requestKey)
   const table = tableFor(tableId)
   return enqueue(table, async () => {
-    const seat = table.game?.seats.findIndex((s) => s.userId?.toString() === userId.toString()) ?? -1
-    if (seat < 0) {
+    if (await Game.exists({ tableId: table.tableId, 'moves.requestKey': requestKey })) {
       const previous = await Game.findOne({ tableId: table.tableId, 'moves.requestKey': requestKey }).lean()
-      if (previous?.moves.some((m) => m.requestKey === requestKey && previous.seats[m.seat].userId?.toString() === userId.toString())) return snapshot(table, userId)
-      throw new ThirteenError('You are not seated', 403, 'NOT_SEATED')
+      if (!previous?.moves.some((m) => m.requestKey === requestKey && previous.seats[m.seat].userId?.toString() === userId.toString())) throw new ThirteenError('Request key already used', 409, 'INVALID_REQUEST_KEY')
+      return snapshot(table, userId)
     }
+    const seat = table.game?.seats.findIndex((s) => s.userId?.toString() === userId.toString()) ?? -1
+    if (seat < 0) throw new ThirteenError('You are not seated', 403, 'NOT_SEATED')
     await moveInternal(table, seat, cards, requestKey)
     return snapshot(table, userId)
   })
+}
+const hasSockets = (userId) => [...sockets.values()].includes(userId.toString())
+const handoffHost = (table, userId) => {
+  if (table.hostId !== userId.toString()) return
+  const seat = table.seats.findIndex((s) => s?.userId === userId.toString())
+  for (let step = 1; step <= 4; step++) {
+    const candidate = table.seats[(seat + step) % 4]
+    if (candidate && candidate.userId !== userId.toString() && hasSockets(candidate.userId)) { table.hostId = candidate.userId; return }
+  }
+  table.hostId = table.seats.find((s) => s && s.userId !== userId.toString())?.userId || null
+}
+const scheduleDisconnect = (userId) => {
+  userId = userId.toString()
+  clearTimeout(disconnectTimers.get(userId))
+  disconnectTimers.set(userId, setTimeout(() => {
+    disconnectTimers.delete(userId)
+    if (hasSockets(userId)) return
+    for (const table of tables) enqueue(table, async () => {
+      if (hasSockets(userId) || table.game || table.fundingGame) return
+      table.seats = table.seats.map((s) => s?.userId === userId ? null : s)
+      handoffHost(table, userId)
+      broadcast(table)
+    }).catch((error) => console.error('[Thirteen] Disconnect failed:', error.message))
+  }, DISCONNECT_GRACE_MS))
+}
+const onSocketDisconnect = (socketId) => {
+  const userId = sockets.get(socketId)
+  sockets.delete(socketId)
+  if (!userId || hasSockets(userId)) return
+  for (const table of tables) enqueue(table, async () => {
+    handoffHost(table, userId)
+    broadcast(table)
+  }).catch((error) => console.error('[Thirteen] Host handoff failed:', error.message))
+  scheduleDisconnect(userId)
+}
+const bindSocket = ({ user, socketId }) => {
+  const userId = user?._id.toString()
+  if (sockets.get(socketId) !== userId) onSocketDisconnect(socketId)
+  if (!userId) return
+  sockets.set(socketId, userId)
+  clearTimeout(disconnectTimers.get(userId))
+  disconnectTimers.delete(userId)
+  for (const table of tables) enqueue(table, async () => {
+    if (!table.hostId && table.seats.some((s) => s?.userId === userId)) { table.hostId = userId; broadcast(table) }
+  }).catch((error) => console.error('[Thirteen] Bind failed:', error.message))
 }
 const init = (io) => { ioRef = io }
 const resume = async (io) => {
@@ -211,12 +289,14 @@ const resume = async (io) => {
       for (const game of await Game.find({ tableId: table.tableId, fundingPending: true }).lean()) await refund(game)
       const game = await Game.findOne({ tableId: table.tableId }).sort({ createdAt: -1 }).lean()
       if (!game) continue
-      table.seats = game.seats.map((s) => s.userId ? { userId: s.userId.toString(), username: s.username } : null)
-      table.hostId = table.seats.find((s) => s)?.userId || null
       const last = await Game.findOne({ tableId: table.tableId, status: 'settled' }).sort({ createdAt: -1 }).lean()
       table.hasPlayed = Boolean(last)
       table.lastWinnerSeat = last?.finishOrder[0] ?? null
+      table.seats = Array(4).fill(null)
+      table.hostId = null
       if (['playing', 'settling'].includes(game.status)) {
+        table.seats = game.seats.map((s) => s.userId ? { userId: s.userId.toString(), username: s.username } : null)
+        table.hostId = table.seats.find((s) => s)?.userId || null
         table.game = game
         if (game.status === 'settling') {
           try { await settle(table) } catch (error) { scheduleSettlementRetry(table); console.error('[Thirteen] Resume settlement failed:', error.message) }
@@ -229,4 +309,4 @@ const resume = async (io) => {
     throw error
   }
 }
-module.exports = { ThirteenError, init, resume, publicConfig, serializeTable, handFor, listTables: () => tables.map((t) => serializeTable(t)), getTable: (id, userId) => snapshot(tableFor(id), userId), sit, leave, start, play: move, pass: (userId, tableId, key) => move(userId, tableId, null, key) }
+module.exports = { ThirteenError, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, handFor, listTables: () => tables.map((t) => serializeTable(t)), getTable: (id, userId) => snapshot(tableFor(id), userId), sit, leave, start, play: move, pass: (userId, tableId, key) => move(userId, tableId, null, key) }
