@@ -249,3 +249,13 @@ export const getTTSVoices = () => api.get("/api/tts/voices");
 export const getTTSHealth = () => api.get("/api/tts/health");
 
 export default api;
+
+// Cờ tướng PvP — phòng hai người, cược mặc định 30 PC mỗi bên
+export const getActiveXiangqiPvp = () => api.get('/api/xiangqi/pvp/active');
+export const getXiangqiPvp = (id) => api.get(`/api/xiangqi/pvp/${id}`);
+export const createXiangqiPvp = () => api.post('/api/xiangqi/pvp');
+export const joinXiangqiPvp = (code) => api.post('/api/xiangqi/pvp/join', { code });
+export const moveXiangqiPvp = (id, from, to, expectedPlyVersion) =>
+  api.post(`/api/xiangqi/pvp/${id}/moves`, { from, to, expectedPlyVersion });
+export const actionXiangqiPvp = (id, action, expectedPlyVersion) =>
+  api.post(`/api/xiangqi/pvp/${id}/actions`, { action, expectedPlyVersion });

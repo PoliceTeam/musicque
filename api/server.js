@@ -12,6 +12,7 @@ const chohan = require('./services/chohan.service')
 const billiards = require('./services/billiards.service')
 const songSkip = require('./services/songSkip.service')
 const xiangqi = require('./services/xiangqi.service')
+const xiangqiPvp = require('./services/xiangqiPvp.service')
 const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
@@ -94,6 +95,9 @@ mongoose
     } catch (error) {
       console.error('[Cờ tướng] Khôi phục ván dở lỗi:', error.message)
     }
+
+    // Hoàn cược/trả thưởng PvP dở trước khi nhận ván mới.
+    await xiangqiPvp.init(io)
 
     // Khởi động server
     server.listen(PORT, async () => {

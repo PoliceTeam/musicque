@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { message } from 'antd'
 import { Link } from 'react-router-dom'
 import UserMenu from '../components/Auth/UserMenu'
+import XiangqiPvp from '../components/Xiangqi/XiangqiPvp'
 import XiangqiBoard from '../components/Xiangqi/XiangqiBoard'
 import XiangqiRulesModal from '../components/Xiangqi/XiangqiRulesModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -40,6 +41,7 @@ const getErrorMessage = (error) => error.response?.data?.message || 'Có lỗi x
 
 const XiangqiPage = () => {
   const { balance, setBalance, refreshBalance } = useAuth()
+  const [mode, setMode] = useState('puzzle')
   const [config, setConfig] = useState(DEFAULT_CONFIG)
   const [game, setGame] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -171,7 +173,11 @@ const XiangqiPage = () => {
       </header>
 
       <main className='xiangqi-stage'>
-        {loading ? (
+        <nav className='xiangqi-modes' aria-label='Chế độ cờ tướng'>
+          <button type='button' className='sp-btn' aria-pressed={mode === 'puzzle'} onClick={() => setMode('puzzle')}>Giải thế · NPC</button>
+          <button type='button' className='sp-btn' aria-pressed={mode === 'pvp'} onClick={() => setMode('pvp')}>Đấu bạn bè · PvP</button>
+        </nav>
+        {mode === 'pvp' ? <XiangqiPvp /> : loading ? (
           <div className='xiangqi-loading'>Đang bày bàn cờ...</div>
         ) : !game ? (
           <section className='xiangqi-lobby'>

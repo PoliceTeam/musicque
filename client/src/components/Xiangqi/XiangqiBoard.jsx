@@ -6,7 +6,7 @@ const FILES = 'abcdefghi'
 
 const squareFor = (row, col) => `${FILES[col]}${9 - row}`
 
-const XiangqiBoard = ({ game, disabled, hint, answer, onMove }) => {
+const XiangqiBoard = ({ game, disabled, hint, answer, onMove, playerColor = 'r' }) => {
   const [selected, setSelected] = useState(null)
   const legalTargets = useMemo(() => new Set(
     game.legalMoves.filter((move) => move.from === selected).map((move) => move.to),
@@ -22,7 +22,7 @@ const XiangqiBoard = ({ game, disabled, hint, answer, onMove }) => {
       onMove(from, square)
       return
     }
-    setSelected(piece?.color === 'r' ? square : null)
+    setSelected(piece?.color === playerColor ? square : null)
   }
 
   return (
@@ -40,7 +40,7 @@ const XiangqiBoard = ({ game, disabled, hint, answer, onMove }) => {
             key={square}
             aria-label={piece ? `${piece.color === 'r' ? 'Đỏ' : 'Đen'} ${PIECE_NAMES[piece.type]} tại ${square}` : `Đi tới ${square}`}
             className={`xiangqi-square${selected === square ? ' is-selected' : ''}${isTarget ? ' is-target' : ''}${isHint ? ' is-hint' : ''}${isAnswer ? ' is-answer' : ''}`}
-            style={{ '--xq-col': colIndex, '--xq-row': rowIndex }}
+            style={{ '--xq-col': playerColor === 'b' ? 8 - colIndex : colIndex, '--xq-row': playerColor === 'b' ? 9 - rowIndex : rowIndex }}
             onClick={() => clickSquare(rowIndex, colIndex)}
           >
             {piece && <img src={`${ASSET_ROOT}/${piece.color === 'r' ? 'red' : 'black'}_${PIECE_NAMES[piece.type]}.svg`} alt='' draggable='false' />}
