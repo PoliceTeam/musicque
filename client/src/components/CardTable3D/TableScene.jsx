@@ -25,7 +25,7 @@ function TableSurface({ seats, currentSeat, userId, children }) {
     <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#637275' />
     <directionalLight position={[2, 4, 3]} intensity={2} />
     <primitive object={tableModel} dispose={null} />
-    {seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={seatPositions[i]} active={currentSeat === i} />)}
+    {seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={seatPositions[i]} active={currentSeat === i} own={mySeat === i} />)}
     {children({ surfaceY, seatPositions, anchor })}
   </>
 }
@@ -51,7 +51,7 @@ export default function TableScene({ fallback, ...props }) {
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
     <Suspense fallback={fallback}>
       <div className='card-table-surface'>
-        <Canvas dpr={[1, 1.5]} camera={{ position: [0, 1.65, 1.32], fov: 48, near: 0.01, far: 10 }} onCreated={({ camera }) => camera.lookAt(0, 0.72, 0)}>
+        <Canvas dpr={[1, 1.5]} camera={{ position: [0, 1.6, 1.07], fov: 40, near: 0.01, far: 10 }} onCreated={({ camera }) => camera.lookAt(0, 0.785, 0.1)}>
           <TableSurface {...props} />
         </Canvas>
       </div>

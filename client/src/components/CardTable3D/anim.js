@@ -5,7 +5,7 @@ export const easeOutCubic = (t) => 1 - (1 - clamp(t)) ** 3
 export const easeInOutQuad = (t) => (t = clamp(t)) < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
 export const easeOutBack = (t) => { const x = clamp(t) - 1; return 1 + 2.70158 * x ** 3 + 1.70158 * x ** 2 }
 export const bezierArc = (from, to, height = 0) => (t) => from.map((v, i) => v + (to[i] - v) * clamp(t) + (i === 1 ? 4 * height * clamp(t) * (1 - clamp(t)) : 0))
-const quaternion = (pose) => pose.quaternion ? new Quaternion().fromArray(pose.quaternion) : new Quaternion().setFromEuler(new Euler(pose.faceUp ? -Math.PI / 2 : Math.PI / 2, 0, pose.rotation || 0))
+const quaternion = (pose) => pose.quaternion ? new Quaternion().fromArray(pose.quaternion) : new Quaternion().setFromEuler(new Euler((pose.faceUp ? -Math.PI / 2 : Math.PI / 2) + (pose.tilt || 0), 0, pose.rotation || 0))
 export const tween = (from, to, { duration = MOTION.play, height = 0 } = {}) => {
   const arc = bezierArc(from.position, to.position, height)
   const start = quaternion(from), end = quaternion(to), orientation = new Quaternion()

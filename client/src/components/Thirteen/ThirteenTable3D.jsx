@@ -13,9 +13,9 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
     })}
     {myHand.map((card, i) => {
       const offset = i - (myHand.length - 1) / 2
-      return <Card3D key={card} deck={deck} cardId={card} position={[offset * 0.037, surfaceY + 0.002 + i * 0.0004, 0.44 - Math.abs(offset) * 0.004]} selected={selectedCards.includes(card)} rotation={-offset * 0.028} onClick={() => toggleCard(card)} />
+      return <Card3D key={card} deck={deck} cardId={card} position={[offset * 0.05, surfaceY + 0.045 + i * 0.0005, 0.55 - Math.abs(offset) * 0.006]} scale={1.7} tilt={0.28} selected={selectedCards.includes(card)} rotation={-offset * 0.028} onClick={() => toggleCard(card)} />
     })}
-    {(table.trick?.cards || []).map((card, i, cards) => <Card3D key={`${table.version}-${card}`} deck={deck} cardId={card} position={[(i - (cards.length - 1) / 2) * 0.035, surfaceY + 0.003 + i * 0.0005, 0]} />)}
+    {(table.trick?.cards || []).map((card, i, cards) => <Card3D key={`${table.version}-${card}`} deck={deck} cardId={card} position={[(i - (cards.length - 1) / 2) * 0.048, surfaceY + 0.004 + i * 0.0007, 0.06]} scale={1.55} />)}
   </>
 }
 export default function ThirteenTable3D(props) {

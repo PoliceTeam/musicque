@@ -33,3 +33,11 @@ button.thirteen-card { cursor: pointer; }
 .thirteen-promo b { margin-left: auto; font-size: 12px; }
 @media (max-width: 700px) { .thirteen-lobby { grid-template-columns: 1fr; } .thirteen-page { padding: 16px; } .thirteen-surface { height: 380px; } }
 @media (prefers-reduced-motion: reduce) { .thirteen-card { transition: none; } }
+
+.thirteen-page--playing main { display: block; width: 100%; max-width: 1440px; margin: 20px auto; }
+.thirteen-page--playing .thirteen-heading h1 { font-size: 28px; letter-spacing: -0.7px; }
+.thirteen-page--playing .thirteen-heading p, .thirteen-page--playing .thirteen-stake { display: none; }
+.thirteen-table-switcher { margin-top: 12px; }
+.thirteen-table-switcher summary { width: fit-content; cursor: pointer; color: var(--sp-text-muted); font-size: 13px; padding: 8px 0; }
+.thirteen-table-switcher .thirteen-lobby { margin: 12px 0; }
+.thirteen-page--playing .card-table-surface { width: 100%; height: min(78vh, 760px); min-height: 440px; margin: 12px 0; }

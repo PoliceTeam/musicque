@@ -14,12 +14,8 @@ function ThirteenContent() {
   const { tables, currentTable, config, action, busy } = state
   const [rulesOpen, setRulesOpen] = useState(false)
   const seated = Boolean(user?._id) && currentTable?.seats.some((s) => s?.userId === user?._id)
-  return <div className='thirteen-page'>
-    <header className='thirteen-header'><Link to='/' className='sp-btn sp-btn--ghost'>← Về trang chủ</Link><UserMenu /></header>
-    <main>
-      <div className='thirteen-heading'><div><span className='sp-eyebrow'>BÀN BÀI MUSICQUE</span><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Xem luật</Button></div>
-      <p className='thirteen-stake'>Cược {config.stake} PC/người khi có từ 2 người thật. Chơi một mình miễn phí; bot lấp ghế trống.</p>
-      <div className='thirteen-lobby'>
+  const playing = seated && ['playing', 'settling'].includes(currentTable?.status)
+  const lobby = (<div className='thirteen-lobby'>
         {tables.map((table) => <section className='sp-panel' key={table.tableId}>
           <h2>Bàn {table.tableId}</h2>
           <p>{table.seats.filter(Boolean).length}/4 ghế · {table.status === 'waiting' ? 'Đang chờ' : 'Đang chơi'}</p>
@@ -29,7 +25,13 @@ function ThirteenContent() {
             {table.hostId === user?._id && <Button className='sp-btn sp-btn--primary' disabled={busy || table.status !== 'waiting'} onClick={() => action('start', table.tableId)}>Bắt đầu</Button>}
           </div> : <Button className='sp-btn sp-btn--primary' disabled={busy || seated || table.status !== 'waiting' || table.seats.every(Boolean)} onClick={() => action('sit', table.tableId)}>Ngồi vào bàn</Button>}
         </section>)}
-      </div>
+      </div>)
+  return <div className={`thirteen-page ${playing ? 'thirteen-page--playing' : ''}`}>
+    <header className='thirteen-header'><Link to='/' className='sp-btn sp-btn--ghost'>← Về trang chủ</Link><UserMenu /></header>
+    <main>
+      <div className='thirteen-heading'><div><span className='sp-eyebrow'>BÀN BÀI MUSICQUE</span><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Xem luật</Button></div>
+      <p className='thirteen-stake'>Cược {config.stake} PC/người khi có từ 2 người thật. Chơi một mình miễn phí; bot lấp ghế trống.</p>
+      {playing ? <details className='thirteen-table-switcher'><summary>Bàn khác · Bạn đang ở bàn {currentTable.tableId}</summary>{lobby}</details> : lobby}
       {!tables.length && <p role='status'>Đang tải bàn chơi...</p>}
       {seated && <ThirteenTable3D table={currentTable} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} userId={user?._id} />}
       <ThirteenHud {...state} table={seated ? currentTable : null} userId={user?._id} />

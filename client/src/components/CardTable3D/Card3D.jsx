@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { tween } from './anim'
-export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, from, delay = 0, duration, height = 0, reducedMotion = false, selected = false, onClick, dim = false }) {
-  const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown }, [explicitTarget, position, rotation, faceDown])
+export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration, height = 0, reducedMotion = false, selected = false, onClick, dim = false }) {
+  const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
   const ref = useRef()
   const motion = useRef(null)
   const [hovered, setHovered] = useState(false)
