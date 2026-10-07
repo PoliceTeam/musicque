@@ -57,7 +57,7 @@ export const RESULT_TEXT = {
   resign: 'đối phương đầu hàng',
   timeout: 'đối phương hết giờ',
   abandon: 'đối phương bỏ ván',
-  repetition: 'lặp lại thế cờ 3 lần',
+  repetition: 'cùng một thế cờ lặp lại quá nhiều lần',
   rat_standoff: 'mỗi bên chỉ còn 1 Chuột',
   move_limit: '50 lượt không ăn quân',
   agreed_draw: 'hai bên đồng ý hòa',

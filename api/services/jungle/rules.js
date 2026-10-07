@@ -6,6 +6,8 @@ const COLS = 7
 const ROWS = 9
 const SIDES = ['red', 'blue']
 const DRAW_PLY_LIMIT = 100 // 50 lượt mỗi bên không ăn quân
+// Cùng một thế cờ (vị trí + bên tới lượt) xuất hiện đủ số lần này thì xử hòa.
+const REPETITION_LIMIT = Math.max(3, Number(process.env.JUNGLE_REPETITION_LIMIT || 12))
 
 const RANKS = Object.freeze({
   rat: 1,
@@ -243,7 +245,7 @@ const evaluateResult = (state, move) => {
   if (move.to === DENS[opponent]) return { winner: mover, reason: 'den' }
   if (countPieces(state.board, opponent).length === 0) return { winner: mover, reason: 'wipeout' }
   if (legalMovesFor(state.board, opponent).length === 0) return { winner: mover, reason: 'no_moves' }
-  if (state.repetitions[positionKey(state.board, state.turn)] >= 3) return { winner: null, reason: 'repetition' }
+  if (state.repetitions[positionKey(state.board, state.turn)] >= REPETITION_LIMIT) return { winner: null, reason: 'repetition' }
   if (isRatStandoff(state.board)) return { winner: null, reason: 'rat_standoff' }
   if (state.pliesSinceCapture >= DRAW_PLY_LIMIT) return { winner: null, reason: 'move_limit' }
   return null
@@ -310,6 +312,7 @@ const boardLayout = () => ({
   water: [...WATER],
   ranks: { ...RANKS },
   drawPlyLimit: DRAW_PLY_LIMIT,
+  repetitionLimit: REPETITION_LIMIT,
 })
 
 module.exports = {
@@ -319,6 +322,7 @@ module.exports = {
   PIECE_TYPES,
   DENS,
   DRAW_PLY_LIMIT,
+  REPETITION_LIMIT,
   REASONS,
   createInitialState,
   validateMove,

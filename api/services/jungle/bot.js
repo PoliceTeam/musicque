@@ -192,7 +192,7 @@ class Search {
     this.board = board
     this.side = side
     this.deadline = deadline
-    this.avoid = avoid // hash các thế đã xuất hiện ≥2 lần trong ván (lặp lần 3 = hòa)
+    this.avoid = avoid // hash các thế mà đi vào thêm một lần nữa là chạm ngưỡng hòa do lặp
     this.nodes = 0
     this.stopped = false
     this.tt = new Map()
@@ -304,7 +304,7 @@ class Search {
     this.nodes += 1
     if (this.checkTime()) return 0
     const key = this.key()
-    // Lặp lại thế cờ trên đường đi hoặc thế đã lặp 2 lần trong ván -> coi như hòa.
+    // Lặp thế cờ ngay trên đường tìm kiếm (không tiến triển) hoặc thế sắp chạm ngưỡng hòa -> coi như hòa.
     if (ply > 0 && (this.path.includes(key) || this.avoid.has(key))) return 0
     if (depth <= 0) return this.quiesce(side, alpha, beta, ply, QUIESCENCE_DEPTH)
 
@@ -400,11 +400,11 @@ const toArrayBoard = (board) => {
   return array
 }
 
-// Hash các thế cờ đã xuất hiện ≥2 lần trong ván: đi vào lần nữa là xử hòa.
+// Hash các thế cờ đã xuất hiện đủ REPETITION_LIMIT - 1 lần: đi vào lần nữa là xử hòa.
 const repeatedHashes = (state) => {
   const avoid = new Set()
   for (const [key, count] of Object.entries(state.repetitions || {})) {
-    if (count < 2) continue
+    if (count < rules.REPETITION_LIMIT - 1) continue
     const [cells, turn] = key.split('|')
     const probe = new Search(new Int8Array(SIZE), RED, { deadline: Infinity })
     const board = probe.board

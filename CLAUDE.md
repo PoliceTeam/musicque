@@ -428,8 +428,8 @@ thư mục vì texture trùng tên `colormap.png`).
   Đỏ ở hàng 1, đi trước). Thế quân theo bàn in Việt Nam (lật trái–phải so với Wikipedia).
   Luật nhà đã chốt với chủ dự án: chỉ Chuột xuống nước; Voi không ăn Chuột (trừ khi Chuột
   trong hang); quân trong hang địch cấp 0 và **không ăn được ai**; Sư tử/Hổ nhảy sông dọc+ngang,
-  bị Chuột (phe nào cũng được) chặn; Báo không nhảy; hết nước đi = thua; hòa khi lặp vị trí 3
-  lần / mỗi bên còn 1 Chuột / 100 ply không ăn quân / đồng ý hòa. Thắng dứt điểm xét trước hòa.
+  bị Chuột (phe nào cũng được) chặn; Báo không nhảy; hết nước đi = thua; hòa khi cùng thế cờ lặp
+  `JUNGLE_REPETITION_LIMIT` lần (mặc định 12; bot đọc cùng ngưỡng) / mỗi bên còn 1 Chuột / 100 ply không ăn quân / đồng ý hòa. Thắng dứt điểm xét trước hòa.
   Mọi nước bị từ chối trả `code` + câu tiếng Việt — client hiển thị nguyên câu đó.
 - **PvP** (`jungle.service.js`): cược `JUNGLE_STAKE_PC` (100) mỗi bên, thắng nhận gấp đôi,
   hòa hoàn cược; đồng hồ `JUNGLE_CLOCK_MS` (15') mỗi bên; mất socket quá

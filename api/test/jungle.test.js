@@ -158,14 +158,17 @@ test('đối phương hết nước đi hợp lệ thì thua', () => {
   assert.deepEqual(sealed.result, { winner: 'red', reason: 'no_moves' })
 })
 
-test('hòa khi lặp vị trí 3 lần', () => {
+test(`hòa khi cùng một thế cờ lặp ${rules.REPETITION_LIMIT} lần (mặc định 12)`, () => {
+  assert.equal(rules.REPETITION_LIMIT, 12)
   let state = position({ a1: 'red:cat', g9: 'blue:cat', d5: 'red:dog', d6: 'blue:dog' })
   const cycle = [['a1', 'a2'], ['g9', 'g8'], ['a2', 'a1'], ['g8', 'g9']]
-  for (let round = 0; round < 2; round += 1) {
+  // Mỗi vòng 4 ply đưa thế ban đầu quay lại một lần; thế đầu đã tính là lần 1.
+  for (let round = 0; round < rules.REPETITION_LIMIT - 1; round += 1) {
+    assert.equal(state.result, null, `chưa được hòa ở vòng ${round}`)
     for (const [from, to] of cycle) state = ok(state, from, to)
   }
   assert.deepEqual(state.result, { winner: null, reason: 'repetition' })
-  assert.equal(state.ply, 8)
+  assert.equal(state.ply, (rules.REPETITION_LIMIT - 1) * 4)
 })
 
 test('hòa khi mỗi bên chỉ còn 1 Chuột', () => {

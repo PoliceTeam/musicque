@@ -45,7 +45,7 @@ const JungleRulesModal = ({ open, onClose, config }) => (
     <section>
       <h4>Hòa và thua</h4>
       <ul>
-        <li>Hòa khi: hai bên đồng ý · cùng một thế cờ lặp lại 3 lần · mỗi bên chỉ còn 1 Chuột · 50 lượt mỗi bên không ăn quân.</li>
+        <li>Hòa khi: hai bên đồng ý · cùng một thế cờ lặp lại {config?.layout?.repetitionLimit ?? 12} lần · mỗi bên chỉ còn 1 Chuột · 50 lượt mỗi bên không ăn quân.</li>
         <li>Đến lượt mà không còn nước hợp lệ nào thì thua.</li>
         {config && (
           <li>
