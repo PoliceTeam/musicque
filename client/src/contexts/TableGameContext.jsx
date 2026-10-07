@@ -12,7 +12,8 @@ export const useTableGame = (gameName) => {
 }
 const ERROR_COPY = {
   INSUFFICIENT_COINS: 'Có người chưa đủ PC. Tiền cược đã được hoàn.',
-  HOST_REQUIRED: 'Chỉ chủ bàn được bắt đầu ván.',
+  TABLE_NOT_FOUND: 'Mã bàn không tồn tại.',
+  TABLE_LIMIT: 'Đã đạt số bàn tối đa. Hãy vào một bàn đang chờ.',
   TABLE_PLAYING: 'Bàn đang chơi. Bạn có thể rời ghế sau ván.',
   TABLE_FULL: 'Bàn đã đủ người.',
   ALREADY_SEATED: 'Bạn đang ngồi ở bàn khác.',
@@ -32,6 +33,8 @@ export const TableGameProvider = ({ game, children }) => {
   const [busy, setBusy] = useState(false)
   const closeResult = useCallback(() => setResult(null), [])
   const busyRef = useRef(false)
+  const tablesRef = useRef([])
+  const toast = (content, type = 'info') => message.open({ key: 'table-game', type, content })
   const userId = user?._id
   const userRef = useRef(userId)
   useEffect(() => { userRef.current = userId }, [userId])
@@ -40,6 +43,20 @@ export const TableGameProvider = ({ game, children }) => {
   const myView = userId && privateView && table && privateView.userId === userId && privateView.matchId === table.matchId && privateView.version === table?.version ? privateView.view : null
   const acceptTable = useCallback((table) => {
     const { myView: view, ...publicTable } = table
+    publicTable.receivedAt = Date.now()
+    const previous = tablesRef.current.find(t => t.tableId === table.tableId)
+    if (previous && previous.serverNow > table.serverNow) return
+    if (table.auto_left?.some(seat => seat.userId === userId && ['not_ready', 'idle'].includes(seat.reason)) && !previous?.auto_left?.some(seat => seat.userId === userId)) {
+      toast('Bạn đã được mời ra khỏi bàn vì chưa sẵn sàng')
+      setTableId(null)
+    } else if (previous && previous.seats.some(seat => seat?.userId === userId)) {
+      const joined = table.seats.find(seat => seat?.userId && !previous.seats.some(old => old?.userId === seat.userId))
+      const left = previous.seats.find(seat => seat?.userId && !table.seats.some(next => next?.userId === seat.userId))
+      if (joined) toast(`${joined.username} vào bàn`)
+      else if (left && left.userId !== userId) toast(`${left.username} rời bàn`)
+    }
+    if (table.startError && table.startError !== previous?.startError) toast(ERROR_COPY[table.startError] || 'Không bắt đầu được ván. Hãy sẵn sàng lại.', 'error')
+    tablesRef.current = table.deleted ? tablesRef.current.filter(t => t.tableId !== table.tableId) : [...tablesRef.current.filter(t => t.tableId !== table.tableId), publicTable]
     setTables((current) => {
       const old = current.find((t) => t.tableId === table.tableId)
       if (old && old.serverNow > table.serverNow) return current
@@ -59,13 +76,16 @@ export const TableGameProvider = ({ game, children }) => {
         const { data } = await tableGameApi.table(game, seated.tableId)
         if (userRef.current === userId) acceptTable(data)
       }
-    } catch { message.error('Không tải được bàn chơi. Hãy tải lại trang.') }
+    } catch { toast('Không tải được bàn chơi. Hãy tải lại trang.', 'error') }
   }, [game, userId, acceptTable])
   useEffect(() => {
+    tablesRef.current = tablesRef.current.filter(table => table.visibility !== 'private' || table.seats.some(seat => seat?.userId === userId))
+    setTables(tablesRef.current)
+    setTableId(null)
     setPrivateViews({})
     setResult(null)
     if (!socket) load()
-  }, [load, socket])
+  }, [load, socket, userId])
   useEffect(() => {
     if (!socket) return undefined
     const bind = () => { socket.emit('table_game:watch', { game }); socket.emit('table_game:bind', { token: getStoredToken() }); load() }
@@ -89,21 +109,22 @@ export const TableGameProvider = ({ game, children }) => {
       socket.off('table_game_result', onResult)
     }
   }, [game, socket, userId, load, acceptTable, refreshBalance])
-  const action = async (name, id = table?.tableId, move) => {
+  const action = async (name, id = table?.tableId, payload) => {
     if (!requireAuth('Đăng nhập để tham gia bàn chơi.') || busyRef.current) return false
     busyRef.current = true
     setBusy(true)
     try {
-      const { data } = await tableGameApi.action(game, id, name, { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move } : {}) })
+      const body = { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move: payload } : name === 'create' ? { visibility: payload } : {}) }
+      const { data } = await (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
       acceptTable(data)
-      setTableId(name === 'leave' ? null : id)
+      setTableId(name === 'leave' ? null : data.tableId)
       await refreshBalance()
       return true
     } catch (error) {
-      message.error(ERROR_COPY[error.response?.data?.code] || 'Không thực hiện được. Hãy thử lại.')
+      toast(ERROR_COPY[error.response?.data?.code] || 'Không thực hiện được. Hãy thử lại.', 'error')
       load()
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id) => action('sit', id), leave: (id) => action('leave', id), start: (id) => action('start', id), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id) => action('sit', id), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }
