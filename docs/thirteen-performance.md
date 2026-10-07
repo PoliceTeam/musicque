@@ -21,8 +21,8 @@ KTX2 loading is supported using the bundled Three Basis transcoder. The supplied
 
 ## Office room (Task 12)
 
-The room adds three steady-frame calls: panorama background, one instanced chair mesh and one instanced shadow mesh. No environment, floor, realtime shadows or extra lights are used. The supplied 3072 × 1536 asset remains unchanged on disk. Its decoded upload is resized to 1280 × 640: Three also creates six 640 × 640 background cube faces, so uploading full resolution would exceed the requested VRAM budget. The two RGBA uploads total about 12.5 MiB without mipmaps; the shadow texture adds 64 KiB. Browsers lacking bitmap resizing retain the full-resolution source and exceed that budget.
+Task 12.1's photographic panorama is on hold at the user's request. The scene keeps the flat blue-grey background and does not load a background image. The chairs and contact shadows add two steady-frame draw calls, with one 128 × 128 shadow texture (64 KiB). No environment, floor, realtime shadows or extra lights are used.
 
-Headless verification: idle samples 0 / 0 / 0 draws per second; one live context; five closes each release it; textures stay at 14 through reopen cycles. No runtime errors. Entire browser process-tree RSS was 1707 MB, versus 1679 MB before the room; this noisy software-GPU measurement does not establish a ≤15 MB tab-memory increase. The default 1440 × 900 screenshot shows three opponents seated on chairs with visible torso and hands. Dragged-view verification follows with Task 9's camera controls.
+Before the hold, the scene passed three zero-draw idle samples, one live context and five close/reopen cycles with no runtime errors. The default 1440 × 900 screenshot showed three opponents seated on chairs with visible torso and hands. Flat-background re-verification and dragged-view verification follow with the remaining tasks.
 
 Imported bind quaternions are normalized before pose blending. Without this, rounding error could keep a completed avatar pose above its angular convergence threshold and render forever; a regression test covers it.

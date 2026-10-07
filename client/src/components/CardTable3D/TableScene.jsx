@@ -59,7 +59,8 @@ function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, f
   const seatPositions = useMemo(() => characterPositions.map(([x, , z]) => [x * 0.6, surfaceY, z * 0.6]), [characterPositions, surfaceY])
   return <>
     {firstPerson && <FixedCamera />}
-    {firstPerson ? <OfficeRoom /> : <color attach='background' args={['#94a3a6']} />}
+    <color attach='background' args={['#94a3a6']} />
+    {firstPerson && <OfficeRoom />}
     <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#80766a' />
     <directionalLight position={[2, 4, 3]} color='#fff2dc' intensity={1.7} />
     <primitive object={tableModel} dispose={null} />

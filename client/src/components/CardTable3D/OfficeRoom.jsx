@@ -1,5 +1,4 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { chairGeometry, chairPlacement } from './chair'
 function shadowTexture() {
@@ -11,7 +10,6 @@ function shadowTexture() {
   return new THREE.CanvasTexture(canvas)
 }
 export default function OfficeRoom() {
-  const { scene, invalidate } = useThree()
   const chairs = useRef(), shadows = useRef()
   const resources = useMemo(() => ({ chair: chairGeometry(), wood: new THREE.MeshLambertMaterial({ color: '#403a35' }), quad: new THREE.PlaneGeometry(1, 1), shadow: new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }) }), [])
   useLayoutEffect(() => {
@@ -26,28 +24,6 @@ export default function OfficeRoom() {
     object.position.set(0, 0.001, 0); object.scale.set(0.9, 0.9, 1); object.updateMatrix(); shadows.current.setMatrixAt(4, object.matrix)
     chairs.current.instanceMatrix.needsUpdate = shadows.current.instanceMatrix.needsUpdate = true
   }, [])
-  useEffect(() => {
-    let cancelled = false, texture
-    new THREE.TextureLoader().load('/backgrounds/office-lounge.webp?v=1', async loaded => {
-      texture = loaded
-      // Three converts equirectangular backgrounds to six cube faces. Bound both uploads.
-      try {
-        const bitmap = await createImageBitmap(loaded.image, { resizeWidth: 1280, resizeHeight: 640, resizeQuality: 'high' })
-        loaded.image.src = ''; loaded.image = bitmap
-      } catch { /* Keep the source image on browsers without bitmap resizing. */ }
-      if (cancelled) { loaded.image?.close?.(); loaded.dispose(); return }
-      loaded.mapping = THREE.EquirectangularReflectionMapping; loaded.colorSpace = THREE.SRGBColorSpace
-      loaded.generateMipmaps = false; loaded.minFilter = THREE.LinearFilter
-      loaded.onUpdate = () => loaded.image?.close?.()
-      scene.background = loaded; scene.backgroundRotation.set(0, Math.PI / 2, 0); scene.backgroundIntensity = 0.9
-      invalidate()
-    })
-    return () => {
-      cancelled = true
-      if (scene.background === texture) scene.background = null
-      texture?.image?.close?.(); texture?.dispose()
-    }
-  }, [scene, invalidate])
   useEffect(() => () => { resources.chair.dispose(); resources.wood.dispose(); resources.quad.dispose(); resources.shadow.map.dispose(); resources.shadow.dispose() }, [resources])
   return <>
     <instancedMesh ref={chairs} args={[resources.chair, resources.wood, 4]} />
