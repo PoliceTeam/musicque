@@ -6,6 +6,7 @@ import { JungleGhost, JunglePiece } from './JunglePiece'
 import { LAND_TOP, WATER_TOP, moveDuration, pieceWorld } from './jungleMotion'
 import { Burst, FloatingText } from './JungleEffects'
 import { preloadJungleAssets } from './jungleAssets'
+import { playSfx } from './jungleAudio'
 import { DENS, SIDE_COLOR, deriveMoveEvent, isWater, jumpArc, looksLikeMove, pieceId, squareToWorld, trapOwner, worldToSquare } from '../../utils/jungle'
 
 preloadJungleAssets()
@@ -145,19 +146,49 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove, inspectedId, onInspect })
     if (event.jump) {
       const mid = event.over[Math.floor(event.over.length / 2)] || event.to
       const [mx, , mz] = squareToWorld(mid)
-      later(duration * 0.45, () => addEffect('splash', [mx, WATER_TOP, mz]))
-      later(duration * 0.98, () => addEffect('dust', [to[0], LAND_TOP, to[2]]))
+      playSfx('jump')
+      later(duration * 0.45, () => {
+        addEffect('splash', [mx, WATER_TOP, mz])
+        playSfx('splash')
+      })
+      later(duration * 0.98, () => {
+        addEffect('dust', [to[0], LAND_TOP, to[2]])
+        playSfx('land')
+      })
+    } else {
+      playSfx('step', duration)
     }
-    if (isWater(event.to) && !isWater(event.from)) later(duration * 0.8, () => addEffect('splash', [to[0], WATER_TOP, to[2]]))
-    if (!isWater(event.to) && isWater(event.from)) later(duration * 0.3, () => addEffect('splash', squareToWorld(event.from).map((v, i) => (i === 1 ? WATER_TOP : v))))
+    if (isWater(event.to) && !isWater(event.from)) {
+      later(duration * 0.8, () => {
+        addEffect('splash', [to[0], WATER_TOP, to[2]])
+        playSfx('splash')
+      })
+    }
+    if (!isWater(event.to) && isWater(event.from)) {
+      later(duration * 0.3, () => {
+        addEffect('splash', squareToWorld(event.from).map((v, i) => (i === 1 ? WATER_TOP : v)))
+        playSfx('splash')
+      })
+    }
     if (trapOwner(event.to) && trapOwner(event.to) !== event.side) {
       later(duration, () => {
         addEffect('sparkle', [to[0], LAND_TOP + 0.6, to[2]])
         addText('Sập bẫy! Cấp 0', [to[0], LAND_TOP + 1.4, to[2]], 'warn')
+        playSfx('trap')
       })
     }
-    if (event.captured) later(duration * 0.75, () => setShakeAt((value) => value + 1))
-    if (event.ratEatsElephant) later(duration * 0.8, () => addText('Chuột hạ Voi!', [to[0], LAND_TOP + 1.6, to[2]], 'gold'))
+    if (event.captured) {
+      later(duration * 0.75, () => {
+        setShakeAt((value) => value + 1)
+        playSfx('capture')
+      })
+    }
+    if (event.ratEatsElephant) {
+      later(duration * 0.8, () => {
+        addText('Chuột hạ Voi!', [to[0], LAND_TOP + 1.6, to[2]], 'gold')
+        playSfx('trombone')
+      })
+    }
   }, [event, later, addEffect, addText])
 
   // Kết thúc ván: pháo giấy ở ổ bị chiếm (hoặc giữa bàn).
@@ -167,13 +198,18 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove, inspectedId, onInspect })
     if (!resultKey || shownResult.current === resultKey) return
     const firstSight = shownResult.current === null && !event
     shownResult.current = resultKey
-    if (firstSight || !game.result.winner) return
+    if (firstSight) return
+    if (!game.result.winner) {
+      later(event ? moveDuration(event) : 0, () => playSfx('draw'))
+      return
+    }
     const target = game.result.reason === 'den' ? squareToWorld(DENS[game.result.winner === 'red' ? 'blue' : 'red']) : [0, 0, 0]
     later(event ? moveDuration(event) : 0, () => {
+      playSfx(!mySide || game.result.winner === mySide ? 'win' : 'lose')
       addEffect('confetti', [target[0], LAND_TOP + 0.4, target[2]])
       addEffect('confetti', [target[0] + 0.6, LAND_TOP + 0.4, target[2] - 0.4])
     })
-  }, [resultKey, event, game, later, addEffect])
+  }, [resultKey, event, game, later, addEffect, mySide])
 
   useEffect(() => { setSelected(null) }, [game?.board?.ply, game?.status])
 
@@ -187,6 +223,7 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove, inspectedId, onInspect })
     const ok = await onMove(from, to)
     setPending(false)
     if (!ok) {
+      playSfx('invalid')
       const piece = pieceBySquare.get(from)
       if (piece) setShakes((map) => ({ ...map, [pieceId(piece)]: (map[pieceId(piece)] || 0) + 1 }))
     }
@@ -196,7 +233,8 @@ const JungleBoard3D = ({ game, mySide, canAct, onMove, inspectedId, onInspect })
     if (!square || !canAct || pending) return
     const occupant = pieceBySquare.get(square)
     if (occupant?.side === mySide) {
-      setSelected((current) => (current === square ? null : square))
+      if (selected !== square) playSfx('select')
+      setSelected(selected === square ? null : square)
       return
     }
     if (!selected) return

@@ -456,5 +456,12 @@ thư mục vì texture trùng tên `colormap.png`).
   `predatorsOf` / `pieceSituation` trong `utils/jungle.js`; đổi luật thì sửa cả ở đó.
 - Nền cỏ và khối viền đất dưới bàn **không được trùng cao độ** — trùng là z-fighting thành vệt
   nhiễu quanh mép bàn (đã gặp). Ô ổ thú (`tile-dirt` dày 0.1) được kéo `scale y = 2` cho chạm nền.
+- **Âm thanh** (`jungleAudio.js`) tổng hợp hoàn toàn bằng Web Audio — không file, không giấy phép.
+  SFX theo đúng mốc hoạt cảnh (bước chân, nhảy/tiếp đất, nước bắn, ngoạm + bụp khi ăn, kèn
+  "wah wah" khi Chuột hạ Voi, bẫy sập, nước sai, tới lượt, đề nghị hòa, tích tắc khi còn <30s,
+  thắng/thua/hòa). Nhạc nền tự sinh: suối (nhiễu nâu) + chim + kalimba ngũ cung 88 bpm, lên lịch
+  trước 0.5s. Chỉ phát sau thao tác đầu tiên (chính sách autoplay), dừng khi rời trang, tạm dừng
+  khi tab ẩn. Bật/tắt Nhạc / Hiệu ứng trên thanh trên, lưu ở localStorage `musicque_jungle_audio`.
+  DEV có `window.__jungleAudio.level()` để đo mức tín hiệu ra loa khi kiểm thử tự động.
 - Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
   `canvas.toDataURL()` kiểm tra được.

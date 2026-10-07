@@ -594,3 +594,22 @@ body:has(.jg-page.is-game) .lr-dock { top: auto; bottom: 44px; right: auto; left
 .jg-pcard__moves { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed var(--jg-border); font-size: 12px; font-weight: 700; color: var(--jg-green); }
 
 .jg-side__tip { margin: 0; padding: 12px 14px; border-radius: 14px; border: 1px dashed var(--jg-border); color: var(--jg-muted); font-size: 13px; line-height: 1.45; }
+
+/* ---------- Nút âm thanh ---------- */
+.jg-audio { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--jg-border); background: var(--jg-surface); }
+.jg-audio__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--jg-faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.jg-audio__btn.is-on { background: color-mix(in srgb, var(--jg-green) 14%, transparent); color: var(--jg-green); }
+.jg-audio__btn:hover { color: var(--jg-text); }

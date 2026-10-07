@@ -15,6 +15,7 @@ import {
   PIECES,
   SIDE_LABEL,
   capturedPieces,
+  clockRemaining,
   describeResult,
   mySideOf,
   pieceId,
@@ -22,6 +23,7 @@ import {
 import JungleBoard3D, { JungleLoading } from './JungleBoard3D'
 import JunglePlayerHud from './JungleHud'
 import JunglePieceCard from './JunglePieceCard'
+import { playSfx } from './jungleAudio'
 import { iconUrl } from './jungleAssets'
 import { useJungleGame, useNow } from './useJungle'
 
@@ -89,6 +91,24 @@ const JungleGameView = ({ gameId }) => {
   const mySide = mySideOf(game, user?._id)
   const playing = game?.status === 'playing'
   const myTurn = playing && mySide && game.board?.turn === mySide
+  const ply = game?.board?.ply
+  const opponentOffers = Boolean(playing && mySide && game.drawOfferBy && game.drawOfferBy !== mySide)
+  const myRemaining = myTurn ? clockRemaining(game.clock, mySide, receivedAt, now) : null
+  const lowSecond = myRemaining !== null && myRemaining < 30_000 ? Math.ceil(myRemaining / 1000) : null
+
+  // Báo tới lượt: chờ hoạt cảnh nước của đối thủ chạy xong rồi mới "ting".
+  const seenPly = useRef(null)
+  useEffect(() => {
+    if (ply === undefined) return undefined
+    const first = seenPly.current === null
+    seenPly.current = ply
+    if (first || !myTurn || ply === 0) return undefined
+    const id = window.setTimeout(() => playSfx('turn'), 700)
+    return () => window.clearTimeout(id)
+  }, [ply, myTurn])
+
+  useEffect(() => { if (opponentOffers) playSfx('notify') }, [opponentOffers])
+  useEffect(() => { if (lowSecond !== null && lowSecond > 0) playSfx('tick') }, [lowSecond])
 
   useEffect(() => {
     if (game?.status === 'finished' && settledRef.current !== game.id) {
