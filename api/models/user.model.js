@@ -145,6 +145,13 @@ const userSchema = new mongoose.Schema({
   },
 })
 
+// Chặn cả hai request đồng thời chọn cùng username khác hoa/thường.
+userSchema.index({ username: 1 }, {
+  unique: true,
+  name: 'username_case_insensitive',
+  collation: { locale: 'en', strength: 2 },
+})
+
 // Tìm user không phân biệt hoa thường để "Tien" và "tien" không thành hai tài khoản
 userSchema.statics.findByUsername = function (username, { withPassword = false } = {}) {
   if (!username || typeof username !== 'string') return Promise.resolve(null)
@@ -160,11 +167,13 @@ userSchema.statics.isValidUsername = function (username) {
 }
 
 // Tự hash mỗi khi password được gán/đổi
+userSchema.statics.hashPassword = (password) => bcrypt.hash(password, SALT_ROUNDS)
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next()
 
   try {
-    this.password = await bcrypt.hash(this.password, SALT_ROUNDS)
+    this.password = await this.constructor.hashPassword(this.password)
     next()
   } catch (error) {
     next(error)

@@ -148,6 +148,72 @@ exports.updateAvatar = async (user, avatarId) => {
   return user.toPublicJSON()
 }
 
+exports.changePassword = async (user, { currentPassword, newPassword } = {}) => {
+  if (typeof currentPassword !== 'string' || !currentPassword) {
+    throw new AuthError(400, 'Vui lòng nhập mật khẩu hiện tại')
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 6 || Buffer.byteLength(newPassword, 'utf8') > 72) {
+    throw new AuthError(400, 'Mật khẩu mới phải có ít nhất 6 ký tự và không vượt quá 72 byte')
+  }
+  const current = await User.findById(user._id).select('+password')
+  if (!current) throw new AuthError(401, 'Vui lòng đăng nhập để tiếp tục')
+  if (current.role === 'admin') {
+    throw new AuthError(403, 'Mật khẩu admin được quản lý bằng cấu hình máy chủ')
+  }
+  if (!await current.comparePassword(currentPassword)) {
+    throw new AuthError(400, 'Mật khẩu hiện tại không đúng')
+  }
+  if (await current.comparePassword(newPassword)) {
+    throw new AuthError(400, 'Mật khẩu mới phải khác mật khẩu hiện tại')
+  }
+  const hashedPassword = await User.hashPassword(newPassword)
+  // Chỉ sửa mật khẩu: giữ nguyên số dư và chặn hai lần đổi đồng thời.
+  const updated = await User.findOneAndUpdate(
+    { _id: current._id, password: current.password, role: 'user' },
+    { $set: { password: hashedPassword } },
+    { new: true },
+  )
+  if (!updated) throw new AuthError(409, 'Mật khẩu vừa thay đổi. Vui lòng thử lại')
+}
+
+exports.updateProfile = async (user, { username, displayName } = {}) => {
+  if (!User.isValidUsername(username)) {
+    throw new AuthError(400, 'Tên đăng nhập phải từ 3 đến 24 ký tự, chỉ gồm chữ, số và . _ -')
+  }
+  if (typeof displayName !== 'string' || !displayName.trim() || displayName.trim().length > 40) {
+    throw new AuthError(400, 'Tên hiển thị phải từ 1 đến 40 ký tự')
+  }
+  const names = { username: username.trim(), displayName: displayName.trim() }
+  // Đợi unique index sẵn sàng trước khi cho phép đổi username.
+  await User.init()
+  const current = await User.findById(user._id)
+  if (!current) throw new AuthError(401, 'Vui lòng đăng nhập để tiếp tục')
+  if (names.username === current.username && names.displayName === (current.displayName || current.username)) {
+    throw new AuthError(400, 'Bạn chưa thay đổi tên')
+  }
+  if (names.username !== current.username) {
+    if (current.role === 'admin') {
+      throw new AuthError(403, 'Tên đăng nhập admin được quản lý bằng cấu hình máy chủ')
+    }
+    if (isReservedAdminUsername(names.username)) {
+      throw new AuthError(403, 'Tên đăng nhập này không khả dụng')
+    }
+    const existing = await User.findByUsername(names.username)
+    if (existing && !existing._id.equals(current._id)) {
+      throw new AuthError(409, 'Tên đăng nhập đã tồn tại')
+    }
+  }
+  const updated = await coinsService.chargeProfileRename(current, names)
+  if (!updated) {
+    const latest = await User.findById(user._id)
+    if ((latest?.polites ?? 0) < 1000) {
+      throw new AuthError(400, 'Bạn cần ít nhất 1.000 PC để đổi tên')
+    }
+    throw new AuthError(409, 'Thông tin tài khoản vừa thay đổi. Vui lòng tải lại và thử lại')
+  }
+  return updated.toPublicJSON()
+}
+
 /**
  * Backfill avatar cho user cũ khi backend restart. Chỉ sửa document đang thiếu
  * hoặc có avatarId không hợp lệ; avatar người dùng đã chọn sẽ được giữ nguyên.

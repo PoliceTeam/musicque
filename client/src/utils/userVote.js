@@ -9,6 +9,11 @@ export const voteEntryBelongsToUser = (entry, username, voterUserId) => {
   const voter = entry?.userId;
   if (!voter) return false;
 
+  // Username có thể đổi; ưu tiên ID để giữ đúng vote đang hiển thị.
+  if (voterUserId && (typeof voter !== 'object' || voter._id)) {
+    return normalizeId(voter) === voterUserId;
+  }
+
   if (typeof voter === 'object' && voter.username) {
     return voter.username === username;
   }

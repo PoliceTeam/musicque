@@ -31,6 +31,7 @@ const TRANSACTION_TYPES = [
   'admin_adjustment',
   'core_purchase',
   'core_bonus',
+  'profile_rename',
 ]
 
 const coinTransactionSchema = new mongoose.Schema(

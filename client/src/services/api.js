@@ -85,6 +85,12 @@ export const fetchMe = () => api.get("/api/auth/me");
 export const updateMyAvatar = (avatarId) =>
   api.patch("/api/auth/me/avatar", { avatarId });
 
+export const updateMyProfile = (profile) =>
+  api.patch("/api/auth/me/profile", profile);
+
+export const changeMyPassword = (passwords) =>
+  api.patch("/api/auth/me/password", passwords);
+
 // Polite Coins API
 export const getCoinBalance = () => api.get("/api/coins/me");
 export const getCoinLeaderboard = (config = {}) =>

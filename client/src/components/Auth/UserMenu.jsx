@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Dropdown, Modal } from 'antd'
-import { LogoutOutlined, DownOutlined, PictureOutlined, CrownOutlined } from '@ant-design/icons'
+import { LogoutOutlined, DownOutlined, PictureOutlined, CrownOutlined, EditOutlined, LockOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import UserAvatar from '../Avatar/UserAvatar'
 import { ANIMAL_AVATARS } from '../../constants/animalAvatars'
 import CoreName from '../Core/CoreName'
 import CoreMembershipModal from '../Core/CoreMembershipModal'
+import ProfileNameModal from './ProfileNameModal'
+import ChangePasswordModal from './ChangePasswordModal'
 
 /**
  * Góc phải thanh trên cùng: chip tài khoản khi đã đăng nhập,
@@ -17,6 +19,8 @@ const UserMenu = () => {
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarId || 'cat')
   const [savingAvatar, setSavingAvatar] = useState(false)
   const [coreOpen, setCoreOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
 
   useEffect(() => {
     if (user?.avatarId) setSelectedAvatar(user.avatarId)
@@ -45,6 +49,18 @@ const UserMenu = () => {
 
   // "Bảng điều khiển" nằm ở SidebarNav — không lặp lại ở đây
   const items = [
+    {
+      key: 'password',
+      icon: <LockOutlined />,
+      label: 'Đổi mật khẩu · Miễn phí',
+      onClick: () => setPasswordOpen(true),
+    },
+    {
+      key: 'profile',
+      icon: <EditOutlined />,
+      label: 'Đổi tên · 1.000 PC',
+      onClick: () => setProfileOpen(true),
+    },
     {
       key: 'core',
       icon: <CrownOutlined />,
@@ -120,6 +136,8 @@ const UserMenu = () => {
         </div>
       </Modal>
       <CoreMembershipModal open={coreOpen} onClose={() => setCoreOpen(false)} />
+      <ProfileNameModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </>
   )
 }
