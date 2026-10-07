@@ -1,5 +1,60 @@
 # Tiến Lên Miền Nam — Implementation Plan
 
+> ## ▶ Progress status — last updated 2026-10-08 ~01:00 (stopped for the day)
+>
+> **Branch:** `feat/tien-len-mien-nam` at `7bf6990`. Nothing has been pushed.
+> `feat/thirteen-rooms` (Codex B, worktree `../musicque-rooms`) is **merged** (`221fe8a`).
+> Tests: API 80/80, client 215/215 (47 files), build OK.
+> The live local check passed: create room → join → both ready → 3 s countdown → match starts (pot 20, 13 cards), with no JS errors.
+>
+> | Task | Status |
+> |---|---|
+> | 1–7 rules, bot, engine, client state, 3D table, docs, reusable table-game engine | ✅ done |
+> | 8 full-screen overlay, first-person view, animations | ✅ done |
+> | 10 performance: on-demand render, 1 WebGL context, DPR cap, KTX2 support, nginx cache, perf script | ✅ done. KTX2 *asset conversion* is still pending: it needs `toktx` (Homebrew `ktx-software`), awaiting the user's OK |
+> | 12 chairs, contact shadows, seated avatars | ✅ done. 12.1 photo panorama: ❌ rejected and removed |
+> | 12.1b stylized low-poly office break room (light/dark) | ✅ done |
+> | Trick readability (upright, display stand, 1.4×) + HUD "last play" chip | ✅ done |
+> | 11.1 dynamic tables with codes, quick-join | ✅ done |
+> | 11.2 ready-check, ready window, idle seats | ✅ done, plus review fixes in `7bf6990` |
+> | 11.3 lobby (Chơi nhanh / Tạo bàn / Nhập mã, resume banner, room grid, `?room=`) | ✅ done |
+> | 11.4 overlay phases (waiting / playing / result), action bar, toasts | ✅ DOM done. 3D bits are 🟡 **WIP** (`1a143de`: waiting poses, empty-seat tags, ready badges) and need a visual check |
+> | 11.5 header removed → corner controls + wall info board | ✅ done |
+> | 9.1 drag-to-look, **yaw only ±30°** (pitch locked) | ✅ done |
+> | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done, needs a visual check from all 3 seats |
+> | 9.3 broadcast only to the watch room / private tables only to seated users | ✅ done |
+> | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | ⏳ not started |
+>
+> **Open items for next session**, in priority order:
+> 1. **Visual QA in the browser:**
+>    - the 11.4 3D WIP;
+>    - opponent hand/fan attachment;
+>    - wall board readability;
+>    - the side chairs and characters (in the 2026-10-08 screenshot the chairs look like they sit in front of the side characters, so check the orientation);
+>    - the Musicque wordmark on the wall: the last letter renders like a mirrored "Ǝ", so check the SVG rasterisation.
+> 2. **Remaining review findings for Codex B's code**, 2026-10-08. Not yet fixed:
+>    - leave idempotency check is outside the queue (`engine.js` `leave`);
+>    - late joiners get kicked by the ready window. Give each late joiner its own deadline;
+>    - `resume` loads the whole match history. Query only `fundingPending` / `playing` / `settling`, plus the latest settled match per table;
+>    - a stale `load()` re-adds a deleted table on the client (`TableGameContext`);
+>    - deep link: no toast for an invalid code, `?room=` is not cleared after leaving, and transient failures are not retried;
+>    - wrong toast text when joining a playing table;
+>    - "Rời bàn" is enabled during a pending refund retry;
+>    - README:98 still says "Chủ bàn bắt đầu ván", and README:95 is a duplicate paragraph;
+>    - `hostId` is still in the test fixtures.
+> 3. **Task 13:** final performance and robustness pass.
+>    - Rerun `client/scripts/perf-thirteen.mjs` in all phases, take a DevTools trace of a full match, do a leak check over 5 overlay open/close cycles, and check socket payload sizes.
+>    - Add `process.on('unhandledRejection')` logging and find the floating promise. On 2026-10-07 23:2x a Mongo monitor timeout crashed the API with `PoolClearedOnNetworkError`; it was logged right after a "[Nối từ] Game loop lỗi" line.
+>    - Convert the GLBs to KTX2 once `toktx` is approved.
+> 4. Clean up the worktree `../musicque-rooms` when it is no longer needed (`git worktree remove`).
+>
+> **Environment notes:**
+> - Local stack: Mongo runs in Docker (`mongo:8.2`) on the volume `musicque_mongodb_data`. `mongo:latest` = 9.0 cannot read the existing 8.2 data, so do not use it.
+> - The API runs on :5005 (port 5000 is taken by macOS), the client on :8080 and TTS on :8100. Docker Desktop must be running.
+> - QA tokens for scripted E2E are in `/private/tmp/thirteen-qa-tokens.json`. These are local throwaway accounts `qa_thirteen_a_1007` / `qa_thirteen_b_1007`.
+> - Codex quota resets at 03:38. Two Codex panes are set up in herdr: `w7:p2` (A, main tree) and `w7:p3` (B, worktree).
+
+
 **Goal:** Add a real-time multiplayer Tiến Lên Miền Nam card game (2–4 humans, bots fill empty
 seats) with a fixed Polite Coins buy-in split by finishing rank, rendered as a full 3D table
 using `client/public/models/deck-of-cards.glb`, on its own route `/thirteen`.
