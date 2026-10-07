@@ -31,6 +31,15 @@ function TurnRing({ position, reducedMotion }) {
 function TableSurface({ seats, currentSeat, userId, turnDeadlineAt, serverNow, firstPerson, children }) {
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
+  const dpr = useThree(state => state.viewport.dpr)
+  useEffect(() => {
+    if (dpr > 1) return
+    tableModel.traverse(node => {
+      for (const material of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) {
+        if (material.normalMap) { material.normalMap.image?.close?.(); material.normalMap.dispose(); material.normalMap = null; material.needsUpdate = true }
+      }
+    })
+  }, [tableModel, dpr])
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false
   const surfaceY = useMemo(() => {
     const bounds = new THREE.Box3().setFromObject(tableModel)
@@ -85,7 +94,7 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   const [contextLost, setContextLost] = useState(false)
   const onContextLost = React.useCallback(() => setContextLost(true), [])
   useEffect(() => clearTableAssets, [])
-  const [dpr, setDpr] = useState([1, 1.5])
+  const [dpr, setDpr] = useState([1, 1.25])
   const showPerf = import.meta.env.DEV && new URLSearchParams(window.location.search).get('perf') === '1'
   const supported = useMemo(canRender3D, [])
   useEffect(() => {
@@ -96,9 +105,9 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
     <Suspense fallback={<div className='card-table-surface' role='status'>Đang tải bàn bài...</div>}>
       <div className='card-table-surface'>
-        <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: true, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1) }}>
+        <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: Math.min(window.devicePixelRatio || 1, 1.25) < 1.25, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1) }}>
           <RendererLifetime onContextLost={onContextLost} />
-          <PerformanceMonitor onDecline={() => setDpr(1)} onFallback={() => setDpr(1)} />
+          <PerformanceMonitor onDecline={() => setDpr(value => Array.isArray(value) ? 1 : 0.85)} onFallback={() => setDpr(0.85)} />
           {showPerf && firstPerson && <Stats className='card-table-stats' />}
           <AnimationActivity><TableSurface {...props} firstPerson={firstPerson} /></AnimationActivity>
         </Canvas>

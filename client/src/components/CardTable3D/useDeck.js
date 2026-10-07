@@ -6,18 +6,17 @@ import { RANKS, SUITS, cardNodeName } from '../../utils/cards'
 export const useDeck = () => {
   const { scene } = useTableGLTF('/models/deck-of-cards.glb?v=webp1')
   const gl = useThree(state => state.gl)
-  useEffect(() => {
-    const anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
-    scene.traverse(node => {
-      if (!node.isMesh) return
-      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-        const texture = material.map
-        if (texture && texture.anisotropy !== anisotropy) { texture.anisotropy = anisotropy; texture.needsUpdate = true }
-      }
-    })
-  }, [scene, gl])
   const templates = useMemo(() => {
     const result = {}
+    const materials = new Map()
+    const anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
+    const cheapMaterial = source => {
+      if (!materials.has(source)) {
+        if (source.map) source.map.anisotropy = anisotropy
+        materials.set(source, new THREE.MeshLambertMaterial({ map: source.map, color: source.color, side: THREE.FrontSide }))
+      }
+      return materials.get(source)
+    }
     for (const node of scene.children[0]?.children || scene.children) {
       if (!node.name.includes('_')) continue
       const clone = node.clone(true)
@@ -27,6 +26,7 @@ export const useDeck = () => {
       const center = new THREE.Box3().setFromObject(clone).getCenter(new THREE.Vector3())
       clone.traverse((child) => {
         if (child.isMesh) {
+          child.material = Array.isArray(child.material) ? child.material.map(cheapMaterial) : cheapMaterial(child.material)
           child.geometry = child.geometry.clone().translate(-center.x, -center.y, -center.z)
         }
       })
@@ -35,7 +35,13 @@ export const useDeck = () => {
     }
     if (!result.Spade_Ace) throw new Error('Card meshes are missing')
     return result
-  }, [scene])
-  useEffect(() => () => Object.values(templates).forEach((node) => node.traverse((child) => { if (child.isMesh) child.geometry.dispose() })), [templates])
+  }, [scene, gl])
+  useEffect(() => () => {
+    const materials = new Set()
+    Object.values(templates).forEach(node => node.traverse(child => {
+      if (child.isMesh) { child.geometry.dispose(); (Array.isArray(child.material) ? child.material : [child.material]).forEach(material => materials.add(material)) }
+    }))
+    materials.forEach(material => material.dispose())
+  }, [templates])
   return useMemo(() => Object.fromEntries(RANKS.flatMap((rank) => SUITS.map((suit) => [rank + suit, templates[cardNodeName(rank + suit)]]))), [templates])
 }

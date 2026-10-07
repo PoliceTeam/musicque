@@ -14,10 +14,16 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   const avatar = useMemo(() => {
     const model = clone(scene)
     const materials = new Map()
+    let sharedSkeleton
     model.traverse((node) => {
       if (!node.isMesh) return
+      if (node.isSkinnedMesh) {
+        if (!sharedSkeleton) sharedSkeleton = node.skeleton
+        else if (node.skeleton.bones.every((bone, i) => bone === sharedSkeleton.bones[i])) node.skeleton = sharedSkeleton
+      }
       const tint = (material) => {
         // Match the existing Chibi overlay: exported BLEND skin needs opaque depth writes.
+        material.side = THREE.FrontSide
         material.transparent = false
         material.depthWrite = true
         material.needsUpdate = true
@@ -26,6 +32,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
           const outfit = material.clone()
           outfit.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), -clipHeight)]
           const color = new THREE.Color(seat.isBot ? '#9bb9ec' : '#b3d9c3')
+          outfit.customProgramCacheKey = () => 'thirteen-outfit-v1'
           outfit.onBeforeCompile = (shader) => {
             shader.uniforms.outfitTint = { value: color }
             shader.fragmentShader = 'uniform vec3 outfitTint;\n' + shader.fragmentShader
