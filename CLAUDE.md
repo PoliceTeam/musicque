@@ -14,6 +14,8 @@ Each service installs and runs independently.
 
 Reusable table games: see [docs/table-game-engine.md](docs/table-game-engine.md) for the definition contract, lifecycle and client scene.
 
+- Thirteen (`/thirteen`, `/api/thirteen`): four-seat Tiến Lên Miền Nam with private hands, bots, PC stakes and restart recovery, implemented as a table-game definition.
+
 | Directory | Stack | Dev port | Docker port |
 |---|---|---|---|
 | `api/` | Node + Express + Mongoose + Socket.IO (CommonJS) | 5000 | 5001 |

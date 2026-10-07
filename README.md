@@ -90,6 +90,22 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 - UI dùng bộ bàn và quân `gmchess wood`; thông tin giấy phép được ghi trong
   `THIRD_PARTY_NOTICES.md`.
 
+### Tiến Lên Miền Nam
+
+- Vào `/thirteen` để xem bàn; đăng nhập để ngồi và chơi. Chủ bàn bắt đầu ván,
+  bot tự lấp các ghế trống để đủ bốn người.
+- Mỗi người cược `10 PC` khi có ít nhất hai người thật. Chơi một mình với bot
+  là luyện tập, không trừ PC. Tiền cược chỉ chia cho người thật theo thứ hạng:
+  hai người `100/0`, ba người `70/30/0`, bốn người `60/30/10/0` phần trăm.
+- Ván đầu người giữ 3 bích đi trước; các ván sau ghế thắng trước mở bài.
+  Hết lượt 20 giây sẽ tự bỏ lượt, hoặc đánh lá thấp nhất khi đang mở vòng.
+- Bàn 3D dùng mô hình bàn ăn và bộ bài thật; có điều khiển chọn bài bằng bàn
+  phím và giao diện thay thế khi không dùng được WebGL hoặc giảm chuyển động.
+- Server giữ riêng bài từng người, kiểm tra luật và thanh toán chống trùng.
+  Tải lại trang hoặc khởi động lại API sẽ khôi phục ván đang chơi.
+- Engine dùng chung cho các trò chơi bàn khác: xem
+  [hướng dẫn thêm trò chơi](docs/table-game-engine.md).
+
 ### Tiện ích cộng tác và nội dung
 
 - Lunch Vote: tạo đội, thêm lựa chọn, vote và quay roulette chọn bữa trưa.
@@ -328,6 +344,10 @@ toàn bộ pipeline bằng Docker Compose.
 | `CHOHAN_REVEAL_MS` | Thời gian hiển thị kết quả | `5000` |
 | `CHOHAN_MIN_BET` | Cược tối thiểu | `5` |
 | `CHOHAN_MAX_BET` | Cược tối đa | `15` |
+| `THIRTEEN_TABLE_COUNT` | Số bàn Tiến Lên Miền Nam | `3` |
+| `THIRTEEN_STAKE_PC` | PC cược mỗi người khi có ít nhất hai người thật | `10` |
+| `THIRTEEN_TURN_MS` | Thời gian một lượt | `20000` |
+| `THIRTEEN_BOT_DELAY_MS` | Thời gian bot suy nghĩ | `1200` |
 | `BILLIARDS_MIN_BET` | Cược billiards tối thiểu | `5` |
 | `BILLIARDS_MAX_BET` | Cược billiards tối đa | `50` |
 | `BILLIARDS_INTERMISSION_MS` | Nghỉ giữa hai ván billiards | `27000` |
