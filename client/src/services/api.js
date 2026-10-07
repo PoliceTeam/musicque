@@ -228,3 +228,10 @@ export const getTTSVoices = () => api.get("/api/tts/voices");
 export const getTTSHealth = () => api.get("/api/tts/health");
 
 export default api;
+
+export const thirteenApi = {
+  config: () => api.get('/api/thirteen/config'),
+  tables: () => api.get('/api/thirteen/tables'),
+  table: (id) => api.get(`/api/thirteen/tables/${id}`),
+  action: (id, action, payload) => api.post(`/api/thirteen/tables/${id}/${action}`, payload),
+};
