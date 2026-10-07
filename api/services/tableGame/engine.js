@@ -51,7 +51,8 @@ const createTableGameService = (definition) => {
     } : null),
     currentSeat: match ? definition.currentSeat(match.state) : null,
     stake: match?.stake ?? stake,
-    pot: match ? match.stake * match.humanCount : 0,
+    pot: match ? match.stake * match.humanCount : table.lastPot || 0,
+    humans: (match?.seats || table.seats).filter(seat => seat?.userId).length,
     turnDeadlineAt: match?.turnDeadlineAt || null,
     version: match?.version ?? 0,
     serverNow: Date.now(),
@@ -228,6 +229,7 @@ const createTableGameService = (definition) => {
     table.hasPlayed = true
     table.seats = game.seats.map((seat) => seat.userId ? { userId: seat.userId.toString(), username: seat.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs } : null)
     table.status = 'finished'
+    table.lastPot = game.stake * game.humanCount
     table.readyDeadlineAt = Date.now() + readyTimeoutMs
     table.match = null
     clearTimeout(table.timer)

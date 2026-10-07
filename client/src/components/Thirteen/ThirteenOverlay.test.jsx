@@ -20,7 +20,7 @@ describe('ThirteenOverlay', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(dialog).toHaveFocus()
     expect(document.body.style.overflow).toBe('hidden')
-    await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' }))
     expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
     expect(props.action).not.toHaveBeenCalledWith('leave', expect.anything())
     expect(document.body.style.overflow).toBe('')
@@ -60,7 +60,7 @@ describe('ThirteenOverlay', () => {
     expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Sẵn sàng ván mới' }))
     expect(props.action).toHaveBeenCalledWith('ready', 1)
-    await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' }))
     expect(props.onClose).toHaveBeenCalled()
   })
   it('does not animate a deal when loading an already-playing match', async () => {
@@ -79,7 +79,7 @@ it('deals on a waiting-to-playing transition, but not when reopening the same ma
   view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
   const dialog = await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })
   expect(dialog.querySelector('[data-deal]')).toHaveAttribute('data-deal', 'true')
-  await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' }))
   await userEvent.click(screen.getByRole('button', { name: 'Quay lại bàn' }))
   expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' }).querySelector('[data-deal]')).toHaveAttribute('data-deal', 'false')
 })
@@ -133,4 +133,15 @@ it('joins a room deep link once', async () => {
   render(<MemoryRouter initialEntries={['/thirteen?room=K7Q2']}><ThirteenPage /></MemoryRouter>)
   await waitFor(() => expect(mocks.state.action).toHaveBeenCalledWith('sit', 'K7Q2'))
   expect(mocks.state.action).toHaveBeenCalledTimes(1)
+})
+
+
+it('uses only corner icons and announces the wall-board information accessibly', () => {
+  const { container, rerender } = render(<ThirteenOverlay {...props} open table={{ ...table, code: 'FQ8X', visibility: 'private' }} />)
+  expect(container.ownerDocument.querySelector('.th-game-header')).toBeNull()
+  const announcement = container.ownerDocument.querySelector('.thirteen-sr-only[aria-live="polite"]')
+  expect(announcement).toHaveTextContent('Bàn FQ8X, riêng tư, đang chơi, quỹ 20 PC')
+  expect(screen.getByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' })).toBeEnabled()
+  rerender(<ThirteenOverlay {...props} open table={{ ...table, code: 'FQ8X', status: 'finished', pot: 0 }} />)
+  expect(announcement).toHaveTextContent('Bàn FQ8X, kết thúc, ván tập')
 })

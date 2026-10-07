@@ -55,15 +55,13 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   return createPortal(<div className='th-overlay'>
     <section className='th-game' role='dialog' aria-modal='true' aria-labelledby='th-game-title' tabIndex={-1} ref={dialog}>
       <ThirteenTable3D {...state} table={table} userId={userId} dealOnMount={dealOnMount} firstPerson viewResetKey={viewResetKey} handLowered={handLowered} />
-      <header className='th-game-header'>
-        <div className='thirteen-actions'><span className='thirteen-chip'>{table.visibility === 'private' && '🔒 '}Bàn {table.code || table.tableId}</span><span className='thirteen-chip'>{roomStatus(table, now)}</span></div>
-        <h2 id='th-game-title'>Tiến Lên Miền Nam</h2>
-        <div className='thirteen-actions'><strong className='thirteen-chip'>{table.pot ? `Quỹ ${table.pot} PC` : playing || finished ? 'Ván tập' : `Cược ${table.stake || 0} PC`}</strong>
-          <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
-          <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ'>−</button></Tooltip>
-          <Tooltip title={playing ? 'Không thể rời khi đang chơi' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
-        </div>
-      </header>
+      <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
+      <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {table.pot ? `quỹ ${table.pot} PC` : 'ván tập'}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
+      <div className='th-game-corner-controls'>
+        <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
+        <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
+        <Tooltip title={playing ? 'Không thể rời khi đang chơi' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
+      </div>
       {playing && <ThirteenHud {...state} resetView={() => setViewResetKey(key => key + 1)} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
       {!playing && <div className='th-game-end'>
         {finished && showResult && result && <ol className='thirteen-results' aria-label='Kết quả ván'>{result.ranking.map((seat, i) => {
