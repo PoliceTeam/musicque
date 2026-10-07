@@ -37,9 +37,10 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
   useEffect(() => {
     if (frame.trickKey !== previousTrick.current) {
       bomb.current = isBombTrick(previousCombo.current, frame.trick)
+      if (bomb.current && !reducedMotion) window.dispatchEvent(new Event('card-table:bomb'))
       previousTrick.current = frame.trickKey; previousCombo.current = frame.trick; elapsed.current = 0; activity.start()
     }
-  }, [frame.trick, frame.trickKey, activity])
+  }, [frame.trick, frame.trickKey, activity, reducedMotion])
   useEffect(() => { elapsed.current = 0; bomb.current = false; activity.start() }, [frame.matchId, frame.finished, activity])
   useFrame((_, delta) => {
     elapsed.current += activity.step(delta) * 1000

@@ -64,7 +64,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
       if (poseStore && poseId) poseStore.current.set(poseId, readWorldPose(inner.current))
     }
   })
-  return <group ref={ref} onClick={onClick ? (event) => { event.stopPropagation(); onClick() } : undefined}
+  return <group ref={ref} userData={{ card: true }} onClick={onClick ? (event) => { event.stopPropagation(); onClick() } : undefined}
     onPointerOver={onClick ? (event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' } : undefined}
     onPointerOut={onClick ? () => { setHovered(false); document.body.style.cursor = '' } : undefined}>
     <group ref={inner}>

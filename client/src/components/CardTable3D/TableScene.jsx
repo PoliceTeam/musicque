@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PerformanceMonitor, Stats } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,13 +8,8 @@ import { useAnimationActivity } from './activity'
 import { clearTableAssets, releaseTextureImage, useTableGLTF } from './assets'
 import SeatMarker from './SeatMarker'
 import OfficeRoom from './OfficeRoom.jsx'
+import DragLookCamera from './DragLookCamera'
 import { chairPlacement } from './chair'
-function FixedCamera() {
-  const base = useMemo(() => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(0, 1.15, 1.16), new THREE.Vector3(0, 0.785, -0.03), new THREE.Vector3(0, 1, 0))), [])
-  const camera = useThree(state => state.camera)
-  useLayoutEffect(() => { camera.position.set(0, 1.15, 1.16); camera.quaternion.copy(base); camera.updateMatrixWorld() }, [camera, base])
-  return null
-}
 function TurnRing({ position, reducedMotion }) {
   const ref = useRef()
   const initialPosition = useRef(position ? [position[0], position[1] + 0.001, position[2]] : [0, 0.786, 0])
@@ -58,7 +53,7 @@ function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serve
   }), [anchor, seatCount])
   const seatPositions = useMemo(() => characterPositions.map(([x, , z]) => [x * 0.6, surfaceY, z * 0.6]), [characterPositions, surfaceY])
   return <>
-    {firstPerson && <FixedCamera />}
+    {firstPerson && <DragLookCamera reducedMotion={reducedMotion} />}
     <color attach='background' args={['#94a3a6']} />
     {firstPerson && <OfficeRoom table={table} />}
     <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#80766a' />
