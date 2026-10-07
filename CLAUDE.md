@@ -418,3 +418,37 @@ the files remain: `api/controllers/worldCup.controller.js`,
 `client/src/components/WorldCup/`, `client/src/pages/WorldCupPage.jsx`. The routes are
 not mounted in `api/app.js` and the page is not routed in `client/src/App.jsx`.
 Don't assume it's reachable; re-enabling means restoring both registrations.
+
+### Cờ Thú (Jungle / Dou Shou Qi) — PvP 3D + bot
+`/jungle` (sảnh) và `/jungle/:gameId` (bàn). Đây là game **3D đầu tiên** của app
+(react-three-fiber + drei, asset Kenney CC0 ở `client/public/models/jungle/`, mỗi pack một
+thư mục vì texture trùng tên `colormap.png`).
+
+- **Luật** nằm duy nhất ở `api/services/jungle/rules.js` (hàm thuần, bàn 7×9, ô `a1`..`g9`,
+  Đỏ ở hàng 1, đi trước). Thế quân theo bàn in Việt Nam (lật trái–phải so với Wikipedia).
+  Luật nhà đã chốt với chủ dự án: chỉ Chuột xuống nước; Voi không ăn Chuột (trừ khi Chuột
+  trong hang); quân trong hang địch cấp 0 và **không ăn được ai**; Sư tử/Hổ nhảy sông dọc+ngang,
+  bị Chuột (phe nào cũng được) chặn; Báo không nhảy; hết nước đi = thua; hòa khi lặp vị trí 3
+  lần / mỗi bên còn 1 Chuột / 100 ply không ăn quân / đồng ý hòa. Thắng dứt điểm xét trước hòa.
+  Mọi nước bị từ chối trả `code` + câu tiếng Việt — client hiển thị nguyên câu đó.
+- **PvP** (`jungle.service.js`): cược `JUNGLE_STAKE_PC` (100) mỗi bên, thắng nhận gấp đôi,
+  hòa hoàn cược; đồng hồ `JUNGLE_CLOCK_MS` (15') mỗi bên; mất socket quá
+  `JUNGLE_DISCONNECT_MS` (3') là thua. Ván lưu Mongo (`JungleGame`), nước đi là update nguyên tử
+  lọc theo `position.ply` (chống gửi trùng). Thu cược = giành chỗ nguyên tử → `debitOnce` từng
+  người → hoàn nếu bước sau hỏng; ván kẹt ở `starting` khi restart được huỷ và **chỉ hoàn phần
+  đã thực sự trừ** (kiểm `appliedCoinOperations`). Vòng `runTick` 1s xử lý hết giờ/bỏ ván/phòng
+  chờ bỏ hoang; lúc khởi động đồng hồ bên đang đi chạy lại từ mốc đã lưu.
+- **Tập với máy** (`mode: 'practice'`): không cược, không đồng hồ, không hiện ở sảnh, không nhận
+  hòa. Bot `api/services/jungle/bot.js` là negamax alpha-beta + iterative deepening + Zobrist TT
+  + quiescence, chạy trong `worker_threads` (`botQueue.js`). Nó có **bộ sinh nước riêng trên mảng
+  số** — `jungleBot.test.js` đối chiếu với `rules.js` trên >10k thế cờ; sửa luật thì phải sửa cả
+  hai. Lực kéo tiến quân trong `evaluate` phải lớn hơn `noise` của mức độ, nếu không bot đi lòng
+  vòng tới hòa 100 ply (đã gặp). Đo: Vừa thắng ngẫu nhiên 16/16; Khó vs Vừa 8 thắng 4 hòa 0 thua.
+- **Client**: `components/Jungle/` — `JungleBoard3D` điều phối (sự kiện nước đi suy từ state cũ →
+  mới bằng `deriveMoveEvent`; nhảy cóc nhiều ply thì đặt quân thẳng chỗ), `JunglePiece` (tween đi
+  /nhảy parabol, bơi, xám + sao khi bị yếu, ghost khi bị ăn), `JungleScenery`, `JungleEffects`.
+  Quân có id cố định `side-type` (mỗi phe mỗi loài một con). Báo/Sói/Chuột mượn model Hổ/Cáo/Koala
+  và đổi màu texture bằng canvas (`jungleAssets.js`). Nước sai nhưng "trông như" nước đi vẫn gửi
+  server để lấy lý do. Màn chơi dời thẻ Mưa lì xì xuống góc dưới trái (`jungle.css`).
+- Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
+  `canvas.toDataURL()` kiểm tra được.

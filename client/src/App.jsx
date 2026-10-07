@@ -22,6 +22,7 @@ const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
 const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
+const JunglePage = lazy(() => import('./pages/JunglePage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
 const LuckyRainPreview = import.meta.env.DEV ? lazy(() => import('./components/LuckyRain/LuckyRainPreview')) : null
 
@@ -76,6 +77,8 @@ function AppContent() {
                       />
                       <Route path='/werewolf' element={<WerewolfPage />} />
                       <Route path='/secret-shift' element={<SecretShiftPage />} />
+                      <Route path='/jungle' element={<JunglePage />} />
+                      <Route path='/jungle/:gameId' element={<JunglePage />} />
                       <Route
                         path='/admin'
                         element={

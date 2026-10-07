@@ -5,6 +5,7 @@ const redLight = require('./services/redLight.service')
 const workspace = require('./services/workspace.service')
 const workspaceVoice = require('./services/workspaceVoice.service')
 const werewolf = require('./services/werewolf.service')
+const jungle = require('./services/jungle.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
 
@@ -247,6 +248,22 @@ const initSocket = (server) => {
     })
 
     socket.on('werewolf:unwatch', () => werewolf.unwatch(socket))
+
+    // Cờ thú: ai cũng xem được; token chỉ để server biết người chơi còn kết nối.
+    socket.on('jungle:watch', async (data = {}) => {
+      try {
+        if (!data.gameId) return
+        const user = data.token ? await resolveUserFromToken(data.token) : null
+        await jungle.watchGame(socket, String(data.gameId), user)
+      } catch (error) {
+        socket.emit('jungle_error', { message: error.message })
+      }
+    })
+    socket.on('jungle:unwatch', () => jungle.unwatchGame(socket))
+    socket.on('jungle:lobby:watch', () => {
+      jungle.watchLobby(socket).catch((error) => console.error('[Cờ thú] Sảnh lỗi:', error.message))
+    })
+    socket.on('jungle:lobby:unwatch', () => jungle.unwatchLobby(socket))
 
     socket.on('disconnect', () => {
       console.log('Client disconnected', socket.id);

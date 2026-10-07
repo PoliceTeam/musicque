@@ -55,6 +55,11 @@ services:
       - XIANGQI_ENGINE_MOVE_MS=800
       - XIANGQI_ENGINE_JOB_TIMEOUT_MS=3000
       - XIANGQI_ENGINE_MAX_RETRIES=1
+      # --- CO THU (Jungle PvP, Polite Coins) ---
+      - JUNGLE_STAKE_PC=100
+      - JUNGLE_CLOCK_MS=900000
+      - JUNGLE_DISCONNECT_MS=180000
+      - JUNGLE_GAME_RETENTION_MS=2592000000
       - YOUTUBE_API_KEY=your_youtube_api_key
       - WC2026_API_KEY=your_wc2026_api_key
       - WEATHER_API_KEY=

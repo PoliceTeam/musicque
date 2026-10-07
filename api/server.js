@@ -17,6 +17,7 @@ const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
 const werewolf = require('./services/werewolf.service')
+const jungle = require('./services/jungle.service')
 const sessionScheduler = require('./services/sessionScheduler.service')
 const luckyRain = require('./services/luckyRain.service')
 
@@ -128,6 +129,11 @@ mongoose
 
       // Ma Sói không gắn với phiên nhạc: sảnh luôn mở, state chỉ nằm trong RAM.
       werewolf.init(io)
+
+      // Cờ thú PvP: chốt ván treo/trả thưởng dở rồi mới chạy vòng kiểm tra giờ.
+      jungle.init(io).catch((error) => {
+        console.error('[Cờ thú] Khởi động lỗi:', error.message)
+      })
 
       // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,
       // không thì PC đã trừ mà người thắng không nhận được gì.

@@ -250,6 +250,22 @@ export const getTTSHealth = () => api.get("/api/tts/health");
 
 export default api;
 
+// Cờ thú (Jungle) — PvP có cược và tập với máy
+export const getJungleConfig = () => api.get("/api/jungle/config");
+export const getJungleLobby = () => api.get("/api/jungle/lobby");
+export const getJungleActive = () => api.get("/api/jungle/games/active");
+export const getJunglePracticeActive = () => api.get("/api/jungle/practice/active");
+export const getJungleGame = (id) => api.get(`/api/jungle/games/${id}`);
+export const createJungleGame = () => api.post("/api/jungle/games");
+export const createJunglePractice = (payload) => api.post("/api/jungle/practice", payload);
+export const joinJungleGame = (id) => api.post(`/api/jungle/games/${id}/join`);
+export const cancelJungleGame = (id) => api.post(`/api/jungle/games/${id}/cancel`);
+export const playJungleMove = (id, payload) => api.post(`/api/jungle/games/${id}/moves`, payload);
+export const resignJungleGame = (id) => api.post(`/api/jungle/games/${id}/resign`);
+export const offerJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/offer`);
+export const acceptJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/accept`);
+export const declineJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/decline`);
+
 // Cờ tướng PvP — phòng hai người, cược mặc định 30 PC mỗi bên
 export const getActiveXiangqiPvp = () => api.get('/api/xiangqi/pvp/active');
 export const getXiangqiPvp = (id) => api.get(`/api/xiangqi/pvp/${id}`);
