@@ -46,3 +46,10 @@ it('samples an opponent release from its moving wrist, with the lift preserved a
   const unlifted = worldPose(source,spaces)
   expect(new Vector3(...unlifted.position).distanceTo(new Vector3(...released.position))).toBeCloseTo(0.02)
 })
+
+it('lifts an upright opaque fan toward its visible top instead of downward', () => {
+  const source={position:[0,0.9,0],faceUp:false,tilt:Math.PI/2}
+  const pose=liftWorldPose(worldPose(source),0.02,source.faceUp)
+  expect(pose.position[1]).toBeCloseTo(0.92)
+  expect(pose.position[2]).toBeCloseTo(0)
+})

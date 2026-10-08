@@ -49,7 +49,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     let pose = animation.sample(animation.elapsed, scratch.sample)
     if (animation.elapsed < 0 && animation.from?.space?.startsWith('seat:')) {
       pose = worldPose(animation.from, spaces, scratch.sample)
-      liftWorldPose(pose, 0.02 * Math.min(1, (delay + animation.elapsed) / 150))
+      liftWorldPose(pose, 0.02 * Math.min(1, (delay + animation.elapsed) / 150), animation.from.faceUp)
     }
     else if (animation.elapsed >= 0 && animation.pending) {
       animation.pending = false
@@ -57,7 +57,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
       animation.to = { position: [...destination.position], quaternion: [...destination.quaternion], scale: destination.scale }
       if (animation.from?.space?.startsWith('seat:')) {
         const released = worldPose(animation.from, spaces, scratch.sample)
-        liftWorldPose(released, 0.02)
+        liftWorldPose(released, 0.02, animation.from.faceUp)
         applyWorldPose(ref.current, released)
       }
       animation.sample = tween(readWorldPose(ref.current), animation.to, { duration: animation.duration, height: animation.height, flip: animation.flip })

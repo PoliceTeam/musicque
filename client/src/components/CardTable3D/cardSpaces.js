@@ -30,8 +30,8 @@ export const applyWorldPose = (group, pose) => {
   group.position.copy(position); group.quaternion.copy(quaternion); group.scale.setScalar(pose.scale ?? 1)
 }
 
-export const liftWorldPose = (pose, distance) => {
-  position.set(0, distance, 0).applyQuaternion(quaternion.fromArray(pose.quaternion))
+export const liftWorldPose = (pose, distance, faceUp = true) => {
+  position.set(0, faceUp ? distance : -distance, 0).applyQuaternion(quaternion.fromArray(pose.quaternion))
   for (let i = 0; i < 3; i++) pose.position[i] += position.getComponent(i)
   return pose
 }
