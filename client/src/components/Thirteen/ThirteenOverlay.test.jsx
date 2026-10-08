@@ -489,3 +489,17 @@ describe('room invite authentication', () => {
     expect(mocks.state.action).toHaveBeenCalledExactlyOnceWith('sit', 'K7Q2', { retryTransient: true })
   })
 })
+
+it('shows host start instructions after a match and on host transfer, without a ready-kick timer', () => {
+  const finished = { ...table, status: 'finished', matchId: null, hostId: 'b', readyDeadlineAt: Date.now() + 30000, seats: [{ userId: 'a', username: 'An', ready: true, readyDeadlineAt: Date.now() + 30000 }, { userId: 'b', username: 'Bình', ready: false }, null, null] }
+  const view = render(<ThirteenOverlay {...props} open table={finished} />)
+  expect(screen.getByRole('timer')).toHaveTextContent('Tự rời bàn')
+  view.rerender(<ThirteenOverlay {...props} open table={{ ...finished, hostId: 'a', seats: [finished.seats[0], null, null, null] }} />)
+  expect(screen.queryByRole('timer')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Tự rời bàn/)).not.toBeInTheDocument()
+  expect(screen.getByText('Bắt đầu khi mọi người sẵn sàng')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Bắt đầu' })).toBeEnabled()
+  expect(screen.queryByRole('button', { name: /Sẵn sàng/ })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu' }))
+  expect(props.action).toHaveBeenCalledWith('start', 1)
+})

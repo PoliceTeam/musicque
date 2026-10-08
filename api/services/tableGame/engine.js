@@ -51,7 +51,7 @@ const createTableGameService = (definition) => {
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),
       userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot),
-      ...(!match ? { ready: Boolean(seat.ready), readyDeadlineAt: seat.readyDeadlineAt || table.readyDeadlineAt || null } : {}),
+      ...(!match ? { ready: Boolean(seat.ready), readyDeadlineAt: seat.userId === table.hostId ? null : seat.readyDeadlineAt || table.readyDeadlineAt || null } : {}),
     } : null),
     currentSeat: match ? definition.currentSeat(match.state) : null,
     stake: match?.stake ?? table.stake,
@@ -89,6 +89,8 @@ const createTableGameService = (definition) => {
       table.chat = [...table.chat, message].slice(-50)
       table.chatAt.set(userId.toString(), at)
       const payload = { game: name, tableId: table.tableId, message }
+      touchSeat(table, userId)
+      scheduleLobby(table)
       emitSeated(table, 'table_game_chat', payload)
       return remember(key, payload)
     })
@@ -107,6 +109,8 @@ const createTableGameService = (definition) => {
       if (at - (table.throwAt.get(userId.toString()) ?? -Infinity) < 3000) throw new TableGameError('Throw too fast', 429, 'THROW_RATE_LIMIT')
       table.throwAt.set(userId.toString(), at)
       const payload = { game: name, tableId: table.tableId, id: randomUUID(), fromSeat, targetSeat, item, at }
+      touchSeat(table, userId)
+      scheduleLobby(table)
       emitSeated(table, 'table_game_throw', payload)
       return remember(key, payload)
     })
@@ -155,7 +159,11 @@ const createTableGameService = (definition) => {
     table.autoLeft = removed.map(seat => ({ userId: seat.userId, reason }))
     table.seats = table.seats.map(seat => seat && predicate(seat) ? null : seat)
     // ponytail: lowest seat index stands in for "earliest seated"; store a join time if that ever matters.
-    if (!table.seats.some(seat => seat?.userId === table.hostId)) table.hostId = table.seats.find(Boolean)?.userId || null
+    if (!table.seats.some(seat => seat?.userId === table.hostId)) {
+      const host = table.seats.find(Boolean)
+      table.hostId = host?.userId || null
+      if (host) { host.ready = false; host.readyDeadlineAt = null }
+    }
     if (removed.length) {
       cancelCountdown(table)
       const payload = serializeTable(table)
@@ -165,19 +173,19 @@ const createTableGameService = (definition) => {
   const scheduleLobby = (table) => {
     clearTimeout(table.lobbyTimer)
     if (!tables.includes(table) || table.match || table.fundingMatch) return
-    const readyDeadlines = table.seats.filter(seat => seat && !seat.ready && seat.readyDeadlineAt).map(seat => seat.readyDeadlineAt)
-    const deadlines = [table.startsAt, ...(table.readyDeadlineAt ? readyDeadlines.length ? readyDeadlines : [table.readyDeadlineAt] : []), ...(!table.readyDeadlineAt ? table.seats.filter(seat => seat && !seat.ready).map(seat => seat.idleDeadlineAt) : [])].filter(Boolean)
+    const readyDeadlines = table.seats.filter(seat => seat && seat.userId !== table.hostId && !seat.ready && seat.readyDeadlineAt).map(seat => seat.readyDeadlineAt)
+    const deadlines = [table.startsAt, ...(table.readyDeadlineAt ? readyDeadlines.length ? readyDeadlines : [table.readyDeadlineAt] : []), ...table.seats.filter(seat => seat && (seat.userId === table.hostId || (!table.readyDeadlineAt && !seat.ready))).map(seat => seat.idleDeadlineAt)].filter(Boolean)
     if (!deadlines.length) return
     table.lobbyTimer = setTimeout(() => enqueue(table, async () => {
       if (!tables.includes(table) || table.match || table.fundingMatch) return
       const now = Date.now()
       if (table.readyDeadlineAt && deadlines.some(deadline => deadline <= now)) {
-        removeSeats(table, seat => !seat.ready && (seat.readyDeadlineAt || table.readyDeadlineAt) <= now, 'not_ready')
-        table.readyDeadlineAt = Math.max(0, ...table.seats.filter(seat => seat && !seat.ready).map(seat => seat.readyDeadlineAt || 0)) || null
+        removeSeats(table, seat => seat.userId !== table.hostId && !seat.ready && (seat.readyDeadlineAt || table.readyDeadlineAt) <= now, 'not_ready')
+        table.readyDeadlineAt = Math.max(0, ...table.seats.filter(seat => seat && seat.userId !== table.hostId && !seat.ready).map(seat => seat.readyDeadlineAt || 0)) || null
         if (!table.readyDeadlineAt) table.status = 'waiting'
-      } else if (!table.readyDeadlineAt) {
-        removeSeats(table, seat => !seat.ready && seat.idleDeadlineAt <= now, 'idle')
       }
+      const idle = seat => (seat.userId === table.hostId || (!table.readyDeadlineAt && !seat.ready)) && seat.idleDeadlineAt <= now
+      if (table.seats.some(seat => seat && idle(seat))) removeSeats(table, idle, 'idle')
       if (table.startsAt && table.startsAt <= now && allReady(table)) {
         table.startsAt = null
         try { await startInternal(table) } catch (error) {
@@ -190,6 +198,10 @@ const createTableGameService = (definition) => {
       deleteEmpty(table)
       scheduleLobby(table)
     }).catch(error => { console.error('[TableGame] Lobby timer failed:', error.message); scheduleLobby(table) }), Math.max(0, Math.min(...deadlines) - Date.now()))
+  }
+  const touchSeat = (table, userId) => {
+    const seat = table.seats.find(seat => seat?.userId === userId.toString())
+    if (seat) seat.idleDeadlineAt = Date.now() + idleSeatMs
   }
   const setReady = (userId, tableId, requestKey, value) => {
     validateKey(requestKey)
@@ -230,7 +242,7 @@ const createTableGameService = (definition) => {
         const user = await User.findById(userId).select('polites').lean()
         if ((user?.polites || 0) < table.stake) throw new TableGameError('Not enough coins for this stake', 409, 'INSUFFICIENT_COINS')
       }
-      table.seats.find(seat => seat?.userId === table.hostId).ready = true
+      touchSeat(table, userId)
       table.startError = null
       table.startsAt = Date.now() + readyCountdownMs
       broadcast(table)
@@ -248,6 +260,7 @@ const createTableGameService = (definition) => {
       if (table.hostId !== userId.toString()) throw new TableGameError('Only the host can change the stake', 403, 'NOT_HOST')
       if (!stakeOptions.includes(tableStake)) throw new TableGameError('Invalid stake', 400, 'INVALID_STAKE')
       if (table.match || table.fundingMatch || table.startsAt) throw new TableGameError('Table is busy', 409, 'TABLE_BUSY')
+      touchSeat(table, userId)
       if (table.stake !== tableStake) {
         table.stake = tableStake
         // A new stake drops the result window too: everyone re-confirms under normal idle rules.
@@ -337,7 +350,7 @@ const createTableGameService = (definition) => {
     table.status = 'finished'
     table.lastPot = game.stake * game.humanCount
     table.readyDeadlineAt = Date.now() + readyTimeoutMs
-    table.seats.forEach(seat => { if (seat) seat.readyDeadlineAt = table.readyDeadlineAt })
+    table.seats.forEach(seat => { if (seat) seat.readyDeadlineAt = seat.userId === table.hostId ? null : table.readyDeadlineAt })
     table.match = null
     clearTimeout(table.timer)
     table.timer = null
@@ -410,7 +423,7 @@ const createTableGameService = (definition) => {
       if (seat < 0) throw new TableGameError('Table is full', 409, 'TABLE_FULL')
       cancelCountdown(table)
       table.autoLeft = []
-      table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs, readyDeadlineAt: table.readyDeadlineAt ? Math.max(table.readyDeadlineAt, Date.now() + readyTimeoutMs) : null }
+      table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs, readyDeadlineAt: table.hostId && table.hostId !== userId && table.readyDeadlineAt ? Math.max(table.readyDeadlineAt, Date.now() + readyTimeoutMs) : null }
       table.hostId ||= userId
       scheduleLobby(table)
       broadcast(table)
