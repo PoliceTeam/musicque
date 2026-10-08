@@ -198,3 +198,13 @@ it('does not rerender the result scene on lobby/overlay timer ticks', async () =
   view.unmount()
   vi.useRealTimers()
 })
+
+it('dispatches a camera reset from the default-view button', async () => {
+  const reset = vi.fn()
+  window.addEventListener('card-table:reset-view', reset)
+  try {
+    render(<ThirteenOverlay {...props} open />)
+    await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
+    expect(reset).toHaveBeenCalledOnce()
+  } finally { window.removeEventListener('card-table:reset-view', reset) }
+})

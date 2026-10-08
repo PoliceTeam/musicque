@@ -4,15 +4,15 @@ import { message, Tooltip } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
 import ThirteenHud from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
+import { resetCardTableView } from '../CardTable3D/dragLook'
 import { inviteUrl, roomRemaining, roomStatus } from '../../utils/tableGame'
 export default function ThirteenOverlay({ open, onClose, table, userId, result, dealOnMount = false, ...state }) {
   const [rulesOpen, setRulesOpen] = useState(false)
-  const [viewResetKey, setViewResetKey] = useState(0)
   const [handLowered, setHandLowered] = useState(false)
   const [showResult, setShowResult] = useState(false)
   const [now, setNow] = useState(Date.now())
   const dialog = useRef()
-  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson viewResetKey={viewResetKey} handLowered={handLowered} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, viewResetKey, handLowered])
+  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered])
   useEffect(() => { setHandLowered(false) }, [table?.matchId])
   useEffect(() => {
     if (!open) return undefined
@@ -65,7 +65,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
         <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
         <Tooltip title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
       </div>
-      {playing && <ThirteenHud {...state} resetView={() => setViewResetKey(key => key + 1)} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
+      {playing && <ThirteenHud {...state} resetView={resetCardTableView} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
       {!playing && <div className='th-game-end'>
         {finished && showResult && result && <ol className='thirteen-results' aria-label='Kết quả ván'>{result.ranking.map((seat, i) => {
           const delta = (result.payouts.find(p => p.userId === seat.userId)?.amount || 0) - (result.stake || 0)
