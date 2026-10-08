@@ -2,7 +2,7 @@ import React, { Profiler, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { message, Tooltip } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
-import ThirteenHud from './ThirteenHud'
+import ThirteenHud, { TableCoins } from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
 import StakePicker from './StakePicker'
 import { tableMoneyText } from '../CardTable3D/tableBoard'
@@ -68,6 +68,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
       <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
       <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {tableMoneyText(table).replace(/^./, letter => letter.toLowerCase())}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
       <div className='th-game-corner-controls'>
+        <TableCoins corner />
         <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
         <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
         <Tooltip title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>

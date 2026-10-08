@@ -8,6 +8,7 @@ import { useAnimationActivity } from './activity'
 import { clearTableAssets, releaseTextureImage, useTableGLTF, warmTableScene } from './assets'
 import SeatMarker from './SeatMarker'
 import OfficeRoom from './OfficeRoom.jsx'
+import TurnCue from './TurnCue'
 import DragLookCamera from './DragLookCamera'
 import { chairPlacement } from './chair'
 function TurnRing({ position, reducedMotion }) {
@@ -25,7 +26,7 @@ function TurnRing({ position, reducedMotion }) {
   })
   return position && <mesh ref={ref} position={initialPosition.current} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.09, 0.097, 64]} /><meshBasicMaterial color='#72edb5' transparent depthWrite={false} /></mesh>
 }
-function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serverNow, firstPerson, children }) {
+function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serverNow, turnMs, firstPerson, children }) {
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
   const dpr = useThree(state => state.viewport.dpr)
@@ -57,12 +58,13 @@ function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serve
   return <>
     {firstPerson && <DragLookCamera reducedMotion={reducedMotion} />}
     <color attach='background' args={['#94a3a6']} />
-    {firstPerson && <OfficeRoom table={table} />}
+    {firstPerson && <OfficeRoom table={table} turnMs={turnMs} />}
     <hemisphereLight intensity={1.8} color='#fff8ef' groundColor='#80766a' />
     <directionalLight position={[2, 4, 3]} color='#fff2dc' intensity={1.7} />
     <primitive object={tableModel} dispose={null} />
-    {!firstPerson && seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={[seatPositions[i][0] * 1.2, surfaceY + 0.1, seatPositions[i][2] * 1.2]} active={currentSeat === i} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} />)}
-    <TurnRing position={seatPositions[currentSeat]} own={mySeat === currentSeat} deadline={turnDeadlineAt} serverNow={serverNow} reducedMotion={reducedMotion} />
+    {!firstPerson && seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={[seatPositions[i][0] * 1.2, surfaceY + 0.1, seatPositions[i][2] * 1.2]} active={currentSeat === i} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} />)}
+    {!firstPerson && <TurnRing position={table?.status === 'playing' ? seatPositions[currentSeat] : null} reducedMotion={reducedMotion} />}
+    <TurnCue table={table} position={characterPositions[currentSeat]} own={mySeat === currentSeat} surfaceY={surfaceY} turnMs={turnMs} firstPerson={firstPerson} />
     {children({ surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson })}
   </>
 }

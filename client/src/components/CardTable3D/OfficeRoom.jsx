@@ -15,7 +15,7 @@ function shadowTexture() {
   return new THREE.CanvasTexture(canvas)
 }
 let logoSource
-export default function OfficeRoom({ table }) {
+export default function OfficeRoom({ table, turnMs }) {
   const { isDark } = useTheme()
   const { scene, invalidate } = useThree()
   const room = useMemo(buildOfficeRoom, [])
@@ -70,7 +70,7 @@ export default function OfficeRoom({ table }) {
   return <>
     <mesh geometry={room.geometry} material={roomMaterial} matrixAutoUpdate={false} dispose={null} />
     <mesh position={[0, 2.1, -2.855]} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}><planeGeometry args={[1.6, 0.4]} /><meshBasicMaterial map={logo.texture} transparent depthWrite={false} /></mesh>
-    {table && <WallInfoBoard table={table} />}
+    {table && <WallInfoBoard table={table} turnMs={turnMs} />}
     <instancedMesh ref={chairs} args={[resources.chair, resources.wood, 4]} matrixAutoUpdate={false} />
     <instancedMesh ref={shadows} args={[resources.quad, resources.shadow, 5]} matrixAutoUpdate={false} />
   </>

@@ -1,0 +1,4 @@
+.card-table-surface .card-table-seat.is-turn { background: linear-gradient(#123329, #123329) padding-box, conic-gradient(var(--turn-color, #4caf50) var(--turn-progress, 100%), #385348 0) border-box; box-shadow: 0 0 22px color-mix(in srgb, var(--turn-color, #4caf50) 50%, transparent); }
+.card-table-seat .card-table-turn-label { color: var(--turn-color, #4caf50); font-weight: 800; }
+.card-table-seat.is-turn b { color: var(--turn-color, #4caf50); }
+.card-table-turn-edge { position: absolute; z-index: 24; box-sizing: border-box; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; transform: translate(-50%, -50%); padding: 7px 12px; border: 1px solid var(--turn-color, #4caf50); border-radius: 999px; background: #12231fee; color: #fff; box-shadow: 0 0 18px color-mix(in srgb, var(--turn-color, #4caf50) 25%, transparent); font-size: 12px; font-weight: 700; pointer-events: none; white-space: nowrap; }
