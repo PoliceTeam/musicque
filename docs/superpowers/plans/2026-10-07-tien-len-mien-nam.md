@@ -23,7 +23,7 @@
 > | 9.1 drag-to-look, **yaw only ±30°** (pitch locked) | ✅ done |
 > | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done, needs a visual check from all 3 seats |
 > | 9.3 broadcast only to the watch room / private tables only to seated users | ✅ done |
-> | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | ⏳ not started |
+> | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | 🟡 robustness complete (Codex B); perf/trace/leak checks and KTX2 conversion remain pending |
 >
 > **Open items for next session**, in priority order:
 > 1. **Visual QA in the browser:**
@@ -32,19 +32,20 @@
 >    - wall board readability;
 >    - the side chairs and characters (in the 2026-10-08 screenshot the chairs look like they sit in front of the side characters, so check the orientation);
 >    - the Musicque wordmark on the wall: the last letter renders like a mirrored "Ǝ", so check the SVG rasterisation.
-> 2. **Remaining review findings for Codex B's code**, 2026-10-08. Not yet fixed:
->    - leave idempotency check is outside the queue (`engine.js` `leave`);
->    - late joiners get kicked by the ready window. Give each late joiner its own deadline;
->    - `resume` loads the whole match history. Query only `fundingPending` / `playing` / `settling`, plus the latest settled match per table;
->    - a stale `load()` re-adds a deleted table on the client (`TableGameContext`);
->    - deep link: no toast for an invalid code, `?room=` is not cleared after leaving, and transient failures are not retried;
->    - wrong toast text when joining a playing table;
->    - "Rời bàn" is enabled during a pending refund retry;
->    - README:98 still says "Chủ bàn bắt đầu ván", and README:95 is a duplicate paragraph;
->    - `hostId` is still in the test fixtures.
+> 2. **Remaining review findings for Codex B's code**, 2026-10-08. ✅ completed on `feat/thirteen-rooms`, with regression tests:
+>    - ✅ Leave idempotency checked and recorded inside the queue, including concurrent retries and deleted rooms (`8f2e9ea`).
+>    - ✅ Late joiners receive `max(readyDeadlineAt, now + readyTimeoutMs)` per seat; original seats retain their deadlines, and the HUD uses the caller's deadline (`7f5155e`).
+>    - ✅ Resume queries only pending funding / playing / settling and the latest settled match per restored table, sorted by `createdAt`; added a matching history index (`0a5e131`).
+>    - ✅ Deletion tombstones reject stale list and detail snapshots without preventing newer room state (`a923f91`).
+>    - ✅ Invite codes are validated with a toast, `?room=` is cleared after the attempt while preserving other parameters, and transient failures retry once using the same request key (`872ebfd`).
+>    - ✅ Joining an active room explains that the caller must wait to enter; joining finished rooms succeeds (`09d874d`).
+>    - ✅ `fundingPending` is public; every leave control stays disabled until refund recovery completes (`53edba9`).
+>    - ✅ README room instructions consolidated and host-start copy removed (`14b12bc`).
+>    - ✅ Obsolete host fixtures removed; serialization asserts the host field stays absent (`a387514`).
 > 3. **Task 13:** final performance and robustness pass.
 >    - Rerun `client/scripts/perf-thirteen.mjs` in all phases, take a DevTools trace of a full match, do a leak check over 5 overlay open/close cycles, and check socket payload sizes.
->    - Add `process.on('unhandledRejection')` logging and find the floating promise. On 2026-10-07 23:2x a Mongo monitor timeout crashed the API with `PoolClearedOnNetworkError`; it was logged right after a "[Nối từ] Game loop lỗi" line.
+>    - ✅ Added non-exiting `unhandledRejection` logging. Found and caught floating Mongo promises in all three Cho-Han timer phases; failure injection confirms Word Chain already handles its timer rejection locally (`9aad4f3`). This is a plausible source of the reported `PoolClearedOnNetworkError`; the original crash was not replayed. Reviewed the remaining timer/queue Mongo calls for rejection handling.
+>    - Codex B verification: API **87/87**, client **222/222** (47 files), scoped client lint and API syntax checks pass, production build OK. No servers started on :5005/:8080.
 >    - Convert the GLBs to KTX2 once `toktx` is approved.
 > 4. Clean up the worktree `../musicque-rooms` when it is no longer needed (`git worktree remove`).
 >
