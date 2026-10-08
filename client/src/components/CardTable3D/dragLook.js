@@ -13,3 +13,18 @@ export function dampSpring(value, velocity, target, delta, settleTime = 0.18) {
   const omega = 4.75 / settleTime, offset = value - target, step = velocity + omega * offset, decay = Math.exp(-omega * delta)
   return { value: target + (offset + step * delta) * decay, velocity: (velocity - omega * step * delta) * decay }
 }
+
+export const degreesPerPixel = (verticalFov, aspect, cssWidth) => cssWidth > 0 ? 2 * Math.atan(Math.tan(verticalFov * Math.PI / 360) * aspect) * 180 / Math.PI / cssWidth : 0
+export function rubberBandYaw(yaw) {
+  const band = Math.PI / 60, edge = LOOK_LIMITS.yaw - band, distance = Math.abs(yaw)
+  return distance <= edge ? yaw : Math.sign(yaw) * (edge + band * (1 - Math.exp(-(distance - edge) / band)))
+}
+export function decayInertia(velocity, delta, decayRate = 12) {
+  const next = velocity * Math.exp(-decayRate * delta)
+  return { velocity: next, distance: (velocity - next) / decayRate }
+}
+export function releaseVelocity(samples, now, windowMs = 80) {
+  const recent = samples.filter(sample => sample.time >= now - windowMs && sample.time <= now)
+  const first = recent[0], last = recent.at(-1)
+  return recent.length < 2 || last.time <= first.time ? 0 : Math.max(-3, Math.min(3, (last.yaw - first.yaw) * 1000 / (last.time - first.time)))
+}

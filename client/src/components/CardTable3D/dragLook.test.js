@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { clampDolly, clampLook, dampSpring, DEFAULT_PITCH, isLookDrag, LOOK_LIMITS, MAX_DOLLY, normalizeWheel } from './dragLook'
+import { clampDolly, clampLook, dampSpring, decayInertia, DEFAULT_PITCH, degreesPerPixel, isLookDrag, LOOK_LIMITS, MAX_DOLLY, normalizeWheel, releaseVelocity, rubberBandYaw } from './dragLook'
 it('clamps horizontal yaw to 30 degrees and locks pitch regardless of vertical input', () => {
   expect(clampLook(10, -10)).toEqual({ yaw: LOOK_LIMITS.yaw, pitch: DEFAULT_PITCH })
   expect(clampLook(-10, 10)).toEqual({ yaw: -LOOK_LIMITS.yaw, pitch: DEFAULT_PITCH })
@@ -31,4 +31,36 @@ it('damps zoom without overshooting and is independent of frame rate', () => {
   expect(full.value).toBeGreaterThan(0)
   expect(full.value).toBeLessThan(MAX_DOLLY)
   expect(dampSpring(0, 0, MAX_DOLLY, 1).value).toBeCloseTo(MAX_DOLLY, 8)
+})
+it('maps one canvas width to its horizontal FOV in CSS pixels', () => {
+  expect(degreesPerPixel(90, 1, 900)).toBeCloseTo(0.1)
+  expect(degreesPerPixel(90, 2, 1000) * 1000).toBeCloseTo(126.86989765)
+  expect(degreesPerPixel(75, 1.6, 1440)).toBeCloseTo(degreesPerPixel(75, 1.6, 720) / 2)
+  expect(degreesPerPixel(75, 1.6, 0)).toBe(0)
+})
+it('rubber-bands symmetrically inside the hard yaw limits', () => {
+  expect(rubberBandYaw(0.2)).toBe(0.2)
+  const near = LOOK_LIMITS.yaw - 0.02
+  expect(rubberBandYaw(near)).toBeLessThan(near)
+  expect(rubberBandYaw(10)).toBeLessThanOrEqual(LOOK_LIMITS.yaw)
+  expect(rubberBandYaw(-near)).toBe(-rubberBandYaw(near))
+})
+it('integrates exponential inertia consistently across frame rates', () => {
+  const full = decayInertia(2, 0.1), half = decayInertia(2, 0.05), twice = decayInertia(half.velocity, 0.05)
+  expect(full.velocity).toBeCloseTo(twice.velocity, 12)
+  expect(full.distance).toBeCloseTo(half.distance + twice.distance, 12)
+  expect(decayInertia(-2, 0.1).distance).toBe(-full.distance)
+  expect(decayInertia(2, 1).velocity).toBeLessThan(0.001)
+})
+it('uses the last 80ms for release velocity and ignores a paused release', () => {
+  const samples = [{time:0,yaw:-1},{time:100,yaw:0},{time:140,yaw:0.04},{time:180,yaw:0.08}]
+  expect(releaseVelocity(samples,180)).toBeCloseTo(1)
+  expect(releaseVelocity(samples,300)).toBe(0)
+  expect(releaseVelocity([{time:0,yaw:0},{time:10,yaw:1}],10)).toBe(3)
+  expect(releaseVelocity([{time:10,yaw:0},{time:10,yaw:1}],10)).toBe(0)
+})
+it('settles the drag follow in 60ms without oscillation', () => {
+  const result = dampSpring(0, 0, 0.3, 0.06, 0.06)
+  expect(result.value).toBeGreaterThan(0.28)
+  expect(result.value).toBeLessThan(0.3)
 })
