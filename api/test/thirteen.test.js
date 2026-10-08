@@ -73,8 +73,9 @@ test('public configuration defaults and serialization never leak hands', () => {
   assert.deepEqual(service.publicConfig(), { maxTables: 20, readyCountdownMs: 3000, readyTimeoutMs: 30000, idleSeatMs: 300000, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
   const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
   const match = { _id: 'g', state, seats: [{ userId: 'a' }, {}, {}, {}] }
-  const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, match)
+  const payload = service.serializeTable({ tableId: 1 }, match)
   assert.ok(!JSON.stringify(payload).includes('"hand":'))
+  assert.equal(Object.hasOwn(payload, 'hostId'), false)
   assert.deepEqual(service.viewFor(match, 'a'), { hand: ['3S'] })
   assert.equal(service.viewFor(match, 'b'), null)
   assert.equal(service.viewFor(match), null)
