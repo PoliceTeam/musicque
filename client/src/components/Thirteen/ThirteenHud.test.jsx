@@ -2,6 +2,7 @@ import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import ThirteenHud from './ThirteenHud'
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ balance: 140 }) }))
 const table = { status: 'playing', currentSeat: 0, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 3 }], trick: null, mustInclude: '3S', pot: 20 }
 const props = { table, userId: 'a', myHand: ['3S', '4S', '5S'], selectedCards: [], action: vi.fn(), toggleCard: vi.fn(), closeResult: vi.fn(), busy: false }
 describe('ThirteenHud', () => {
@@ -58,7 +59,7 @@ it('announces the top cards, bomb and a brief pass, then hides on an empty trick
   vi.useFakeTimers()
   const top = { ...table, mustInclude: null, trick: { bySeat: 0, cards: ['3S', '3C', '3D', '3H'], isBomb: true }, lastMove: { seat: 0, cards: ['3S', '3C', '3D', '3H'], sequence: 1 } }
   const { rerender, container } = render(<ThirteenHud {...props} table={top} />)
-  const chip = container.querySelector('[aria-live="polite"]')
+  const chip = container.querySelector('.thirteen-last-play')
   expect(chip).toHaveTextContent('An đánh:')
   expect(chip).toHaveTextContent('3♠')
   expect(chip).toHaveTextContent('Chặt!')
@@ -69,6 +70,28 @@ it('announces the top cards, bomb and a brief pass, then hides on an empty trick
   expect(chip).not.toHaveTextContent('Bình bỏ lượt')
   expect(chip).toHaveTextContent('An đánh:')
   rerender(<ThirteenHud {...props} table={{ ...table, trick: null }} />)
-  expect(container.querySelector('[aria-live="polite"]')).toBeNull()
+  expect(container.querySelector('.thirteen-last-play')).toBeNull()
+  vi.useRealTimers()
+})
+
+
+it('shows my turn, remaining coins and a border that depletes through the shared colour scale', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(100000)
+  const timed = { ...table, serverNow: 100000, turnDeadlineAt: 120000 }
+  const { container, rerender } = render(<ThirteenHud {...props} table={timed} />)
+  expect(screen.getByRole('status')).toHaveTextContent('Đến lượt bạn')
+  expect(screen.getByLabelText('Số dư của bạn: 140 PC')).toBeInTheDocument()
+  expect(container.querySelector('.thirteen-hud')).toHaveClass('is-my-turn')
+  expect(container.querySelector('rect')).toHaveAttribute('stroke-dashoffset', '0')
+  act(() => vi.advanceTimersByTime(14000))
+  expect(container.querySelector('.thirteen-hud').style.getPropertyValue('--turn-color')).toBe('#f5c13d')
+  expect(container.querySelector('rect')).toHaveAttribute('stroke-dashoffset', '70')
+  expect(screen.queryByRole('status')).toBeNull()
+  act(() => vi.advanceTimersByTime(4000))
+  expect(container.querySelector('.thirteen-hud')).toHaveClass('is-urgent')
+  rerender(<ThirteenHud {...props} table={{ ...timed, currentSeat: 1, seats: [...timed.seats, { username: 'Bình' }] }} />)
+  expect(screen.getByText('Lượt: Bình')).toBeInTheDocument()
+  expect(container.querySelector('rect')).toBeNull()
   vi.useRealTimers()
 })

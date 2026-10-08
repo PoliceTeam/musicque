@@ -7,6 +7,8 @@ import { useDeck } from '../CardTable3D/useDeck'
 import Card3D from '../CardTable3D/Card3D'
 import TableScene from '../CardTable3D/TableScene'
 import { EmptySeatMarker } from '../CardTable3D/SeatMarker'
+import { OwnChatBubble } from '../CardTable3D/ChatBubble'
+import { syncTableGameTimer } from '../../utils/tableGame'
 import OpponentAvatar from '../CardTable3D/OpponentAvatar'
 import { useCardTransitions } from '../CardTable3D/useCardTransitions'
 import { MOTION } from '../CardTable3D/anim'
@@ -71,11 +73,12 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
     <instancedMesh ref={burst} args={[null, null, 8]} visible={false}><planeGeometry args={[0.04, 0.06]} /><meshBasicMaterial color='#fff5d2' side={THREE.DoubleSide} /></instancedMesh>
   </>
 }
-function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson, dealOnMount, preview, handLowered, turnMs }) {
+function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson, dealOnMount, preview, handLowered, turnMs, lastChatBySeat }) {
   const deck = useDeck()
   const { scene, camera, gl } = useThree()
   useLayoutEffect(() => { warmTableScene(scene, camera, gl) }, [scene, camera, gl, deck, table.matchId])
   const spaces = useRef({})
+  const offset = useMemo(() => syncTableGameTimer(table, table.receivedAt ?? Date.now()).offset, [table])
   const poseStore = useMemo(() => ({ current: new Map(), matchId: table.matchId }), [table.matchId])
   const next = useMemo(() => buildThirteenSnapshot({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }), [table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview])
   const frame = useCardTransitions(next, { dealOnMount, matchId: table.matchId, isBomb: isBombTrick, reducedMotion })
@@ -83,14 +86,16 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
   const renderCard = (card) => <Card3D key={`${frame.matchId}:${card.id}`} deck={deck} cardId={card.cardId} target={card} from={card.from} delay={card.delay} duration={card.duration} height={card.height} reducedMotion={reducedMotion} dim={card.dim} spaces={spaces} poseStore={poseStore} poseId={card.id} selected={card.zone === 'hand' && card.seat === anchor && selectedCards.includes(card.cardId)} onClick={!preview && !frame.deal && table.status === 'playing' && card.zone === 'hand' && card.seat === anchor && card.faceUp ? () => toggleCard(card.cardId) : undefined} />
   return <>
     {firstPerson && <CameraHand spaces={spaces} lowered={handLowered} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === 'camera').map(renderCard)}</CameraHand>}
-    {firstPerson && table.seats.map((seat, i) => seat && i !== anchor && <OpponentAvatar key={`${table.matchId}:${i}`} seat={seat} seatIndex={i} phase={table.status} position={characterPositions[i]} clipHeight={surfaceY - 0.01} active={table.currentSeat === i} playedKey={frame.trick?.bySeat === i ? frame.trickKey : null} turnDeadlineAt={table.turnDeadlineAt} serverNow={table.serverNow} turnMs={turnMs} spaces={spaces} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === `seat:${i}`).map(renderCard)}</OpponentAvatar>)}
+    {firstPerson && table.seats.map((seat, i) => seat && i !== anchor && <OpponentAvatar key={`${table.matchId}:${i}`} seat={seat} seatIndex={i} phase={table.status} position={characterPositions[i]} clipHeight={surfaceY - 0.01} active={table.status === 'playing' && table.currentSeat === i} playedKey={frame.trick?.bySeat === i ? frame.trickKey : null} turnDeadlineAt={table.turnDeadlineAt} serverNow={table.serverNow} turnMs={turnMs} message={lastChatBySeat?.[i]} serverOffset={offset} spaces={spaces} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === `seat:${i}`).map(renderCard)}</OpponentAvatar>)}
     {firstPerson && table.seats.map((seat, i) => !seat && <EmptySeatMarker key={`empty:${i}`} position={[characterPositions[i][0], surfaceY + 0.2, characterPositions[i][2]]} />)}
     {frame.cards.filter(card => !firstPerson || card.space === 'world' || !card.space).map(renderCard)}
     <SceneEffects frame={frame} reducedMotion={reducedMotion} deck={deck} surfaceY={surfaceY} />
   </>
 }
 export default React.memo(function ThirteenTable3D(props) {
-  return <TableScene table={props.table} seats={props.table.seats} currentSeat={props.table.currentSeat} userId={props.userId} turnDeadlineAt={props.table.turnDeadlineAt} serverNow={props.table.serverNow} firstPerson={props.firstPerson} fallback={<ThirteenFallback2D {...props} />}>
+  const ownSeat = props.table.seats.findIndex(seat => seat?.userId === props.userId)
+  const offset = useMemo(() => syncTableGameTimer(props.table, props.table.receivedAt ?? Date.now()).offset, [props.table])
+  return <><TableScene table={props.table} seats={props.table.seats} currentSeat={props.table.currentSeat} userId={props.userId} turnDeadlineAt={props.table.turnDeadlineAt} serverNow={props.table.serverNow} firstPerson={props.firstPerson} turnMs={props.turnMs} fallback={<ThirteenFallback2D {...props} />}>
     {(surface) => <ThirteenCards {...props} {...surface} />}
-  </TableScene>
+  </TableScene>{props.firstPerson && <OwnChatBubble message={props.lastChatBySeat?.[ownSeat]} phase={props.table.status} offset={offset} />}</>
 })

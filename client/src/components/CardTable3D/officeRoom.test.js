@@ -16,7 +16,23 @@ describe('stylized office room', () => {
     expect(geometry.boundingBox.min.y).toBeGreaterThanOrEqual(-0.030001)
     expect(geometry.boundingBox.max.y).toBeLessThanOrEqual(2.800001)
     const playingFootprint = new Box3(new Vector3(-1.2, 0.05, -1.2), new Vector3(1.2, 1.6, 1.2))
-    for (const { name, box } of bounds) expect(box.intersectsBox(playingFootprint), name).toBe(false)
+    for (const { name, box } of bounds) {
+      if (name.startsWith('pendant')) expect(box.min.y, name).toBeGreaterThan(1.45)
+      else expect(box.intersectsBox(playingFootprint), name).toBe(false)
+    }
+    geometry.dispose()
+  })
+  it('adds a central pendant and limits emission to lamp surfaces', () => {
+    const { geometry, paletteKeys, bounds } = buildOfficeRoom()
+    expect(bounds.filter(part => part.name.startsWith('pendant'))).toHaveLength(3)
+    const bulb = bounds.find(part => part.name === 'pendantBulb').box
+    expect(bulb.getCenter(new Vector3()).x).toBe(0)
+    expect(bulb.getCenter(new Vector3()).z).toBe(0)
+    const emission = geometry.attributes.lampEmission
+    for (let i = 0; i < emission.count; i++) {
+      const key = paletteKeys[geometry.attributes.paletteKey.getX(i)]
+      expect(emission.getX(i)).toBeCloseTo(key === 'lampGlow' ? 1 : key === 'lampShade' ? .08 : 0)
+    }
     geometry.dispose()
   })
   it('recolours every palette index without rebuilding geometry', () => {

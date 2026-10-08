@@ -240,7 +240,7 @@ it('dispatches a camera reset from the default-view button', async () => {
   window.addEventListener('card-table:reset-view', reset)
   try {
     render(<ThirteenOverlay {...props} open />)
-    await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Về góc nhìn mặc định' }))
     expect(reset).toHaveBeenCalledOnce()
   } finally { window.removeEventListener('card-table:reset-view', reset) }
 })
@@ -502,4 +502,14 @@ it('shows host start instructions after a match and on host transfer, without a 
   expect(screen.queryByRole('button', { name: /Sẵn sàng/ })).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu' }))
   expect(props.action).toHaveBeenCalledWith('start', 1)
+})
+
+it('keeps the default-view icon available in waiting rooms and shows its tooltip on focus', async () => {
+  render(<ThirteenOverlay {...props} open table={{ ...table, status: 'waiting' }} />)
+  const button = screen.getByRole('button', { name: 'Về góc nhìn mặc định' })
+  expect(button.closest('.th-game-corner-controls')).not.toBeNull()
+  fireEvent.focus(button)
+  const tooltip = await screen.findByRole('tooltip')
+  expect(tooltip).toHaveTextContent('Về góc nhìn mặc định')
+  expect(getComputedStyle(tooltip.closest('.ant-tooltip')).zIndex).toBe('1301')
 })

@@ -1,8 +1,8 @@
 import React, { Profiler, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { message, Tooltip } from 'antd'
+import { message, Tooltip, ConfigProvider } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
-import ThirteenHud from './ThirteenHud'
+import ThirteenHud, { TableCoins } from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
 import StakePicker from './StakePicker'
 import TableChat from './TableChat'
@@ -15,7 +15,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const [showResult, setShowResult] = useState(false)
   const [now, setNow] = useState(Date.now())
   const dialog = useRef()
-  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered])
+  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} lastChatBySeat={state.lastChatBySeat} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered, state.lastChatBySeat])
   useEffect(() => { setHandLowered(false) }, [table?.matchId])
   useEffect(() => {
     if (!open) return undefined
@@ -61,7 +61,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
     try { await navigator.clipboard.writeText(inviteUrl(table.code || table.tableId)); message.open({ key: 'table-game', type: 'success', content: 'Đã sao chép link mời' }) }
     catch { message.open({ key: 'table-game', type: 'error', content: 'Không sao chép được link mời. Hãy thử lại.' }) }
   }
-  return createPortal(<div className='th-overlay'>
+  return createPortal(<ConfigProvider theme={{ components: { Tooltip: { zIndexPopup: 1301 } } }}><div className='th-overlay'>
     <section className='th-game' role='dialog' aria-modal='true' aria-labelledby='th-game-title' tabIndex={-1} ref={dialog}>
       <Profiler id='thirteen-table' onRender={(...sample) => { if (import.meta.env.DEV) window.__thirteenProfile?.(...sample) }}>
         {scene}
@@ -69,11 +69,13 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
       <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
       <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {tableMoneyText(table).replace(/^./, letter => letter.toLowerCase())}{!isHost && table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
       <div className='th-game-corner-controls'>
-        <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
-        <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
-        <Tooltip title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
+        <TableCoins corner />
+        <Tooltip trigger={['hover', 'focus']} title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title='Về góc nhìn mặc định'><button type='button' className='sp-btn th-icon' onClick={resetCardTableView} aria-label='Về góc nhìn mặc định'>⌖</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span tabIndex={playing || table.fundingPending || state.busy ? 0 : undefined}><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
       </div>
-      {playing && <ThirteenHud {...state} resetView={resetCardTableView} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
+      {playing && <ThirteenHud {...state} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
       {!playing && <div className='th-game-end'>
         {finished && showResult && result && <ol className='thirteen-results' aria-label='Kết quả ván'>{result.ranking.map((seat, i) => {
           const delta = (result.payouts.find(p => p.userId === seat.userId)?.amount || 0) - (result.stake || 0)
@@ -91,5 +93,5 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
       <TableChat />
       <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </section>
-  </div>, document.body)
+  </div></ConfigProvider>, document.body)
 }

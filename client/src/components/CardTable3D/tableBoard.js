@@ -25,6 +25,6 @@ export function tableBoardText(table, now = Date.now()) {
     `Bàn ${table.code || '—'}${table.visibility === 'private' ? ' 🔒' : ''}`,
     start ? `Bắt đầu sau ${start}` : table.status === 'playing' || table.status === 'settling' ? 'Đang chơi' : table.status === 'finished' ? 'Kết thúc' : `Đang chờ ${humans}/${table.seats.length}`,
     tableMoneyText(table),
-    ready ? `Ván mới sau ${ready}s` : '',
+    table.status === 'playing' && table.seats[table.currentSeat] ? `Lượt: ${table.seats[table.currentSeat].username}` : ready ? `Ván mới sau ${ready}s` : '',
   ]
 }
