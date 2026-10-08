@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { Profiler, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { message, Tooltip } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
@@ -54,7 +54,9 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   }
   return createPortal(<div className='th-overlay'>
     <section className='th-game' role='dialog' aria-modal='true' aria-labelledby='th-game-title' tabIndex={-1} ref={dialog}>
-      <ThirteenTable3D {...state} table={table} userId={userId} dealOnMount={dealOnMount} firstPerson viewResetKey={viewResetKey} handLowered={handLowered} />
+      <Profiler id='thirteen-table' onRender={(...sample) => { if (import.meta.env.DEV) window.__thirteenProfile?.(...sample) }}>
+        <ThirteenTable3D {...state} table={table} userId={userId} dealOnMount={dealOnMount} firstPerson viewResetKey={viewResetKey} handLowered={handLowered} />
+      </Profiler>
       <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
       <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {table.pot ? `quỹ ${table.pot} PC` : 'ván tập'}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
       <div className='th-game-corner-controls'>
