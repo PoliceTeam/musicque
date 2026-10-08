@@ -26,14 +26,15 @@ function ThirteenContent() {
   const [lastMatch, setLastMatch] = useState(null)
   const [now, setNow] = useState(Date.now())
   const seenMatch = useRef(null), previousTable = useRef(null), joinedLink = useRef(null)
-  const closeOverlay = useCallback(() => setOverlayOpen(false), [])
+  // Ván chỉ chia bài một lần: mọi đường đóng overlay đều xoá cờ, nên mở lại bằng thẻ bàn, link mời hay "Quay lại bàn" đều không chia lại.
+  const closeOverlay = useCallback(() => { setOverlayOpen(false); setDealOnMount(false) }, [])
   const seated = Boolean(user?._id) && currentTable?.seats.some(s => s?.userId === user._id)
   const playing = seated && ['playing', 'settling'].includes(currentTable?.status)
   const userId = user?._id
   const clearResult = state.closeResult
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer) }, [])
   useEffect(() => {
-    if (!seated) { previousTable.current = null; seenMatch.current = null; setLastMatch(null); setOverlayOpen(false); return }
+    if (!seated) { previousTable.current = null; seenMatch.current = null; setLastMatch(null); closeOverlay(); return }
     if (previousTable.current?.tableId !== currentTable.tableId) setOverlayOpen(true)
     if (playing) {
       setLastMatch(currentTable)
@@ -45,7 +46,7 @@ function ThirteenContent() {
       }
     }
     previousTable.current = currentTable
-  }, [currentTable, seated, playing, clearResult])
+  }, [currentTable, seated, playing, clearResult, closeOverlay])
   useEffect(() => {
     if (room === undefined) { joinedLink.current = null; return }
     if (joinedLink.current === `${room}:${userId || 'guest'}`) return
@@ -75,7 +76,7 @@ function ThirteenContent() {
   return <div className='thirteen-page'>
     <header className='thirteen-header'><Link to='/games' className='sp-btn sp-btn--ghost'>← Chọn game</Link><div><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Luật chơi</Button><UserMenu /></header>
     <main>
-      {seated && <div className='sp-panel thirteen-resume'>Bạn đang ở bàn {currentTable.code || currentTable.tableId} · {roomStatus(currentTable, now)}<Button className='sp-btn sp-btn--primary' onClick={() => { setDealOnMount(false); setOverlayOpen(true) }}>Quay lại bàn</Button></div>}
+      {seated && <div className='sp-panel thirteen-resume'>Bạn đang ở bàn {currentTable.code || currentTable.tableId} · {roomStatus(currentTable, now)}<Button className='sp-btn sp-btn--primary' onClick={() => setOverlayOpen(true)}>Quay lại bàn</Button></div>}
       <div className='thirteen-hero'>
         <Button className='sp-btn sp-btn--primary' disabled={busy || seated} onClick={() => join('quickJoin')}>Chơi nhanh</Button>
         <Button className='sp-btn' disabled={busy || seated} onClick={() => setCreateOpen(true)}>Tạo bàn</Button>

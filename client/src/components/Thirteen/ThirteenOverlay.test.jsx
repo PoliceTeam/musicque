@@ -85,6 +85,40 @@ it('deals on a waiting-to-playing transition, but not when reopening the same ma
   expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' }).querySelector('[data-deal]')).toHaveAttribute('data-deal', 'false')
 })
 
+describe('deal animation plays at most once per match', () => {
+  const dealOf = () => screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' }).querySelector('[data-deal]')
+  const startMatch = () => {
+    mocks.state = { ...props, tables: [{ ...table, status: 'waiting' }], currentTable: { ...table, matchId: null, status: 'waiting' }, config: { stake: 10 }, closeResult: vi.fn() }
+    const view = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    mocks.state = { ...mocks.state, currentTable: table, tables: [table] }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    return view
+  }
+
+  it('does not deal again when a minimized match is reopened from its table card', async () => {
+    startMatch()
+    expect(await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    expect(dealOf()).toHaveAttribute('data-deal', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Vào bàn' }))
+    expect(dealOf()).toHaveAttribute('data-deal', 'false')
+  })
+
+  it('does not carry a stale deal into a table joined after leaving', async () => {
+    const view = startMatch()
+    expect(await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    expect(dealOf()).toHaveAttribute('data-deal', 'true')
+    mocks.state = { ...mocks.state, currentTable: null, tables: [] }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
+    const finished = { ...table, tableId: 2, status: 'finished', matchId: null }
+    mocks.state = { ...mocks.state, currentTable: finished, tables: [finished] }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    expect(await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    expect(dealOf()).toHaveAttribute('data-deal', 'false')
+  })
+})
+
 it('shows readiness, countdown and disabled leave during play', async () => {
   const waiting = { ...table, status: 'waiting', matchId: null, seats: [{ userId: 'a', username: 'An', ready: false }, null, null, null] }
   const view = render(<ThirteenOverlay {...props} open table={waiting} />)
