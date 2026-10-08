@@ -27,15 +27,15 @@ const api = async (path, body) => {
   return value
 }
 const instrument = `(() => {
-  const contexts = []; let draws = 0, compiles = 0, uploads = 0;
+  const contexts = []; let draws = 0, compiles = 0, uploads = 0, boneUploads = 0;
   const commits = []; window.__thirteenProfile = (id, phase, duration) => commits.push({ id, phase, duration });
   const get = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function(type, ...args) {
     const gl = get.call(this, type, ...args);
     if (gl && /webgl/i.test(type) && !contexts.some(ref => ref.deref() === gl)) {
       contexts.push(new WeakRef(gl));
-      for (const [name, count] of [['compileShader', () => compiles++], ['texImage2D', () => uploads++], ['texSubImage2D', () => uploads++], ['compressedTexImage2D', () => uploads++]]) {
-        const original = gl[name].bind(gl); gl[name] = (...values) => { count(); return original(...values) };
+      for (const [name, count] of [['compileShader', () => compiles++], ...['texImage2D', 'texSubImage2D', 'compressedTexImage2D'].map(name => [name, values => { uploads++; if (values.some(value => value instanceof Float32Array)) boneUploads++ }])]) {
+        const original = gl[name].bind(gl); gl[name] = (...values) => { count(values); return original(...values) };
       }
       for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced']) {
         if (!gl[name]) continue;
@@ -46,7 +46,7 @@ const instrument = `(() => {
   };
   window.__tablePerf = () => ({
     canvases: document.querySelectorAll('canvas').length,
-    contextsCreated: contexts.length, compiles, uploads, commits: commits.length, profilerMs: commits.reduce((sum, sample) => sum + sample.duration, 0),
+    contextsCreated: contexts.length, compiles, uploads, boneUploads, commits: commits.length, profilerMs: commits.reduce((sum, sample) => sum + sample.duration, 0),
     liveContexts: contexts.map(ref => ref.deref()).filter(gl => gl && !gl.isContextLost()).length,
     draws,
     activeAnimations: window.__thirteenActiveAnimations?.size || 0,
@@ -55,7 +55,7 @@ const instrument = `(() => {
 })();`
 const profile = await mkdtemp(join(tmpdir(), 'thirteen-perf-'))
 let chrome, socket, sequence = 0, tableId, seatedByProbe = false
-const pending = new Map(), errors = [], payloads = [], trace = []
+const pending = new Map(), errors = [], payloads = [], trace = [], heapChunks = []
 let traceComplete
 const traced = new Promise(resolve => { traceComplete = resolve })
 const call = (method, params = {}) => new Promise((resolve, reject) => {
@@ -81,9 +81,19 @@ const sample = async () => {
     listeners[target] = result.listeners.length
   }
   await call('Runtime.releaseObjectGroup', { objectGroup: 'perf-listeners' })
+  const socketListeners = await evaluate(`(() => {
+    const node = document.querySelector('.thirteen-page') || document.querySelector('#root > *');
+    let fiber = node?.[Object.keys(node).find(key => key.startsWith('__reactFiber'))];
+    for (; fiber; fiber = fiber.return) {
+      const io = fiber.memoizedProps?.value?.socket;
+      if (io) return Object.fromEntries(['connect', 'table_game_state', 'table_game_private', 'table_game_result'].map(event => [event, io.listeners(event).length]));
+    }
+    return Object.fromEntries(['connect', 'table_game_state', 'table_game_private', 'table_game_result'].map(event => [event, 0]));
+  })()` )
   const heap = await call('Runtime.getHeapUsage')
-  return { ...browser, listeners, heapMb: heap.usedSize / 1048576 }
+  return { ...browser, listeners, socketListeners, heapMb: heap.usedSize / 1048576 }
 }
+async function runProbe() {
 try {
   chrome = spawn(chromePath, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--enable-precise-memory-info', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' })
   let tabs
@@ -93,6 +103,7 @@ try {
   socket.on('message', bytes => {
     const message = JSON.parse(bytes)
     if (message.id && pending.has(message.id)) { const callback = pending.get(message.id); pending.delete(message.id); message.error ? callback.reject(new Error(message.error.message)) : callback.resolve(message.result) }
+    if (message.method === 'HeapProfiler.addHeapSnapshotChunk') heapChunks.push(message.params.chunk)
     if (message.method === 'Tracing.dataCollected') trace.push(...message.params.value)
     if (message.method === 'Tracing.tracingComplete') traceComplete()
     if (message.method === 'Network.webSocketFrameReceived') {
@@ -113,7 +124,7 @@ try {
   const phases = {}
   const measure = async name => {
     const before = await sample(); await pause(1000); const after = await sample()
-    phases[name] = { ...after, drawsPerSecond: after.draws - before.draws, commitsPerSecond: after.commits - before.commits, profilerMsPerSecond: after.profilerMs - before.profilerMs, shaderCompiles: after.compiles - before.compiles, textureUploads: after.uploads - before.uploads }
+    phases[name] = { ...after, drawsPerSecond: after.draws - before.draws, commitsPerSecond: after.commits - before.commits, profilerMsPerSecond: after.profilerMs - before.profilerMs, shaderCompiles: after.compiles - before.compiles, textureUploads: after.uploads - before.uploads, staticTextureUploads: (after.uploads - after.boneUploads) - (before.uploads - before.boneUploads) }
   }
   // Use a fresh practice room: never start or leave someone else's game.
   const tables = await api('/thirteen/tables')
@@ -125,25 +136,56 @@ try {
   await pause(3500)
   await measure('waiting')
   const cycles = []
-  const waitingBaseline = await sample()
-  for (let i = 0; i < 5; i++) {
+  const heapObjects = async () => {
+    await call('HeapProfiler.takeHeapSnapshot')
+    // Never persist snapshots: they contain authentication state. Keep constructor counts only.
+    const snapshot = JSON.parse(heapChunks.join('')); heapChunks.length = 0
+    const { node_fields: fields, node_types: types } = snapshot.snapshot.meta
+    let retainedObjectMb = 0
+    const counts = {}, width = fields.length, type = fields.indexOf('type'), name = fields.indexOf('name')
+    for (let i = 0; i < snapshot.nodes.length; i += width) {
+      if (types[type][snapshot.nodes[i + type]] === 'object') retainedObjectMb += snapshot.nodes[i + fields.indexOf('self_size')] / 1048576
+      const constructor = snapshot.strings[snapshot.nodes[i + name]]
+      if (types[type][snapshot.nodes[i + type]] === 'object' && /^(BufferGeometry|Group|Mesh|SkinnedMesh|Object3D|WebGLRenderer|Texture|CanvasTexture|ImageBitmap|MeshLambertMaterial|MeshStandardMaterial|Skeleton|HTMLCanvasElement|FiberNode|Promise)$/.test(constructor)) counts[constructor] = (counts[constructor] || 0) + 1
+    }
+    return { counts, retainedObjectMb }
+  }
+  const heapCounts = []
+  const cycleCount = Number(process.env.PERF_CYCLES ?? 5), warmupCount = cycleCount ? 3 : 0
+  let waitingBaseline = await sample()
+  const warmupCycles = []
+  for (let i = 0; i < cycleCount + warmupCount; i++) {
     await evaluate(`document.querySelector('[aria-label^="Thu nhỏ"]').click()`)
     await pause(1000)
     const closed = await sample()
     await evaluate(`([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Quay lại bàn')).click()`)
     await until('document.querySelector(".th-game canvas")')
     await pause(3000)
-    cycles.push({ closed, reopened: await sample() })
+    const cycle = { closed, reopened: await sample() }
+    if (i < warmupCount) { warmupCycles.push(cycle); waitingBaseline = cycle.reopened; if (i === warmupCount - 1 && process.env.PERF_HEAP_COUNTS === '1') { heapCounts.push(await heapObjects()); waitingBaseline = await sample() } } else cycles.push(cycle)
   }
+  if (process.env.PERF_HEAP_COUNTS === '1') heapCounts.push(await heapObjects())
   const routeCycles = []
-  for (let i = 0; i < 2; i++) {
-    await evaluate(`document.querySelector('[aria-label^="Thu nhỏ"]').click(); document.querySelector('.thirteen-header a').click()`)
+  for (let i = 0; i < (cycleCount ? 2 : 0); i++) {
+    await evaluate(`document.querySelector('[aria-label^="Thu nhỏ"]').click(); history.pushState(null, '', '/__thirteen_perf_empty__'); window.dispatchEvent(new PopStateEvent('popstate'))`)
     await pause(2000)
     const left = await sample()
     await evaluate(`history.pushState(null, '', '/thirteen?perf=1'); window.dispatchEvent(new PopStateEvent('popstate'))`)
     await until('document.querySelector(".th-game canvas")')
     await pause(3000)
     routeCycles.push({ left, returned: await sample() })
+  }
+  const assertLeaks = () => {
+    if (!cycles.length) return
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+    assert(cycles.every(cycle => same(cycle.reopened.renderers.map(({ geometries, textures }) => ({ geometries, textures })), waitingBaseline.renderers.map(({ geometries, textures }) => ({ geometries, textures }))) && same(cycle.reopened.listeners, waitingBaseline.listeners) && same(cycle.reopened.socketListeners, waitingBaseline.socketListeners)), 'Resource/listener growth across overlay cycles')
+    assert(routeCycles.every(cycle => cycle.left.liveContexts === 0 && cycle.left.renderers.length === 0 && cycle.left.socketListeners.table_game_state === 0 && same(cycle.returned.socketListeners, waitingBaseline.socketListeners)), 'Route cleanup failed')
+    // Runtime heap includes V8 tier-up and profiler bookkeeping; snapshot live objects separately.
+    assert(cycles.at(-1).reopened.heapMb - waitingBaseline.heapMb < 2, `Heap grew beyond warmed baseline tolerance: ${waitingBaseline.heapMb} -> ${cycles.at(-1).reopened.heapMb}`)
+    if (heapCounts.length) { assert(heapCounts.at(-1).retainedObjectMb - heapCounts[0].retainedObjectMb < 0.1, 'Retained JS objects grew'); assert.equal(heapCounts.at(-1).counts.WebGLRenderer, heapCounts[0].counts.WebGLRenderer, 'Renderer objects retained after close') }
+  }
+  if (process.env.PERF_LEAK_ONLY === '1') {
+    console.log(JSON.stringify({ phases, waitingBaseline, cycles, routeCycles, heapCounts, errors }, null, 2)); if (process.env.PERF_ASSERT === '1') assertLeaks(); return
   }
   await call('Tracing.start', { categories: 'devtools.timeline,v8,blink,cc,gpu,disabled-by-default-devtools.timeline,disabled-by-default-v8.gc', options: 'record-as-much-as-possible' })
   await api(`/thirteen/tables/${tableId}/ready`, { requestKey: randomUUID() })
@@ -167,7 +209,7 @@ try {
         await api(`/thirteen/tables/${tableId}/move`, { requestKey: randomUUID(), move: cards ? { type: 'play', cards } : { type: 'pass' } })
         await pause(1000)
         const after = await sample()
-        phases.playingAnimations = { ...after, drawsPerSecond: after.draws - before.draws, commitsPerSecond: after.commits - before.commits, profilerMsPerSecond: after.profilerMs - before.profilerMs, shaderCompiles: after.compiles - before.compiles, textureUploads: after.uploads - before.uploads }
+        phases.playingAnimations = { ...after, drawsPerSecond: after.draws - before.draws, commitsPerSecond: after.commits - before.commits, profilerMsPerSecond: after.profilerMs - before.profilerMs, shaderCompiles: after.compiles - before.compiles, textureUploads: after.uploads - before.uploads, staticTextureUploads: (after.uploads - after.boneUploads) - (before.uploads - before.boneUploads) }
         sampled = true
       } else {
         const cards = chooseMove(table.myView.hand, table.trick ? classify(table.trick.cards) : null, { mustInclude: table.mustInclude })
@@ -184,8 +226,19 @@ try {
   const tracePath = process.env.PERF_TRACE || join(tmpdir(), 'thirteen-trace.json')
   await writeFile(tracePath, JSON.stringify({ traceEvents: trace }))
   const durations = names => trace.filter(event => event.ph === 'X' && names.test(event.name) && event.dur).map(event => ({ name: event.name, ms: event.dur / 1000 })).sort((a, b) => b.ms - a.ms)
-  const frames = durations(/^FireAnimationFrame$/), gc = durations(/GC|GarbageCollect/), shaders = durations(/shader|compile|tex.*upload/i)
-  const traceSummary = { frames: frames.length, framesOver16ms: frames.filter(frame => frame.ms > 16).length, worstFrames: frames.slice(0, 8), gcPauses: gc.length, worstGc: gc.slice(0, 8), shaderOrUploadEvents: shaders.slice(0, 8), tracePath }
+  const frames = durations(/^FireAnimationFrame$/), gc = durations(/^(MajorGC|MinorGC)$/), shaders = durations(/shader|compile|tex.*upload/i)
+  const presented = [], frameStarts = new Map()
+  for (const event of trace) if (event.name === 'PipelineReporter') {
+    const key = `${event.pid}:${event.tid}:${event.id2?.local}`
+    if (event.ph === 'b') frameStarts.set(key, event)
+    else if (event.ph === 'e') {
+      const start = frameStarts.get(key)
+      if (start?.args?.frame_reporter?.state?.startsWith('STATE_PRESENTED')) presented.push((event.ts - start.ts) / 1000)
+      frameStarts.delete(key)
+    }
+  }
+  const minorGc = durations(/^MinorGC$/), majorGc = durations(/^MajorGC$/)
+  const traceSummary = { presentedFrames: presented.length, presentedOver16ms: presented.filter(ms => ms > 16).length, presentedMaxMs: Math.max(0, ...presented), frames: frames.length, framesOver16ms: frames.filter(frame => frame.ms > 16).length, worstFrames: frames.slice(0, 8), gcPauses: gc.length, minorGcMaxMs: minorGc[0]?.ms || 0, majorGcMaxMs: majorGc[0]?.ms || 0, worstGc: gc.slice(0, 8), shaderOrUploadEvents: shaders.slice(0, 8), tracePath }
   const socketSizes = Object.fromEntries(['table_game_state', 'table_game_private'].map(event => {
     const sizes = payloads.filter(p => p.event === event && p.tableId === tableId && p.version > 0).map(p => p.bytes)
     return [event, { count: sizes.length, min: Math.min(...sizes), max: Math.max(...sizes), mean: sizes.reduce((a, b) => a + b, 0) / sizes.length }]
@@ -208,11 +261,13 @@ try {
     do { previousSize = ids.size; for (const [pid, parent] of list) if (ids.has(parent)) ids.add(pid) } while (ids.size !== previousSize)
     browserRssMb = list.filter(([pid]) => ids.has(pid)).reduce((sum, row) => sum + row[2], 0) / 1024
   } catch { /* RSS is optional on platforms without ps. */ }
-  console.log(JSON.stringify({ phases, waitingBaseline, idle, cycles, routeCycles, socketSizes, moves, traceSummary, browserRssMb, rssScope: 'entire isolated browser process tree, including software GPU; not exact tab memory', errors, screenshot }, null, 2))
+  console.log(JSON.stringify({ phases, waitingBaseline, heapCounts, warmupCycles, idle, cycles, routeCycles, socketSizes, moves, traceSummary, browserRssMb, rssScope: 'entire isolated browser process tree, including software GPU; not exact tab memory', errors, screenshot }, null, 2))
   if (process.env.PERF_ASSERT === '1') {
+    assertLeaks()
     assert(idle.some(sample => sample.drawsPerSecond === 0), 'No idle sample reached zero draws')
     assert(idle.every(sample => sample.liveContexts === 1), 'Expected one live WebGL context')
     assert(cycles.every(cycle => cycle.closed.liveContexts === 0 && cycle.reopened.liveContexts === 1), 'Context leak across reopen cycles')
+    assert(phases.result.drawsPerSecond <= phases.result.renderers[0].frameDraws * 2, 'Result redraws more often than its one-second board countdown')
     assert.equal(errors.length, 0, 'Browser runtime errors')
   }
 } catch (error) { console.error(error); throw error } finally {
@@ -224,3 +279,6 @@ try {
     if (table && ['waiting', 'finished'].includes(table.status)) await api(`/thirteen/tables/${tableId}/leave`, { requestKey: randomUUID() })
   }
 }
+
+}
+await runProbe()

@@ -1,6 +1,6 @@
 # Tiến Lên Miền Nam — Implementation Plan
 
-> ## ▶ Progress status — last updated 2026-10-08 (3D visual QA completed)
+> ## ▶ Progress status — last updated 2026-10-08 (Task 13 performance review completed)
 >
 > **Branch:** `feat/tien-len-mien-nam`; latest 3D fix `342e872`. Nothing has been pushed.
 > `feat/thirteen-rooms` (Codex B, worktree `../musicque-rooms`) is **merged** (`221fe8a`).
@@ -23,7 +23,7 @@
 > | 9.1 drag-to-look, **yaw only ±30°** (pitch locked) | ✅ done |
 > | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done; all three grips and 300 ms mid-reaches checked in both themes; opaque-card lift direction corrected |
 > | 9.3 broadcast only to the watch room / private tables only to seated users | ✅ done |
-> | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | 🟡 robustness complete (Codex B); perf/trace/leak checks and KTX2 conversion remain pending |
+> | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | ✅ robustness and perf/trace/leak review done; see [performance report](../reports/2026-10-08-thirteen-performance.md). KTX2 asset conversion remains pending (`toktx` approval) |
 >
 > **Open items for next session**, in priority order:
 > 1. ✅ **Visual QA completed:** headless Chrome, 1440×900, light and dark; client-only fixtures and deterministic mid-reach captures. One WebGL context, 0 idle draws/s, no JS errors. HUD timer ticks no longer redraw the table (`9fe3dcd`).
@@ -43,7 +43,7 @@
 >    - ✅ README room instructions consolidated and host-start copy removed (`14b12bc`).
 >    - ✅ Obsolete host fixtures removed; serialization asserts the host field stays absent (`a387514`).
 > 3. **Task 13:** final performance and robustness pass.
->    - Rerun `client/scripts/perf-thirteen.mjs` in all phases, take a DevTools trace of a full match, do a leak check over 5 overlay open/close cycles, and check socket payload sizes.
+>    - ✅ All phases measured, full bot-game CDP trace captured, five overlay cycles and route cleanup checked. Fixed retained renderers from global card materials, disposed cloned skeleton textures, warmed shaders/textures and the DPR shader variant, removed result timer redraws and opaque rank-face draws, trimmed public move payloads ~27.6%. [Before/after report](../reports/2026-10-08-thirteen-performance.md). API 88/88, client 241/241, build OK.
 >    - ✅ Added non-exiting `unhandledRejection` logging. Found and caught floating Mongo promises in all three Cho-Han timer phases; failure injection confirms Word Chain already handles its timer rejection locally (`9aad4f3`). This is a plausible source of the reported `PoolClearedOnNetworkError`; the original crash was not replayed. Reviewed the remaining timer/queue Mongo calls for rejection handling.
 >    - Codex B verification: API **87/87**, client **222/222** (47 files), scoped client lint and API syntax checks pass, production build OK. No servers started on :5005/:8080.
 >    - Convert the GLBs to KTX2 once `toktx` is approved.
