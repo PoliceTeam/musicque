@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Euler, Raycaster, Vector2 } from 'three'
+import { Euler, Raycaster, Vector2, Vector3 } from 'three'
 import { useAnimationActivity } from './activity'
-import { clampLook, DEFAULT_PITCH, isLookDrag } from './dragLook'
+import { clampDolly, clampLook, dampSpring, DEFAULT_PITCH, isLookDrag, normalizeWheel } from './dragLook'
 export default function DragLookCamera({ reducedMotion }) {
   const { camera, gl, scene } = useThree()
   const activity = useAnimationActivity()
-  const state = useRef({ yaw: 0, pitch: DEFAULT_PITCH, target: { yaw: 0, pitch: DEFAULT_PITCH }, reset: null, shake: Infinity, active: false })
-  const scratch = useMemo(() => ({ euler: new Euler(0, 0, 0, 'YXZ'), ray: new Raycaster(), pointer: new Vector2() }), [])
+  const state = useRef({ yaw: 0, pitch: DEFAULT_PITCH, target: { yaw: 0, pitch: DEFAULT_PITCH }, reset: null, shake: Infinity, active: false, zoom: 0, zoomTarget: 0, zoomVelocity: 0 })
+  const scratch = useMemo(() => ({ euler: new Euler(0, 0, 0, 'YXZ'), ray: new Raycaster(), pointer: new Vector2(), forward: new Vector3() }), [])
   useLayoutEffect(() => { camera.position.set(0, 1.15, 1.16); camera.quaternion.setFromEuler(scratch.euler.set(DEFAULT_PITCH, 0, 0)); camera.updateWorldMatrix(true, false) }, [camera, scratch])
   useEffect(() => {
     const canvas = gl.domElement
@@ -16,7 +16,12 @@ export default function DragLookCamera({ reducedMotion }) {
     const reset = () => {
       const current = state.current
       current.reset = { yaw: current.yaw, pitch: current.pitch, elapsed: 0 }
-      current.target = { yaw: 0, pitch: DEFAULT_PITCH }; start()
+      current.target = { yaw: 0, pitch: DEFAULT_PITCH }; current.zoomTarget = 0; start()
+    }
+    const wheel = event => {
+      event.preventDefault()
+      state.current.zoomTarget = clampDolly(state.current.zoomTarget - normalizeWheel(event, canvas.clientHeight) * 0.0006)
+      start()
     }
     const down = event => {
       if (event.button !== 0) return
@@ -48,12 +53,12 @@ export default function DragLookCamera({ reducedMotion }) {
       reset()
     }
     const bomb = () => { if (!reducedMotion) { state.current.shake = 0; start() } }
-    canvas.addEventListener('pointerdown', down, true); window.addEventListener('pointermove', move, true); canvas.addEventListener('click', click, true); canvas.addEventListener('dblclick', doubleClick, true)
+    canvas.addEventListener('wheel', wheel, { passive: false }); canvas.addEventListener('pointerdown', down, true); window.addEventListener('pointermove', move, true); canvas.addEventListener('click', click, true); canvas.addEventListener('dblclick', doubleClick, true)
     window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true)
     window.addEventListener('card-table:reset-view', reset); window.addEventListener('card-table:bomb', bomb)
     return () => {
       if (candidate?.dragging && canvas.hasPointerCapture(candidate.id)) canvas.releasePointerCapture(candidate.id)
-      canvas.removeEventListener('pointerdown', down, true); window.removeEventListener('pointermove', move, true); canvas.removeEventListener('click', click, true); canvas.removeEventListener('dblclick', doubleClick, true)
+      canvas.removeEventListener('wheel', wheel); canvas.removeEventListener('pointerdown', down, true); window.removeEventListener('pointermove', move, true); canvas.removeEventListener('click', click, true); canvas.removeEventListener('dblclick', doubleClick, true)
       window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', up, true)
       window.removeEventListener('card-table:reset-view', reset); window.removeEventListener('card-table:bomb', bomb)
     }
@@ -72,13 +77,18 @@ export default function DragLookCamera({ reducedMotion }) {
       const alpha = reducedMotion ? 1 : 1 - Math.exp(-delta / 0.12)
       current.yaw += (current.target.yaw - current.yaw) * alpha; current.pitch += (current.target.pitch - current.pitch) * alpha
     }
+    const zoom = reducedMotion ? { value: current.zoomTarget, velocity: 0 } : dampSpring(current.zoom, current.zoomVelocity, current.zoomTarget, delta)
+    current.zoom = clampDolly(zoom.value); current.zoomVelocity = zoom.velocity
+    if (Math.abs(current.zoom - current.zoomTarget) < 1e-5 && Math.abs(current.zoomVelocity) < 1e-4) { current.zoom = current.zoomTarget; current.zoomVelocity = 0 }
+    scratch.forward.set(0, 0, -1).applyEuler(scratch.euler.set(DEFAULT_PITCH, current.yaw, 0))
+    camera.position.set(0, 1.15, 1.16).addScaledVector(scratch.forward, current.zoom)
     current.shake += delta * 1000
     const shaking = current.shake < 250, decay = shaking ? 1 - current.shake / 250 : 0
     const pitchShake = shaking ? Math.sin(current.shake * 0.08) * 0.008 * decay : 0
     const yawShake = shaking ? Math.sin(current.shake * 0.11) * 0.012 * decay : 0
     camera.quaternion.setFromEuler(scratch.euler.set(current.pitch + pitchShake, current.yaw + yawShake, 0))
     camera.updateWorldMatrix(true, false)
-    if (!current.reset && !shaking && Math.abs(current.yaw - current.target.yaw) < 1e-5 && Math.abs(current.pitch - current.target.pitch) < 1e-5) {
+    if (!current.reset && !shaking && current.zoom === current.zoomTarget && current.zoomVelocity === 0 && Math.abs(current.yaw - current.target.yaw) < 1e-5 && Math.abs(current.pitch - current.target.pitch) < 1e-5) {
       current.yaw = current.target.yaw; current.pitch = current.target.pitch; current.active = false; activity.stop()
     }
   }, -2)

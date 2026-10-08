@@ -184,3 +184,13 @@ it('disables every leave control until refund recovery completes', () => {
   view.rerender(<ThirteenOverlay {...props} open table={{ ...room, fundingPending: false }} />)
   for (const button of screen.getAllByRole('button', { name: 'Rời bàn' })) expect(button).toBeEnabled()
 })
+
+it('dispatches a camera reset from the default-view button', async () => {
+  const reset = vi.fn()
+  window.addEventListener('card-table:reset-view', reset)
+  try {
+    render(<ThirteenOverlay {...props} open />)
+    await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
+    expect(reset).toHaveBeenCalledOnce()
+  } finally { window.removeEventListener('card-table:reset-view', reset) }
+})
