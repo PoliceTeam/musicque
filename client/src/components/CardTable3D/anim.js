@@ -15,7 +15,7 @@ export const liftCardPose = (pose, distance) => {
   const lift = new Vector3(0, distance, 0).applyQuaternion(cardQuaternion(pose))
   return { ...pose, position: pose.position.map((value, i) => value + lift.getComponent(i)) }
 }
-export const tween = (from, to, { duration = MOTION.play, height = 0, flip = false, slide = false, group } = {}) => {
+export const tween = (from, to, { duration = MOTION.play, height = 0, flip = false, slide = false, landing = false, group } = {}) => {
   const start = cardQuaternion(from), end = cardQuaternion(to), orientation = new Quaternion()
   const axis = new Vector3(0, 1, 0), turn = new Quaternion()
   if (flip) end.multiply(new Quaternion().setFromAxisAngle(axis, -Math.PI))
@@ -32,7 +32,12 @@ export const tween = (from, to, { duration = MOTION.play, height = 0, flip = fal
         : from.position[i] + (to.position[i] - from.position[i]) * eased
       if (i === 1) out.position[i] += 4 * height * eased * (1 - eased)
     }
-    if (slide && progress > 0.8) out.position[1] += 0.002 * Math.sin(Math.PI * (progress - 0.8) / 0.2)
+    if (slide && height > 0 && progress > 0.8) out.position[1] += 0.002 * Math.sin(Math.PI * (progress - 0.8) / 0.2)
+    if (landing && elapsed > duration - 60) {
+      const settle = clamp((elapsed - duration + 60) / 60), wave = Math.sin(Math.PI * settle)
+      out.position[1] += 0.002 * wave
+      orientation.premultiply(turn.setFromAxisAngle(axis, 3 * Math.PI / 180 * wave))
+    }
     orientation.toArray(out.quaternion)
     out.scale = (from.scale ?? 1) + ((to.scale ?? 1) - (from.scale ?? 1)) * eased
     out.done = progress === 1; out.progress = eased

@@ -14,7 +14,17 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   const [hovered, setHovered] = useState(false)
   useLayoutEffect(() => { activity.start() }, [activity, selected, hovered])
   const opaque = target.id?.startsWith('opaque:') || false
-  const clone = useMemo(() => { const card = deck[cardId].clone(true); setCardFaceVisibility(card, opaque); return card }, [deck, cardId, opaque])
+  const played = target.zone === 'trick'
+  const { clone, materials } = useMemo(() => {
+    const clone = deck[cardId].clone(true), materials = []
+    setCardFaceVisibility(clone, opaque)
+    if (played) clone.traverse(mesh => {
+      if (!mesh.isMesh) return
+      mesh.material = mesh.material.clone(); materials.push(mesh.material)
+    })
+    return { clone, materials }
+  }, [deck, cardId, opaque, played])
+  useEffect(() => () => materials.forEach(material => material.dispose()), [materials])
   useEffect(() => () => { if (hovered) document.body.style.cursor = '' }, [hovered])
   useLayoutEffect(() => () => {
     if (poseStore && poseId && inner.current) poseStore.current.set(poseId, readWorldPose(inner.current))
@@ -31,9 +41,9 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
       : target.motion?.map(stage => ({ ...stage })) || [{ target, start: wait, duration: travel, height, kind: target.motionKind || 'move', flip: Boolean(from && from.faceUp !== target.faceUp), group: target.flightGroup }]
     const sourceSpace = from?.space || target.space || 'world'
     motion.current = { target, stages, elapsed: 0, index: -1, sourceSpace, sourceLocal: poseInSpace(initial, spaces, sourceSpace), from, initial, deferredInitial, interrupted, done: false }
-    clone.traverse(mesh => { if (mesh.isMesh) mesh.renderOrder = target.order ?? 0 })
+    clone.traverse(mesh => { if (mesh.isMesh) mesh.renderOrder = played ? 2000 + (target.order ?? 0) : target.order ?? 0; if (played && mesh.material) mesh.material.depthTest = false })
     activity.start(); applyWorldPose(ref.current, initial)
-  }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch, activity])
+  }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch, activity, played])
   useFrame((_, delta) => {
     const animation = motion.current
     const lift = selected ? 0.03 : hovered ? 0.01 : 0
@@ -84,7 +94,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
         for (let i = index + 1; i < animation.stages.length; i++) animation.stages[i].start = animation.stages[i - 1].start + animation.stages[i - 1].duration
       }
       animation.index = index; animation.local = local; animation.to = destination
-      animation.sample = tween(source, destination, { duration: stage.duration, height: stage.height || 0, flip: stage.flip, slide: stage.kind === 'slide', group })
+      animation.sample = tween(source, destination, { duration: stage.duration, height: stage.height || 0, flip: stage.flip, slide: stage.kind === 'slide', landing: stage.kind === 'play', group })
     }
     const elapsed = animation.elapsed - stage.start
     let pose = animation.sample(elapsed, scratch.sample)
@@ -100,6 +110,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     applyWorldPose(ref.current, pose)
     if (index === animation.stages.length - 1 && elapsed >= stage.duration) {
       animation.done = true
+      if (played) materials.forEach(material => { material.depthTest = true })
       if (poseStore && poseId) poseStore.current.set(poseId, readWorldPose(inner.current))
     }
   })

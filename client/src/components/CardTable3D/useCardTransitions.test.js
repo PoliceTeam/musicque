@@ -39,14 +39,15 @@ it('keeps at most two face-up combos, then sweeps both on reset', () => {
   const reset = diffCardTransitions(third, snapshot([]))
   expect(reset.cards.every(c => c.zone === 'discard' && !c.faceUp)).toBe(true)
 })
-it('gives a bomb a stronger, faster landing after the opponent reach delay', () => {
+it('keeps bomb cards on the same low flight after the opponent reach delay', () => {
   const previous = { ...snapshot([card('opaque:1:0', 'hand', 1)]), trickKey: 'old' }
   const next = { ...snapshot([card('9S', 'trick', 1)]), trickKey: 'bomb' }
   const normal = diffCardTransitions(previous, next).cards[0]
   const bomb = diffCardTransitions(previous, next, () => true).cards[0]
   expect(bomb.delay).toBe(450)
-  expect(bomb.height).toBeGreaterThan(normal.height)
-  expect(bomb.duration).toBeLessThanOrEqual(normal.duration + 10)
+  expect(bomb.height).toBe(normal.height)
+  expect(bomb.duration).toBe(normal.duration)
+  expect(bomb.motionKind).toBe('play')
 })
 
 it('slides the previous display combo back onto the cloth and removes its display tilt', () => {
@@ -85,4 +86,18 @@ it('buffers live moves until the deal completes and snaps reduced motion', () =>
     expect(reduced.result.current.cards[0].duration).toBe(0)
     reduced.unmount()
   } finally { vi.useRealTimers() }
+})
+
+
+it('shares a group flight and gathers before a flat sweep without retaining motion history', () => {
+  const old = { ...snapshot([card('3S', 'hand'), card('3C', 'hand')]), anchor: 0 }
+  const played = diffCardTransitions(old, { ...snapshot([card('3S', 'trick'), card('3C', 'trick')]), anchor: 0 })
+  expect(played.cards[0].flightGroup).toBe(played.cards[1].flightGroup)
+  const swept = diffCardTransitions(played, snapshot([]))
+  for (const card of swept.cards) {
+    expect(card.motion.map(stage => stage.duration)).toEqual([150, 350])
+    expect(card.motion[1]).toMatchObject({ height: 0, flip: true, kind: 'slide' })
+    expect(card.from.from).toBeUndefined()
+    expect(card.from.flightGroup).toBeUndefined()
+  }
 })

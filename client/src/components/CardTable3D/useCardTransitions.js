@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { dealSchedule, dealMotion } from './cardMotion'
+import { dealSchedule, dealMotion, groupFlight, sweepMotion } from './cardMotion'
 import { MOTION, animationTimeScale } from './anim'
 
 const sourcePose = card => Object.fromEntries(['id', 'zone', 'seat', 'position', 'faceUp', 'rotation', 'tilt', 'yaw', 'scale', 'space', 'order'].filter(key => card[key] !== undefined).map(key => [key, card[key]]))
@@ -22,12 +22,21 @@ export const diffCardTransitions = (previous, next, isBomb) => {
     }
     if (dealt.has(card.id)) return { ...card, ...dealMotion(dealt.get(card.id), schedule.pickupAt, next.anchor || 0, next.deckPosition) }
     const from = source ? sourcePose(source) : card
-    return { ...card, from, delay: source?.zone === 'hand' && card.zone === 'trick' ? source.seat !== next.anchor ? MOTION.release : MOTION.ownRelease : 0, duration: source ? card.zone === 'trick' && source.zone === 'hand' ? bomb ? MOTION.bombLanding : MOTION.flight : MOTION.play : 0, height: source && card.zone === 'trick' ? bomb ? 0.2 : 0.14 : 0 }
+    const play = source?.zone === 'hand' && card.zone === 'trick'
+    if (play) return { ...card, from, delay: source.seat !== next.anchor ? MOTION.release : MOTION.ownRelease, duration: MOTION.flight, height: 0, motionKind: 'play', bomb }
+    return { ...card, from, delay: 0, duration: source ? MOTION.play : 0, height: 0 }
 
   })
   // A removed opponent slot becomes the revealed trick card, never a duplicate back.
   const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: sourcePose(card), duration: MOTION.play, delay: 0, height: 0 }))
-  const exiting = removed.filter((card) => !consumed.has(card.id) && !under.some((combo) => combo.id === card.id) && card.zone !== 'hand').map((card, i) => ({ ...card, zone: 'discard', dim: false, order: 50 + i, space: 'world', tilt: 0, scale: 1, faceUp: false, position: [next.discardPosition[0], next.discardPosition[1] + i * 0.0002, next.discardPosition[2]], from: card, delay: 0, duration: MOTION.sweep, height: 0.035 }))
+  const playing = cards.filter(card => card.motionKind === 'play')
+  if (playing.length) {
+    const group = groupFlight(playing)
+    playing.forEach(card => { card.flightGroup = group })
+  }
+  const swept = removed.filter(card => !consumed.has(card.id) && !under.some(combo => combo.id === card.id) && card.zone !== 'hand')
+  const center = swept.length ? [0, 1, 2].map(axis => swept.reduce((sum, card) => sum + card.position[axis], 0) / swept.length) : [0, 0, 0]
+  const exiting = swept.map((card, i) => sweepMotion(sourcePose(card), i, center, next.discardPosition, next.surfaceY ?? next.deckPosition[1]))
   return { ...next, cards: [...cards, ...under, ...exiting], winnerSeat: next.winnerSeat ?? previous?.winnerSeat, deal, dealDuration: schedule?.duration || 0, dealTiming: deal ? { startedAt: null } : null }
 }
 

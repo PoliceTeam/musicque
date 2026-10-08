@@ -59,3 +59,17 @@ it('flips exactly once around local Y, only within the 35–75% window', () => {
     previous = angle
   }
 })
+
+
+it('keeps group offsets until the last 30% and lands without a discontinuity', () => {
+  const options = { duration: 400, landing: true, group: { from: [0, 0, 0], to: [1, 0, 0] } }
+  const left = tween({ position: [-0.03, 0, 0], faceUp: true }, { position: [0.94, 0, 0], faceUp: true }, options)
+  const right = tween({ position: [0.03, 0, 0], faceUp: true }, { position: [1.06, 0, 0], faceUp: true }, options)
+  expect(right(280).position[0] - left(280).position[0]).toBeCloseTo(0.06)
+  expect(right(400).position[0] - left(400).position[0]).toBeCloseTo(0.12)
+  expect(left(340).position[1]).toBeCloseTo(0)
+  expect(left(370).position[1]).toBeCloseTo(0.002)
+  expect(left(400).position).toEqual([0.94, 0, 0])
+  const flat = tween({ position: [0, 0, 0], faceUp: true }, { position: [1, 0, 0], faceUp: false }, { duration: 350, slide: true, flip: true })
+  for (let ms = 0; ms <= 350; ms += 10) expect(flat(ms).position[1]).toBe(0)
+})
