@@ -4,7 +4,7 @@ import { syncTableGameTimer } from '../../utils/tableGame'
 import { useAuth } from '../../contexts/AuthContext'
 import { turnColor, turnTiming } from '../CardTable3D/turn'
 import { classify, canBeat, isValidLead } from '../../utils/thirteen'
-export default function ThirteenHud({ table, userId, myHand, selectedCards, toggleCard, action, busy, handLowered, toggleHand, resetView, shortcutsEnabled = true, turnMs = 20000 }) {
+export default function ThirteenHud({ table, userId, myHand, selectedCards, toggleCard, action, busy, handLowered, toggleHand, shortcutsEnabled = true, turnMs = 20000 }) {
   const [now, setNow] = useState(Date.now())
   const sync = useMemo(() => syncTableGameTimer(table, table?.receivedAt ?? Date.now()), [table])
   useEffect(() => {
@@ -64,7 +64,6 @@ export default function ThirteenHud({ table, userId, myHand, selectedCards, togg
         <Button className='sp-btn sp-btn--primary' disabled={!canPlay} aria-keyshortcuts='Enter' onClick={() => action('play')}>Đánh bài</Button>
         {toggleHand && <Button className='sp-btn' aria-pressed={Boolean(handLowered)} onClick={toggleHand}>{handLowered ? 'Nâng bài' : 'Hạ bài'}</Button>}
         {table.trick && <Button className='sp-btn' disabled={!canPass} aria-keyshortcuts='Space' onClick={() => action('pass')}>Bỏ lượt</Button>}
-        {resetView && <Button className='sp-btn' onClick={resetView}>Góc mặc định</Button>}
       </div></>}
     </>}
   </section>

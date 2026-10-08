@@ -49,7 +49,7 @@ describe('ThirteenOverlay', () => {
   it('keeps keyboard focus within the floating controls', () => {
     render(<ThirteenOverlay {...props} open />)
     const first = screen.getByRole('button', { name: 'Luật chơi' })
-    const last = screen.getByRole('button', { name: 'Góc mặc định' })
+    const last = screen.getByRole('button', { name: 'Hạ bài' })
     last.focus()
     fireEvent.keyDown(window, { key: 'Tab' })
     expect(first).toHaveFocus()
@@ -240,7 +240,7 @@ it('dispatches a camera reset from the default-view button', async () => {
   window.addEventListener('card-table:reset-view', reset)
   try {
     render(<ThirteenOverlay {...props} open />)
-    await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Về góc nhìn mặc định' }))
     expect(reset).toHaveBeenCalledOnce()
   } finally { window.removeEventListener('card-table:reset-view', reset) }
 })
@@ -491,4 +491,15 @@ describe('room invite authentication', () => {
     expect(mocks.requireAuth).not.toHaveBeenCalled()
     expect(mocks.state.action).toHaveBeenCalledExactlyOnceWith('sit', 'K7Q2', { retryTransient: true })
   })
+})
+
+
+it('keeps the default-view icon available in waiting rooms and shows its tooltip on focus', async () => {
+  render(<ThirteenOverlay {...props} open table={{ ...table, status: 'waiting' }} />)
+  const button = screen.getByRole('button', { name: 'Về góc nhìn mặc định' })
+  expect(button.closest('.th-game-corner-controls')).not.toBeNull()
+  fireEvent.focus(button)
+  const tooltip = await screen.findByRole('tooltip')
+  expect(tooltip).toHaveTextContent('Về góc nhìn mặc định')
+  expect(getComputedStyle(tooltip.closest('.ant-tooltip')).zIndex).toBe('1301')
 })
