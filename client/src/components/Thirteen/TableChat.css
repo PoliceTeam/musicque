@@ -17,6 +17,6 @@
 .table-chat .chat-emoji-picker { position: absolute; bottom: 40px; right: 0; width: 240px; max-height: 200px; overflow: auto; display: grid; grid-template-columns: repeat(6, 1fr); background: var(--sp-surface, #fff); }
 .table-chat .chat-emoji-picker__item, .table-chat .chat-room__tool { background: transparent; border: 0; cursor: pointer; padding: 5px; }
 @media (max-width: 700px) {
-  .table-chat { top: auto; bottom: 12px; right: 12px; left: 12px; width: auto; height: min(55vh, 480px); }
+  .table-chat { top: auto; bottom: var(--table-chat-bottom, 12px); right: 12px; left: 12px; width: auto; height: min(55vh, 480px, calc(100dvh - var(--table-chat-bottom, 12px) - 80px)); }
   .table-chat:not(.is-open) { left: auto; height: auto; top: 68px; bottom: auto; }
 }
