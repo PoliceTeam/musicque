@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import ErrorBoundary from '../ErrorBoundary'
 import { AnimationActivity } from './AnimationActivity'
 import { useAnimationActivity } from './activity'
-import { clearTableAssets, releaseTextureImage, useTableGLTF } from './assets'
+import { clearTableAssets, releaseTextureImage, useTableGLTF, warmTableScene } from './assets'
 import SeatMarker from './SeatMarker'
 import OfficeRoom from './OfficeRoom.jsx'
 import DragLookCamera from './DragLookCamera'
@@ -29,6 +29,7 @@ function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serve
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
   const dpr = useThree(state => state.viewport.dpr)
+  const { gl, camera, scene: renderScene } = useThree()
   useEffect(() => {
     if (dpr > 1) return
     tableModel.traverse(node => {
@@ -36,7 +37,8 @@ function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serve
         if (material.normalMap) { releaseTextureImage(material.normalMap); material.normalMap.dispose(); material.normalMap = null; material.needsUpdate = true }
       }
     })
-  }, [tableModel, dpr])
+    warmTableScene(renderScene, camera, gl)
+  }, [tableModel, dpr, renderScene, camera, gl])
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false
   const surfaceY = useMemo(() => {
     const bounds = new THREE.Box3().setFromObject(tableModel)
