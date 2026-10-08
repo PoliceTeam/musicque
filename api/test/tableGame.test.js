@@ -9,7 +9,7 @@ const { createTableGameService } = require('../services/tableGame/engine')
 const { assertDefinition, GameRuleError } = require('../services/tableGame/definition')
 const definition = {
   name: 'fake', seats: { min: 2, max: 4 },
-  config: { maxTables: 20, stake: 10, turnMs: 20000, botDelayMs: 1200 },
+  config: { maxTables: 20, stake: 10, stakeOptions: [0, 10, 20, 50], turnMs: 20000, botDelayMs: 1200 },
   ledger: { stake: 'thirteen_stake', payout: 'thirteen_payout', refund: 'thirteen_refund' },
   setup: ({ previous }) => ({ seats: Array.from({ length: 4 }, (_, i) => ({ hand: [String(i + 3) + 'S'], passed: false })), currentSeat: previous?.winnerSeat ?? 0, moves: [], finishOrder: [], secret: 'PRIVATE_SENTINEL' }),
   currentSeat: (state) => state.finishOrder.length ? null : state.currentSeat,
@@ -41,6 +41,8 @@ const harness = (t, records = [], gameDefinition = definition) => {
   const emitted = []
   let debitFailure = null
   let creditFailures = 0
+  const balances = {}
+  t.mock.method(User, 'findById', (id) => ({ select() { return this }, lean: async () => ({ polites: balances[id] ?? 100 }) }))
   t.mock.method(global, 'setTimeout', (fn, ms) => { const timer = { fn, ms, at: now + ms }; timers.set(timer, timer); return timer })
   t.mock.method(global, 'clearTimeout', (timer) => timers.delete(timer))
   const matches = (game, filter) => Object.entries(filter).every(([key, value]) => key === '$or' ? value.some(part => matches(game, part)) : value && typeof value === 'object' && '$in' in value ? value.$in.includes(game[key]) : key === 'moves.requestKey' ? game.moves.some((m) => m.requestKey === value) : game[key] === value)
@@ -88,7 +90,7 @@ const harness = (t, records = [], gameDefinition = definition) => {
   const resolve = id => aliases.get(id) || id
   service.sit = async (user, id, key) => {
     if (typeof id === 'number' && !aliases.has(id)) {
-      const room = await original.create(user, 'public', key)
+      const room = await original.create(user, 'public', undefined, key)
       aliases.set(id, room.tableId)
       return room
     }
@@ -104,7 +106,7 @@ const harness = (t, records = [], gameDefinition = definition) => {
     if (response.startError) throw Object.assign(new Error(response.startError), { code: response.startError })
     return response
   }
-  return { service, io, records, timers, credits, debits, emitted, fire, failDebit: (id) => { debitFailure = id }, failCredit: (n) => { creditFailures = n } }
+  return { service, io, records, timers, credits, debits, emitted, fire, failDebit: (id) => { debitFailure = id }, failCredit: (n) => { creditFailures = n }, setBalance: (id, n) => { balances[id] = n } }
 }
 test('partial buy-in failure refunds only debited humans and aborts the game', async (t) => {
   const h = harness(t)
@@ -317,7 +319,7 @@ test('bots get their delay and a resumed playing match preserves its deadline', 
 })
 test('definition validation rejects missing functions and invalid configuration', () => {
   assert.equal(assertDefinition(definition), definition)
-  for (const invalid of [{ ...definition, name: '../fake' }, { ...definition, botMove: null }, { ...definition, config: { ...definition.config, turnMs: 0 } }, { ...definition, seats: { min: 4, max: 2 } }]) assert.throws(() => assertDefinition(invalid))
+  for (const invalid of [{ ...definition, name: '../fake' }, { ...definition, botMove: null }, { ...definition, config: { ...definition.config, turnMs: 0 } }, { ...definition, seats: { min: 4, max: 2 } }, { ...definition, config: { ...definition.config, stakeOptions: [0, 20] } }, { ...definition, config: { ...definition.config, stakeOptions: [-10, 10] } }, { ...definition, config: { ...definition.config, stakeOptions: [10, 1.5] } }]) assert.throws(() => assertDefinition(invalid))
 })
 test('overlapping socket binds keep only the newest authenticated hand room', async (t) => {
   const h = harness(t)
@@ -358,25 +360,25 @@ test('overlapping socket binds keep only the newest authenticated hand room', as
 
 test('creates coded rooms idempotently and hides private rooms from strangers and viewers', async t => {
   const h = harness(t)
-  const room = await h.service.create(player('a'), 'private', 'create')
+  const room = await h.service.create(player('a'), 'private', undefined, 'create')
   assert.match(room.code, /^[A-HJ-NP-Z2-9]{4}$/)
   assert.equal(room.tableId, room.code)
   assert.equal(room.seats[0].userId, 'a')
   assert.equal(h.service.listTables().length, 0)
   assert.equal(h.service.listTables('a').length, 1)
-  assert.equal((await h.service.create(player('a'), 'private', 'create')).code, room.code)
+  assert.equal((await h.service.create(player('a'), 'private', undefined, 'create')).code, room.code)
   assert.ok(h.emitted.every(event => event.event !== 'table_game_state' || !event.room.includes('table_game:watch:fake')))
   await h.service.sit(player('b'), room.code, 'invite')
   assert.equal(h.service.listTables('b').length, 1)
 })
 test('quick join picks the fullest public room and respects the room limit', async t => {
   const h = harness(t, [], { ...definition, config: { ...definition.config, maxTables: 3 } })
-  const first = await h.service.create(player('a'), 'public', 'a')
-  const second = await h.service.create(player('b'), 'public', 'b')
+  const first = await h.service.create(player('a'), 'public', undefined, 'a')
+  const second = await h.service.create(player('b'), 'public', undefined, 'b')
   await h.service.sit(player('c'), second.code, 'c')
-  await h.service.create(player('d'), 'private', 'd')
+  await h.service.create(player('d'), 'private', undefined, 'd')
   assert.equal((await h.service.quickJoin(player('e'), 'e')).code, second.code)
-  await assert.rejects(h.service.create(player('f'), 'public', 'f'), { code: 'TABLE_LIMIT' })
+  await assert.rejects(h.service.create(player('f'), 'public', undefined, 'f'), { code: 'TABLE_LIMIT' })
   await h.service.leave('a', first.code, 'leave')
   assert.throws(() => h.service.getTable(first.code), { code: 'TABLE_NOT_FOUND' })
   assert.equal(h.service.listTables().length, 1)
@@ -384,8 +386,8 @@ test('quick join picks the fullest public room and respects the room limit', asy
 })
 test('concurrent joins cannot seat a user in two rooms', async t => {
   const h = harness(t)
-  const a = await h.service.create(player('a'), 'public', 'a')
-  const b = await h.service.create(player('b'), 'public', 'b')
+  const a = await h.service.create(player('a'), 'public', undefined, 'a')
+  const b = await h.service.create(player('b'), 'public', undefined, 'b')
   const results = await Promise.allSettled([h.service.sit(player('c'), a.code, 'c-a'), h.service.sit(player('c'), b.code, 'c-b')])
   assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
   assert.equal(h.service.listTables().filter(table => table.seats.some(seat => seat?.userId === 'c')).length, 1)
@@ -393,7 +395,7 @@ test('concurrent joins cannot seat a user in two rooms', async t => {
 
 test('ready countdown needs every human, and sit, leave and unready cancel it', async t => {
   const h = harness(t)
-  const room = await h.service.create(player('a'), 'public', 'create')
+  const room = await h.service.create(player('a'), 'public', undefined, 'create')
   await h.service.sit(player('b'), room.code, 'sit')
   await h.service.ready('a', room.code, 'a-ready')
   assert.equal(h.service.getTable(room.code).startsAt, null)
@@ -443,7 +445,7 @@ test('result window stands up unready humans and starts remaining ready players'
 })
 test('fresh waiting seats expire only after idle timeout and empty result rooms disappear', async t => {
   const h = harness(t)
-  const room = await h.service.create(player('a'), 'private', 'create')
+  const room = await h.service.create(player('a'), 'private', undefined, 'create')
   assert.equal(room.readyDeadlineAt, null)
   assert.equal(room.seats[0].ready, false)
   await h.fire([...h.timers.values()].find(timer => timer.ms === 300000))
@@ -467,7 +469,7 @@ test('private state and result reach seated users only; public state reaches vie
 
 test('concurrent identical leave requests share the queued result, including deleted rooms', async t => {
   const h = harness(t)
-  const room = await h.service.create(player('a'), 'public', 'create')
+  const room = await h.service.create(player('a'), 'public', undefined, 'create')
   const results = await Promise.all([h.service.leave('a', room.code, 'leave'), h.service.leave('a', room.code, 'leave')])
   assert.deepEqual(results[0], results[1])
   assert.equal(results[0].deleted, true)
@@ -506,4 +508,90 @@ test('resume fetches only recoverable matches and selects previous winners by cr
   assert.deepEqual(findOne.mock.calls[0].arguments[0], { game: 'fake', tableId: '1', status: 'settled' })
   assert.deepEqual(result.mock.calls[0].arguments[0].finishOrder, recent.state.finishOrder)
   assert.equal(h.service.listTables().length, 1)
+})
+
+test('create accepts only listed stakes and defaults to the config stake', async t => {
+  const h = harness(t)
+  assert.equal((await h.service.create(player('a'), 'public', undefined, 'a')).stake, 10)
+  for (const [i, stake] of [0, 20, 50].entries()) {
+    const room = await h.service.create(player(`p${i}`), 'public', stake, 'create')
+    assert.equal(room.stake, stake)
+    assert.equal(room.hostId, `p${i}`)
+  }
+  for (const stake of [5, -10, '20', 1.5, null]) await assert.rejects(h.service.create(player('z'), 'public', stake, `bad-${stake}`), { code: 'INVALID_STAKE', status: 400 })
+  assert.deepEqual(h.service.publicConfig().stakeOptions, [0, 10, 20, 50])
+})
+test('only the host changes the stake, never mid-countdown, and every ready flag resets', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', 20, 'create')
+  await h.service.sit(player('b'), room.code, 'sit')
+  await assert.rejects(h.service.setStake('b', room.code, 50, 'b-stake'), { code: 'NOT_HOST', status: 403 })
+  await assert.rejects(h.service.setStake('a', room.code, 7, 'bad'), { code: 'INVALID_STAKE', status: 400 })
+  await h.service.ready('b', room.code, 'b-ready')
+  const changed = await h.service.setStake('a', room.code, 50, 'a-stake')
+  assert.equal(changed.stake, 50)
+  assert.ok(changed.seats.filter(Boolean).every(seat => !seat.ready))
+  assert.equal((await h.service.setStake('a', room.code, 50, 'a-stake')).stake, 50)
+  await h.service.ready('a', room.code, 'a-ready')
+  await h.service.ready('b', room.code, 'b-ready-2')
+  assert.ok(h.service.getTable(room.code).startsAt)
+  await assert.rejects(h.service.setStake('a', room.code, 0, 'during'), { code: 'TABLE_BUSY', status: 409 })
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 3000))
+  assert.deepEqual(h.debits.map(d => [d.userId, d.amount]), [['a', 50], ['b', 50]])
+  assert.equal(h.records[0].stake, 50)
+  assert.equal(h.records[0].tableStake, 50)
+  assert.equal(h.records[0].hostId, 'a')
+  await assert.rejects(h.service.setStake('a', room.code, 0, 'playing'), { code: 'TABLE_BUSY', status: 409 })
+})
+test('host passes to the earliest remaining seat on leave and on idle kick', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', undefined, 'create')
+  await h.service.sit(player('b'), room.code, 'b')
+  await h.service.sit(player('c'), room.code, 'c')
+  await h.service.leave('a', room.code, 'leave')
+  assert.equal(h.service.getTable(room.code).hostId, 'b')
+  await h.service.ready('c', room.code, 'c-ready')
+  await h.fire([...h.timers.values()].find(timer => timer.ms === 300000))
+  assert.deepEqual(h.service.getTable(room.code).seats.filter(Boolean).map(seat => seat.userId), ['c'])
+  assert.equal(h.service.getTable(room.code).hostId, 'c')
+})
+test('quick join skips tables whose stake is not the default', async t => {
+  const h = harness(t)
+  const rich = await h.service.create(player('a'), 'public', 50, 'a')
+  const joined = await h.service.quickJoin(player('b'), 'b')
+  assert.notEqual(joined.code, rich.code)
+  assert.equal(joined.stake, 10)
+  assert.equal(joined.hostId, 'b')
+  assert.equal((await h.service.quickJoin(player('c'), 'c')).code, joined.code)
+})
+test('ready rejects a player who cannot cover the table stake', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', 50, 'create')
+  h.setBalance('a', 40)
+  // Alone at the table means a free practice match, so no balance is needed yet.
+  await h.service.ready('a', room.code, 'solo')
+  await h.service.unready('a', room.code, 'solo-off')
+  await h.service.sit(player('b'), room.code, 'b')
+  await assert.rejects(h.service.ready('a', room.code, 'ready'), { code: 'INSUFFICIENT_COINS', status: 409 })
+  assert.equal(h.service.getTable(room.code).seats[0].ready, false)
+  await h.service.setStake('a', room.code, 0, 'free')
+  await h.service.ready('a', room.code, 'ready-free')
+  assert.equal(h.service.getTable(room.code).seats[0].ready, true)
+})
+test('resume keeps the table stake and host from the active match', async t => {
+  await t.test('persisted', async t => {
+    const h = harness(t, [{ ...fixture(), tableStake: 20, stake: 20, hostId: 'b' }])
+    await h.service.resume(h.io)
+    assert.equal(h.service.getTable(1).hostId, 'b')
+    for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find(timer => timer.ms <= 20000))
+    assert.equal(h.service.getTable(1).status, 'finished')
+    assert.equal(h.service.getTable(1).stake, 20)
+  })
+  await t.test('legacy match falls back to the default stake and first seated human', async t => {
+    const h = harness(t, [fixture()])
+    await h.service.resume(h.io)
+    assert.equal(h.service.getTable(1).hostId, 'a')
+    for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find(timer => timer.ms <= 20000))
+    assert.equal(h.service.getTable(1).stake, 10)
+  })
 })

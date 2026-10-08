@@ -2,7 +2,7 @@
  * @typedef {Object} TableGameDefinition
  * @property {string} name Route/ledger namespace (lowercase ASCII).
  * @property {{min:number,max:number}} seats Tables always fill to max with bots, even when min is smaller.
- * @property {{maxTables:number,stake:number,turnMs:number,botDelayMs:number}} config
+ * @property {{maxTables:number,stake:number,stakeOptions?:number[],turnMs:number,botDelayMs:number}} config stakeOptions must include stake.
  * @property {{stake:string,payout:string,refund:string}} ledger Registered coin types.
  * @property {function({seats:Array,rng:Function,previous:Object|null}):Object} setup
  * @property {function(Object):(number|null)} currentSeat Null once finished.
@@ -27,6 +27,8 @@ const assertDefinition = (definition) => {
     const value = definition.config?.[key]
     if (!Number.isInteger(value) || value < (key === 'stake' || key === 'botDelayMs' ? 0 : 1)) throw new TypeError(`Invalid config: ${key}`)
   }
+  const { stakeOptions } = definition.config
+  if (stakeOptions !== undefined && (!Array.isArray(stakeOptions) || stakeOptions.some(value => !Number.isInteger(value) || value < 0) || !stakeOptions.includes(definition.config.stake))) throw new TypeError('Invalid config: stakeOptions')
   for (const key of ['readyCountdownMs', 'readyTimeoutMs', 'idleSeatMs']) if (definition.config[key] !== undefined && (!Number.isInteger(definition.config[key]) || definition.config[key] < 1)) throw new TypeError(`Invalid config: ${key}`)
   for (const key of ['stake', 'payout', 'refund']) if (typeof definition.ledger?.[key] !== 'string' || !definition.ledger[key]) throw new TypeError(`Invalid ledger: ${key}`)
   for (const key of ['setup', 'currentSeat', 'applyMove', 'timeoutMove', 'botMove', 'playerView', 'publicView', 'result', 'payout']) if (typeof definition[key] !== 'function') throw new TypeError(`Missing game function: ${key}`)

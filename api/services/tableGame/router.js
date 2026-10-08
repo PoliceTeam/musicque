@@ -9,7 +9,7 @@ const createTableGameRouter = (service) => {
   router.post('/tables', authenticate, controller.create)
   router.post('/quick-join', authenticate, controller.quickJoin)
   router.get('/tables/:id', optionalAuthenticate, controller.table)
-  for (const action of ['sit', 'leave', 'ready', 'unready', 'move']) router.post(`/tables/:id/${action}`, authenticate, controller[action])
+  for (const action of ['sit', 'leave', 'ready', 'unready', 'stake', 'move']) router.post(`/tables/:id/${action}`, authenticate, controller[action])
   return router
 }
 module.exports = { createTableGameRouter }

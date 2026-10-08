@@ -15,6 +15,8 @@ const schema = new mongoose.Schema({
   state: { type: mongoose.Schema.Types.Mixed, required: true },
   version: { type: Number, default: 0 },
   stake: Number,
+  tableStake: Number,
+  hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   humanCount: Number,
   turnDeadlineAt: Date,
   startRequestKey: String,

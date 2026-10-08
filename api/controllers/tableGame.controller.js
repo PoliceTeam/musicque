@@ -10,10 +10,11 @@ const createTableGameController = (service) => {
   const controller = {
     config: respond(() => service.publicConfig()),
     tables: respond(req => service.listTables(req.user?._id)),
-    create: respond(req => service.create(req.user, req.body.visibility, req.body.requestKey)),
+    create: respond(req => service.create(req.user, req.body.visibility, req.body.stake, req.body.requestKey)),
     quickJoin: respond(req => service.quickJoin(req.user, req.body.requestKey)),
     table: respond((req) => service.getTable(req.params.id, req.user?._id)),
     sit: respond((req) => service.sit(req.user, req.params.id, req.body.requestKey)),
+    stake: respond((req) => service.setStake(req.user._id, req.params.id, req.body.stake, req.body.requestKey)),
     move: respond((req) => service.move(req.user._id, req.params.id, req.body.move, req.body.requestKey)),
   }
   for (const action of ['leave', 'ready', 'unready']) controller[action] = respond((req) => service[action](req.user._id, req.params.id, req.body.requestKey))
