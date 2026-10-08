@@ -1266,3 +1266,60 @@ Commit message (each agent):
 locked** at the default. Vertical mouse movement is ignored. Readability of the trick comes
 from the trick "display stand", not from looking down. Double-click and "Góc mặc định" reset
 the yaw. The bomb shake still applies as a temporary offset.
+
+## Task 14 — Realistic card motion (user: "cards fly around chaotically when dealing and playing")
+
+**Diagnosis** (from `anim.js` / `useCardTransitions.js` at `fa196e2`):
+1. **Deal is a toss.**
+   - Each card arcs about 13 cm high, with a 35 ms stagger and a 450 ms flight, so about 13 cards are in the air at once and their paths cross.
+   - Each card flies straight from a flat face-down deck into the camera-held fan or onto the opponent's hand bone. That is a change of about 180° in orientation, and the slerp tumbles it about an unpredictable axis.
+2. **Position and rotation use different easings.** Position uses `easeOutCubic` and arrives early; rotation uses `easeInOutQuad` and is still half-way. Cards therefore arrive and then spin in place.
+   - Opponent flips use two chained slerps (`start × Ry(π)`, then end), which tumbles them again.
+3. **Destinations move during flight.** They are re-resolved every frame in world space while the camera drags or avatars breathe, so cards jitter.
+
+### Target behaviour: "a real dealer and real players"
+- **Deal: a two-phase, table-level slide.**
+  1. **Deal to piles.** The deck sits at the table centre. Cards are dealt clockwise, starting with the seat after the previous winner (or with me on the first game).
+     - Each card **slides face-down on the table plane** into a neat pile in front of its seat.
+     - The flight height is at most 1.5 cm; it is a skim, not a toss.
+     - Rotation is **yaw only**, around the table normal: at most ±25° of spin that settles to the pile angle. There is no tilt and no flip.
+     - Position eases with `easeOutQuart`, plus a 2–3 mm settle at the end.
+     - Stagger 60 ms, flight about 280 ms, so at most about 5 cards are in the air and no paths cross: each target pile is on a separate ray from the deck.
+     - Piles stack with a 0.25 mm step, and the later card is on top.
+  2. **Pick up.** When the last card lands, each pile lifts **as one stack**.
+     - Opponents: the stack rises to the hand bone over about 400 ms, then fans open over about 250 ms.
+     - Mine: the stack rises toward the camera over about 450 ms. It turns face-up **once, around its own long axis**, during the rise, then fans open from a closed stack into `fanLayout` over about 300 ms. Sorting happens as part of the fan opening.
+- **Play (mine):**
+  1. The selected cards slide up out of the fan, about 2 cm in the fan plane, over 100 ms.
+  2. They travel **as a group, keeping their relative offsets**, along a low arc. Height is `min(0.10, 0.04 + 0.08 × distance)` m, duration is `220 + 300 × distance` ms, and the combo fans into the trick layout during the last 30%.
+  3. Landing: a 2 mm drop plus a ±3° yaw settle in the last 60 ms.
+- **Play (opponent):** the reach-and-release rhythm from Task 9.2 stays.
+  - At release, the group detaches **at the hand's world pose**.
+  - Each card flips face-up exactly once, **about its own long (local Y) axis**, by π during the 35–75% part of the flight. Build it as an explicit axis-angle rotation, not as a slerp between two arbitrary quaternions.
+  - The same low arc and landing apply.
+- **Orientation interpolation rules**, applied everywhere:
+  - Always choose the shortest-path quaternion (negate when `dot < 0`).
+  - Never introduce roll beyond what the start and end poses need.
+  - Position and rotation use **one shared easing curve** (`easeInOutCubic`, or `easeOutQuart` for slides), so they finish together.
+- **Bigger combo on top.** A newly played combo gets `renderOrder` and depth above the current top from launch, so it never passes *under* existing cards mid-flight.
+- **Trick reset (sweep).** First the trick cards gather into a neat stack in place (about 150 ms). Then the stack **slides along the table**, with height 0, to the discard pile (about 350 ms), turning face-down once about its long axis while sliding.
+- **Space handling.** Fix the jitter. When a flight's start and end are in the same space (camera, a seat hand or world), tween in that space's local coordinates. For cross-space flights, sample the destination world pose **once at launch**. During the last 25%, blend in only the anchor's delta since launch. The card must not chase a moving anchor every frame.
+- **Reduced motion.** Snap instantly, as today.
+
+### Tests (pure helpers in `anim.js` / `useCardTransitions.js` / a new `cardMotion.js`)
+- The deal schedule: clockwise order from the right start seat, at most 5 cards in the air at any time, piles on distinct rays, and stack heights increasing.
+- The arc height formula and its clamp; the duration formula.
+- The shortest-path quaternion (no flip greater than 180°); a yaw-only deal keeps the card normal parallel to the table normal at every sample.
+- The opponent flip rotates only about local Y, exactly π in total, and only inside the 35–75% window.
+- Position and rotation progress are equal at all samples (shared easing).
+- Retarget mid-flight continues from the current pose without jumping.
+
+### Verification
+- Add a dev-only `?anim=slow` flag that sets a 4× time scale, so the motion can be inspected.
+- Capture a headless frame sequence at about 20 fps of a full deal, one own play, one opponent play and one trick sweep. Check visually that no card tumbles, no card paths cross, and cards rest flat on the table.
+- The perf script must still show 0 idle draws per second, with no per-frame allocations added.
+
+Commits:
+- `feat(card-table-3d): realistic deal with table slide and pick-up`
+- `fix(card-table-3d): single-axis flips and shared easing for plays`
+- `fix(card-table-3d): stable flight targets during camera and avatar motion`

@@ -38,5 +38,5 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
     cards.push({ id: `card:${card}`, cardId: card, zone: 'trick', seat: table.trick.bySeat, faceUp: true, space: 'world', position, tilt, rotation: pose.rotation, scale, order: pose.order })
   })
   const winner = table.seats.map((seat, i) => ({ ...seat, seat: i })).filter(seat => seat.userId && seat.finishedPlace).sort((a, b) => a.finishedPlace - b.finishedPlace)[0]
-  return { matchId: table.matchId, cards, anchor, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, surfaceY, finished: !waiting && Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
+  return { matchId: table.matchId, cards, anchor, seatPositions, winnerSeat: table.seats.findIndex(seat => seat?.finishedPlace === 1) >= 0 ? table.seats.findIndex(seat => seat?.finishedPlace === 1) : undefined, deckPosition: [0, surfaceY + 0.005, 0], discardPosition: [0.35, surfaceY + 0.004, -0.25], trickKey: table.trick ? `${table.trick.bySeat}:${table.trick.cards.join()}` : null, trick: table.trick, surfaceY, finished: !waiting && Boolean(table.remainingHands), winnerPosition: seatPositions[winner?.seat ?? anchor] }
 }

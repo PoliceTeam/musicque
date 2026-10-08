@@ -19,10 +19,10 @@ describe('card motion', () => {
     expect(sample(1000)).toMatchObject({ position: target.position, scale: 2, done: true })
     expect(tween(current, target, { duration: 0 })(0).position).toEqual(target.position)
   })
-  it('turns the card over by 180 degrees halfway through a reveal flight', () => {
+  it('reaches the face-up endpoint after a single-axis reveal flight', () => {
     const sample = tween({ position: [0, 0, 0], faceUp: false }, { position: [1, 0, 0], faceUp: true }, { duration: 1000, flip: true })
     const first = new Quaternion().fromArray(sample(0).quaternion)
-    expect(first.angleTo(new Quaternion().fromArray(sample(500).quaternion))).toBeCloseTo(Math.PI)
+    expect(first.angleTo(new Quaternion().fromArray(sample(1000).quaternion))).toBeCloseTo(Math.PI)
     expect(sample(1000).done).toBe(true)
   })
 })

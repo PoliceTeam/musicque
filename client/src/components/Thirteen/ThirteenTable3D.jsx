@@ -48,9 +48,7 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
     elapsed.current += activity.step(delta) * 1000
     const time = elapsed.current
     if (shuffle.current) {
-      shuffle.current.visible = frame.deal && !reducedMotion && time < MOTION.shuffle
-      shuffle.current.rotation.z = Math.sin(time / 35) * 0.08
-      shuffle.current.position.y = Math.abs(Math.sin(time / 65)) * 0.008
+      shuffle.current.visible = frame.deal && !reducedMotion && time < frame.dealDuration - 750
     }
     if (flash.current) flash.current.material.opacity = bomb.current && !reducedMotion ? Math.max(0, 0.8 * (1 - time / MOTION.bomb)) : 0
     if (burst.current) {
@@ -64,7 +62,7 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
       }
       if (burst.current.visible) burst.current.instanceMatrix.needsUpdate = true
     }
-    const active = !reducedMotion && ((frame.deal && time < MOTION.shuffle) || (bomb.current && time < MOTION.bomb) || (frame.finished && time < MOTION.finish))
+    const active = !reducedMotion && ((frame.deal && time < frame.dealDuration - 750) || (bomb.current && time < MOTION.bomb) || (frame.finished && time < MOTION.finish))
     if (!active) activity.stop()
   })
   return <>
@@ -80,8 +78,9 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
   const spaces = useRef({})
   const poseStore = useMemo(() => ({ current: new Map(), matchId: table.matchId }), [table.matchId])
   const next = useMemo(() => buildThirteenSnapshot({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }), [table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview])
-  const frame = useCardTransitions(next, { dealOnMount, matchId: table.matchId, isBomb: isBombTrick })
-  const renderCard = (card) => <Card3D key={`${frame.matchId}:${card.id}`} deck={deck} cardId={card.cardId} target={card} from={card.from} delay={card.delay} duration={card.duration} height={card.height} reducedMotion={reducedMotion} dim={card.dim} spaces={spaces} poseStore={poseStore} poseId={card.id} selected={card.zone === 'hand' && card.seat === anchor && selectedCards.includes(card.cardId)} onClick={!preview && table.status === 'playing' && card.zone === 'hand' && card.seat === anchor && card.faceUp ? () => toggleCard(card.cardId) : undefined} />
+  const frame = useCardTransitions(next, { dealOnMount, matchId: table.matchId, isBomb: isBombTrick, reducedMotion })
+  useFrame(() => { if (frame.deal && frame.dealTiming.startedAt === null) frame.dealTiming.startedAt = performance.now() }, -2)
+  const renderCard = (card) => <Card3D key={`${frame.matchId}:${card.id}`} deck={deck} cardId={card.cardId} target={card} from={card.from} delay={card.delay} duration={card.duration} height={card.height} reducedMotion={reducedMotion} dim={card.dim} spaces={spaces} poseStore={poseStore} poseId={card.id} selected={card.zone === 'hand' && card.seat === anchor && selectedCards.includes(card.cardId)} onClick={!preview && !frame.deal && table.status === 'playing' && card.zone === 'hand' && card.seat === anchor && card.faceUp ? () => toggleCard(card.cardId) : undefined} />
   return <>
     {firstPerson && <CameraHand spaces={spaces} lowered={handLowered} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === 'camera').map(renderCard)}</CameraHand>}
     {firstPerson && table.seats.map((seat, i) => seat && i !== anchor && <OpponentAvatar key={`${table.matchId}:${i}`} seat={seat} seatIndex={i} phase={table.status} position={characterPositions[i]} clipHeight={surfaceY - 0.01} active={table.currentSeat === i} playedKey={frame.trick?.bySeat === i ? frame.trickKey : null} turnDeadlineAt={table.turnDeadlineAt} serverNow={table.serverNow} turnMs={turnMs} spaces={spaces} reducedMotion={reducedMotion}>{frame.cards.filter(card => card.space === `seat:${i}`).map(renderCard)}</OpponentAvatar>)}

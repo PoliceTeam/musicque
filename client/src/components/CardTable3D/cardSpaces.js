@@ -35,3 +35,16 @@ export const liftWorldPose = (pose, distance, faceUp = true) => {
   for (let i = 0; i < 3; i++) pose.position[i] += position.getComponent(i)
   return pose
 }
+
+export const poseInSpace = (pose, spaces, space, out = createPose()) => {
+  const anchor = spaces?.current[space]
+  position.fromArray(pose.position); quaternion.fromArray(pose.quaternion)
+  if (anchor) {
+    anchor.updateWorldMatrix(true, false)
+    anchor.worldToLocal(position)
+    quaternion.premultiply(anchor.getWorldQuaternion(anchorQuaternion).invert())
+  }
+  position.toArray(out.position); quaternion.toArray(out.quaternion)
+  out.scale = pose.scale ?? 1; out.space = space
+  return out
+}

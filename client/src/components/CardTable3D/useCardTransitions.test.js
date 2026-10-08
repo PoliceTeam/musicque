@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { diffCardTransitions } from './useCardTransitions'
+import { describe, expect, it, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useCardTransitions, diffCardTransitions } from './useCardTransitions'
 const card = (id, zone, seat = 0) => ({ id, cardId: id, zone, seat, position: [seat, 1, 0], faceUp: seat === 0 })
 const snapshot = (cards, matchId = 'g1') => ({ cards, matchId, deckPosition: [0, 1, 0], discardPosition: [0.5, 1, 0] })
 describe('card transitions', () => {
@@ -61,6 +62,27 @@ it('waits for the reach peak before opponent release and gives my own cards a sh
   const old = {...snapshot([card('3S','hand'),card('opaque:1:0','hand',1)]), anchor:0}
   const next = {...snapshot([card('3S','trick'),card('4S','trick',1)]), anchor:0}
   const cards = diffCardTransitions(old,next).cards
-  expect(cards[0]).toMatchObject({delay:180,duration:350})
+  expect(cards[0]).toMatchObject({delay:100,duration:350})
   expect(cards[1]).toMatchObject({delay:450,duration:350})
+})
+
+
+it('buffers live moves until the deal completes and snaps reduced motion', () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+  try {
+    const first = snapshot([card('3S', 'hand')])
+    const next = snapshot([card('3S', 'trick')])
+    const { result, rerender, unmount } = renderHook(({ next }) => useCardTransitions(next, { dealOnMount: true }), { initialProps: { next: first } })
+    result.current.dealTiming.startedAt = performance.now()
+    rerender({ next })
+    expect(result.current.source).toBe(first)
+    act(() => vi.advanceTimersByTime(result.current.dealDuration + 100))
+    expect(result.current.deal).toBe(false)
+    expect(result.current.source).toBe(next)
+    unmount()
+    const reduced = renderHook(() => useCardTransitions(first, { dealOnMount: true, reducedMotion: true }))
+    expect(reduced.result.current.deal).toBe(false)
+    expect(reduced.result.current.cards[0].duration).toBe(0)
+    reduced.unmount()
+  } finally { vi.useRealTimers() }
 })
