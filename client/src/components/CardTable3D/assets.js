@@ -64,3 +64,7 @@ export function disposeClonedSkeletons(scene) {
   scene.traverse(node => { if (node.isSkinnedMesh) skeletons.add(node.skeleton) })
   for (const skeleton of skeletons) skeleton.dispose()
 }
+
+export function setCardFaceVisibility(card, opaque) {
+  card.traverse(node => { if (node.isMesh) node.visible = !opaque || node.material.name !== 'CardFront' })
+}

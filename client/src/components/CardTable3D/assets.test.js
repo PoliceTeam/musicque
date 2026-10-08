@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ data: null, clear: vi.fn() }))
 vi.mock('@react-three/drei', () => { const useGLTF = () => mocks.data; useGLTF.clear = mocks.clear; return { useGLTF } })
 vi.mock('@react-three/fiber', () => ({ useThree: fn => fn({ gl: { extensions: { has: () => false }, capabilities: { isWebGL2: true, getMaxAnisotropy: () => 8 } } }) }))
-import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF, warmTableScene, disposeClonedSkeletons } from './assets'
+import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF, warmTableScene, disposeClonedSkeletons, setCardFaceVisibility } from './assets'
 it('disposes shared resources once and clears parsed models for a fresh context', () => {
   const image = { close: vi.fn() }, texture = new Texture(image)
   const material = new MeshBasicMaterial({ map: texture }), geometry = new PlaneGeometry()
@@ -47,4 +47,13 @@ it('disposes each cloned skeleton bone texture once across shared meshes', () =>
   disposeClonedSkeletons(scene)
   expect(dispose).toHaveBeenCalledTimes(1)
   expect(skeleton.boneTexture).toBeNull()
+})
+
+it('omits hidden rank faces for opaque hands while retaining both faces of revealed cards', () => {
+  const card = new Group(), front = new Mesh(undefined, new MeshBasicMaterial({ name: 'CardFront' })), back = new Mesh(undefined, new MeshBasicMaterial({ name: 'CardBack' }))
+  card.add(front, back)
+  setCardFaceVisibility(card, true)
+  expect(front.visible).toBe(false); expect(back.visible).toBe(true)
+  setCardFaceVisibility(card, false)
+  expect(front.visible).toBe(true); expect(back.visible).toBe(true)
 })

@@ -13,7 +13,7 @@ export const useDeck = () => {
     const cheapMaterial = source => {
       if (!materials.has(source)) {
         if (source.map) source.map.anisotropy = anisotropy
-        materials.set(source, new THREE.MeshLambertMaterial({ map: source.map, color: source.color, side: THREE.FrontSide }))
+        materials.set(source, new THREE.MeshLambertMaterial({ name: source.name, map: source.map, color: source.color, side: THREE.FrontSide }))
       }
       return materials.get(source)
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { DoubleSide, MeshBasicMaterial, PlaneGeometry } from 'three'
+import { setCardFaceVisibility } from './assets'
 import { useAnimationActivity } from './activity'
 import { sameCardTarget, tween, motionTiming } from './anim'
 import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose } from './cardSpaces'
@@ -15,7 +16,8 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   const scratch = useMemo(() => ({ destination: createPose(), sample: createPose() }), [])
   const [hovered, setHovered] = useState(false)
   useLayoutEffect(() => { activity.start() }, [activity, selected, hovered])
-  const clone = useMemo(() => deck[cardId].clone(true), [deck, cardId])
+  const opaque = target.id?.startsWith('opaque:') || false
+  const clone = useMemo(() => { const card = deck[cardId].clone(true); setCardFaceVisibility(card, opaque); return card }, [deck, cardId, opaque])
   useEffect(() => () => { if (hovered) document.body.style.cursor = '' }, [hovered])
   useLayoutEffect(() => () => {
     if (poseStore && poseId && inner.current) poseStore.current.set(poseId, readWorldPose(inner.current))
