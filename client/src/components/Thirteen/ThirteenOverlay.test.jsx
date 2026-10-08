@@ -405,3 +405,28 @@ describe('lobby design', () => {
     expect(screen.getByRole('dialog', { name: 'Tạo bàn' }).closest('.cgl-modal')).not.toBeNull()
   })
 })
+
+describe('stake picker label placement', () => {
+  it('shows "Mức cược mỗi người" in the picker header of the create-table modal', async () => {
+    lobbyState()
+    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
+    const dialog = screen.getByRole('dialog', { name: 'Tạo bàn' })
+    expect(dialog.querySelector('.stake-slider__head .stake-slider__label')).toHaveTextContent('Mức cược mỗi người')
+    expect(dialog.querySelectorAll('.stake-slider__label')).toHaveLength(1)
+  })
+
+  it('shows the label once in the host control of the waiting panel', () => {
+    const waiting = { ...table, status: 'waiting', matchId: null, pot: 0, stake: 20, hostId: 'a', seats: [{ userId: 'a', username: 'An', ready: false }, { userId: 'b', username: 'Bình', ready: true }, null, null] }
+    render(<ThirteenOverlay {...props} config={stakeConfig} balance={500} open table={waiting} />)
+    expect(screen.getAllByText('Mức cược')).toHaveLength(1)
+    expect(screen.getByRole('slider', { name: 'Mức cược' })).toHaveAttribute('aria-valuetext', '20 PC')
+    const first = screen.getByRole('button', { name: 'Luật chơi' })
+    const last = screen.getByRole('button', { name: 'Sao chép link mời' })
+    last.focus()
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(first).toHaveFocus()
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
+    expect(last).toHaveFocus()
+  })
+})

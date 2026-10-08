@@ -39,3 +39,23 @@ it('formats stakes: 0 is free play, anything else is PC per player', async () =>
   expect(stakeChangeNotice(50)).toBe('Chủ bàn đổi mức cược thành 50 PC — hãy sẵn sàng lại')
   expect(stakeChangeNotice(0)).toBe('Chủ bàn đổi sang chơi vui — hãy sẵn sàng lại')
 })
+
+it('colours a stake by risk: free blue, 10–20 green, 50 yellow, 100 red', async () => {
+  const { stakeTone } = await import('./tableGame')
+  expect([0, 10, 20, 50, 100].map(stakeTone)).toEqual(['blue', 'green', 'green', 'yellow', 'red'])
+  expect([5, 30, 200].map(stakeTone)).toEqual(['green', 'yellow', 'red'])
+})
+
+it('labels slider ticks short: Vui for free play, the bare amount otherwise', async () => {
+  const { stakeTickLabel } = await import('./tableGame')
+  expect([0, 10, 100].map(stakeTickLabel)).toEqual(['Vui', '10', '100'])
+})
+
+it('explains the money at stake for a full table, with the server payout split (60/30/10/0, remainder to the winner)', async () => {
+  const { stakeMoneyHint } = await import('./tableGame')
+  expect(stakeMoneyHint(0)).toBe('Chơi vui — không trừ PC')
+  expect(stakeMoneyHint(10)).toBe('Bàn đủ 4 người: quỹ 40 PC · nhất nhận 24 PC')
+  expect(stakeMoneyHint(100)).toBe('Bàn đủ 4 người: quỹ 400 PC · nhất nhận 240 PC')
+  // A 28 PC pot rounds second/third down to 8/2, leaving 18 for the winner.
+  expect(stakeMoneyHint(7)).toBe('Bàn đủ 4 người: quỹ 28 PC · nhất nhận 18 PC')
+})

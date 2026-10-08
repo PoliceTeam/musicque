@@ -52,7 +52,8 @@ describe('StakePicker', () => {
   it('keeps unaffordable stops visible but dimmed, and says why', () => {
     const { container } = render(<StakePicker options={OPTIONS} value={10} balance={30} onChange={vi.fn()} />)
     expect(container.querySelectorAll('.stake-slider__tick')).toHaveLength(5)
-    expect([...container.querySelectorAll('[data-locked]')]).toHaveLength(2)
+    expect(container.querySelectorAll('.stake-slider__tick[data-locked]')).toHaveLength(2)
+    expect(container.querySelectorAll('.stake-slider__tick-label[data-locked]')).toHaveLength(2)
     expect(screen.getByText('Không đủ PC cho mức từ 50 PC trở lên')).toBeInTheDocument()
   })
 
@@ -100,5 +101,70 @@ describe('StakePicker', () => {
     render(<StakePicker options={[10]} value={10} onChange={vi.fn()} />)
     expect(slider()).toHaveAttribute('max', '0')
     expect(slider()).toHaveAttribute('aria-valuetext', '10 PC')
+  })
+
+  it('puts the label on the left and the value on the right of one header row above the track', () => {
+    const { container } = render(<StakePicker options={OPTIONS} value={20} onChange={vi.fn()} label='Mức cược mỗi người' />)
+    const head = container.querySelector('.stake-slider__head')
+    expect([...head.children].map(node => node.className)).toEqual(['stake-slider__label', 'stake-slider__value'])
+    expect(head).toHaveTextContent('Mức cược mỗi người20 PC')
+    expect(head.nextElementSibling).toHaveClass('stake-slider__track')
+    expect(slider()).toHaveAccessibleName('Mức cược')
+  })
+
+  it('labels itself "Mức cược" by default', () => {
+    const { container } = render(<StakePicker options={OPTIONS} value={20} onChange={vi.fn()} />)
+    expect(container.querySelector('.stake-slider__label')).toHaveTextContent(/^Mức cược$/)
+  })
+
+  it('tints the slider by risk with the Politetech tone classes', () => {
+    const toneOf = value => render(<StakePicker options={OPTIONS} value={value} onChange={vi.fn()} />).container.firstChild
+    expect(toneOf(0)).toHaveClass('cgl-tone--blue')
+    expect(toneOf(10)).toHaveClass('cgl-tone--green')
+    expect(toneOf(20)).toHaveClass('cgl-tone--green')
+    expect(toneOf(50)).toHaveClass('cgl-tone--yellow')
+    expect(toneOf(100)).toHaveClass('cgl-tone--red')
+  })
+
+  it('shows a short label under every tick, bold on the selected one', () => {
+    const { container } = render(<StakePicker options={OPTIONS} value={20} onChange={vi.fn()} />)
+    const labels = [...container.querySelectorAll('.stake-slider__tick-label')]
+    expect(labels.map(node => node.textContent)).toEqual(['Vui', '10', '20', '50', '100'])
+    expect(labels.map(node => node.hasAttribute('data-active'))).toEqual([false, false, true, false, false])
+  })
+
+  it('selects a stop when its label is clicked, but not a locked or disabled one', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<StakePicker options={OPTIONS} value={10} balance={30} onChange={onChange} />)
+    await userEvent.click(screen.getByText('20'))
+    expect(onChange).toHaveBeenLastCalledWith(20)
+    await userEvent.click(screen.getByText('Vui'))
+    expect(onChange).toHaveBeenLastCalledWith(0)
+    onChange.mockClear()
+    await userEvent.click(screen.getByText('50'))
+    expect(onChange).not.toHaveBeenCalled()
+    rerender(<StakePicker options={OPTIONS} value={10} balance={30} onChange={onChange} disabled />)
+    await userEvent.click(screen.getByText('20'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('keeps tick labels out of the accessibility tree and out of the tab order; the slider stays the one control', () => {
+    const { container } = render(<StakePicker options={OPTIONS} value={20} onChange={vi.fn()} />)
+    expect(container.querySelectorAll('.stake-slider__tick-label')).toHaveLength(5)
+    for (const label of container.querySelectorAll('.stake-slider__tick-label')) {
+      expect(label).toHaveAttribute('aria-hidden', 'true')
+      expect(label).toHaveAttribute('tabindex', '-1')
+    }
+    expect(screen.getAllByRole('slider')).toHaveLength(1)
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('explains the money at stake in one muted line, and the low-balance hint uses the same style', () => {
+    const { container, rerender } = render(<StakePicker options={OPTIONS} value={20} balance={30} onChange={vi.fn()} />)
+    const notes = [...container.querySelectorAll('.stake-slider__note')]
+    expect(notes.map(node => node.textContent)).toEqual(['Bàn đủ 4 người: quỹ 80 PC · nhất nhận 48 PC', 'Không đủ PC cho mức từ 50 PC trở lên'])
+    expect(slider().getAttribute('aria-describedby').split(' ')).toEqual(notes.map(node => node.id))
+    rerender(<StakePicker options={OPTIONS} value={0} onChange={vi.fn()} />)
+    expect(container.querySelector('.stake-slider__note')).toHaveTextContent('Chơi vui — không trừ PC')
   })
 })

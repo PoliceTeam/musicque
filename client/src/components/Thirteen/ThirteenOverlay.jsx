@@ -30,7 +30,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
         else onClose()
       }
       if (event.key === 'Tab' && !rulesOpen) {
-        const buttons = dialog.current?.querySelectorAll('button:not(:disabled), input:not(:disabled)')
+        const buttons = dialog.current?.querySelectorAll('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled)')
         const first = buttons?.[0], last = buttons?.[buttons.length - 1]
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first?.focus() }
@@ -78,9 +78,9 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
           const delta = (result.payouts.find(p => p.userId === seat.userId)?.amount || 0) - (result.stake || 0)
           return <li key={seat.seat}><span>{['🥇 Nhất', '🥈 Nhì', '🥉 Ba', 'Bét'][i]} · {seat.username}</span><strong>{seat.isBot ? 'Bot' : !result.stake ? 'Ván tập' : `${delta >= 0 ? '+' : '−'}${Math.abs(delta)} PC`}</strong></li>
         })}</ol>}
-        {hasStake && <div className='thirteen-stake-row'><span>Mức cược</span>{isHost
+        {hasStake && <div className='thirteen-stake-row'>{isHost
           ? <StakePicker options={stakeOptionsOf(state.config)} value={table.stake} balance={state.balance} disabled={Boolean(table.startsAt) || table.fundingPending || state.busy} onChange={stake => state.action('setStake', table.tableId, stake)} />
-          : <strong>{stakeLabel(table.stake)}</strong>}</div>}
+          : <><span>Mức cược</span><strong>{stakeLabel(table.stake)}</strong></>}</div>}
         {hasStake && !isHost && host && <p>Chủ bàn: {host.username}</p>}
         <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
         {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>Bot sẽ lấp các ghế trống khi bắt đầu.</p>}

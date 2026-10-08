@@ -107,7 +107,7 @@ function ThirteenContent() {
       </section>)}</div>
       {!publicTables.length && <p role='status' className='cgl-empty'>Chưa có bàn nào — Chơi nhanh để tạo bàn mới</p>}
     </main>
-    <Modal className='cgl-modal' title='Tạo bàn' open={createOpen} onCancel={() => setCreateOpen(false)} footer={<Button className='sp-btn sp-btn--primary' disabled={busy} onClick={create}>Tạo bàn</Button>}><Radio.Group value={visibility} onChange={event => setVisibility(event.target.value)}><Radio value='public'>Công khai</Radio><Radio value='private'>Riêng tư (chỉ vào bằng mã)</Radio></Radio.Group><div className='thirteen-stake-row'><span>Mức cược mỗi người</span><StakePicker options={stakeOptionsOf(config)} value={createStake} balance={balance} onChange={setPickedStake} /></div></Modal>
+    <Modal className='cgl-modal' title='Tạo bàn' open={createOpen} onCancel={() => setCreateOpen(false)} footer={<Button className='sp-btn sp-btn--primary' disabled={busy} onClick={create}>Tạo bàn</Button>}><Radio.Group value={visibility} onChange={event => setVisibility(event.target.value)}><Radio value='public'>Công khai</Radio><Radio value='private'>Riêng tư (chỉ vào bằng mã)</Radio></Radio.Group><div className='thirteen-stake-row'><StakePicker label='Mức cược mỗi người' options={stakeOptionsOf(config)} value={createStake} balance={balance} onChange={setPickedStake} /></div></Modal>
     {seated && <ThirteenOverlay key={userId} {...state} balance={balance} table={finalTable} userId={userId} open={overlayOpen} onClose={closeOverlay} dealOnMount={dealOnMount} turnMs={config.turnMs} />}
     <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
   </div>
