@@ -13,6 +13,9 @@ export function relocateWallBoardFrame(geometry) {
   geometry.computeBoundingBox(); geometry.computeBoundingSphere()
 }
 
+// Có tiền trong quỹ thì hiện quỹ; chưa có thì hiện mức cược của bàn (server cũ chưa gửi stake: "Ván tập").
+export const tableMoneyText = table => table.pot > 0 ? `Quỹ ${table.pot} PC` : typeof table.stake !== 'number' ? 'Ván tập' : table.stake > 0 ? `Cược ${table.stake} PC` : 'Chơi vui'
+
 export function tableBoardText(table, now = Date.now()) {
   const humans = table.seats.filter(seat => seat && !seat.isBot).length
   const seconds = value => Math.max(0, Math.ceil((new Date(value).getTime() - now) / 1000))
@@ -21,7 +24,7 @@ export function tableBoardText(table, now = Date.now()) {
   return [
     `Bàn ${table.code || '—'}${table.visibility === 'private' ? ' 🔒' : ''}`,
     start ? `Bắt đầu sau ${start}` : table.status === 'playing' || table.status === 'settling' ? 'Đang chơi' : table.status === 'finished' ? 'Kết thúc' : `Đang chờ ${humans}/${table.seats.length}`,
-    table.pot > 0 ? `Quỹ ${table.pot} PC` : 'Ván tập',
+    tableMoneyText(table),
     ready ? `Ván mới sau ${ready}s` : '',
   ]
 }

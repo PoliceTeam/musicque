@@ -6,6 +6,12 @@ it('derives waiting, practice and private board copy only from the table', () =>
   expect(tableBoardText({...table, visibility:'private', status:'playing',pot:20})).toEqual(['Bàn FQ8X 🔒','Đang chơi','Quỹ 20 PC',''])
   expect(tableBoardText({...table, status:'settling'})[1]).toBe('Đang chơi')
 })
+it('shows the table stake on the board when there is no pot, and the pot once money is in', () => {
+  expect(tableBoardText({ ...table, stake: 50 })[2]).toBe('Cược 50 PC')
+  expect(tableBoardText({ ...table, stake: 0 })[2]).toBe('Chơi vui')
+  expect(tableBoardText({ ...table, stake: 50, status: 'playing', pot: 100 })[2]).toBe('Quỹ 100 PC')
+  expect(tableBoardText({ ...table, status: 'finished', stake: 20, pot: 0 })[2]).toBe('Cược 20 PC')
+})
 it('changes countdown text only at whole-second boundaries and clears expired countdowns', () => {
   const countdown = {...table, startsAt:3000}
   expect(tableBoardText(countdown,0)[1]).toBe('Bắt đầu sau 3')

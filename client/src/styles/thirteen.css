@@ -9,6 +9,11 @@
 .thirteen-lobby section { padding: 20px; }
 .thirteen-lobby h2 { margin: 0; }
 .thirteen-lobby ul { list-style: none; padding: 0; line-height: 1.8; }
+.thirteen-lobby .thirteen-status h2 { margin-right: auto; }
+.thirteen-chip--stake { background: var(--sp-green-soft); font-weight: 700; }
+.thirteen-stake-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.thirteen-stake-row span { color: var(--sp-text-muted); font-size: 13px; }
+.th-game-end .thirteen-stake-row { margin: 0 0 8px; }
 .games-tile > p { margin: 12px 0 20px; color: var(--sp-text-muted); font-size: 13px; }
 .games-tile > .sp-btn { margin-top: auto; align-self: flex-start; }
 .games-tile [aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }

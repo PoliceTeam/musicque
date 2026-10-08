@@ -4,8 +4,10 @@ import { message, Tooltip } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
 import ThirteenHud from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
+import StakePicker from './StakePicker'
+import { tableMoneyText } from '../CardTable3D/tableBoard'
 import { resetCardTableView } from '../CardTable3D/dragLook'
-import { inviteUrl, roomRemaining, roomStatus } from '../../utils/tableGame'
+import { inviteUrl, roomRemaining, roomStatus, stakeLabel, stakeOptionsOf } from '../../utils/tableGame'
 export default function ThirteenOverlay({ open, onClose, table, userId, result, dealOnMount = false, ...state }) {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [handLowered, setHandLowered] = useState(false)
@@ -48,6 +50,11 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const finished = table.status === 'finished'
   const me = table.seats.find(seat => seat?.userId === userId)
   const countdown = roomRemaining(table, table.startsAt, now)
+  const hasStake = typeof table.stake === 'number'
+  const isHost = Boolean(userId) && table.hostId === userId
+  const host = table.seats.find(seat => seat?.userId && seat.userId === table.hostId)
+  // Ván chỉ có người thật mới tính cược; một mình là ván tập nên không ghi số tiền lên nút.
+  const readyAmount = table.stake > 0 && table.seats.filter(seat => seat?.userId).length >= 2 ? ` (cược ${table.stake} PC)` : ''
   const readyTime = roomRemaining(table, me?.readyDeadlineAt || table.readyDeadlineAt, now)
   const copyInvite = async () => {
     try { await navigator.clipboard.writeText(inviteUrl(table.code || table.tableId)); message.open({ key: 'table-game', type: 'success', content: 'Đã sao chép link mời' }) }
@@ -59,7 +66,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
         {scene}
       </Profiler>
       <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
-      <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {table.pot ? `quỹ ${table.pot} PC` : 'ván tập'}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
+      <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {tableMoneyText(table).replace(/^./, letter => letter.toLowerCase())}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
       <div className='th-game-corner-controls'>
         <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
         <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
@@ -71,9 +78,13 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
           const delta = (result.payouts.find(p => p.userId === seat.userId)?.amount || 0) - (result.stake || 0)
           return <li key={seat.seat}><span>{['🥇 Nhất', '🥈 Nhì', '🥉 Ba', 'Bét'][i]} · {seat.username}</span><strong>{seat.isBot ? 'Bot' : !result.stake ? 'Ván tập' : `${delta >= 0 ? '+' : '−'}${Math.abs(delta)} PC`}</strong></li>
         })}</ol>}
+        {hasStake && <div className='thirteen-stake-row'><span>Mức cược</span>{isHost
+          ? <StakePicker options={stakeOptionsOf(state.config)} value={table.stake} balance={state.balance} disabled={Boolean(table.startsAt) || table.fundingPending || state.busy} onChange={stake => state.action('setStake', table.tableId, stake)} />
+          : <strong>{stakeLabel(table.stake)}</strong>}</div>}
+        {hasStake && !isHost && host && <p>Chủ bàn: {host.username}</p>}
         <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
         {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>Bot sẽ lấp các ghế trống khi bắt đầu.</p>}
-        <div className='thirteen-actions'><button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}</button><button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
+        <div className='thirteen-actions'><button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : `${finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}${readyAmount}`}</button><button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
       </div>}
       <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </section>

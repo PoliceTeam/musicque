@@ -25,3 +25,17 @@ it('validates unambiguous room codes and counts down with server offset after re
   expect(roomRemaining(table, table.startsAt, 5000)).toBe(0)
   expect(roomStatus(table, 2000)).toBe('Bắt đầu sau 2')
 })
+
+it('formats stakes: 0 is free play, anything else is PC per player', async () => {
+  const { stakeLabel, stakeOptionsOf, canAffordStake, stakeChangeNotice } = await import('./tableGame')
+  expect(stakeLabel(0)).toBe('Chơi vui')
+  expect(stakeLabel(50)).toBe('50 PC')
+  expect(stakeOptionsOf({ stake: 10 })).toEqual([10])
+  expect(stakeOptionsOf({ stake: 10, stakeOptions: [0, 10, 20] })).toEqual([0, 10, 20])
+  expect(canAffordStake(50, 20)).toBe(false)
+  expect(canAffordStake(20, 20)).toBe(true)
+  expect(canAffordStake(0, 0)).toBe(true)
+  expect(canAffordStake(10, undefined)).toBe(true)
+  expect(stakeChangeNotice(50)).toBe('Chủ bàn đổi mức cược thành 50 PC — hãy sẵn sàng lại')
+  expect(stakeChangeNotice(0)).toBe('Chủ bàn đổi sang chơi vui — hãy sẵn sàng lại')
+})

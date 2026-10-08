@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PlaylistContext } from './PlaylistContext'
 import { ThirteenProvider, useThirteen } from './ThirteenContext'
+import { message } from 'antd'
 import { tableGameApi } from '../services/api'
 const mocks = vi.hoisted(() => ({ user: null, tables: [], table: null, handlers: {}, refreshBalance: vi.fn(), requireAuth: vi.fn() }))
 vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mocks.user, refreshBalance: mocks.refreshBalance, requireAuth: mocks.requireAuth }) }))
@@ -130,4 +131,63 @@ it('uses join-specific errors for playing rooms and accepts finished rooms', asy
   await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('1'))
   expect(toast.mock.calls.some(([value]) => value.content?.includes('rời ghế'))).toBe(false)
   toast.mockRestore()
+})
+
+function StakeProbe() {
+  const { create, setStake, ready } = useThirteen()
+  return <div><button onClick={() => create('private', { stake: 20 })}>Create 20</button><button onClick={() => setStake('K7Q2', 50)}>Set stake 50</button><button onClick={() => ready('K7Q2')}>Ready</button></div>
+}
+const stakeTable = { game: 'thirteen', tableId: 'K7Q2', code: 'K7Q2', status: 'waiting', stake: 20, hostId: 'b', seats: [{ userId: 'a', username: 'An' }, { userId: 'b', username: 'Bình' }, null, null], serverNow: 1000 }
+const renderStake = () => render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><StakeProbe /></ThirteenProvider></PlaylistContext.Provider>)
+
+describe('table stake', () => {
+  beforeEach(() => { mocks.user = { _id: 'a' }; mocks.requireAuth.mockReturnValue(true); mocks.tables = [stakeTable]; mocks.table = stakeTable; tableGameApi.action.mockClear(); tableGameApi.create.mockClear() })
+
+  it('sends the chosen stake when creating a table', async () => {
+    renderStake()
+    fireEvent.click(screen.getByText('Create 20'))
+    await waitFor(() => expect(tableGameApi.create).toHaveBeenCalledWith('thirteen', { visibility: 'private', stake: 20, requestKey: expect.any(String) }))
+  })
+
+  it('posts a stake change to the table with a request key', async () => {
+    renderStake()
+    fireEvent.click(screen.getByText('Set stake 50'))
+    await waitFor(() => expect(tableGameApi.action).toHaveBeenCalledWith('thirteen', 'K7Q2', 'stake', { stake: 50, requestKey: expect.any(String) }))
+  })
+
+  it('maps a ready rejected for low balance to a stake-specific message', async () => {
+    const toast = vi.spyOn(message, 'open')
+    tableGameApi.action.mockRejectedValueOnce({ response: { status: 409, data: { code: 'INSUFFICIENT_COINS' } } })
+    renderStake()
+    fireEvent.click(screen.getByText('Ready'))
+    await waitFor(() => expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Không đủ PC cho mức cược này' }))
+    toast.mockRestore()
+  })
+
+  it('does not mistake a match snapshot stake (0 for a solo practice) for a host change', async () => {
+    const toast = vi.spyOn(message, 'open')
+    renderStake()
+    await waitFor(() => expect(mocks.handlers.table_game_state).toBeTypeOf('function'))
+    await act(async () => { await Promise.resolve() })
+    toast.mockClear()
+    act(() => mocks.handlers.table_game_state({ ...stakeTable, status: 'playing', matchId: 'm1', stake: 0, serverNow: 2000 }))
+    act(() => mocks.handlers.table_game_state({ ...stakeTable, status: 'finished', matchId: null, stake: 20, serverNow: 3000 }))
+    expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('mức cược') }))
+    toast.mockRestore()
+  })
+
+  it('tells seated players when the host changes the stake, but not the host', async () => {
+    const toast = vi.spyOn(message, 'open')
+    renderStake()
+    await waitFor(() => expect(tableGameApi.tables).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.handlers.table_game_state).toBeTypeOf('function'))
+    await act(async () => { await Promise.resolve() })
+    toast.mockClear()
+    act(() => mocks.handlers.table_game_state({ ...stakeTable, stake: 50, serverNow: 2000 }))
+    expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'info', content: 'Chủ bàn đổi mức cược thành 50 PC — hãy sẵn sàng lại' })
+    toast.mockClear()
+    act(() => mocks.handlers.table_game_state({ ...stakeTable, stake: 100, hostId: 'a', serverNow: 3000 }))
+    expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('mức cược') }))
+    toast.mockRestore()
+  })
 })

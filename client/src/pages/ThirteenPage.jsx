@@ -7,10 +7,11 @@ import { ThirteenProvider, useThirteen } from '../contexts/ThirteenContext'
 import { clearTableAssets } from '../components/CardTable3D/assets'
 import ThirteenOverlay from '../components/Thirteen/ThirteenOverlay'
 import ThirteenRulesModal from '../components/Thirteen/ThirteenRulesModal'
-import { isRoomCode, roomStatus } from '../utils/tableGame'
+import StakePicker from '../components/Thirteen/StakePicker'
+import { canAffordStake, isRoomCode, roomStatus, stakeLabel, stakeOptionsOf } from '../utils/tableGame'
 function ThirteenContent() {
   useEffect(() => clearTableAssets, [])
-  const { user, requireAuth } = useAuth()
+  const { user, requireAuth, balance } = useAuth()
   const state = useThirteen()
   const { tables, currentTable, config, action, busy } = state
   const [params, setParams] = useSearchParams()
@@ -19,6 +20,7 @@ function ThirteenContent() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [visibility, setVisibility] = useState('public')
+  const [pickedStake, setPickedStake] = useState(null)
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [dealOnMount, setDealOnMount] = useState(false)
   const [lastMatch, setLastMatch] = useState(null)
@@ -61,6 +63,10 @@ function ThirteenContent() {
     else action('sit', room, { retryTransient: true }).then(ok => { if (ok) setOverlayOpen(true) }).finally(clearRoom)
   }, [room, userId, action, requireAuth, setParams])
   const join = async (name, value) => { if (await action(name, value)) { setOverlayOpen(true); setCreateOpen(false) } }
+  // Mức mặc định của server; nếu số dư không đủ thì mở sẵn "Chơi vui" thay vì một lựa chọn bị khoá.
+  const wantedStake = pickedStake ?? config.stake
+  const createStake = canAffordStake(wantedStake, balance) ? wantedStake : 0
+  const create = async () => { if (await action('create', visibility, { stake: createStake })) { setOverlayOpen(true); setCreateOpen(false) } }
   const finalTable = useMemo(() => state.result && lastMatch?.matchId === state.result.matchId && currentTable?.status === 'finished' ? {
     ...currentTable, ...state.result.publicView, matchId: lastMatch.matchId, pot: lastMatch.pot, seats: currentTable.seats.map((seat, i) => seat ? { ...state.result.publicView?.seats?.[i], ...seat } : null), status: 'finished', currentSeat: null,
   } : currentTable, [state.result, lastMatch, currentTable])
@@ -75,16 +81,16 @@ function ThirteenContent() {
         <Button className='sp-btn' disabled={busy || seated} onClick={() => setCreateOpen(true)}>Tạo bàn</Button>
         <form onSubmit={event => { event.preventDefault(); if (isRoomCode(code)) join('sit', code) }}><Input aria-label='Nhập mã bàn' placeholder='Nhập mã bàn' maxLength={4} value={code} onChange={event => setCode(event.target.value.toUpperCase())} /><Button htmlType='submit' className='sp-btn' disabled={busy || seated || !isRoomCode(code)}>Vào</Button></form>
       </div>
-      <p className='thirteen-stake'>Cược {config.stake} PC/người khi có từ 2 người thật · Chơi một mình là ván tập (miễn phí)</p>
+      <p className='thirteen-stake'>Mỗi bàn có mức cược riêng do chủ bàn chọn, tính cho mỗi người khi có từ 2 người thật · Chơi nhanh vào bàn mức {stakeLabel(config.stake)} · Chơi một mình là ván tập (miễn phí)</p>
       <div className='thirteen-lobby'>{publicTables.map(table => <section className='sp-panel' key={table.tableId}>
-        <div className='thirteen-status'><h2>Bàn {table.code || table.tableId}</h2><span className='thirteen-chip'>{table.startsAt ? `Sắp bắt đầu ${roomStatus(table, now).split(' ').at(-1)}s` : roomStatus(table, now)}</span></div>
-        <ul className='thirteen-seats'>{table.seats.map((seat, i) => <li key={i}><span className='thirteen-avatar'>{seat?.username?.slice(0, 2).toUpperCase() || '—'}</span><span>{seat?.username || 'Trống'}{seat?.ready && ' ✓'}</span></li>)}</ul>
+        <div className='thirteen-status'><h2>Bàn {table.code || table.tableId}</h2>{typeof table.stake === 'number' && <span className='thirteen-chip thirteen-chip--stake'>{stakeLabel(table.stake)}</span>}<span className='thirteen-chip'>{table.startsAt ? `Sắp bắt đầu ${roomStatus(table, now).split(' ').at(-1)}s` : roomStatus(table, now)}</span></div>
+        <ul className='thirteen-seats'>{table.seats.map((seat, i) => <li key={i}><span className='thirteen-avatar'>{seat?.username?.slice(0, 2).toUpperCase() || '—'}</span><span>{seat?.username || 'Trống'}{seat?.userId && seat.userId === table.hostId && <> <span role='img' aria-label='Chủ bàn'>👑</span></>}{seat?.ready && ' ✓'}</span></li>)}</ul>
         <Button className='sp-btn' disabled={busy || (seated && currentTable.tableId !== table.tableId) || (!['waiting', 'finished'].includes(table.status) && currentTable?.tableId !== table.tableId) || (table.seats.every(Boolean) && currentTable?.tableId !== table.tableId)} onClick={() => currentTable?.tableId === table.tableId ? setOverlayOpen(true) : join('sit', table.tableId)}>{['playing', 'settling'].includes(table.status) && currentTable?.tableId !== table.tableId ? 'Đang chơi' : 'Vào bàn'}</Button>
       </section>)}</div>
       {!publicTables.length && <p role='status'>Chưa có bàn nào — Chơi nhanh để tạo bàn mới</p>}
     </main>
-    <Modal title='Tạo bàn' open={createOpen} onCancel={() => setCreateOpen(false)} footer={<Button className='sp-btn sp-btn--primary' disabled={busy} onClick={() => join('create', visibility)}>Tạo bàn</Button>}><Radio.Group value={visibility} onChange={event => setVisibility(event.target.value)}><Radio value='public'>Công khai</Radio><Radio value='private'>Riêng tư (chỉ vào bằng mã)</Radio></Radio.Group></Modal>
-    {seated && <ThirteenOverlay key={userId} {...state} table={finalTable} userId={userId} open={overlayOpen} onClose={closeOverlay} dealOnMount={dealOnMount} turnMs={config.turnMs} />}
+    <Modal title='Tạo bàn' open={createOpen} onCancel={() => setCreateOpen(false)} footer={<Button className='sp-btn sp-btn--primary' disabled={busy} onClick={create}>Tạo bàn</Button>}><Radio.Group value={visibility} onChange={event => setVisibility(event.target.value)}><Radio value='public'>Công khai</Radio><Radio value='private'>Riêng tư (chỉ vào bằng mã)</Radio></Radio.Group><div className='thirteen-stake-row'><span>Mức cược mỗi người</span><StakePicker options={stakeOptionsOf(config)} value={createStake} balance={balance} onChange={setPickedStake} /></div></Modal>
+    {seated && <ThirteenOverlay key={userId} {...state} balance={balance} table={finalTable} userId={userId} open={overlayOpen} onClose={closeOverlay} dealOnMount={dealOnMount} turnMs={config.turnMs} />}
     <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
   </div>
 }

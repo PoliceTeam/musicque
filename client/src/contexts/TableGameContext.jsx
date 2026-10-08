@@ -4,6 +4,7 @@ import { message } from 'antd'
 import { PlaylistContext } from './PlaylistContext'
 import { useAuth } from './AuthContext'
 import { tableGameApi, getStoredToken } from '../services/api'
+import { stakeChangeNotice } from '../utils/tableGame'
 const TableGameContext = createContext(null)
 export const useTableGame = (gameName) => {
   const value = useContext(TableGameContext)
@@ -21,7 +22,12 @@ const ERROR_COPY = {
   MOVE_CONFLICT: 'Bàn vừa cập nhật, hãy thử lại.',
   NOT_SEATED: 'Bạn chưa ngồi vào bàn.',
   RECOVERING: 'Bàn đang được khôi phục, hãy thử lại.',
+  NOT_HOST: 'Chỉ chủ bàn mới đổi được mức cược.',
+  INVALID_STAKE: 'Mức cược không hợp lệ.',
+  TABLE_BUSY: 'Bàn đang bắt đầu hoặc đang chơi, chưa đổi được mức cược.',
 }
+// Cùng mã INSUFFICIENT_COINS: lúc bắt đầu ván là "đã hoàn cược" (ERROR_COPY), lúc bấm sẵn sàng là thiếu PC cho mức cược.
+const ACTION_ERROR_COPY = { ...ERROR_COPY, INSUFFICIENT_COINS: 'Không đủ PC cho mức cược này' }
 export const TableGameProvider = ({ game, children }) => {
   const { socket } = useContext(PlaylistContext)
   const { user, requireAuth, refreshBalance } = useAuth()
@@ -58,6 +64,7 @@ export const TableGameProvider = ({ game, children }) => {
       const left = previous.seats.find(seat => seat?.userId && !table.seats.some(next => next?.userId === seat.userId))
       if (joined) toast(`${joined.username} vào bàn`)
       else if (left && left.userId !== userId) toast(`${left.username} rời bàn`)
+      if (!previous.matchId && !table.matchId && previous.stake !== undefined && table.stake !== undefined && table.stake !== previous.stake && table.hostId !== userId) toast(stakeChangeNotice(table.stake))
     }
     if (table.startError && table.startError !== previous?.startError) toast(ERROR_COPY[table.startError] || 'Không bắt đầu được ván. Hãy sẵn sàng lại.', 'error')
     tablesRef.current = table.deleted ? tablesRef.current.filter(t => t.tableId !== table.tableId) : [...tablesRef.current.filter(t => t.tableId !== table.tableId), publicTable]
@@ -116,7 +123,7 @@ export const TableGameProvider = ({ game, children }) => {
     busyRef.current = true
     setBusy(true)
     try {
-      const body = { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move: payload } : name === 'create' ? { visibility: payload } : {}) }
+      const body = { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move: payload } : name === 'create' ? { visibility: payload, stake: options.stake } : name === 'stake' ? { stake: payload } : {}) }
       const send = () => (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
       let response
       try { response = await send() } catch (error) {
@@ -131,10 +138,10 @@ export const TableGameProvider = ({ game, children }) => {
     } catch (error) {
       const code = error.response?.data?.code
       const joinError = ['sit', 'quickJoin'].includes(name) && code === 'TABLE_PLAYING'
-      toast(joinError ? 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' : ERROR_COPY[code] || 'Không thực hiện được. Hãy thử lại.', 'error')
+      toast(joinError ? 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' : ACTION_ERROR_COPY[code] || 'Không thực hiện được. Hãy thử lại.', 'error')
       load()
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }

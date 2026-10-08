@@ -5,13 +5,14 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ThirteenOverlay from './ThirteenOverlay'
 import ThirteenPage from '../../pages/ThirteenPage'
-const mocks = vi.hoisted(() => ({ state: null }))
+const mocks = vi.hoisted(() => ({ state: null, balance: undefined }))
 vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => { mocks.sceneRenders = (mocks.sceneRenders || 0) + 1; return <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> } }))
 vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> }))
-vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' } }) }))
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' }, balance: mocks.balance }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
 const table = { tableId: 1, matchId: 'g1', version: 0, status: 'playing', currentSeat: 0, pot: 20, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 1 }, { userId: 'b', username: 'Bình', handCount: 1 }, { isBot: true, username: 'Bot 1', handCount: 1 }, { isBot: true, username: 'Bot 2', handCount: 1 }], trick: null, mustInclude: '3S' }
 const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), busy: false, onClose: vi.fn() }
+beforeEach(() => { mocks.balance = undefined })
 describe('ThirteenOverlay', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.state = { ...props, tables: [table], currentTable: table, config: { stake: 10, turnMs: 20000 }, closeResult: vi.fn() } })
   it('automatically opens the playing match, closes to the lobby and can reopen', async () => {
@@ -125,7 +126,7 @@ it('quick joins, creates private rooms and validates room codes in the lobby', a
   await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
   await userEvent.click(screen.getByRole('radio', { name: 'Riêng tư (chỉ vào bằng mã)' }))
   await userEvent.click(within(screen.getByRole('dialog', { name: 'Tạo bàn' })).getByRole('button', { name: 'Tạo bàn' }))
-  expect(mocks.state.action).toHaveBeenCalledWith('create', 'private')
+  expect(mocks.state.action).toHaveBeenCalledWith('create', 'private', { stake: 10 })
 })
 
 it('joins a room deep link once', async () => {
@@ -207,4 +208,103 @@ it('dispatches a camera reset from the default-view button', async () => {
     await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
     expect(reset).toHaveBeenCalledOnce()
   } finally { window.removeEventListener('card-table:reset-view', reset) }
+})
+
+const stakeConfig = { stake: 10, stakeOptions: [0, 10, 20, 50, 100], turnMs: 20000 }
+const lobbyState = overrides => { mocks.state = { ...props, tables: [], currentTable: null, config: stakeConfig, closeResult: vi.fn(), action: vi.fn(async () => true), ...overrides } }
+
+describe('stake in the lobby', () => {
+  it('creates a table at the chosen stake and disables tiers above the balance', async () => {
+    mocks.balance = 30
+    lobbyState()
+    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
+    const dialog = screen.getByRole('dialog', { name: 'Tạo bàn' })
+    expect(within(dialog).getByRole('radio', { name: '10 PC' })).toBeChecked()
+    expect(within(dialog).getByRole('radio', { name: '50 PC' })).toBeDisabled()
+    await userEvent.click(within(dialog).getByText('20 PC'))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo bàn' }))
+    expect(mocks.state.action).toHaveBeenCalledWith('create', 'public', { stake: 20 })
+  })
+
+  it('falls back to free play when the default stake is above the balance', async () => {
+    mocks.balance = 5
+    lobbyState()
+    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
+    const dialog = screen.getByRole('dialog', { name: 'Tạo bàn' })
+    expect(within(dialog).getByRole('radio', { name: 'Chơi vui' })).toBeChecked()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo bàn' }))
+    expect(mocks.state.action).toHaveBeenCalledWith('create', 'public', { stake: 0 })
+  })
+
+  it('shows each table stake, crowns its host and explains per-table stakes', () => {
+    const room = { ...table, tableId: 'AAAA', code: 'AAAA', status: 'waiting', visibility: 'public', stake: 50, hostId: 'guest-1', seats: [{ userId: 'guest-0', username: 'Guest 0' }, { userId: 'guest-1', username: 'Guest 1' }, null, null] }
+    lobbyState({ tables: [room, { ...room, tableId: 'BBBB', code: 'BBBB', stake: 0, hostId: 'guest-0' }] })
+    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    const card = screen.getByRole('heading', { name: 'Bàn AAAA' }).closest('section')
+    expect(within(card).getByText('50 PC')).toBeInTheDocument()
+    expect(within(screen.getByRole('heading', { name: 'Bàn BBBB' }).closest('section')).getByText('Chơi vui')).toBeInTheDocument()
+    const crown = within(card).getByRole('img', { name: 'Chủ bàn' })
+    expect(within(card).getAllByRole('img', { name: 'Chủ bàn' })).toHaveLength(1)
+    expect(within(card).getByText('Guest 1').closest('li')).toContainElement(crown)
+    expect(screen.getByText(/Mỗi bàn có mức cược riêng/)).toBeInTheDocument()
+    expect(screen.queryByText(/Cược 10 PC\/người/)).not.toBeInTheDocument()
+  })
+})
+
+describe('stake in the waiting panel', () => {
+  const waiting = { ...table, status: 'waiting', matchId: null, pot: 0, stake: 20, hostId: 'a', seats: [{ userId: 'a', username: 'An', ready: false }, { userId: 'b', username: 'Bình', ready: true }, null, null] }
+  const overlay = (overrides = {}) => <ThirteenOverlay {...props} config={stakeConfig} balance={500} open table={{ ...waiting, ...overrides }} />
+  const radios = () => screen.getAllByRole('radio')
+
+  it('lets the host change the stake', async () => {
+    render(overlay())
+    expect(screen.getByRole('radiogroup', { name: 'Mức cược' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '20 PC' })).toBeChecked()
+    await userEvent.click(screen.getByText('50 PC'))
+    expect(props.action).toHaveBeenCalledWith('setStake', 1, 50)
+  })
+
+  it('locks the host control during the countdown and while funding is pending', () => {
+    const view = render(overlay({ startsAt: Date.now() + 3000 }))
+    for (const radio of radios()) expect(radio).toBeDisabled()
+    view.rerender(overlay({ fundingPending: true }))
+    for (const radio of radios()) expect(radio).toBeDisabled()
+    view.rerender(overlay())
+    for (const radio of radios()) expect(radio).toBeEnabled()
+  })
+
+  it('shows other players the stake read-only with the host name', () => {
+    render(overlay({ hostId: 'b' }))
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+    expect(screen.getByText('Mức cược')).toBeInTheDocument()
+    expect(screen.getByText('20 PC')).toBeInTheDocument()
+    expect(screen.getByText('Chủ bàn: Bình')).toBeInTheDocument()
+  })
+
+  it('hides the stake row when the server sends no stake', () => {
+    render(overlay({ stake: undefined, hostId: undefined }))
+    expect(screen.queryByText('Mức cược')).not.toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+  })
+
+  it('puts the amount on the ready button, but not for free play', () => {
+    const view = render(overlay({ stake: 50 }))
+    expect(screen.getByRole('button', { name: 'Sẵn sàng (cược 50 PC)' })).toBeInTheDocument()
+    view.rerender(overlay({ stake: 50, status: 'finished' }))
+    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới (cược 50 PC)' })).toBeInTheDocument()
+    view.rerender(overlay({ stake: 0, status: 'finished' }))
+    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới' })).toBeInTheDocument()
+  })
+
+  it('leaves the amount off the ready button when you are alone, since a solo game is free practice', () => {
+    render(overlay({ stake: 50, seats: [waiting.seats[0], null, null, null] }))
+    expect(screen.getByRole('button', { name: 'Sẵn sàng' })).toBeInTheDocument()
+  })
+
+  it('announces the stake with the other wall-board information', () => {
+    const { container } = render(overlay({ code: 'FQ8X', stake: 50 }))
+    expect(container.ownerDocument.querySelector('.thirteen-sr-only[aria-live="polite"]')).toHaveTextContent('Bàn FQ8X, đang chờ 2/4, cược 50 PC')
+  })
 })
