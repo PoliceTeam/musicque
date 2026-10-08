@@ -322,13 +322,10 @@ const createTableGameService = (definition) => {
   const leave = (userId, tableId, requestKey) => {
     validateKey(requestKey)
     const key = `u:${userId}:leave:${tableId}:${requestKey}`
-    if (requests.has(key)) return Promise.resolve(requests.get(key))
-    return leaveInternal(userId, tableId, requestKey).then(response => { return remember(key, response) })
-  }
-  const leaveInternal = (userId, tableId, requestKey) => {
-    validateKey(requestKey)
-    const table = tableFor(tableId)
-    return enqueue(table, async () => {
+    const queue = tables.find(table => table.tableId === String(tableId).toUpperCase()) || lobby
+    return enqueue(queue, async () => {
+      if (requests.has(key)) return requests.get(key)
+      const table = tableFor(tableId)
       waiting(table)
       if (!table.seats.some(seat => seat?.userId === userId.toString())) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
       removeSeats(table, seat => seat.userId === userId.toString(), 'left')
@@ -338,7 +335,7 @@ const createTableGameService = (definition) => {
       broadcast(table)
       deleteEmpty(table)
       if (!tables.includes(table)) response.deleted = true
-      return response
+      return remember(key, response)
     })
   }
   const startInternal = async (table) => {

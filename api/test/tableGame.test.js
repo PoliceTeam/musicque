@@ -462,3 +462,13 @@ test('private state and result reach seated users only; public state reaches vie
   assert.ok(publicEvents.every(event => Array.isArray(event.room) && event.room.every(room => ['table_game:user:a', 'table_game:user:b'].includes(room))))
   assert.deepEqual(h.service.listTables('stranger'), [])
 })
+
+test('concurrent identical leave requests share the queued result, including deleted rooms', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', 'create')
+  const results = await Promise.all([h.service.leave('a', room.code, 'leave'), h.service.leave('a', room.code, 'leave')])
+  assert.deepEqual(results[0], results[1])
+  assert.equal(results[0].deleted, true)
+  assert.deepEqual(await h.service.leave('a', room.code, 'leave'), results[0])
+  assert.equal(h.emitted.filter(event => event.data.deleted).length, 1)
+})
