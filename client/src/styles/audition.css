@@ -92,11 +92,6 @@ body:has(.au-page) .lr-dock { display: none; }
   transform: scale(1.08);
 }
 
-.au-icon--lg {
-  width: 56px;
-  height: 56px;
-}
-
 .au-progress {
   width: 160px;
   height: 6px;
@@ -153,6 +148,7 @@ body:has(.au-page) .lr-dock { display: none; }
   filter: drop-shadow(0 0 14px rgba(255, 63, 208, 0.6));
 }
 
+/* chữ chấm điểm hiện phía trên hàng phím, như Audition */
 .au-label--finish {
   filter: drop-shadow(0 0 20px rgba(255, 216, 77, 0.85));
 }
@@ -162,7 +158,6 @@ body:has(.au-page) .lr-dock { display: none; }
   animation: none;
 }
 
-/* chữ chấm điểm hiện phía trên hàng phím, như Audition */
 .au-judge {
   position: absolute;
   bottom: 158px;
@@ -393,31 +388,8 @@ body:has(.au-page) .lr-dock { display: none; }
   opacity: 0.8;
 }
 
-.au-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-
-.au-field--col {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-.au-field small {
-  opacity: 0.65;
-}
-
 .au-check {
   cursor: pointer;
-}
-
-.au-chars {
-  display: flex;
-  gap: 6px;
 }
 
 .au-chip {
@@ -437,14 +409,6 @@ body:has(.au-page) .lr-dock { display: none; }
   box-shadow: 0 0 12px rgba(47, 224, 255, 0.5);
 }
 
-.au-howto {
-  margin: 4px 0 16px;
-  padding-left: 18px;
-  font-size: 13px;
-  line-height: 1.5;
-  opacity: 0.85;
-}
-
 .au-start {
   width: 100%;
   padding: 12px;
@@ -461,55 +425,6 @@ body:has(.au-page) .lr-dock { display: none; }
 .au-start:disabled {
   opacity: 0.5;
   cursor: wait;
-}
-
-.au-result {
-  text-align: center;
-}
-
-.au-result__grade {
-  font-size: 84px;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--au-gold);
-  text-shadow: 0 0 24px rgba(255, 216, 77, 0.7);
-}
-
-.au-result__tag {
-  display: block;
-  width: 240px;
-  margin: 4px auto 0;
-}
-
-.au-result__score {
-  margin: 8px 0 12px;
-  font-size: 32px;
-  font-weight: 900;
-}
-
-.au-result__rows {
-  text-align: left;
-}
-
-.au-result__row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 14px;
-}
-
-.au-result__row.is-perfect b { color: var(--au-gold); }
-.au-result__row.is-great b { color: #4dffc3; }
-.au-result__row.is-cool b { color: var(--au-cyan); }
-.au-result__row.is-bad b { color: #ff9a3c; }
-.au-result__row.is-missed b { color: #ff4f6d; }
-
-.au-result__actions {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 16px;
 }
 
 /* ---------- Keyframes ---------- */
@@ -555,24 +470,6 @@ body:has(.au-page) .lr-dock { display: none; }
 }
 
 /* ---------- Phòng nhiều người ---------- */
-.au-tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(10, 6, 30, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #e9e4ff;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.au-tag.is-me {
-  border-color: var(--au-gold);
-  color: var(--au-gold);
-  box-shadow: 0 0 8px rgba(255, 216, 77, 0.5);
-}
-
 .au-live {
   position: absolute;
   right: 14px;
@@ -689,155 +586,9 @@ body:has(.au-page) .lr-dock { display: none; }
   cursor: pointer;
 }
 
-.au-players {
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-}
-
-.au-players li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 13px;
-  min-width: 0;
-}
-
-.au-players li.is-me {
-  border-color: var(--au-cyan);
-}
-
-.au-players li.is-empty {
-  justify-content: center;
-  opacity: 0.35;
-  font-size: 12px;
-  border-style: dashed;
-}
-
-.au-players__char {
-  flex: 0 0 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: rgba(47, 224, 255, 0.2);
-  color: var(--au-cyan);
-  font-size: 11px;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.au-players__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.au-players__host {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--au-gold);
-  white-space: nowrap;
-}
-
 .au-check.is-readonly {
   opacity: 0.7;
   cursor: default;
-}
-
-.au-settings {
-  margin-bottom: 10px;
-  font-size: 13px;
-}
-
-.au-settings summary {
-  cursor: pointer;
-  opacity: 0.8;
-  margin-bottom: 8px;
-}
-
-.au-wait {
-  padding: 10px;
-  text-align: center;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.au-ghost {
-  width: 100%;
-  margin-top: 8px;
-  padding: 9px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: var(--au-ink);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.au-ghost:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.au-result {
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
-}
-
-.au-result__rows--inline {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 14px;
-}
-
-.au-result__title {
-  margin: 14px 0 6px;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-
-.au-rank {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-.au-rank li {
-  display: grid;
-  grid-template-columns: 26px 1fr auto;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.au-rank li:first-child {
-  background: rgba(255, 216, 77, 0.12);
-}
-
-.au-rank li.is-me {
-  outline: 1px solid var(--au-cyan);
-}
-
-.au-rank__pos {
-  font-weight: 900;
-  font-style: italic;
-  color: var(--au-gold);
-}
-
-.au-rank__score {
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Sảnh danh sách phòng ---------- */
@@ -977,67 +728,8 @@ body:has(.au-page) .lr-dock { display: none; }
   cursor: not-allowed;
 }
 
-.au-tag.is-leader {
-  border-color: var(--au-gold);
-  background: rgba(60, 40, 0, 0.75);
-  color: var(--au-gold);
-  box-shadow: 0 0 12px rgba(255, 216, 77, 0.6);
-}
-
-.au-players__bot {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--au-pink);
-  white-space: nowrap;
-}
-
-.au-players__host + .au-players__bot {
-  margin-left: 4px;
-}
-
-.au-players__x {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255, 79, 109, 0.2);
-  color: #ff8a9a;
-  line-height: 18px;
-  cursor: pointer;
-}
-
 .au-bots .au-chip-btn {
   padding: 5px 12px;
-}
-
-.au-select {
-  padding: 5px 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--au-ink);
-}
-
-.au-select option {
-  color: #111;
-}
-
-.au-players__ready {
-  margin-left: auto;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.45);
-  white-space: nowrap;
-}
-
-.au-players__ready.is-on {
-  color: #4dffc3;
-}
-
-.au-select--grow {
-  flex: 1;
-  min-width: 0;
 }
 
 .au-start.is-ready {

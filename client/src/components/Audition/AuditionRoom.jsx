@@ -2,13 +2,10 @@ import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useStat
 import { useNavigate } from 'react-router-dom'
 import { message } from 'antd'
 import {
-  accuracy,
   createChart,
   createGameState,
   seededRng,
   expireTurn,
-  gradeFor,
-  JUDGEMENTS,
   KEY_TO_DIR,
   pressArrow,
   pressSpace,
@@ -30,14 +27,12 @@ import {
 } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import AuditionHud from './AuditionHud'
-import AtlasImg from './AtlasImg'
 import { useAuditionRoom } from './useAuditionRoom'
+import { slotOf } from './resultBoard'
 import {
   ASSET,
-  BOT_SKILLS,
   CHARACTERS,
   DANCE_BY_LEVEL,
-  FRAME,
   loadBest,
   loadSettings,
   saveBest,
@@ -46,18 +41,14 @@ import {
   SFX_FINISH,
   SFX_FOR,
   SHOWTIME_CLIP,
-  SONGS,
   STAGES,
-  RANDOM_STAGE,
   trackOf
 } from './auditionConfig'
 import { createSfx } from './auditionSfx'
 
 const AuditionStage3D = lazy(() => import('./AuditionStage3D'))
 
-const JUDGE_LABEL = { perfect: 'Perfect', great: 'Great', cool: 'Cool', bad: 'Bad', missed: 'Missed' }
 const charUrl = (charId) => (CHARACTERS.find((c) => c.id === charId) || CHARACTERS[0]).url
-const charNo = (charId) => Math.max(1, CHARACTERS.findIndex((c) => c.id === charId) + 1)
 
 // Phản ứng của nhân vật với một kết quả chấm điểm (của mình hay của người khác).
 const animForResult = ({ judgement, showtime, turnLevel }, t, bar) => {
@@ -90,7 +81,6 @@ const AuditionRoom = ({ roomId }) => {
   const [local, setLocal] = useState('idle') // idle | countdown | playing | done | missed-start
   const [countdown, setCountdown] = useState(0)
   const [needTap, setNeedTap] = useState(false)
-  const [myResult, setMyResult] = useState(null)
   const [best, setBest] = useState(loadBest)
 
   const audioRef = useRef(null)
@@ -185,12 +175,9 @@ const AuditionRoom = ({ roomId }) => {
 
   const finishLocal = useCallback(() => {
     const g = gameRef.current
-    const acc = accuracy(g)
-    const newRecord = g.score > loadBest()
-    if (newRecord) { saveBest(g.score); setBest(g.score) }
-    const fullCombo = g.turnsPlayed > 0 && g.counts.cool + g.counts.bad + g.counts.missed === 0
-    setMyResult({ ...g, acc, grade: gradeFor(acc), newRecord, fullCombo })
-    setMine({ kind: 'end', clip: acc >= 0.6 ? 'victory_2' : 'defeat', synced: false, once: true, restart: true })
+    if (g.score > loadBest()) { saveBest(g.score); setBest(g.score) }
+    // hết bài trên máy mình: nhún chờ cả phòng; điệu ăn mừng/thua theo hạng chạy khi bảng điểm mở
+    setMine({ kind: 'idle', clip: 'idle', synced: false, restart: true })
     showLabel(null)
     setLocal('done')
     finishAuditionGame(roomId, gameMeta.current.gameNo).catch(() => {})
@@ -223,7 +210,6 @@ const AuditionRoom = ({ roomId }) => {
       chartRef.current = createChart({ bpm: track.bpm, offset: track.offset, duration: track.duration })
       gameRef.current = createGameState()
       setView(gameRef.current)
-      setMyResult(null)
       setFx((f) => ({ key: f.key + 1 }))
       setLiveScores({})
       othersRef.current = {}
@@ -360,6 +346,11 @@ const AuditionRoom = ({ roomId }) => {
   useEffect(() => {
     const onKey = (e) => {
       if (local !== 'playing') {
+        if (e.key === 'Enter' && room?.status === 'finished' && resultsSeen !== room.gameNo && me) {
+          e.preventDefault()
+          setResultsSeen(room.gameNo)
+          return
+        }
         const inLobby = room && room.status !== 'playing' && !(room.status === 'finished' && resultsSeen !== room.gameNo)
         if (e.key === 'Enter' && isHost && inLobby && e.target.tagName !== 'SELECT') { e.preventDefault(); start() }
         return
@@ -374,7 +365,7 @@ const AuditionRoom = ({ roomId }) => {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [local, isHost, room, resultsSeen, start, commit])
+  }, [local, isHost, room, resultsSeen, start, commit, me])
 
   // DEV: kiểm thử tự động đọc trạng thái / điều khiển.
   useEffect(() => {
@@ -413,6 +404,22 @@ const AuditionRoom = ({ roomId }) => {
   // ---- Sân khấu: mình đứng giữa hàng sau, người dẫn đầu đứng trước ----
   const dancers = useMemo(() => {
     if (!room) return []
+    // bảng điểm đã chốt: hạng 1–2 ăn mừng (lặp), từ hạng 3 làm động tác thua
+    const podiumRank = room.status === 'finished' && room.results && resultsSeen !== room.gameNo
+      ? new Map(room.results.map((r) => [r.userId, r.rank]))
+      : null
+    if (podiumRank) {
+      const animFor = (id) => {
+        const r = podiumRank.get(id)
+        const key = 1000 + room.gameNo
+        if (r === 1) return { clip: 'victory_2', synced: false, key, kind: 'win' }
+        if (r === 2) return { clip: 'victory_1', synced: false, key, kind: 'win' }
+        return { clip: 'defeat', synced: false, once: true, key, kind: 'lose' }
+      }
+      return room.players.map((p) => ({
+        id: p.userId, url: charUrl(p.charId), anim: animFor(p.userId), name: p.name, isMe: p.userId === userId, isLeader: false, platform: 'idle'
+      }))
+    }
     const playing = local === 'playing' || local === 'done'
     const idle = { clip: 'idle', synced: playing, key: 0, kind: 'idle' }
     const others = room.players.filter((p) => p.userId !== userId)
@@ -426,7 +433,7 @@ const AuditionRoom = ({ roomId }) => {
       })
     }
     return list
-  }, [room, userId, me, othersAnim, myAnim, local, leaderId])
+  }, [room, userId, me, othersAnim, myAnim, local, leaderId, resultsSeen])
 
   const ranking = useMemo(() => {
     if (!room) return []
@@ -445,6 +452,54 @@ const AuditionRoom = ({ roomId }) => {
     return STAGES[Math.floor(r() * STAGES.length)].image
   }, [room?.seed, room?.id, room?.stageId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- Bảng điểm cuối bài (dựng trong scene WebGL, xem ResultScene) ----
+  const showResults = Boolean(room) && local !== 'playing' && local !== 'countdown' &&
+    ((room.status === 'finished' && resultsSeen !== room.gameNo) || (local === 'done' && room.status === 'playing'))
+  const finalResults = showResults && room.status === 'finished' && room.results ? room.results : null
+  const resultView = useMemo(() => {
+    if (!showResults) return null
+    // chưa chốt ván: xếp tạm theo điểm hiện tại, chỉ hiện bảng của mình
+    const list = finalResults || ranking.map((p, i) => ({ rank: i + 1, userId: p.userId, name: p.name, isBot: p.isBot, score: p.live }))
+    const ranks = new Map(list.map((r) => [r.userId, r.rank]))
+    const entries = (finalResults ? list : list.filter((r) => r.userId === userId).map((r) => ({
+      ...r, score: view.score, counts: view.counts, maxPerfect: view.maxPerfect
+    })))
+      .map((e) => ({ ...e, isMe: e.userId === userId }))
+      .sort((a, b) => slotOf(a.rank)[0] - slotOf(b.rank)[0])
+    return {
+      ranks,
+      hud: {
+        entries,
+        title: finalResults ? 'BẢNG XẾP HẠNG' : 'ĐANG CHỜ CẢ PHÒNG…',
+        sub: track.label,
+        onContinue: finalResults && me ? () => setResultsSeen(room.gameNo) : null,
+        onLeave: leave
+      }
+    }
+  }, [showResults, finalResults, ranking, userId, view, track.label, me, room?.gameNo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- Phòng chờ (dựng trong scene WebGL, xem LobbyHud) ----
+  const showLobby = Boolean(room) && !showResults && local !== 'playing' && local !== 'countdown' && !(local === 'done' && room.status === 'playing')
+  const lobbyView = showLobby
+    ? {
+        room,
+        me,
+        isHost,
+        actions: {
+          onJoin: join,
+          onLeave: leave,
+          onStart: start,
+          onChar: (charId) => run(() => setAuditionCharacter(roomId, charId)),
+          onDel: (del) => run(() => setAuditionSettings(roomId, { del })),
+          onAddBot: (skill) => run(() => addAuditionBot(roomId, skill)),
+          onRemoveBot: (botId) => run(() => removeAuditionBot(roomId, botId)),
+          onReady: (ready) => run(() => setAuditionReady(roomId, ready)),
+          onSong: (songId) => run(() => setAuditionSettings(roomId, { songId })),
+          onStage: (stageId) => run(() => setAuditionSettings(roomId, { stageId }))
+        }
+      }
+    : null
+
   if (gone) {
     return (
       <div className='au-page' style={{ backgroundImage: `url(${ASSET.stage})` }}>
@@ -462,11 +517,10 @@ const AuditionRoom = ({ roomId }) => {
   return (
     <div className='au-page' style={{ backgroundImage: `url(${background})` }}>
       <audio ref={audioRef} src={track.url} preload='auto' />
-      {/* lúc có bảng chờ/kết quả bên phải thì thu hẹp sân khấu để không ai bị che */}
-      <div className={`au-stage${showtime ? ' is-showtime' : ''}${inGame ? '' : ' is-panel'}`}>
+      <div className={`au-stage${showtime ? ' is-showtime' : ''}`}>
         <Suspense fallback={<div className='au-loading au-loading--page'>Đang tải sân khấu…</div>}>
           {dancers.length > 0 && (
-            <AuditionStage3D dancers={dancers} audioRef={audioRef} track={track} latencyRef={latencyRef} showtime={showtime} />
+            <AuditionStage3D dancers={dancers} audioRef={audioRef} track={track} latencyRef={latencyRef} showtime={showtime} results={resultView} lobby={lobbyView} />
           )}
         </Suspense>
       </div>
@@ -495,208 +549,8 @@ const AuditionRoom = ({ roomId }) => {
 
       {!room && <div className='au-loading au-loading--page'>Đang vào phòng…</div>}
 
-      {room && !inGame && !(room.status === 'finished' && resultsSeen !== room.gameNo) && !(local === 'done' && room.status === 'playing') && (
-        <WaitingPanel
-          room={room}
-          me={me}
-          isHost={isHost}
-          settings={settings}
-          setSettings={setSettings}
-          onJoin={join}
-          onLeave={leave}
-          onStart={start}
-          onChar={(charId) => run(() => setAuditionCharacter(roomId, charId))}
-          onDel={(del) => run(() => setAuditionSettings(roomId, { del }))}
-          onAddBot={(skill) => run(() => addAuditionBot(roomId, skill))}
-          onReady={(ready) => run(() => setAuditionReady(roomId, ready))}
-          onSong={(songId) => run(() => setAuditionSettings(roomId, { songId }))}
-          onStage={(stageId) => run(() => setAuditionSettings(roomId, { stageId }))}
-          onRemoveBot={(botId) => run(() => removeAuditionBot(roomId, botId))}
-          sfx={sfx}
-        />
-      )}
-
-      {room && !inGame && ((room.status === 'finished' && resultsSeen !== room.gameNo) || (local === 'done' && room.status === 'playing')) && (
-        <ResultPanel room={room} me={me} myResult={myResult} onContinue={() => setResultsSeen(room.gameNo)} onLeave={leave} userId={userId} />
-      )}
     </div>
   )
 }
-
-const WaitingPanel = ({ room, me, isHost, settings, setSettings, onJoin, onLeave, onStart, onChar, onDel, onAddBot, onRemoveBot, onReady, onSong, onStage, sfx }) => {
-  const track = trackOf(room.songId)
-  const notReady = room.players.filter((p) => !p.ready).length
-  const [botSkill, setBotSkill] = useState('normal')
-  const full = room.players.length >= room.maxPlayers
-  const copyLink = () => {
-    navigator.clipboard?.writeText(window.location.href).then(() => message.success('Đã chép link phòng'))
-  }
-  return (
-    <div className='au-modal au-lobby'>
-      <h1>{room.name}</h1>
-      <p className='au-sub'>
-        ♪ {track.label} · {Math.round(track.bpm)} BPM · mã <b>{room.id}</b>{' '}
-        <button type='button' className='au-link' onClick={copyLink}>chép link</button>
-      </p>
-
-      <ul className='au-players'>
-        {room.players.map((p) => (
-          <li key={p.userId} className={p.userId === me?.userId ? 'is-me' : ''}>
-            <span className='au-players__char'>{charNo(p.charId)}</span>
-            <span className='au-players__name'>{p.name}</span>
-            {p.userId === room.hostId
-              ? <span className='au-players__host'>Chủ phòng</span>
-              : !p.isBot && <span className={`au-players__ready${p.ready ? ' is-on' : ''}`}>{p.ready ? 'Sẵn sàng' : 'Chưa'}</span>}
-            {p.isBot && <span className='au-players__bot'>{p.skill}</span>}
-            {p.isBot && isHost && (
-              <button type='button' className='au-players__x' title='Bớt bot' onClick={() => onRemoveBot(p.userId)}>×</button>
-            )}
-          </li>
-        ))}
-        {Array.from({ length: room.maxPlayers - room.players.length }, (_, i) => <li key={`e${i}`} className='is-empty'>Chỗ trống</li>)}
-      </ul>
-
-      {me && room.status === 'playing' ? (
-        <>
-          <div className='au-wait'>Phòng đang nhảy, đợi hết bài rồi chơi ván sau nhé.</div>
-          <button type='button' className='au-ghost' onClick={onLeave}>Rời phòng</button>
-        </>
-      ) : me ? (
-        <>
-          {isHost && (
-            <>
-              <label className='au-field'>
-                <span>Bài hát</span>
-                <select className='au-select au-select--grow' value={room.songId} onChange={(e) => onSong(e.target.value)}>
-                  {SONGS.map((t) => <option key={t.id} value={t.id}>{t.label} · {Math.round(t.bpm)} BPM</option>)}
-                </select>
-              </label>
-              <label className='au-field'>
-                <span>Sân khấu</span>
-                <select className='au-select au-select--grow' value={room.stageId} onChange={(e) => onStage(e.target.value)}>
-                  <option value={RANDOM_STAGE}>Ngẫu nhiên mỗi ván</option>
-                  {STAGES.map((st) => <option key={st.id} value={st.id}>{st.label}</option>)}
-                </select>
-              </label>
-            </>
-          )}
-          <div className='au-field'>
-            <span>Nhân vật</span>
-            <div className='au-chars'>
-              {CHARACTERS.map((c, i) => (
-                <button
-                  key={c.id}
-                  type='button'
-                  className={`au-chip${c.id === me.charId ? ' is-active' : ''}`}
-                  disabled={me.ready && !isHost}
-                  title={me.ready && !isHost ? 'Bỏ sẵn sàng để đổi nhân vật' : undefined}
-                  onClick={() => onChar(c.id)}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className={`au-field au-check${isHost ? '' : ' is-readonly'}`}>
-            <input type='checkbox' checked={room.del} disabled={!isHost} onChange={(e) => onDel(e.target.checked)} />
-            <span>Chế độ Del <small>— từ level 5 có mũi tên đỏ{isHost ? '' : ' (chủ phòng chọn)'}</small></span>
-          </label>
-          {isHost && (
-            <div className='au-field au-bots'>
-              <span>Thêm bot</span>
-              <select className='au-select' value={botSkill} onChange={(e) => setBotSkill(e.target.value)}>
-                {BOT_SKILLS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-              </select>
-              <button type='button' className='au-chip-btn' disabled={full} onClick={() => onAddBot(botSkill)}>+ Bot</button>
-            </div>
-          )}
-          <details className='au-settings'>
-            <summary>Cài đặt của bạn (âm lượng, độ trễ)</summary>
-            <label className='au-field au-field--col'>
-              <span>Âm lượng nhạc <b>{Math.round(settings.musicVolume * 100)}%</b></span>
-              <input type='range' min={0} max={1} step={0.05} value={settings.musicVolume} onChange={(e) => setSettings((s) => ({ ...s, musicVolume: Number(e.target.value) }))} />
-            </label>
-            <label className='au-field au-field--col'>
-              <span>Âm lượng hiệu ứng <b>{Math.round(settings.sfxVolume * 100)}%</b></span>
-              <input
-                type='range'
-                min={0}
-                max={1}
-                step={0.05}
-                value={settings.sfxVolume}
-                onChange={(e) => setSettings((s) => ({ ...s, sfxVolume: Number(e.target.value) }))}
-                onPointerUp={() => { sfx.unlock(); sfx.play('perfect_1') }}
-              />
-            </label>
-            <label className='au-field au-field--col'>
-              <span>Độ trễ âm thanh <b>{settings.latencyMs} ms</b></span>
-              <input type='range' min={-150} max={400} step={10} value={settings.latencyMs} onChange={(e) => setSettings((s) => ({ ...s, latencyMs: Number(e.target.value) }))} />
-            </label>
-          </details>
-          <ul className='au-howto'>
-            <li>Bấm <b>← ↑ ↓ →</b> đúng chuỗi, rồi <b>Space</b> đúng lúc bi chạm vạch vàng (phách 4).</li>
-            <li>Cả phòng cùng level nhận cùng chuỗi phím. Thành công lên level, không bao giờ bị lùi.</li>
-            <li><b>Missed</b> bị khoá 1 lượt. Đánh 3 lượt ở level 9 thì tới <b>Finish Move</b> (luôn có phím đỏ), xong về level 6. Chưa Finish đủ thì lượt cuối bài là Finish.</li>
-          </ul>
-          {isHost ? (
-            <button type='button' className='au-start' disabled={!room.allReady} onClick={onStart}>
-              {room.allReady ? 'Bắt đầu (Enter)' : `Chờ ${notReady} người sẵn sàng…`}
-            </button>
-          ) : (
-            <button type='button' className={`au-start${me.ready ? ' is-ready' : ''}`} onClick={() => onReady(!me.ready)}>
-              {me.ready ? '✓ Đã sẵn sàng — bấm để huỷ' : 'Sẵn sàng'}
-            </button>
-          )}
-          <button type='button' className='au-ghost' onClick={onLeave}>Rời phòng</button>
-        </>
-      ) : room.status === 'playing' ? (
-        <div className='au-wait'>Phòng đang nhảy, đợi hết bài rồi vào nhé.</div>
-      ) : (
-        <>
-          <button type='button' className='au-start' onClick={onJoin} disabled={room.players.length >= room.maxPlayers}>
-            {room.players.length >= room.maxPlayers ? 'Phòng đã đủ người' : 'Vào phòng'}
-          </button>
-          <button type='button' className='au-ghost' onClick={onLeave}>Về sảnh</button>
-        </>
-      )}
-    </div>
-  )
-}
-
-const ResultPanel = ({ room, me, myResult, onContinue, onLeave, userId }) => (
-  <div className='au-modal au-result'>
-    {myResult && (
-      <>
-        <div className='au-result__grade'>{myResult.grade}</div>
-        {myResult.newRecord && <img className='au-result__tag' src={ASSET.label('new_record')} alt='New record' />}
-        {myResult.fullCombo && <img className='au-result__tag' src={ASSET.label('full_combo')} alt='Full combo' />}
-        <div className='au-result__rows au-result__rows--inline'>
-          {JUDGEMENTS.map((j) => (
-            <div key={j} className={`au-result__row is-${j}`}><span>{JUDGE_LABEL[j]}</span><b>{myResult.counts[j]}</b></div>
-          ))}
-          <div className='au-result__row'><span>Combo cao nhất</span><b>{myResult.maxCombo}</b></div>
-          <div className='au-result__row'><span>Finish Move</span><b>{myResult.finishes}</b></div>
-          <div className='au-result__row'><span>Độ chính xác</span><b>{Math.round(myResult.acc * 100)}%</b></div>
-        </div>
-      </>
-    )}
-    <h3 className='au-result__title'>{room.status === 'finished' ? 'Bảng xếp hạng' : 'Đang chờ cả phòng nhảy xong…'}</h3>
-    <ol className='au-rank'>
-      {(room.results || [...room.players].sort((a, b) => b.score - a.score)).map((r, i) => (
-        <li key={r.userId} className={r.userId === userId ? 'is-me' : ''}>
-          <span className='au-rank__pos'>{i + 1}</span>
-          <span className='au-rank__name'>{r.name}</span>
-          <span className='au-rank__score'>{r.score.toLocaleString('vi-VN')}</span>
-        </li>
-      ))}
-    </ol>
-    <div className='au-result__actions'>
-      {room.status === 'finished' && me && (
-        <button type='button' className='au-icon au-icon--lg' onClick={onContinue} title='Về phòng chờ (chọn nhân vật, sẵn sàng ván sau)'><AtlasImg name={FRAME.icon('retry')} height={56} /></button>
-      )}
-      <button type='button' className='au-icon au-icon--lg' onClick={onLeave} title='Rời phòng'><AtlasImg name={FRAME.icon('home')} height={56} /></button>
-    </div>
-  </div>
-)
 
 export default AuditionRoom

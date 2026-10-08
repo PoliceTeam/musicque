@@ -122,6 +122,8 @@ export const createGameState = () => ({
   level: 1,
   combo: 0,
   maxCombo: 0,
+  perfectStreak: 0,
+  maxPerfect: 0, // chuỗi Perfect liên tiếp dài nhất (bảng điểm cuối bài)
   score: 0,
   counts: { perfect: 0, great: 0, cool: 0, bad: 0, missed: 0 },
   finishes: 0, // số Finish Move thành Showtime (Perfect/Great)
@@ -198,6 +200,8 @@ const resolve = (state, judgement, t, reason = null) => {
       level,
       combo,
       maxCombo: Math.max(state.maxCombo, combo),
+      perfectStreak: judgement === 'perfect' ? state.perfectStreak + 1 : 0,
+      maxPerfect: Math.max(state.maxPerfect, judgement === 'perfect' ? state.perfectStreak + 1 : 0),
       score: state.score + points,
       counts: { ...state.counts, [judgement]: state.counts[judgement] + 1 },
       finishes: state.finishes + (showtime ? 1 : 0),

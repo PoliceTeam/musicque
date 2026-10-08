@@ -230,3 +230,16 @@ test('chủ phòng không rời được khi đang nhảy; hết ván thì rời
   core.endGame(room)
   assert.equal(core.leaveRoom(rooms, room, 'u1'), true)
 })
+
+test('bảng điểm cuối bài có chuỗi Perfect liên tiếp dài nhất của từng người', () => {
+  const { room } = setup(2)
+  core.startGame(room, 'u1', 0, rng)
+  const seq = ['perfect', 'perfect', 'great', 'perfect', 'perfect', 'perfect', 'missed', 'perfect']
+  seq.forEach((judgement, i) => turn(room, 'u2', i * 2, { judgement, points: judgement === 'missed' ? 0 : 100 }))
+  core.markDone(room, 'u1', room.gameNo)
+  core.markDone(room, 'u2', room.gameNo)
+  const r = room.results.find((x) => x.userId === 'u2')
+  assert.equal(r.maxPerfect, 3)
+  assert.deepEqual(r.counts, { perfect: 6, great: 1, cool: 0, bad: 0, missed: 1 })
+  assert.equal(r.rank, 1)
+})

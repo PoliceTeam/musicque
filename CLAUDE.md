@@ -515,3 +515,13 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   character. Horizontal root motion is removed with a slow EMA so dancers stay on their spot.
 - React StrictMode double-mounts in dev: `auditionSfx` must recreate a closed AudioContext,
   otherwise every judgement sound is silent.
+- **The waiting room and the end-of-game results are WebGL, not HTML** (owner's requirement).
+  Both live in drei `<Hud>` layers (orthographic camera, units = pixels) inside the stage canvas:
+  `LobbyHud` (built from the canvas-texture widgets in `hudKit.jsx`: Panel/Text/Button/Stepper/
+  Toggle/PlayerSlot) and `ResultScene` (gold/silver podiums, spotlights, confetti in world space;
+  per-player stat boards drawn by `resultBoard.js` with atlas digits/judgement art). Name tags are
+  canvas sprites. Boards show rank, name, score, Perfect/Great/Cool/Bad/Missed and the longest
+  Perfect chain (`maxPerfect`, tracked on both client and server). Only the room-list page
+  (`AuditionLobby`) and the in-game HUD are still HTML.
+- **Audio levels are fixed** (`AUDIO` in `auditionConfig.js`: latency 250ms, music 40%, sfx 25%);
+  players cannot change them — only mute is stored per device.

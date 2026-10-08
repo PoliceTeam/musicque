@@ -78,25 +78,27 @@ export const SHOWTIME_CLIP = 'Breakdance Freezes'
 // Khoảng cách giữa các nhân vật trên sân khấu (m) khi cả phòng cùng nhảy.
 export const DANCER_SPACING = 1.3
 
+// Bề rộng (px) bảng phòng chờ dựng trong WebGL ở mép phải — camera dời sân khấu sang trái chừng này.
+export const LOBBY_PANEL_W = 400
+export const LOBBY_PANEL_SPACE = LOBBY_PANEL_W + 24
+
 export const TRAIL_COLORS = { hand: '#36e8ff', foot: '#ff4fd8' }
 
 const SETTINGS_KEY = 'musicque_audition_settings'
 const BEST_KEY = 'musicque_audition_best'
 
-// Nhạc nền để nhỏ hơn hẳn tiếng chấm điểm, nếu không Perfect/Great bị nhạc át.
-// Mặc định theo lần căn thử thực tế: nhạc 40%, hiệu ứng 25%, trễ 250ms là dễ ăn Perfect.
-export const DEFAULT_SETTINGS = { latencyMs: 250, muted: false, musicVolume: 0.4, sfxVolume: 0.25 }
+// Âm lượng và độ trễ cố định cho mọi máy (đã căn thử: dễ ăn Perfect nhất), người chơi không chỉnh.
+// Chỉ còn bật/tắt tiếng là lưu theo máy.
+export const AUDIO = { latencyMs: 250, musicVolume: 0.4, sfxVolume: 0.25 }
 
 export const loadSettings = () => {
-  try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }
-  } catch {
-    return DEFAULT_SETTINGS
-  }
+  let muted = false
+  try { muted = Boolean(JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').muted) } catch { /* bỏ qua */ }
+  return { ...AUDIO, muted }
 }
 
 export const saveSettings = (s) => {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) } catch { /* không lưu được thì thôi */ }
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ muted: Boolean(s.muted) })) } catch { /* không lưu được thì thôi */ }
 }
 
 export const loadBest = () => {

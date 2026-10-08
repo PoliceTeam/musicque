@@ -53,6 +53,8 @@ const blankStats = () => ({
   score: 0,
   combo: 0,
   maxCombo: 0,
+  perfectStreak: 0, // chuỗi Perfect liên tiếp đang chạy
+  maxPerfect: 0, // chuỗi Perfect liên tiếp dài nhất trong ván (bảng điểm cuối bài)
   level: 1,
   counts: { perfect: 0, great: 0, cool: 0, bad: 0, missed: 0 },
   finishes: 0,
@@ -258,6 +260,8 @@ const applyReport = (room, player, turnIndex, { judgement, points, combo, level,
   player.counts[judgement] += 1
   player.combo = combo
   player.maxCombo = Math.max(player.maxCombo, combo)
+  player.perfectStreak = judgement === 'perfect' ? player.perfectStreak + 1 : 0
+  player.maxPerfect = Math.max(player.maxPerfect, player.perfectStreak)
   player.level = level
   if (showtime) player.finishes += 1
   return { userId: player.userId, gameNo: room.gameNo, turnIndex, judgement, points, combo, level, showtime, turnLevel, score: player.score }
@@ -266,7 +270,7 @@ const applyReport = (room, player, turnIndex, { judgement, points, combo, level,
 const ranking = (room) =>
   [...room.players.values()]
     .sort((a, b) => b.score - a.score || b.maxCombo - a.maxCombo)
-    .map((p, i) => ({ rank: i + 1, userId: p.userId, name: p.name, isBot: Boolean(p.isBot), charId: p.charId, score: p.score, maxCombo: p.maxCombo, counts: p.counts, finishes: p.finishes }))
+    .map((p, i) => ({ rank: i + 1, userId: p.userId, name: p.name, isBot: Boolean(p.isBot), charId: p.charId, score: p.score, maxCombo: p.maxCombo, maxPerfect: p.maxPerfect, counts: p.counts, finishes: p.finishes }))
 
 const endGame = (room) => {
   if (room.status !== 'playing') return false

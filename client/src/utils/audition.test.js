@@ -245,3 +245,14 @@ describe('judging and scoring', () => {
     expect(r.event).toMatchObject({ judgement: 'cool', success: true, showtime: false })
   })
 })
+
+describe('perfect chain', () => {
+  it('tracks the longest run of consecutive Perfects', () => {
+    let s = createGameState()
+    for (const dt of [0, 0.01, 0.08, 0, 0, 0, 0.2, 0]) {
+      s = pressSpace(typeAll(begin(s, arrows('up')), 10), 12 + dt).state
+    }
+    expect(s.maxPerfect).toBe(3)
+    expect(s.perfectStreak).toBe(1)
+  })
+})

@@ -2,11 +2,14 @@ import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
-import { ContactShadows, Environment, Html, Lightformer, useGLTF, useProgress } from '@react-three/drei'
+import { ContactShadows, Environment, Html, Hud, Lightformer, useGLTF } from '@react-three/drei'
 import { CLIP_TEMPO, TARGET_HEIGHT, TRAIL_BONES } from '../DanceLab/danceLab'
 import LimbTrail from '../DanceLab/LimbTrail'
 import { clipTimeAt } from '../../utils/danceSync'
-import { ASSET, DANCER_SPACING, TRAIL_COLORS } from './auditionConfig'
+import { ASSET, DANCER_SPACING, LOBBY_PANEL_SPACE, TRAIL_COLORS } from './auditionConfig'
+import LobbyHud from './LobbyHud'
+import { PodiumWorld, ResultOverlay } from './ResultScene'
+import { fontFamily, makeTexture, slotOf } from './resultBoard'
 
 const FADE = 0.25
 const DRIFT_TAU = 1.2 // giây — trượt chậm hơn mức này bị khử (giữ nhân vật trên bục), lắc hông nhanh thì giữ nguyên
@@ -76,9 +79,11 @@ const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isM
     // trượt mượt tới chỗ đứng mới khi đổi hạng (người dẫn đầu bước lên trước)
     if (root.current) {
       const p = root.current.position
-      if (!placed.current) { p.set(pos[0], 0, pos[1]); placed.current = true }
+      const y = pos[2] || 0 // độ cao bục (bảng điểm cuối bài)
+      if (!placed.current) { p.set(pos[0], y, pos[1]); placed.current = true }
       const k = 1 - Math.exp(-dt * 3)
       p.x += (pos[0] - p.x) * k
+      p.y += (y - p.y) * k
       p.z += (pos[1] - p.z) * k
     }
     mixer.update(dt)
@@ -111,15 +116,43 @@ const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isM
         </group>
         {/* vòng sáng chỉ đánh dấu nhân vật của mình */}
         {isMe && <Platform kind={platform} />}
-        {name && (
-          <Html position={[0, TARGET_HEIGHT + 0.1, 0]} center zIndexRange={[5, 0]}>
-            <div className={`au-tag${isMe ? ' is-me' : ''}${isLeader ? ' is-leader' : ''}`}>{isLeader ? '👑 ' : ''}{name}</div>
-          </Html>
-        )}
+        {name && <NameTag name={name} isMe={isMe} isLeader={isLeader} />}
       </group>
       {/* vệt sáng dựng theo toạ độ thế giới nên phải nằm ngoài group đã dời chỗ */}
       {trails && limbs.map((l) => <LimbTrail key={l.id} bone={l.bone} color={TRAIL_COLORS[l.kind]} />)}
     </>
+  )
+}
+
+// Nhãn tên trên đầu: sprite (luôn quay về camera) vẽ bằng canvas, không dùng HTML.
+const NameTag = ({ name, isMe, isLeader }) => {
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = 512
+    c.height = 96
+    const ctx = c.getContext('2d')
+    ctx.font = `800 40px ${fontFamily()}`
+    const text = `${isLeader ? '♛ ' : ''}${name}`
+    const w = Math.min(500, ctx.measureText(text).width + 48)
+    const x = (512 - w) / 2
+    ctx.beginPath()
+    ctx.roundRect(x, 14, w, 68, 34)
+    ctx.fillStyle = isLeader ? 'rgba(60, 40, 0, 0.85)' : 'rgba(10, 6, 30, 0.75)'
+    ctx.fill()
+    ctx.lineWidth = 3
+    ctx.strokeStyle = isLeader || isMe ? '#ffd84d' : 'rgba(255,255,255,0.25)'
+    ctx.stroke()
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = isLeader || isMe ? '#ffd84d' : '#e9e4ff'
+    ctx.fillText(text, 256, 50, 470)
+    return makeTexture(c)
+  }, [name, isMe, isLeader])
+  useEffect(() => () => tex.dispose(), [tex])
+  return (
+    <sprite position={[0, TARGET_HEIGHT + 0.16, 0]} scale={[0.9, 0.169, 1]} renderOrder={5}>
+      <spriteMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+    </sprite>
   )
 }
 
@@ -144,27 +177,37 @@ const Platform = ({ kind }) => {
 
 // Camera gốc (0, 1.35, 7.6) nhìn (0, 0.95, 0) — lùi xa cho nhân vật nhỏ lại; hàng sau đông người thì
 // lùi thêm theo cùng tỉ lệ (phóng đều quanh gốc sàn nên đường chân trời trên ảnh nền giữ nguyên).
-const CameraRig = ({ halfWidth }) => {
+// Bảng điểm cuối bài: nhìn thấp xuống để nhân vật + bục nằm nửa trên khung, chừa nửa dưới cho bảng thông số.
+const CAMERA = {
+  play: { y: 1.35, z: 7.6, look: 0.95 },
+  podium: { y: 2.1, z: 8.6, look: -0.15 }
+}
+
+// panelPx: bảng phòng chờ chiếm mép phải màn hình — vừa khung theo phần còn trống và dời camera
+// sang phải để cả nhóm nhân vật nằm giữa phần trống đó.
+const CameraRig = ({ halfWidth, mode, panelPx = 0 }) => {
   const camera = useThree((s) => s.camera)
   const { width, height } = useThree((s) => s.size)
   useEffect(() => {
+    const c = CAMERA[mode] || CAMERA.play
     const half = halfWidth + 0.9
-    const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * (width / height)
-    const k = Math.max(1, half / (7.6 * tanH))
-    camera.position.set(0, 1.35 * k, 7.6 * k)
-    camera.lookAt(0, 0.95 * k, 0)
-  }, [camera, halfWidth, width, height])
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+    const freeW = Math.max(width - panelPx, width * 0.4)
+    const k = Math.max(1, half / (c.z * tanV * (freeW / height)))
+    const shift = c.z * k * tanV * (width / height) * (panelPx / width)
+    camera.position.set(shift, c.y * k, c.z * k)
+    camera.lookAt(shift, c.look * k, 0)
+  }, [camera, halfWidth, width, height, mode, panelPx])
   return null
 }
 
-const Loader = () => {
-  const { progress } = useProgress()
-  return (
-    <Html center>
-      <div className='au-loading'>Đang tải nhân vật… {Math.round(progress)}%</div>
-    </Html>
-  )
-}
+// Không dùng useProgress: store của nó cập nhật ngay trong lúc component khác đang suspend
+// (useLoader), React báo "Cannot update a component while rendering a different component".
+const Loader = () => (
+  <Html center>
+    <div className='au-loading'>Đang tải nhân vật…</div>
+  </Html>
+)
 
 // DEV: tab ẩn thì rAF dừng, kiểm thử tự bước khung qua window.__auditionStage.step(n).
 const DevHook = () => {
@@ -195,6 +238,16 @@ const backSlots = (n) => {
   return slots.slice(0, n).sort((a, b) => a - b).map((k) => k * DANCER_SPACING)
 }
 
+// Bảng điểm cuối bài: đứng theo hạng (RANK_SLOTS) — hạng 1–2 trên bục, còn lại dưới sàn.
+const podiumLayout = (dancers, ranks) => {
+  const pos = new Map(dancers.map((d) => {
+    const [x, z, h] = slotOf(ranks.get(d.id) || dancers.length)
+    return [d.id, [x, z, h]]
+  }))
+  const halfWidth = Math.max(0, ...[...pos.values()].map((p) => Math.abs(p[0])))
+  return { pos, halfWidth }
+}
+
 const layout = (dancers) => {
   const leader = dancers.find((d) => d.isLeader)
   const row = dancers.filter((d) => d !== leader)
@@ -206,8 +259,10 @@ const layout = (dancers) => {
 }
 
 // dancers: [{ id, url, anim, name, isMe, isLeader, platform }] — thứ tự hàng sau do trang quyết định.
-const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime }) => {
-  const { pos, halfWidth } = layout(dancers)
+// results (bảng điểm cuối bài): { ranks: Map(userId → hạng), hud: { entries, title, sub, onContinue, onLeave } }
+// lobby (phòng chờ, dựng bằng WebGL): xem LobbyHud
+const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime, results, lobby }) => {
+  const { pos, halfWidth } = results ? podiumLayout(dancers, results.ranks) : layout(dancers)
   return (
   <Canvas
     shadows
@@ -215,7 +270,7 @@ const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime }) => 
     camera={{ position: [0, 1.35, 7.6], fov: 35, near: 0.1, far: 80 }}
     gl={{ antialias: true, alpha: true, preserveDrawingBuffer: import.meta.env.DEV }}
   >
-    <CameraRig halfWidth={halfWidth} />
+    <CameraRig halfWidth={halfWidth} mode={results ? 'podium' : 'play'} panelPx={lobby ? LOBBY_PANEL_SPACE : 0} />
     {import.meta.env.DEV && <DevHook />}
     <hemisphereLight args={['#ffffff', '#2a1838', 1.6]} />
     <directionalLight position={[0, 2.5, 10]} intensity={2.4} color='#ffffff' />
@@ -239,14 +294,21 @@ const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime }) => 
           audioRef={audioRef}
           track={track}
           latencyRef={latencyRef}
-          trails={d.isMe}
-          name={dancers.length > 1 ? d.name : null}
-          isMe={d.isMe}
+          trails={d.isMe && !results}
+          name={dancers.length > 1 && !results ? d.name : null}
+          isMe={d.isMe && !results}
           isLeader={d.isLeader}
           platform={d.platform}
         />
       ))}
+      {results && <PodiumWorld ranks={results.ranks} />}
     </Suspense>
+    {results && <ResultOverlay results={results.hud} />}
+    {lobby && !results && (
+      <Hud renderPriority={1}>
+        <LobbyHud lobby={lobby} />
+      </Hud>
+    )}
     <ContactShadows position={[0, 0.01, 0.5]} scale={14} blur={2.4} opacity={0.55} far={3} />
   </Canvas>
   )
