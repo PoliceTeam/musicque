@@ -66,11 +66,9 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     let index = -1
     for (let i = 0; i < animation.stages.length; i++) if (animation.elapsed >= animation.stages[i].start) index = i
     if (index < 0) {
-      if (animation.from?.zone === 'hand') {
-        const pose = worldPose(animation.sourceLocal, spaces, scratch.world)
-        liftWorldPose(pose, 0.02 * easeInOutCubic(Math.min(1, animation.elapsed / animation.stages[0].start)), animation.from.faceUp)
-        applyWorldPose(ref.current, pose)
-      }
+      const pose = worldPose(animation.sourceLocal, spaces, scratch.world)
+      if (animation.from?.zone === 'hand') liftWorldPose(pose, 0.02 * easeInOutCubic(Math.min(1, animation.elapsed / animation.stages[0].start)), animation.from.faceUp)
+      applyWorldPose(ref.current, pose)
       return
     }
     const stage = animation.stages[index]
