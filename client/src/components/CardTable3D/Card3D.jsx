@@ -1,15 +1,11 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { DoubleSide, MeshBasicMaterial, PlaneGeometry } from 'three'
 import { setCardFaceVisibility } from './assets'
 import { useAnimationActivity } from './activity'
 import { sameCardTarget, tween, motionTiming } from './anim'
 import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose } from './cardSpaces'
-const glowGeometry = new PlaneGeometry(0.064, 0.095)
-const glowMaterial = new MeshBasicMaterial({ color: '#72edb5', transparent: true, opacity: 0.55, side: DoubleSide, depthWrite: false })
-const dimGeometry = new PlaneGeometry(0.058, 0.089)
-const dimMaterial = new MeshBasicMaterial({ color: '#26383d', transparent: true, opacity: 0.2, side: DoubleSide, depthWrite: false })
 export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
+  const { glowGeometry, glowMaterial, dimGeometry, dimMaterial } = deck.overlays
   const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
   const activity = useAnimationActivity()
   const ref = useRef(), inner = useRef(), motion = useRef(null)

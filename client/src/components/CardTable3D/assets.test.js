@@ -1,3 +1,4 @@
+import { useDeck } from './useDeck'
 import { renderHook } from '@testing-library/react'
 import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Skeleton, SkinnedMesh } from 'three'
 import { expect, it, vi } from 'vitest'
@@ -56,4 +57,15 @@ it('omits hidden rank faces for opaque hands while retaining both faces of revea
   expect(front.visible).toBe(false); expect(back.visible).toBe(true)
   setCardFaceVisibility(card, false)
   expect(front.visible).toBe(true); expect(back.visible).toBe(true)
+})
+
+it('disposes per-deck overlay resources, releasing renderer material listeners on unmount', () => {
+  const scene = new Group(), parent = new Group(), mesh = new Mesh(new PlaneGeometry(), new MeshBasicMaterial({ name: 'CardFront' }))
+  mesh.name = 'Spade_Ace'; parent.add(mesh); scene.add(parent); mocks.data = { scene }
+  const { result, unmount } = renderHook(useDeck)
+  const resources = Object.values(result.current.overlays)
+  const listeners = resources.map(resource => { const listener = vi.fn(); resource.addEventListener('dispose', listener); return listener })
+  unmount()
+  listeners.forEach(listener => expect(listener).toHaveBeenCalledTimes(1))
+  clearTableAssets()
 })

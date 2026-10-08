@@ -6,6 +6,13 @@ import { RANKS, SUITS, cardNodeName } from '../../utils/cards'
 export const useDeck = () => {
   const { scene } = useTableGLTF('/models/deck-of-cards.glb?v=webp1')
   const gl = useThree(state => state.gl)
+  const overlays = useMemo(() => ({
+    glowGeometry: new THREE.PlaneGeometry(0.064, 0.095),
+    glowMaterial: new THREE.MeshBasicMaterial({ color: '#72edb5', transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }),
+    dimGeometry: new THREE.PlaneGeometry(0.058, 0.089),
+    dimMaterial: new THREE.MeshBasicMaterial({ color: '#26383d', transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }),
+  }), [])
+  useEffect(() => () => Object.values(overlays).forEach(resource => resource.dispose()), [overlays])
   const templates = useMemo(() => {
     const result = {}
     const materials = new Map()
@@ -43,5 +50,5 @@ export const useDeck = () => {
     }))
     materials.forEach(material => material.dispose())
   }, [templates])
-  return useMemo(() => Object.fromEntries(RANKS.flatMap((rank) => SUITS.map((suit) => [rank + suit, templates[cardNodeName(rank + suit)]]))), [templates])
+  return useMemo(() => ({ ...Object.fromEntries(RANKS.flatMap((rank) => SUITS.map((suit) => [rank + suit, templates[cardNodeName(rank + suit)]]))), overlays }), [templates, overlays])
 }
