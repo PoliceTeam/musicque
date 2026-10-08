@@ -212,6 +212,29 @@ const initSocket = (server) => {
       }
     });
 
+    for (const action of ['watch', 'unwatch']) socket.on(`table_game:${action}`, (data = {}) => {
+      if (typeof data.game !== 'string' || !Object.hasOwn(require('./services/tableGame').services, data.game)) return
+      if (action === 'watch') socket.join(`table_game:watch:${data.game}`)
+      else socket.leave(`table_game:watch:${data.game}`)
+    })
+    let tableGameBindSequence = 0
+    socket.on('table_game:bind', async (data = {}) => {
+      const sequence = ++tableGameBindSequence
+      try {
+        const user = await resolveUserFromToken(data.token)
+        if (sequence !== tableGameBindSequence || !socket.connected) return
+        for (const room of socket.rooms) if (room.startsWith('table_game:user:')) socket.leave(room)
+        if (user) socket.join(`table_game:user:${user._id}`)
+        for (const service of Object.values(require('./services/tableGame').services)) service.bindSocket({ user, socketId: socket.id })
+      } catch (error) {
+        if (sequence === tableGameBindSequence) {
+          for (const room of socket.rooms) if (room.startsWith('table_game:user:')) socket.leave(room)
+          for (const service of Object.values(require('./services/tableGame').services)) service.onSocketDisconnect(socket.id)
+        }
+        console.error('[TableGame] Bind failed:', error.message)
+      }
+    })
+
     socket.on('redlight:bind', async (data = {}) => {
       try {
         const user = await resolveUserFromToken(data.token)
@@ -266,6 +289,8 @@ const initSocket = (server) => {
     socket.on('jungle:lobby:unwatch', () => jungle.unwatchLobby(socket))
 
     socket.on('disconnect', () => {
+      tableGameBindSequence++
+      for (const service of Object.values(require('./services/tableGame').services)) service.onSocketDisconnect(socket.id)
       console.log('Client disconnected', socket.id);
       workspace.leave(socket)
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))

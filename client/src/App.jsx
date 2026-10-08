@@ -13,11 +13,14 @@ import { LuckyRainProvider } from './contexts/LuckyRainContext'
 import LuckyRain from './components/LuckyRain/LuckyRain'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
+import ThirteenRedirect from './components/Thirteen/ThirteenRedirect'
 import { useTheme } from './contexts/ThemeContext'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
+const CardGamesPage = lazy(() => import('./pages/CardGamesPage'))
+const ThirteenPage = lazy(() => import('./pages/ThirteenPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
@@ -57,6 +60,9 @@ function AppContent() {
                     <Routes>
                       {import.meta.env.DEV && <Route path='/dev/lucky-rain' element={<LuckyRainPreview />} />}
                       <Route path='/' element={<HomePage />} />
+                      <Route path='/card-games' element={<CardGamesPage />} />
+                      <Route path='/card-games/thirteen' element={<ThirteenPage />} />
+                      <Route path='/thirteen' element={<ThirteenRedirect />} />
                       <Route path='/login' element={<LoginPage initialMode='login' />} />
                       <Route path='/register' element={<LoginPage initialMode='register' />} />
                       <Route

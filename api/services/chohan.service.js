@@ -82,6 +82,8 @@ const voidPendingRounds = async (sid) => {
 
 // ── Vòng đời một vòng chơi ──────────────────────────────────────────────
 
+const logLoopError = error => console.error('[Cho-Han] Game loop failed:', error)
+
 const beginRound = async () => {
   if (!running) return
   roundCounter += 1
@@ -105,7 +107,7 @@ const beginRound = async () => {
 
   currentRoundId = round._id
   broadcast('chohan_round', serializeRound(round))
-  timer = setTimeout(lockRound, BET_MS)
+  timer = setTimeout(() => lockRound().catch(logLoopError), BET_MS)
 }
 
 const lockRound = async () => {
@@ -117,7 +119,7 @@ const lockRound = async () => {
   )
   if (!round) return
   broadcast('chohan_round', serializeRound(round))
-  timer = setTimeout(revealRound, SHAKE_MS)
+  timer = setTimeout(() => revealRound().catch(logLoopError), SHAKE_MS)
 }
 
 const settleRound = async (round) => {
@@ -157,7 +159,7 @@ const revealRound = async () => {
   await round.save()
 
   broadcast('chohan_result', serializeRound(round))
-  timer = setTimeout(beginRound, REVEAL_MS)
+  timer = setTimeout(() => beginRound().catch(logLoopError), REVEAL_MS)
 }
 
 // ── API công khai của service ───────────────────────────────────────────

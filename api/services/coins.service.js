@@ -492,6 +492,15 @@ async function getEconomyStats(period = '30d') {
                 chohanPayout: {
                   $sum: { $cond: [{ $eq: ['$type', 'chohan_payout'] }, '$amount', 0] },
                 },
+                thirteenWagered: {
+                  $sum: { $cond: [{ $eq: ['$type', 'thirteen_stake'] }, { $abs: '$amount' }, 0] },
+                },
+                thirteenPayout: {
+                  $sum: { $cond: [{ $eq: ['$type', 'thirteen_payout'] }, '$amount', 0] },
+                },
+                thirteenWinProfit: {
+                  $sum: { $cond: [{ $eq: ['$type', 'thirteen_payout'] }, { $max: [0, { $subtract: ['$amount', { $ifNull: ['$metadata.stake', 0] }] }] }, 0] },
+                },
                 xiangqiWagered: {
                   $sum: { $cond: [{ $eq: ['$type', 'xiangqi_bet'] }, { $abs: '$amount' }, 0] },
                 },
@@ -523,6 +532,7 @@ async function getEconomyStats(period = '30d') {
                             'song_bid_refund',
                             'song_skip_refund',
                             'chohan_refund',
+                            'thirteen_refund',
                             'xiangqi_refund',
                             'wordchain_refund',
                             'lottery_refund',
@@ -576,6 +586,9 @@ async function getEconomyStats(period = '30d') {
                 songSkipSpent: 1,
                 chohanWagered: 1,
                 chohanPayout: 1,
+                thirteenWagered: 1,
+                thirteenPayout: 1,
+                thirteenWinProfit: 1,
                 xiangqiWagered: 1,
                 xiangqiPayout: 1,
                 wordChainSpent: 1,
@@ -665,6 +678,9 @@ async function getEconomyStats(period = '30d') {
     songBidRefund: 0,
     songSkipRefund: 0,
     chohanRefund: 0,
+    thirteenWagered: 0,
+    thirteenPayout: 0,
+    thirteenWinProfit: 0,
     xiangqiWagered: 0,
     xiangqiPayout: 0,
     xiangqiRefund: 0,
@@ -690,11 +706,13 @@ async function getEconomyStats(period = '30d') {
         totals.songBidSpent
         + totals.songSkipSpent
         + totals.corePurchased
+        + (totals.thirteenWagered || 0)
         + (totals.profileRenameSpent || 0)
         + totals.chohanWagered
         + totals.xiangqiWagered
         + totals.wordChainSpent
         + (totals.lotteryWagered || 0)
+        - (totals.thirteenPayout || 0)
         - totals.chohanPayout
         - totals.xiangqiPayout
         - totals.wordChainPayout
@@ -703,7 +721,8 @@ async function getEconomyStats(period = '30d') {
         - totals.coreBonus
         - totals.refunded,
       playerWinProfit:
-        totals.chohanPayout / 2
+        (totals.thirteenWinProfit || 0)
+        + totals.chohanPayout / 2
         + Math.max(0, totals.xiangqiPayout - totals.xiangqiWagered)
         + Math.max(0, totals.wordChainPayout - totals.wordChainSpent)
         + (totals.redLightPayout || 0)

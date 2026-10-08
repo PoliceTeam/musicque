@@ -12,6 +12,10 @@ admin runs the playback session. It has accreted several unrelated side widgets
 The repo is a **multi-service monorepo with no workspace tooling** — no root `package.json`.
 Each service installs and runs independently.
 
+Reusable table games: see [docs/table-game-engine.md](docs/table-game-engine.md) for the definition contract, lifecycle and client scene.
+
+- Thirteen (`/thirteen`, `/api/thirteen`): four-seat Tiến Lên Miền Nam with private hands, bots, PC stakes, ready checks and dynamic public/private room codes, implemented as a table-game definition.
+
 | Directory | Stack | Dev port | Docker port |
 |---|---|---|---|
 | `api/` | Node + Express + Mongoose + Socket.IO (CommonJS) | 5000 | 5001 |

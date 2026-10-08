@@ -15,6 +15,7 @@ import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
+import CardGamesPromo from '../components/Home/CardGamesPromo';
 import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
@@ -345,6 +346,7 @@ const HomePage = () => {
             </div>
             <WerewolfLauncher />
             <JungleLauncher />
+            <CardGamesPromo />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />

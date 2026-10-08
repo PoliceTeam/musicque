@@ -256,6 +256,15 @@ export const getTTSHealth = () => api.get("/api/tts/health");
 
 export default api;
 
+export const tableGameApi = {
+  create: (game, payload) => api.post(`/api/${game}/tables`, payload),
+  quickJoin: (game, payload) => api.post(`/api/${game}/quick-join`, payload),
+  config: (game) => api.get(`/api/${game}/config`),
+  tables: (game) => api.get(`/api/${game}/tables`),
+  table: (game, id) => api.get(`/api/${game}/tables/${id}`),
+  action: (game, id, action, payload) => api.post(`/api/${game}/tables/${id}/${action}`, payload),
+};
+
 // Cờ thú (Jungle) — PvP có cược và tập với máy
 export const getJungleConfig = () => api.get("/api/jungle/config");
 export const getJungleLobby = () => api.get("/api/jungle/lobby");

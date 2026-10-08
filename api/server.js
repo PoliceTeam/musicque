@@ -1,4 +1,7 @@
 require('dotenv').config()
+process.on('unhandledRejection', reason => {
+  console.error('[Process] Unhandled promise rejection:', reason)
+})
 const mongoose = require('mongoose')
 const http = require('http')
 const app = require('./app')
@@ -103,6 +106,10 @@ mongoose
     // Khởi động server
     server.listen(PORT, async () => {
       console.log(`Server running on port ${PORT}`)
+
+      require('./services/tableGame').resumeAll(io).catch((error) => {
+        console.error('[TableGame] Resume failed:', error.message)
+      })
 
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()

@@ -28,6 +28,9 @@ const TRANSACTION_TYPES = [
   'lottery_bet',
   'lottery_payout',
   'lottery_refund',
+  'thirteen_stake',
+  'thirteen_payout',
+  'thirteen_refund',
   'admin_adjustment',
   'core_purchase',
   'core_bonus',
@@ -71,7 +74,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'XiangqiPvp', 'WordChainRound', 'RedLightRound', 'WerewolfGame', 'JungleGame', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'LuckyRainClaim'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'XiangqiPvp', 'WordChainRound', 'RedLightRound', 'WerewolfGame', 'JungleGame', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'LuckyRainClaim', 'TableGameMatch'],
       default: undefined,
     },
     referenceId: {

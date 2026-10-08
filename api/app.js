@@ -60,6 +60,7 @@ app.use('/api/billiards', billiardsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/xiangqi', xiangqiRoutes);
 app.use('/api/word-chain', wordChainRoutes);
+app.use('/api/thirteen', require('./routes/thirteen.routes'));
 app.use('/api/red-light', redLightRoutes);
 app.use('/api/lottery', lotteryRoutes);
 app.use('/api/core', coreMembershipRoutes);
