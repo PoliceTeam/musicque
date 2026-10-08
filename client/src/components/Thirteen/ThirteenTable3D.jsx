@@ -87,8 +87,8 @@ function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, sea
     <SceneEffects frame={frame} reducedMotion={reducedMotion} deck={deck} surfaceY={surfaceY} />
   </>
 }
-export default function ThirteenTable3D(props) {
+export default React.memo(function ThirteenTable3D(props) {
   return <TableScene table={props.table} seats={props.table.seats} currentSeat={props.table.currentSeat} userId={props.userId} turnDeadlineAt={props.table.turnDeadlineAt} serverNow={props.table.serverNow} firstPerson={props.firstPerson} fallback={<ThirteenFallback2D {...props} />}>
     {(surface) => <ThirteenCards {...props} {...surface} />}
   </TableScene>
-}
+})
