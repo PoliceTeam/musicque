@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Input, Modal, Radio } from 'antd'
+import { Button, Input, Modal, Radio, message } from 'antd'
 import { Link, useSearchParams } from 'react-router-dom'
 import UserMenu from '../components/Auth/UserMenu'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,7 +13,7 @@ function ThirteenContent() {
   const { user, requireAuth } = useAuth()
   const state = useThirteen()
   const { tables, currentTable, config, action, busy } = state
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const room = params.get('room')?.toUpperCase()
   const [code, setCode] = useState(room || '')
   const [rulesOpen, setRulesOpen] = useState(false)
@@ -45,11 +45,21 @@ function ThirteenContent() {
     previousTable.current = currentTable
   }, [currentTable, seated, playing, clearResult])
   useEffect(() => {
-    if (!room || !isRoomCode(room) || joinedLink.current === `${room}:${userId || 'guest'}`) return
+    if (room === undefined) { joinedLink.current = null; return }
+    if (joinedLink.current === `${room}:${userId || 'guest'}`) return
     joinedLink.current = `${room}:${userId || 'guest'}`
-    if (!userId) requireAuth('Đăng nhập để vào bàn được mời.')
-    else action('sit', room).then(ok => { if (ok) setOverlayOpen(true) })
-  }, [room, userId, action, requireAuth])
+    const clearRoom = () => setParams(current => {
+      if (current.get('room')?.toUpperCase() !== room) return current
+      const next = new URLSearchParams(current)
+      next.delete('room')
+      return next
+    }, { replace: true })
+    if (!isRoomCode(room)) {
+      message.open({ key: 'table-game', type: 'error', content: 'Mã bàn không tồn tại' })
+      clearRoom()
+    } else if (!userId) requireAuth('Đăng nhập để vào bàn được mời.')
+    else action('sit', room, { retryTransient: true }).then(ok => { if (ok) setOverlayOpen(true) }).finally(clearRoom)
+  }, [room, userId, action, requireAuth, setParams])
   const join = async (name, value) => { if (await action(name, value)) { setOverlayOpen(true); setCreateOpen(false) } }
   const finalTable = state.result && lastMatch?.matchId === state.result.matchId && currentTable?.status === 'finished' ? {
     ...currentTable, ...state.result.publicView, matchId: lastMatch.matchId, pot: lastMatch.pot, seats: currentTable.seats.map((seat, i) => seat ? { ...state.result.publicView?.seats?.[i], ...seat } : null), status: 'finished', currentSeat: null,

@@ -1,4 +1,7 @@
 require('dotenv').config()
+process.on('unhandledRejection', reason => {
+  console.error('[Process] Unhandled promise rejection:', reason)
+})
 const mongoose = require('mongoose')
 const http = require('http')
 const app = require('./app')

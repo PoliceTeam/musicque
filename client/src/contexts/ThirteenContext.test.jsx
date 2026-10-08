@@ -6,7 +6,7 @@ import { ThirteenProvider, useThirteen } from './ThirteenContext'
 import { tableGameApi } from '../services/api'
 const mocks = vi.hoisted(() => ({ user: null, tables: [], table: null, handlers: {}, refreshBalance: vi.fn(), requireAuth: vi.fn() }))
 vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mocks.user, refreshBalance: mocks.refreshBalance, requireAuth: mocks.requireAuth }) }))
-vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: async () => ({ data: mocks.table }), action: vi.fn(async () => ({ data: mocks.table })), create: vi.fn(async () => ({ data: mocks.table })), quickJoin: vi.fn(async () => ({ data: mocks.table })) } }))
+vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: vi.fn(async () => ({ data: mocks.table })), action: vi.fn(async () => ({ data: mocks.table })), create: vi.fn(async () => ({ data: mocks.table })), quickJoin: vi.fn(async () => ({ data: mocks.table })) } }))
 function Probe() {
   const { currentTable, myHand } = useThirteen()
   return <div>{currentTable ? `Bàn ${currentTable.tableId}` : 'Phòng chờ'}<output>{myHand.join(',')}</output></div>
@@ -53,7 +53,7 @@ it('watches only the mounted game, re-watches on reconnect and unwatches on exit
 
 function ActionProbe() {
   const { tables, action } = useThirteen()
-  return <div><output aria-label='Room count'>{tables.length}</output><button onClick={() => action('quickJoin')}>Quick join</button><button onClick={() => action('create', 'private')}>Create private</button></div>
+  return <div><output aria-label='Room count'>{tables.length}</output><button onClick={() => action('quickJoin')}>Quick join</button><button onClick={() => action('create', 'private')}>Create private</button><button onClick={() => action('sit', 'K7Q2', { retryTransient: true })}>Join link</button></div>
 }
 it('quick join and create send authenticated API requests with independent request keys', async () => {
   mocks.user = { _id: 'a' }
@@ -76,4 +76,58 @@ it('reconnect replaces rooms deleted while the viewer was offline', async () => 
   mocks.tables = []
   act(() => mocks.handlers.connect())
   await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('0'))
+})
+
+it('does not restore a deleted room from an in-flight list or seated detail request', async () => {
+  mocks.user = { _id: 'a' }
+  const room = { game: 'thirteen', tableId: 'K7Q2', seats: [{ userId: 'a' }, null, null, null], serverNow: 10 }
+  let resolveList, resolveDetail
+  tableGameApi.tables.mockImplementationOnce(() => new Promise(resolve => { resolveList = resolve }))
+  tableGameApi.table.mockImplementationOnce(() => new Promise(resolve => { resolveDetail = resolve }))
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  act(() => mocks.handlers.table_game_state({ ...room, serverNow: 20, deleted: true }))
+  await act(async () => { resolveList({ data: [room] }) })
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('0')
+  await act(async () => { resolveDetail({ data: { ...room, serverNow: 15, myView: { hand: ['3S'] } } }) })
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('0')
+  act(() => mocks.handlers.table_game_state({ ...room, serverNow: 30 }))
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('1')
+})
+
+it('retries a transient invite join once with the same request key and does not retry permanent errors', async () => {
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  mocks.tables = []
+  mocks.table = { game: 'thirteen', tableId: 'K7Q2', seats: [{ userId: 'a' }, null, null, null], serverNow: Date.now() }
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 503 } })
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(tableGameApi.action).toHaveBeenCalledTimes(2))
+  expect(tableGameApi.action.mock.calls[0]).toEqual(tableGameApi.action.mock.calls[1])
+  await act(async () => {})
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 404, data: { code: 'TABLE_NOT_FOUND' } } })
+  fireEvent.click(screen.getByText('Join link'))
+  await act(async () => {})
+  expect(tableGameApi.action).toHaveBeenCalledTimes(1)
+})
+
+it('uses join-specific errors for playing rooms and accepts finished rooms', async () => {
+  const { message } = await import('antd')
+  const toast = vi.spyOn(message, 'open')
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  mocks.tables = []
+  mocks.table = { game: 'thirteen', tableId: 'K7Q2', status: 'finished', seats: [{ userId: 'a' }, null, null, null], serverNow: Date.now() }
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 409, data: { code: 'TABLE_PLAYING' } } })
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' }))
+  await act(async () => {})
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('1'))
+  expect(toast.mock.calls.some(([value]) => value.content?.includes('rời ghế'))).toBe(false)
+  toast.mockRestore()
 })

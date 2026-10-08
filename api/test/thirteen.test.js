@@ -73,8 +73,9 @@ test('public configuration defaults and serialization never leak hands', () => {
   assert.deepEqual(service.publicConfig(), { maxTables: 20, readyCountdownMs: 3000, readyTimeoutMs: 30000, idleSeatMs: 300000, stake: 10, turnMs: 20000, botDelayMs: 1200, seats: { min: 2, max: 4 } })
   const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
   const match = { _id: 'g', state, seats: [{ userId: 'a' }, {}, {}, {}] }
-  const payload = service.serializeTable({ tableId: 1, hostId: 'a' }, match)
+  const payload = service.serializeTable({ tableId: 1 }, match)
   assert.ok(!JSON.stringify(payload).includes('"hand":'))
+  assert.equal(Object.hasOwn(payload, 'hostId'), false)
   assert.deepEqual(service.viewFor(match, 'a'), { hand: ['3S'] })
   assert.equal(service.viewFor(match, 'b'), null)
   assert.equal(service.viewFor(match), null)
@@ -182,4 +183,13 @@ test('public last move identifies bombs and passes without exposing a hand', () 
   assert.equal(definition.publicView(state).trick.isBomb, true)
   assert.deepEqual(definition.publicView(state).lastMove, { seat: 2, cards: [], isBomb: false, sequence: 3 })
   assert.ok(!JSON.stringify(view).includes('9S'))
+})
+
+test('room documentation describes readiness without duplicate legacy host instructions', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const section = fs.readFileSync(path.join(__dirname, '../../README.md'), 'utf8').split('### Tiến Lên Miền Nam')[1].split('\n### ')[0]
+  assert.ok(!section.includes('Chủ bàn bắt đầu ván'))
+  assert.equal(section.split('bấm Sẵn sàng').length - 1, 1)
+  assert.ok(section.includes('người vào muộn có đủ 30 giây riêng'))
 })

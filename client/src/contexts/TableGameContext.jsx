@@ -34,6 +34,7 @@ export const TableGameProvider = ({ game, children }) => {
   const closeResult = useCallback(() => setResult(null), [])
   const busyRef = useRef(false)
   const tablesRef = useRef([])
+  const deletedTables = useRef(new Map())
   const toast = (content, type = 'info') => message.open({ key: 'table-game', type, content })
   const userId = user?._id
   const userRef = useRef(userId)
@@ -44,6 +45,9 @@ export const TableGameProvider = ({ game, children }) => {
   const acceptTable = useCallback((table) => {
     const { myView: view, ...publicTable } = table
     publicTable.receivedAt = Date.now()
+    const deletedAt = deletedTables.current.get(table.tableId)
+    if (!table.deleted && deletedAt !== undefined && table.serverNow <= deletedAt) return
+    if (table.deleted) deletedTables.current.set(table.tableId, table.serverNow)
     const previous = tablesRef.current.find(t => t.tableId === table.tableId)
     if (previous && previous.serverNow > table.serverNow) return
     if (table.auto_left?.some(seat => seat.userId === userId && ['not_ready', 'idle'].includes(seat.reason)) && !previous?.auto_left?.some(seat => seat.userId === userId)) {
@@ -107,22 +111,30 @@ export const TableGameProvider = ({ game, children }) => {
       socket.off('table_game_result', onResult)
     }
   }, [game, socket, userId, load, acceptTable, refreshBalance])
-  const action = async (name, id = table?.tableId, payload) => {
+  const action = async (name, id = table?.tableId, payload, options = {}) => {
     if (!requireAuth('Đăng nhập để tham gia bàn chơi.') || busyRef.current) return false
     busyRef.current = true
     setBusy(true)
     try {
       const body = { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move: payload } : name === 'create' ? { visibility: payload } : {}) }
-      const { data } = await (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
+      const send = () => (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
+      let response
+      try { response = await send() } catch (error) {
+        if (!options.retryTransient || (error.response && error.response.status < 500)) throw error
+        response = await send()
+      }
+      const { data } = response
       acceptTable(data)
       setTableId(name === 'leave' ? null : data.tableId)
       await refreshBalance()
       return true
     } catch (error) {
-      toast(ERROR_COPY[error.response?.data?.code] || 'Không thực hiện được. Hãy thử lại.', 'error')
+      const code = error.response?.data?.code
+      const joinError = ['sit', 'quickJoin'].includes(name) && code === 'TABLE_PLAYING'
+      toast(joinError ? 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' : ERROR_COPY[code] || 'Không thực hiện được. Hãy thử lại.', 'error')
       load()
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id) => action('sit', id), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }
