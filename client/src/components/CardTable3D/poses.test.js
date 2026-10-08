@@ -52,3 +52,24 @@ it('holds during the lift, reaches at release time, and returns over 300ms', () 
   expect(playPosePhase(600)).toEqual({reaching:false,progress:0.5})
   expect(playPosePhase(750)).toEqual({reaching:false,progress:1})
 })
+
+it('rests both waiting hands below the shoulders instead of stretching them at table height', () => {
+  const bytes=readFileSync('public/models/chibi.glb')
+  const json=JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)))
+  const nodes=json.nodes.map(node=>{
+    const object=node.name?.startsWith('mixamorig')?new Bone():new Group()
+    object.name=node.name||''
+    if(node.translation)object.position.fromArray(node.translation)
+    if(node.rotation)object.quaternion.fromArray(node.rotation).normalize()
+    if(node.scale)object.scale.fromArray(node.scale)
+    return object
+  })
+  json.nodes.forEach((node,i)=>node.children?.forEach(child=>nodes[i].add(nodes[child])))
+  const root=new Group();json.scenes[0].nodes.forEach(i=>root.add(nodes[i]))
+  const rig=prepareRig(root);blendPose(rig,poseTargets(rig,poses.seated,poses.waiting,poses.idle),1)
+  for(const side of ['Left','Right']) {
+    const shoulder=rig.get(`mixamorig${side}Arm`).bone.getWorldPosition(new Vector3())
+    const hand=rig.get(`mixamorig${side}Hand`).bone.getWorldPosition(new Vector3())
+    expect(hand.y).toBeLessThan(shoulder.y-0.1)
+  }
+})
