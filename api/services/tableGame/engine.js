@@ -97,9 +97,7 @@ const createTableGameService = (definition) => {
     if (table.match || table.fundingMatch) throw new TableGameError('Table is playing', 409, 'TABLE_PLAYING')
   }
   const cancelCountdown = (table) => { table.startsAt = null }
-  const allReady = (table) => table.seats.some(Boolean) && table.seats.filter(Boolean).every(seat => seat.ready)
-  // Re-arm after someone leaves: the remaining players may all be ready already.
-  const armCountdown = (table) => { if (allReady(table) && !table.startsAt) table.startsAt = Date.now() + readyCountdownMs }
+  const allReady = (table) => table.seats.some(Boolean) && table.seats.filter(Boolean).every(seat => seat.userId === table.hostId || seat.ready)
   const resetReady = (table) => {
     const now = Date.now()
     table.seats.forEach(seat => { if (seat) { seat.ready = false; seat.readyDeadlineAt = null; seat.idleDeadlineAt = now + idleSeatMs } })
@@ -130,10 +128,8 @@ const createTableGameService = (definition) => {
         removeSeats(table, seat => !seat.ready && (seat.readyDeadlineAt || table.readyDeadlineAt) <= now, 'not_ready')
         table.readyDeadlineAt = Math.max(0, ...table.seats.filter(seat => seat && !seat.ready).map(seat => seat.readyDeadlineAt || 0)) || null
         if (!table.readyDeadlineAt) table.status = 'waiting'
-        if (allReady(table) && !table.startsAt) table.startsAt = now + readyCountdownMs
       } else if (!table.readyDeadlineAt) {
         removeSeats(table, seat => !seat.ready && seat.idleDeadlineAt <= now, 'idle')
-        if (table.autoLeft.length && allReady(table)) table.startsAt = now + readyCountdownMs
       }
       if (table.startsAt && table.startsAt <= now && allReady(table)) {
         table.startsAt = null
@@ -167,8 +163,29 @@ const createTableGameService = (definition) => {
         seat.ready = value
         seat.idleDeadlineAt = Date.now() + idleSeatMs
         if (!value) cancelCountdown(table)
-        else if (allReady(table) && !table.startsAt) table.startsAt = Date.now() + readyCountdownMs
       }
+      broadcast(table)
+      scheduleLobby(table)
+      remember(key, true)
+      return snapshot(table, userId)
+    })
+  }
+  const start = (userId, tableId, requestKey) => {
+    validateKey(requestKey)
+    const table = tableFor(tableId)
+    const key = `u:${userId}:start:${tableId}:${requestKey}`
+    return enqueue(table, async () => {
+      if (requests.has(key)) return snapshot(table, userId)
+      if (table.hostId !== userId.toString()) throw new TableGameError('Only the host can start', 403, 'NOT_HOST')
+      if (table.match || table.fundingMatch || table.startsAt) throw new TableGameError('Table is busy', 409, 'TABLE_BUSY')
+      if (!allReady(table)) throw new TableGameError('Players are not ready', 409, 'NOT_ALL_READY')
+      if (table.stake && table.seats.filter(Boolean).length >= 2) {
+        const user = await User.findById(userId).select('polites').lean()
+        if ((user?.polites || 0) < table.stake) throw new TableGameError('Not enough coins for this stake', 409, 'INSUFFICIENT_COINS')
+      }
+      table.seats.find(seat => seat?.userId === table.hostId).ready = true
+      table.startError = null
+      table.startsAt = Date.now() + readyCountdownMs
       broadcast(table)
       scheduleLobby(table)
       remember(key, true)
@@ -363,7 +380,6 @@ const createTableGameService = (definition) => {
       waiting(table)
       if (!table.seats.some(seat => seat?.userId === userId.toString())) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
       removeSeats(table, seat => seat.userId === userId.toString(), 'left')
-      armCountdown(table)
       scheduleLobby(table)
       const response = snapshot(table, userId)
       broadcast(table)
@@ -425,7 +441,6 @@ const createTableGameService = (definition) => {
       for (const table of tables) enqueue(table, async () => {
         if (hasSockets(userId) || table.match || table.fundingMatch) return
         removeSeats(table, seat => seat.userId === userId, 'disconnected')
-        armCountdown(table)
         scheduleLobby(table)
         broadcast(table)
         deleteEmpty(table)
@@ -502,6 +517,6 @@ const createTableGameService = (definition) => {
       throw error
     }
   }
-  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), setStake, move }
+  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), start, setStake, move }
 }
 module.exports = { createTableGameService, TableGameError }

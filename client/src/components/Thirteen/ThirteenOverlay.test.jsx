@@ -325,18 +325,15 @@ describe('stake in the waiting panel', () => {
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 
-  it('puts the amount on the ready button, but not for free play', () => {
-    const view = render(overlay({ stake: 50 }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng (cược 50 PC)' })).toBeInTheDocument()
-    view.rerender(overlay({ stake: 50, status: 'finished' }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới (cược 50 PC)' })).toBeInTheDocument()
-    view.rerender(overlay({ stake: 0, status: 'finished' }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới' })).toBeInTheDocument()
-  })
-
-  it('leaves the amount off the ready button when you are alone, since a solo game is free practice', () => {
-    render(overlay({ stake: 50, seats: [waiting.seats[0], null, null, null] }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng' })).toBeInTheDocument()
+  it('host starts only when other humans are ready, with no ready toggle', () => {
+    const view = render(overlay({ seats: [waiting.seats[0], { ...waiting.seats[1], ready: false }, null, null] }))
+    expect(screen.getByRole('button', { name: 'Bắt đầu (cược 20 PC)' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Sẵn sàng/ })).not.toBeInTheDocument()
+    view.rerender(overlay())
+    fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu (cược 20 PC)' }))
+    expect(props.action).toHaveBeenCalledWith('start', 1)
+    view.rerender(overlay({ seats: [waiting.seats[0], null, null, null] }))
+    expect(screen.getByRole('button', { name: 'Bắt đầu' })).toBeEnabled()
   })
 
   it('announces the stake with the other wall-board information', () => {

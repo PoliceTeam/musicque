@@ -22,7 +22,8 @@ const ERROR_COPY = {
   MOVE_CONFLICT: 'Bàn vừa cập nhật, hãy thử lại.',
   NOT_SEATED: 'Bạn chưa ngồi vào bàn.',
   RECOVERING: 'Bàn đang được khôi phục, hãy thử lại.',
-  NOT_HOST: 'Chỉ chủ bàn mới đổi được mức cược.',
+  NOT_HOST: 'Chỉ chủ bàn mới thực hiện được thao tác này.',
+  NOT_ALL_READY: 'Hãy chờ mọi người sẵn sàng.',
   INVALID_STAKE: 'Mức cược không hợp lệ.',
   TABLE_BUSY: 'Bàn đang bắt đầu hoặc đang chơi, chưa đổi được mức cược.',
 }
@@ -143,5 +144,5 @@ export const TableGameProvider = ({ game, children }) => {
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), start: (id) => action('start', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }
