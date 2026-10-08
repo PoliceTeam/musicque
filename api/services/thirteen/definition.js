@@ -4,12 +4,14 @@ const { applyMove, mustIncludeFor } = require('./engine')
 const { chooseMove } = require('./bot')
 const { splitPot } = require('./payout')
 const { GameRuleError } = require('../tableGame/definition')
+const stake = Number(process.env.THIRTEEN_STAKE_PC || 10)
 module.exports = {
   name: 'thirteen',
   seats: { min: 2, max: 4 },
   config: {
     maxTables: Number(process.env.THIRTEEN_MAX_TABLES || 20),
-    stake: Number(process.env.THIRTEEN_STAKE_PC || 10),
+    stake,
+    stakeOptions: [...new Set([...(process.env.THIRTEEN_STAKE_OPTIONS || '0,10,20,50,100').split(',').map(Number), stake])].sort((a, b) => a - b),
     turnMs: Number(process.env.THIRTEEN_TURN_MS || 20000),
     readyCountdownMs: Number(process.env.THIRTEEN_READY_COUNTDOWN_MS || 3000),
     readyTimeoutMs: Number(process.env.THIRTEEN_READY_TIMEOUT_MS || 30000),
