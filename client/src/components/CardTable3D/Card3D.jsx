@@ -5,7 +5,7 @@ import { useAnimationActivity } from './activity'
 import { sameCardTarget, tween, motionTiming, easeInOutCubic } from './anim'
 import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose, poseInSpace, blendAnchorDelta } from './cardSpaces'
 import { playMetrics } from './cardMotion'
-export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
+export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, focused = false, onClick, dim = false, spaces, poseStore, poseId }) {
   const { glowGeometry, glowMaterial, selectionMaterial, dimGeometry, dimMaterial } = deck.overlays
   const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
   const activity = useAnimationActivity()
@@ -47,8 +47,8 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   useFrame((_, delta) => {
     const animation = motion.current
     if (import.meta.env.DEV) ref.current.userData.motion = animation
-    const lift = selected ? 0.065 : hovered ? 0.01 : 0
-    const selectionTilt = selected ? -0.14 : 0
+    const lift = selected ? 0.033 : hovered ? 0.01 : 0
+    const selectionTilt = 0
     const lifting = inner.current && (Math.abs(inner.current.position.y - lift) > 1e-5 || Math.abs(inner.current.rotation.x - selectionTilt) > 1e-5)
     if ((!animation || animation.done) && !lifting) { activity.stop(); return }
     if (animation?.deferredInitial) {
@@ -112,13 +112,13 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
       if (poseStore && poseId) poseStore.current.set(poseId, readWorldPose(inner.current))
     }
   })
-  return <group ref={ref} userData={{ card: true }} onClick={onClick ? (event) => { event.stopPropagation(); onClick() } : undefined}
+  return <group ref={ref} userData={{ card: true, selectionCard: onClick ? cardId : null }} onClick={onClick ? (event) => { event.stopPropagation(); onClick() } : undefined}
     onPointerOver={onClick ? (event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' } : undefined}
     onPointerOut={onClick ? () => { setHovered(false); document.body.style.cursor = '' } : undefined}>
     <group ref={inner}>
       <primitive object={clone} dispose={null} />
-      <mesh visible={selected || hovered} position={[0, 0, -0.0001]} geometry={glowGeometry} material={selected ? selectionMaterial : glowMaterial} dispose={null} />
-      <mesh visible={dim} position={[0, 0, 0.0002]} geometry={dimGeometry} material={dimMaterial} dispose={null} />
+      <mesh raycast={() => null} visible={selected || hovered || focused} position={[0, 0, -0.0001]} geometry={glowGeometry} material={selected ? selectionMaterial : glowMaterial} dispose={null} />
+      <mesh raycast={() => null} visible={dim} position={[0, 0, 0.0002]} geometry={dimGeometry} material={dimMaterial} dispose={null} />
     </group>
   </group>
 }

@@ -12,12 +12,12 @@ vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> })
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: mocks.user, loading: mocks.loading, requireAuth: mocks.requireAuth, balance: mocks.balance }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
 const table = { tableId: 1, matchId: 'g1', version: 0, status: 'playing', currentSeat: 0, pot: 20, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 1 }, { userId: 'b', username: 'Bình', handCount: 1 }, { isBot: true, username: 'Bot 1', handCount: 1 }, { isBot: true, username: 'Bot 2', handCount: 1 }], trick: null, mustInclude: '3S' }
-const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), busy: false, onClose: vi.fn() }
+const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), clearSelection: vi.fn(), busy: false, onClose: vi.fn() }
 beforeEach(() => { mocks.balance = undefined; mocks.user = { _id: 'a' }; mocks.loading = false; mocks.requireAuth = vi.fn() })
 describe('ThirteenOverlay', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.state = { ...props, tables: [table], currentTable: table, config: { stake: 10, turnMs: 20000 }, closeResult: vi.fn() } })
   it('automatically opens the playing match, closes to the lobby and can reopen', async () => {
-    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    const view = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     const dialog = await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })
     expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(dialog).toHaveFocus()
@@ -28,6 +28,11 @@ describe('ThirteenOverlay', () => {
     expect(document.body.style.overflow).toBe('')
     await userEvent.click(screen.getByRole('button', { name: 'Quay lại bàn' }))
     expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(props.clearSelection).toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    mocks.state = { ...mocks.state, selectedCards: [] }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
   })

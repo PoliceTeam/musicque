@@ -1,0 +1,18 @@
+.thirteen-hud .thirteen-actions { max-width: 580px; }
+.thirteen-actions .thirteen-selection-feedback { font-size: 12px; white-space: nowrap; }
+.thirteen-selection-feedback.is-valid { color: var(--sp-green); }
+.thirteen-selection-feedback.is-invalid { color: var(--sp-red); }
+.thirteen-clear b { font-size: 18px; font-weight: 400; }
+.thirteen-clear { gap: 4px; }
+.thirteen-pass-pulse { animation: thirteen-pass-hint 700ms ease-in-out 3 alternate; }
+@keyframes thirteen-pass-hint { to { box-shadow: 0 0 0 4px color-mix(in srgb, var(--sp-green) 45%, transparent); } }
+.thirteen-card.is-dim { filter: brightness(0.65); }
+.thirteen-card.is-focused { outline: 3px solid #ffc857; outline-offset: 4px; }
+@media (max-width: 700px) {
+  .th-game .thirteen-actions .thirteen-selection-feedback { order: -1; flex: 1 0 100%; overflow: hidden; text-overflow: ellipsis; }
+  .th-game .thirteen-actions { gap: 6px; }
+  .th-game .thirteen-actions .thirteen-timer { box-sizing: border-box; width: 34px; height: 34px; }
+  .th-game .thirteen-actions button { padding-inline: 6px; font-size: 12px; }
+  .th-game .thirteen-hud .thirteen-actions .thirteen-clear span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .thirteen-pass-pulse { animation: none; } }

@@ -37,7 +37,7 @@ it('keeps an own-seat card waiting in the deck while the camera anchor rotates',
   readWorldPose(card).position.forEach((value, i) => expect(value).toBeCloseTo(waiting[i], 6))
 })
 
-it('raises and tilts selected cards with an opaque border, keeping hover lighter', async () => {
+it('raises selected cards in-plane without tilting with an opaque border, keeping hover lighter', async () => {
   const selectionMaterial = new MeshBasicMaterial({ color: '#3d7dee' })
   root = createRoot(document.createElement('canvas'))
   const scene = new THREE.Scene()
@@ -47,8 +47,9 @@ it('raises and tilts selected cards with an opaque border, keeping hover lighter
   await act(async () => root.render(<Card3D {...cardProps} selected />))
   await act(async () => advance(1))
   const card = scene.children[0].children[0]
-  expect(card.position.y).toBe(.065)
-  expect(card.rotation.x).toBe(-.14)
+  expect(card.position.y).toBe(.033)
+  expect(card.rotation.x).toBe(0)
+  expect(card.position.z).toBe(0)
   expect(card.children[1].material).toBe(selectionMaterial)
   expect(card.children[1].material.opacity).toBe(1)
   await act(async () => root.render(<Card3D {...cardProps} />))
@@ -56,4 +57,25 @@ it('raises and tilts selected cards with an opaque border, keeping hover lighter
   expect(card.position.y).toBe(0)
   expect(card.rotation.x).toBe(0)
   expect(card.children[1].visible).toBe(false)
+})
+
+it('keeps selected-card depth and draw order so the visible overlapping neighbour wins the raycast', async () => {
+  const face = new THREE.Mesh(new PlaneGeometry(.058, .089), new MeshBasicMaterial())
+  const cardDeck = { ...deck, AS: face, overlays: { ...deck.overlays, selectionMaterial: new MeshBasicMaterial(), glowGeometry: new PlaneGeometry(.064, .095) } }
+  root = createRoot(document.createElement('canvas'))
+  const scene = new THREE.Scene()
+  root.configure({ scene, gl: renderer, frameloop: 'never', size: { width: 100, height: 100, top: 0, left: 0 } })
+  const first = { position: [0, 0, 0], faceUp: true, tilt: Math.PI / 2, order: 1000 }
+  const next = { ...first, position: [.015, 0, .0005], order: 1001 }
+  await act(async () => root.render(<><Card3D deck={cardDeck} cardId='AS' target={first} selected reducedMotion /><Card3D deck={cardDeck} cardId='AS' target={next} reducedMotion /></>))
+  await act(async () => advance(1))
+  scene.updateMatrixWorld(true)
+  const selected = scene.children[0], neighbour = scene.children[1]
+  expect(selected.children[0].position.toArray()).toEqual([0, .033, 0])
+  expect(selected.children[0].rotation.x).toBe(0)
+  expect(selected.children[0].children[0].renderOrder).toBe(1000)
+  expect(neighbour.children[0].children[0].renderOrder).toBe(1001)
+  const ray = new THREE.Raycaster(new THREE.Vector3(.02, .02, 1), new THREE.Vector3(0, 0, -1))
+  const hit = ray.intersectObjects(scene.children, true)[0].object
+  expect(hit.parent.parent).toBe(neighbour)
 })

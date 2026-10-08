@@ -15,7 +15,9 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const [showResult, setShowResult] = useState(false)
   const [now, setNow] = useState(Date.now())
   const dialog = useRef()
-  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} lastChatBySeat={state.lastChatBySeat} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered, state.lastChatBySeat])
+  const selection = useRef(state)
+  selection.current = state
+  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} setCardSelected={state.setCardSelected} setSelectedCards={state.setSelectedCards} clearSelection={state.clearSelection} focusedCard={state.focusedCard} validPlays={state.validPlays} action={state.action} busy={state.busy} shortcutsEnabled={!rulesOpen} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} lastChatBySeat={state.lastChatBySeat} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.setCardSelected, state.setSelectedCards, state.clearSelection, state.focusedCard, state.validPlays, state.action, state.busy, rulesOpen, state.turnMs, dealOnMount, handLowered, state.lastChatBySeat])
   useEffect(() => { setHandLowered(false) }, [table?.matchId])
   useEffect(() => {
     if (!open) return undefined
@@ -25,9 +27,10 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
     document.body.style.overflow = 'hidden'
     dialog.current?.focus()
     const onKey = event => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault()
         if (rulesOpen) setRulesOpen(false)
+        else if (selection.current.selectedCards?.length) selection.current.clearSelection?.()
         else onClose()
       }
       if (event.key === 'Tab' && !rulesOpen) {
