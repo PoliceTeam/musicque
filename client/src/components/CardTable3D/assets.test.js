@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ data: null, clear: vi.fn() }))
 vi.mock('@react-three/drei', () => { const useGLTF = () => mocks.data; useGLTF.clear = mocks.clear; return { useGLTF } })
 vi.mock('@react-three/fiber', () => ({ useThree: fn => fn({ gl: { extensions: { has: () => false }, capabilities: { isWebGL2: true, getMaxAnisotropy: () => 8 } } }) }))
-import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF } from './assets'
+import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF, warmTableScene } from './assets'
 it('disposes shared resources once and clears parsed models for a fresh context', () => {
   const image = { close: vi.fn() }, texture = new Texture(image)
   const material = new MeshBasicMaterial({ map: texture }), geometry = new PlaneGeometry()
@@ -25,4 +25,14 @@ it('closes decoded images once after upload and again-safe cleanup', () => {
   const image = { close: vi.fn() }, texture = new Texture(image)
   releaseTextureImage(texture); releaseTextureImage(texture)
   expect(image.close).toHaveBeenCalledTimes(1)
+})
+
+it('warms programs and shared textures once, including hidden meshes', () => {
+  const scene = new Group(), texture = new Texture(), material = new MeshBasicMaterial({ map: texture })
+  scene.add(new Mesh(new PlaneGeometry(), material), new Mesh(new PlaneGeometry(), material))
+  scene.children[0].visible = false
+  const camera = {}, gl = { compile: vi.fn(), initTexture: vi.fn() }
+  warmTableScene(scene, camera, gl)
+  expect(gl.compile).toHaveBeenCalledWith(scene, camera)
+  expect(gl.initTexture).toHaveBeenCalledExactlyOnceWith(texture)
 })

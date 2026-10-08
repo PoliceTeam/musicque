@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useAnimationActivity } from '../CardTable3D/activity'
+import { warmTableScene } from '../CardTable3D/assets'
 import { useDeck } from '../CardTable3D/useDeck'
 import Card3D from '../CardTable3D/Card3D'
 import TableScene from '../CardTable3D/TableScene'
@@ -74,6 +75,8 @@ function SceneEffects({ frame, reducedMotion, deck, surfaceY }) {
 }
 function ThirteenCards({ table, myHand, selectedCards, toggleCard, surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson, dealOnMount, preview, handLowered, turnMs }) {
   const deck = useDeck()
+  const { scene, camera, gl } = useThree()
+  useLayoutEffect(() => { warmTableScene(scene, camera, gl) }, [scene, camera, gl, deck, table.matchId])
   const spaces = useRef({})
   const poseStore = useMemo(() => ({ current: new Map(), matchId: table.matchId }), [table.matchId])
   const next = useMemo(() => buildThirteenSnapshot({ table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview }), [table, myHand, anchor, surfaceY, seatPositions, firstPerson, preview])

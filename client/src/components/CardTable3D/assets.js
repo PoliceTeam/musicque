@@ -44,3 +44,15 @@ export const clearTableAssets = () => {
   ktx2?.dispose(); ktx2 = undefined
   for (const url of TABLE_MODEL_URLS) useGLTF.clear(url)
 }
+
+// Run after the loaded scene commits, before its first animation frame.
+export function warmTableScene(scene, camera, gl) {
+  gl.compile(scene, camera)
+  const textures = new Set()
+  scene.traverse(node => {
+    for (const material of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) {
+      for (const value of Object.values(material)) if (value?.isTexture) textures.add(value)
+    }
+  })
+  for (const texture of textures) gl.initTexture(texture)
+}
