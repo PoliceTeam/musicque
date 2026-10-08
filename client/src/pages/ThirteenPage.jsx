@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input, Modal, Radio, message } from 'antd'
 import { Link, useSearchParams } from 'react-router-dom'
 import UserMenu from '../components/Auth/UserMenu'
@@ -61,9 +61,9 @@ function ThirteenContent() {
     else action('sit', room, { retryTransient: true }).then(ok => { if (ok) setOverlayOpen(true) }).finally(clearRoom)
   }, [room, userId, action, requireAuth, setParams])
   const join = async (name, value) => { if (await action(name, value)) { setOverlayOpen(true); setCreateOpen(false) } }
-  const finalTable = state.result && lastMatch?.matchId === state.result.matchId && currentTable?.status === 'finished' ? {
+  const finalTable = useMemo(() => state.result && lastMatch?.matchId === state.result.matchId && currentTable?.status === 'finished' ? {
     ...currentTable, ...state.result.publicView, matchId: lastMatch.matchId, pot: lastMatch.pot, seats: currentTable.seats.map((seat, i) => seat ? { ...state.result.publicView?.seats?.[i], ...seat } : null), status: 'finished', currentSeat: null,
-  } : currentTable
+  } : currentTable, [state.result, lastMatch, currentTable])
   const joinable = table => ['waiting', 'finished'].includes(table.status) && table.seats.some(seat => !seat)
   const publicTables = tables.filter(table => table.visibility !== 'private').sort((a, b) => Number(joinable(b)) - Number(joinable(a)) || b.seats.filter(Boolean).length - a.seats.filter(Boolean).length)
   return <div className='thirteen-page'>

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ThirteenOverlay from './ThirteenOverlay'
 import ThirteenPage from '../../pages/ThirteenPage'
 const mocks = vi.hoisted(() => ({ state: null }))
-vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> }))
+vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => { mocks.sceneRenders = (mocks.sceneRenders || 0) + 1; return <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> } }))
 vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> }))
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' } }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
@@ -183,4 +183,18 @@ it('disables every leave control until refund recovery completes', () => {
   for (const button of screen.getAllByRole('button', { name: 'Rời bàn' })) expect(button).toBeDisabled()
   view.rerender(<ThirteenOverlay {...props} open table={{ ...room, fundingPending: false }} />)
   for (const button of screen.getAllByRole('button', { name: 'Rời bàn' })) expect(button).toBeEnabled()
+})
+
+it('does not rerender the result scene on lobby/overlay timer ticks', async () => {
+  vi.useFakeTimers()
+  const finished = { ...table, status: 'finished' }
+  const result = { matchId: 'g1', publicView: { remainingHands: [['3S'], [], [], []], seats: table.seats }, ranking: [], payouts: [] }
+  mocks.state = { ...props, table: finished, currentTable: finished, tables: [finished], result, config: { turnMs: 20000 } }
+  const view = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+  const before = mocks.sceneRenders
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+  expect(mocks.sceneRenders).toBe(before)
+  view.unmount()
+  vi.useRealTimers()
 })
