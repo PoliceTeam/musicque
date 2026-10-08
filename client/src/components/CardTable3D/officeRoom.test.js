@@ -37,3 +37,16 @@ describe('stylized office room', () => {
     geometry.dispose()
   })
 })
+
+it('preserves the SVG viewBox and reading direction, adding the missing E stem in both themes', async () => {
+  const {readFileSync}=await import('node:fs')
+  const {wallWordmarkSvg}=await import('./officeRoom')
+  const source=readFileSync('public/brand/logo-wordmark.svg','utf8')
+  for(const palette of Object.values(roomPalettes)) {
+    const svg=wallWordmarkSvg(source,palette.logoTint)
+    expect(svg).toContain('viewBox="-14 0 956 190"')
+    expect(svg).toContain(`stroke="${palette.logoTint}"`)
+    expect(svg).toContain('<path d="M825 30 L825 150"/>')
+    expect(svg).not.toMatch(/scale\(-1/)
+  }
+})

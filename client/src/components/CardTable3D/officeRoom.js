@@ -58,3 +58,6 @@ export function buildOfficeRoom() {
   recolorRoom(geometry, paletteKeys, roomPalettes.light)
   return { geometry, paletteKeys, bounds }
 }
+
+// The brand asset ends with three sound bars; the wall-sized wordmark needs an E stem.
+export const wallWordmarkSvg = (source, tint) => source.replace('stroke="url(#mq-spectrum)"', `stroke="${tint}"`).replace('</g>', '<path d="M825 30 L825 150"/></g>')

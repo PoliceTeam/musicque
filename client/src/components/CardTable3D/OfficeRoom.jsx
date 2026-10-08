@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
 import { useTheme } from '../../contexts/ThemeContext'
-import { buildOfficeRoom } from './officeRoom.js'
+import { buildOfficeRoom, wallWordmarkSvg } from './officeRoom.js'
 import { recolorRoom, roomPalettes } from './roomPalette'
 import * as THREE from 'three'
 import WallInfoBoard from './WallInfoBoard'
@@ -55,7 +55,7 @@ export default function OfficeRoom({ table }) {
     logoSource ||= fetch('/brand/logo-wordmark.svg').then(response => { if (!response.ok) throw new Error('Wordmark failed to load'); return response.text() })
     logoSource.then(source => {
       if (cancelled) return
-      const svg = source.replace('stroke="url(#mq-spectrum)"', `stroke="${roomPalettes[isDark ? 'dark' : 'light'].logoTint}"`)
+      const svg = wallWordmarkSvg(source, roomPalettes[isDark ? 'dark' : 'light'].logoTint)
       url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })); image = new Image()
       image.onload = () => {
         if (!cancelled) { const context = logo.canvas.getContext('2d'); context.clearRect(0, 0, 512, 128); context.drawImage(image, 0, 13, 512, 102); logo.texture.needsUpdate = true; invalidate() }
