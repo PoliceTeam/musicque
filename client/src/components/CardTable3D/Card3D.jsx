@@ -6,7 +6,7 @@ import { sameCardTarget, tween, motionTiming, easeInOutCubic } from './anim'
 import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose, poseInSpace, blendAnchorDelta } from './cardSpaces'
 import { playMetrics } from './cardMotion'
 export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
-  const { glowGeometry, glowMaterial, dimGeometry, dimMaterial } = deck.overlays
+  const { glowGeometry, glowMaterial, selectionMaterial, dimGeometry, dimMaterial } = deck.overlays
   const target = useMemo(() => explicitTarget || { position, rotation, faceUp: !faceDown, scale, tilt }, [explicitTarget, position, rotation, faceDown, scale, tilt])
   const activity = useAnimationActivity()
   const ref = useRef(), inner = useRef(), motion = useRef(null)
@@ -47,8 +47,9 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   useFrame((_, delta) => {
     const animation = motion.current
     if (import.meta.env.DEV) ref.current.userData.motion = animation
-    const lift = selected ? 0.03 : hovered ? 0.01 : 0
-    const lifting = inner.current && Math.abs(inner.current.position.y - lift) > 1e-5
+    const lift = selected ? 0.065 : hovered ? 0.01 : 0
+    const selectionTilt = selected ? -0.14 : 0
+    const lifting = inner.current && (Math.abs(inner.current.position.y - lift) > 1e-5 || Math.abs(inner.current.rotation.x - selectionTilt) > 1e-5)
     if ((!animation || animation.done) && !lifting) { activity.stop(); return }
     if (animation?.deferredInitial) {
       const initial = worldPose(animation.from || animation.target, spaces, scratch.world)
@@ -58,6 +59,8 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     }
     delta = activity.step(delta)
     if (lifting) {
+      inner.current.rotation.x += (selectionTilt - inner.current.rotation.x) * (reducedMotion ? 1 : 1 - Math.exp(-20 * delta))
+      if (Math.abs(inner.current.rotation.x - selectionTilt) <= 1e-5) inner.current.rotation.x = selectionTilt
       inner.current.position.y += (lift - inner.current.position.y) * (reducedMotion ? 1 : 1 - Math.exp(-20 * delta))
       if (Math.abs(inner.current.position.y - lift) <= 1e-5) inner.current.position.y = lift
     }
@@ -114,7 +117,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     onPointerOut={onClick ? () => { setHovered(false); document.body.style.cursor = '' } : undefined}>
     <group ref={inner}>
       <primitive object={clone} dispose={null} />
-      <mesh visible={selected || hovered} position={[0, 0, -0.0001]} geometry={glowGeometry} material={glowMaterial} dispose={null} />
+      <mesh visible={selected || hovered} position={[0, 0, -0.0001]} geometry={glowGeometry} material={selected ? selectionMaterial : glowMaterial} dispose={null} />
       <mesh visible={dim} position={[0, 0, 0.0002]} geometry={dimGeometry} material={dimMaterial} dispose={null} />
     </group>
   </group>

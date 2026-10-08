@@ -22,7 +22,8 @@ it('keeps an own-seat card waiting in the deck while the camera anchor rotates',
   expect(entry.start).toBeGreaterThan(0)
   const anchor = new Group(), spaces = { current: { camera: anchor } }
   root = createRoot(document.createElement('canvas'))
-  root.configure({ gl: renderer, frameloop: 'never', size: { width: 100, height: 100, top: 0, left: 0 } })
+  const scene = new THREE.Scene()
+  root.configure({ scene, gl: renderer, frameloop: 'never', size: { width: 100, height: 100, top: 0, left: 0 } })
   await act(async () => root.render(
     <primitive object={anchor}><Card3D deck={deck} cardId='AS' target={{ ...entry.card, ...motion }} from={motion.from} delay={motion.delay} duration={motion.duration} height={motion.height} spaces={spaces} /></primitive>
   ))
@@ -34,4 +35,25 @@ it('keeps an own-seat card waiting in the deck while the camera anchor rotates',
   anchor.rotation.y = 0.6; anchor.position.x = 0.3
   await frame()
   readWorldPose(card).position.forEach((value, i) => expect(value).toBeCloseTo(waiting[i], 6))
+})
+
+it('raises and tilts selected cards with an opaque border, keeping hover lighter', async () => {
+  const selectionMaterial = new MeshBasicMaterial({ color: '#3d7dee' })
+  root = createRoot(document.createElement('canvas'))
+  const scene = new THREE.Scene()
+  root.configure({ scene, gl: renderer, frameloop: 'never', size: { width: 100, height: 100, top: 0, left: 0 } })
+  const selectedDeck = { ...deck, overlays: { ...deck.overlays, selectionMaterial } }
+  const cardProps = { deck: selectedDeck, cardId: 'AS', position: [0, 0, 0], reducedMotion: true }
+  await act(async () => root.render(<Card3D {...cardProps} selected />))
+  await act(async () => advance(1))
+  const card = scene.children[0].children[0]
+  expect(card.position.y).toBe(.065)
+  expect(card.rotation.x).toBe(-.14)
+  expect(card.children[1].material).toBe(selectionMaterial)
+  expect(card.children[1].material.opacity).toBe(1)
+  await act(async () => root.render(<Card3D {...cardProps} />))
+  await act(async () => advance(2))
+  expect(card.position.y).toBe(0)
+  expect(card.rotation.x).toBe(0)
+  expect(card.children[1].visible).toBe(false)
 })

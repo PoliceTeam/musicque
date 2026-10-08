@@ -1,31 +1,16 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import React, { Suspense, useEffect, useMemo, useState } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
 import { PerformanceMonitor, Stats } from '@react-three/drei'
 import * as THREE from 'three'
 import ErrorBoundary from '../ErrorBoundary'
 import { AnimationActivity } from './AnimationActivity'
-import { useAnimationActivity } from './activity'
+import TurnRing from './TurnRing'
 import { clearTableAssets, releaseTextureImage, useTableGLTF, warmTableScene } from './assets'
 import SeatMarker from './SeatMarker'
 import OfficeRoom from './OfficeRoom.jsx'
 import TurnCue from './TurnCue'
 import DragLookCamera from './DragLookCamera'
 import { chairPlacement } from './chair'
-function TurnRing({ position, reducedMotion }) {
-  const ref = useRef()
-  const initialPosition = useRef(position ? [position[0], position[1] + 0.001, position[2]] : [0, 0.786, 0])
-  const target = useMemo(() => position ? new THREE.Vector3(position[0], position[1] + 0.001, position[2]) : null, [position])
-  const activity = useAnimationActivity()
-  useEffect(() => { activity.start() }, [activity, target])
-  useFrame((_, delta) => {
-    if (!ref.current || !target) { activity.stop(); return }
-    delta = activity.step(delta)
-    ref.current.position.lerp(target, reducedMotion ? 1 : 1 - Math.exp(-12 * delta))
-    ref.current.material.opacity = 0.75
-    if (ref.current.position.distanceToSquared(target) < 1e-8) { ref.current.position.copy(target); activity.stop() }
-  })
-  return position && <mesh ref={ref} position={initialPosition.current} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.09, 0.097, 64]} /><meshBasicMaterial color='#72edb5' transparent depthWrite={false} /></mesh>
-}
 function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serverNow, turnMs, firstPerson, children }) {
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
@@ -63,7 +48,7 @@ function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serve
     <directionalLight position={[2, 4, 3]} color='#fff2dc' intensity={1.7} />
     <primitive object={tableModel} dispose={null} />
     {!firstPerson && seats.map((seat, i) => seat && <SeatMarker key={i} seat={seat} position={[seatPositions[i][0] * 1.2, surfaceY + 0.1, seatPositions[i][2] * 1.2]} active={currentSeat === i} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} />)}
-    {!firstPerson && <TurnRing position={table?.status === 'playing' ? seatPositions[currentSeat] : null} reducedMotion={reducedMotion} />}
+    <TurnRing position={table?.status === 'playing' ? seatPositions[currentSeat] : null} table={table} turnMs={turnMs} reducedMotion={reducedMotion} />
     <TurnCue table={table} position={characterPositions[currentSeat]} own={mySeat === currentSeat} surfaceY={surfaceY} turnMs={turnMs} firstPerson={firstPerson} />
     {children({ surfaceY, seatPositions, characterPositions, anchor, reducedMotion, firstPerson })}
   </>
