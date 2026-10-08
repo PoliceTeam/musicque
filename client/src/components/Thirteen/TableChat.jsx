@@ -13,11 +13,6 @@ export default function TableChat() {
   useEffect(() => {
     if (open) { end.current?.scrollIntoView?.({ block: 'nearest' }); setSeenIds(new Set(chat.map(item => item.id))) }
   }, [chat, open])
-  useEffect(() => {
-    const room = end.current?.closest('.th-game')
-    room?.classList.toggle('has-table-chat', open)
-    return () => room?.classList.remove('has-table-chat')
-  }, [open])
   if (!currentTable) return null
   const unread = open ? 0 : chat.filter(item => !seenIds.has(item.id)).length
   const send = async event => {
