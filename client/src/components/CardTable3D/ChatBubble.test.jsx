@@ -2,7 +2,7 @@ import React from 'react'
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import ChatBubble from './ChatBubble'
-import { bubbleText } from './throws'
+import { bubbleText } from './chat'
 afterEach(() => vi.useRealTimers())
 it('truncates long messages without splitting emoji', () => {
   expect(bubbleText('🍅'.repeat(61))).toBe('🍅'.repeat(60) + '…')

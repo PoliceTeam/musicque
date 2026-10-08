@@ -75,12 +75,12 @@ export default function DragLookCamera({ reducedMotion }) {
     const bomb = () => { if (!reducedMotion) { state.current.shake = 0; start() } }
     canvas.addEventListener('wheel', wheel, { passive: false }); canvas.addEventListener('pointerdown', down, true); window.addEventListener('pointermove', move, true); canvas.addEventListener('click', click, true); canvas.addEventListener('dblclick', doubleClick, true)
     window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true)
-    window.addEventListener('card-table:reset-view', reset); window.addEventListener('card-table:bomb', bomb); window.addEventListener('card-table:hit', bomb)
+    window.addEventListener('card-table:reset-view', reset); window.addEventListener('card-table:bomb', bomb)
     return () => {
       if (candidate?.dragging && canvas.hasPointerCapture(candidate.id)) canvas.releasePointerCapture(candidate.id)
       canvas.removeEventListener('wheel', wheel); canvas.removeEventListener('pointerdown', down, true); window.removeEventListener('pointermove', move, true); canvas.removeEventListener('click', click, true); canvas.removeEventListener('dblclick', doubleClick, true)
       window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', up, true)
-      window.removeEventListener('card-table:reset-view', reset); window.removeEventListener('card-table:bomb', bomb); window.removeEventListener('card-table:hit', bomb)
+      window.removeEventListener('card-table:reset-view', reset); window.removeEventListener('card-table:bomb', bomb)
       currentState.active = false; activity.stop()
     }
   }, [activity, camera, gl, scene, scratch, reducedMotion])

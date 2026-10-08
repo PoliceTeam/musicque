@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { bubbleText } from './throws'
+import { bubbleText } from './chat'
 import './social.css'
 export default function ChatBubble({ message, offset = 0 }) {
   const [visible, setVisible] = useState(false)

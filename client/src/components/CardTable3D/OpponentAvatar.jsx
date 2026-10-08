@@ -8,7 +8,7 @@ import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 import { CHAIR_HEIGHT } from './chair'
 const AVATAR_SCALE = 0.85
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, impact, message, serverOffset, onSeatClick, phase: roomPhase = 'playing', children }) {
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, message, serverOffset, phase: roomPhase = 'playing', children }) {
   const { scene } = useTableGLTF('/models/chibi.glb?v=1')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
@@ -80,12 +80,11 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     return { model, rig, waiting: poseTargets(rig, poses.seated, poses.waiting, poses.idle), hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
   }, [scene, seat.isBot])
   const activity = useAnimationActivity()
-  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed, roomPhase, impact])
+  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed, roomPhase])
   const phase = useMemo(() => ({}), [])
   const initialized = useRef(false), lastPhase = useRef(roomPhase)
   const handAnchor = useMemo(() => new THREE.Group(), [])
-  const headAnchor = useRef(), body = useRef()
-  const headTarget = useMemo(() => new THREE.Object3D(), [])
+  const headAnchor = useRef()
   const elapsed = useRef(Infinity)
   const lastPlay = useRef(playedKey)
   const lastPassed = useRef(seat.passed), passElapsed = useRef(Infinity)
@@ -93,8 +92,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
   spaces.current[`seat:${seatIndex}`] = handAnchor
-  spaces.current[`head:${seatIndex}`] = headTarget
-  useEffect(() => () => { disposeClonedSkeletons(avatar.model); avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`]; delete spaces.current[`head:${seatIndex}`] }, [avatar, spaces, seatIndex])
+  useEffect(() => () => { disposeClonedSkeletons(avatar.model); avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
   useFrame((_, delta) => {
     delta = activity.step(delta)
     if (playedKey !== lastPlay.current) {
@@ -108,8 +106,6 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const waiting = roomPhase !== 'playing'
     const phaseChanged = lastPhase.current !== roomPhase
     lastPhase.current = roomPhase
-    const hitAge = impact ? performance.now() - impact.startedAt : Infinity
-    const hitActive = hitAge >= 0 && hitAge < (impact?.item === 'tomato' ? 2000 : 1200)
     const moving = !waiting && !reducedMotion && (elapsed.current < 750 || interrupted.current)
     if (moving) {
       playPosePhase(elapsed.current, phase)
@@ -120,25 +116,19 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       const eased = progress * progress * (3 - 2 * progress)
       for (const [name, target] of to) avatar.rig.get(name).bone.quaternion.slerpQuaternions(from.get(name), target, eased)
       if (interrupted.current && progress === 1) { interrupted.current = null; elapsed.current = Infinity }
-    } else if (initialized.current && !wasMoving.current && !phaseChanged && passElapsed.current >= 800 && !hitActive) { activity.stop(); return }
+    } else if (initialized.current && !wasMoving.current && !phaseChanged && passElapsed.current >= 800) { activity.stop(); return }
     else blendPose(avatar.rig, waiting ? avatar.waiting : avatar.hold, 1)
     wasMoving.current = Boolean(moving)
     initialized.current = true
-    if (hitActive && !reducedMotion) {
-      if (impact.item === 'stone') head.rotation.z += Math.sin(hitAge * .035) * .18 * Math.max(0, 1 - hitAge / 700)
-      const squash = impact.item === 'tomato' && hitAge < 450 ? Math.sin(hitAge / 450 * Math.PI) : 0
-      body.current?.scale.set(AVATAR_SCALE * (1 + squash * .1), AVATAR_SCALE * (1 - squash * .12), AVATAR_SCALE)
-    } else body.current?.scale.setScalar(AVATAR_SCALE)
     head.updateWorldMatrix(true, false)
-    head.getWorldPosition(headTarget.position); headTarget.position.y += .18
     updateHandAnchor(hand, handAnchor)
     handAnchor.position.y -= !reducedMotion && passElapsed.current < 800 ? 0.03 * Math.sin(Math.PI * passElapsed.current / 800) : 0
     handAnchor.updateWorldMatrix(true, false)
     if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)
   return <>
-    <group ref={body} onClick={onSeatClick ? event => { event.stopPropagation(); onSeatClick() } : undefined} position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
+    <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
     <primitive object={handAnchor}>{children}</primitive>
-    <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} message={message} serverOffset={serverOffset} onSeatClick={onSeatClick} /></group>
+    <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} message={message} serverOffset={serverOffset} /></group>
   </>
 }
