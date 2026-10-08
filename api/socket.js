@@ -5,6 +5,7 @@ const redLight = require('./services/redLight.service')
 const workspace = require('./services/workspace.service')
 const workspaceVoice = require('./services/workspaceVoice.service')
 const werewolf = require('./services/werewolf.service')
+const audition = require('./services/audition.service')
 const jungle = require('./services/jungle.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
@@ -272,6 +273,20 @@ const initSocket = (server) => {
 
     socket.on('werewolf:unwatch', () => werewolf.unwatch(socket))
 
+    // Audition: token để server biết socket này là người chơi nào trong phòng (rớt mạng lâu lúc chờ thì tự rời).
+    socket.on('audition:watch', async (data = {}) => {
+      try {
+        if (!data.roomId) return
+        const user = data.token ? await resolveUserFromToken(data.token) : null
+        audition.watch(socket, String(data.roomId), user)
+      } catch (error) {
+        console.error('[Audition] Watch lỗi:', error.message)
+      }
+    })
+    socket.on('audition:unwatch', () => audition.unwatch(socket))
+    socket.on('audition:lobby:watch', () => audition.watchLobby(socket))
+    socket.on('audition:lobby:unwatch', () => audition.unwatchLobby(socket))
+
     // Cờ thú: ai cũng xem được; token chỉ để server biết người chơi còn kết nối.
     socket.on('jungle:watch', async (data = {}) => {
       try {
@@ -296,6 +311,7 @@ const initSocket = (server) => {
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))
       redLight.onSocketDisconnect(socket.id)
       werewolf.onSocketGone(socket)
+      audition.unwatch(socket)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor
         socket.to(socket.poliboardRoom).emit('cursor:remove', { id: socket.id });

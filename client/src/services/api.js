@@ -242,6 +242,22 @@ export const startWerewolf = () => api.post("/api/werewolf/start");
 export const fillWerewolfBots = () => api.post("/api/werewolf/bots");
 export const resetWerewolf = () => api.post("/api/werewolf/reset");
 export const sendWerewolfAction = (payload) => api.post("/api/werewolf/action", payload);
+
+// Audition (Neon Dance) — phòng nhảy nhiều người
+export const getAuditionRooms = () => api.get("/api/audition/rooms");
+export const getMyAuditionRoom = () => api.get("/api/audition/mine");
+export const getAuditionRoom = (id) => api.get(`/api/audition/rooms/${id}`);
+export const createAuditionRoom = (body) => api.post("/api/audition/rooms", body);
+export const joinAuditionRoom = (id) => api.post(`/api/audition/rooms/${id}/join`);
+export const leaveAuditionRoom = (id) => api.post(`/api/audition/rooms/${id}/leave`);
+export const setAuditionCharacter = (id, charId) => api.post(`/api/audition/rooms/${id}/character`, { charId });
+export const setAuditionSettings = (id, body) => api.post(`/api/audition/rooms/${id}/settings`, body);
+export const startAuditionRoom = (id) => api.post(`/api/audition/rooms/${id}/start`);
+export const setAuditionReady = (id, ready) => api.post(`/api/audition/rooms/${id}/ready`, { ready });
+export const addAuditionBot = (id, skill) => api.post(`/api/audition/rooms/${id}/bots`, { skill });
+export const removeAuditionBot = (id, botId) => api.delete(`/api/audition/rooms/${id}/bots/${botId}`);
+export const reportAuditionTurn = (id, body) => api.post(`/api/audition/rooms/${id}/report`, body);
+export const finishAuditionGame = (id, gameNo) => api.post(`/api/audition/rooms/${id}/done`, { gameNo });
 export const setWerewolfReady = (ready) => api.post("/api/werewolf/ready", { ready });
 export const sendWerewolfChat = (content) => api.post("/api/werewolf/chat", { content });
 export const getWerewolfSettings = () => api.get("/api/werewolf/settings");

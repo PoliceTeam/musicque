@@ -18,6 +18,7 @@ const redLightRoutes = require('./routes/redLight.routes');
 const lotteryRoutes = require('./routes/lottery.routes');
 const coreMembershipRoutes = require('./routes/coreMembership.routes');
 const werewolfRoutes = require('./routes/werewolf.routes');
+const auditionRoutes = require('./routes/audition.routes');
 const jungleRoutes = require('./routes/jungle.routes');
 const { errorHandler } = require('./middlewares/error.middleware');
 const { createCorsOrigin } = require('./utils/cors');
@@ -65,6 +66,7 @@ app.use('/api/red-light', redLightRoutes);
 app.use('/api/lottery', lotteryRoutes);
 app.use('/api/core', coreMembershipRoutes);
 app.use('/api/werewolf', werewolfRoutes);
+app.use('/api/audition', auditionRoutes);
 app.use('/api/jungle', jungleRoutes);
 app.use('/api/secret-shift', require('./routes/secretShift.routes'));
 

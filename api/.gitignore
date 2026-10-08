@@ -51,3 +51,5 @@ bower_components/
 
 # Yarn Integrity file
 .yarn-integrity 
+# Tài khoản test cục bộ (không commit)
+test-accounts.local.json

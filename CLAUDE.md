@@ -469,3 +469,49 @@ thư mục vì texture trùng tên `colormap.png`).
   DEV có `window.__jungleAudio.level()` để đo mức tín hiệu ra loa khi kiểm thử tự động.
 - Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
   `canvas.toDataURL()` kiểm tra được.
+
+### Neon Dance (Audition) — `/audition`, `/audition/:roomId`
+Rhythm game: each turn = 1 bar of 4 beats, type the arrow sequence then hit Space on beat 4.
+Rules are pure functions in `client/src/utils/audition.js` (tested); server only manages rooms.
+
+- **Timing is judged on the client** against each player's own `<audio>` clock (minus the
+  per-device latency setting), so network lag never affects Perfect/Great. The server
+  (`api/services/audition/rooms.js`, in-memory like Ma Sói) hands out `seed` + `startAt`
+  (server ms; clients correct with `serverNow` offset) and sums the per-turn `report`s.
+  It only sanity-checks reports (`MAX_TURN_POINTS`), it does not re-judge — nothing is staked.
+- **Shared keys**: `sequenceFor(turn, level, { seed, del })` uses a seeded RNG of
+  (seed, turnIndex, level), so everyone at the same level on the same turn gets the same keys.
+  Finish Moves sit at fixed chart positions (`FINISH_POSITIONS`, mid-song + last turn) and are
+  identical for the whole room; every Finish Move has at least one red (Del, reversed) key.
+- **Levels never go down from failing.** Success +1 (cap 9), Bad keeps the level, Missed keeps it
+  but locks the next turn (`skipNext` → `skipped`). **Finish Move is per player**: after
+  `TURNS_AT_9_BEFORE_FINISH` (3) turns played at level 9 the next turn is a Finish (9 keys, ≥1
+  red key, sequence seeded by turn index so same-turn finishers share keys). Max
+  `chart.maxFinishes` per song (~1 per 2 min); anyone short of it gets the last turn forced to a
+  Finish. After any Finish, levels above 6 drop to 6 (`FINISH_RESET_LEVEL`).
+- **Chart length uses `TRACK.duration` (ffprobe), never `audio.duration`** — browsers estimate
+  MP3 length differently (Chrome: 240.76s vs 239.05s) and Finish Move positions must match on
+  every machine. `api/services/audition/chart.js` mirrors the chart + level rules for bots;
+  both test suites pin the same numbers (80 turns, `maxFinishes` 2).
+- **Bots** (host adds them while waiting) are simulated on the server clock in `botTick` by skill
+  profile; they finish only when the real song time ends, so a room with bots can't end early.
+- **Room flow**: host picks song (`songId`, from `SONGS` in `api/services/audition/chart.js` =
+  `TRACKS` on the client — add new songs to both with the same id/bpm/offset/duration) and
+  stage (`stageId`, `'random'` = seeded per game). Everyone picks a character; non-host players
+  press Ready (character locked while ready); host can only start when `allReady`. Ready flags
+  reset when a game ends.
+- **No joining mid-song**: join is refused while `playing` (allowed when `waiting`/`finished`).
+  A member who reloads mid-song does not rejoin the music; they wait, and are marked done.
+- Formation: the unique top scorer steps forward (`LEADER_Z`), the rest stand in a back row
+  that leaves its centre open. Background is picked from `BACKGROUNDS` by the game seed.
+- Sounds: `audition-effects-final` pack → `public/audition/sfx/` (perfect_1/2/3 by combo,
+  `finish` when a Finish Move is completed, `end_win` for ranks 1–2 / `end_lose` from rank 3).
+- Song tempo/offset come from `TRACKS` in `client/src/components/DanceLab/danceLab.js`;
+  `SONG_MS` in `rooms.js` must match the track length (end-of-game fallback timer).
+- UI images come from the "Neon Dance — Assets v3" pack in `client/public/audition/`;
+  buttons/judgements/combo/digits/icons are drawn from `atlas/ui_atlas.png` via `AtlasImg`
+  + `ui_atlas.json` — do not hand-draw replacements.
+- Each dancer is a `SkeletonUtils.clone` of the cached GLB so two players can pick the same
+  character. Horizontal root motion is removed with a slow EMA so dancers stay on their spot.
+- React StrictMode double-mounts in dev: `auditionSfx` must recreate a closed AudioContext,
+  otherwise every judgement sound is silent.
