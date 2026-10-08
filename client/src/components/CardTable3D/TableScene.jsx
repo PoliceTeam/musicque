@@ -1,9 +1,10 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { PerformanceMonitor, Stats } from '@react-three/drei'
+import { Stats } from '@react-three/drei'
 import * as THREE from 'three'
 import ErrorBoundary from '../ErrorBoundary'
 import { AnimationActivity } from './AnimationActivity'
+import AdaptiveDpr from './AdaptiveDpr'
 import TurnRing from './TurnRing'
 import { clearTableAssets, releaseTextureImage, useTableGLTF, warmTableScene } from './assets'
 import SeatMarker from './SeatMarker'
@@ -14,17 +15,17 @@ import { chairPlacement } from './chair'
 function TableSurface({ table, seats, currentSeat, userId, turnDeadlineAt, serverNow, turnMs, firstPerson, children }) {
   const { scene } = useTableGLTF('/models/dinner-table.glb?v=webp1')
   const tableModel = useMemo(() => scene.clone(true), [scene])
-  const dpr = useThree(state => state.viewport.dpr)
+  const lowDpr = useThree(state => state.viewport.dpr <= 1)
   const { gl, camera, scene: renderScene } = useThree()
   useEffect(() => {
-    if (dpr > 1) return
+    if (!lowDpr) return
     tableModel.traverse(node => {
       for (const material of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) {
         if (material.normalMap) { releaseTextureImage(material.normalMap); material.normalMap.dispose(); material.normalMap = null; material.needsUpdate = true }
       }
     })
     warmTableScene(renderScene, camera, gl)
-  }, [tableModel, dpr, renderScene, camera, gl])
+  }, [tableModel, lowDpr, renderScene, camera, gl])
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false
   const surfaceY = useMemo(() => {
     const bounds = new THREE.Box3().setFromObject(tableModel)
@@ -80,10 +81,10 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   const [contextLost, setContextLost] = useState(false)
   const onContextLost = React.useCallback(() => setContextLost(true), [])
   useEffect(() => clearTableAssets, [])
-  // Render at the screen's real density (Retina = 2) so card faces stay sharp; rendering is on demand,
-  // so the cost is only paid while something moves. A slow GPU steps down, but never below 1.
+  // Render at the screen's real density (Retina = 2) so card faces stay sharp; AdaptiveDpr drops it
+  // while something moves and caps it to a pixel budget on very large canvases.
   const maxDpr = Math.min(window.devicePixelRatio || 1, 2)
-  const [dpr, setDpr] = useState([1, maxDpr])
+  const [dpr, setDpr] = useState(maxDpr)
   const showPerf = import.meta.env.DEV && new URLSearchParams(window.location.search).get('perf') === '1'
   const supported = useMemo(canRender3D, [])
   if (!supported) return fallback
@@ -93,9 +94,8 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
       <div className='card-table-surface'>
         <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: maxDpr < 2, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl, scene, invalidate }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1); if (import.meta.env.DEV) window.__thirteenSceneState = { camera, gl, scene, invalidate, defaultPitch: camera.rotation.x } }}>
           <RendererLifetime onContextLost={onContextLost} />
-          <PerformanceMonitor onDecline={() => setDpr(Math.max(1, Math.min(maxDpr, 1.5)))} onFallback={() => setDpr(1)} />
           {showPerf && firstPerson && <Stats className='card-table-stats' />}
-          <AnimationActivity><TableSurface {...props} firstPerson={firstPerson} /></AnimationActivity>
+          <AnimationActivity><AdaptiveDpr onDpr={setDpr} /><TableSurface {...props} firstPerson={firstPerson} /></AnimationActivity>
         </Canvas>
       </div>
     </Suspense>
