@@ -102,3 +102,10 @@ it('does not render stale hands or tricks during the next ready check', () => {
   expect(snapshot.cards).toEqual([])
   expect(snapshot.finished).toBe(false)
 })
+
+it('shows most of both pair faces rather than collapsing the pair into a single silhouette', () => {
+  const cards = buildThirteenSnapshot({...options, table:{...table,trick:{bySeat:1,cards:['9S','9C']}}}).cards.filter(card=>card.zone==='trick')
+  expect(cards).toHaveLength(2)
+  expect(cards[1].position[0]-cards[0].position[0]).toBeGreaterThan(0.05)
+  expect(cards[1].order).toBe(cards[0].order+1)
+})

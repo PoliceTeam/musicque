@@ -31,7 +31,7 @@ export const buildThirteenSnapshot = ({ table, myHand, anchor, surfaceY, seatPos
   const scale = 1.4, tilt = 35 * Math.PI / 180
   const stand = new Vector3(0, surfaceY + 0.02 + 0.089 * scale / 2 * Math.sin(tilt), 0.30)
   const plane = new Euler(-Math.PI / 2 + tilt, 0, 0)
-  const trickFan = fanLayout(combo.length, { width: 0.058 * scale, height: 0.089 * scale, spacing: 0.024, maxSpread: 6 * Math.PI / 180, baseOrder: 200 })
+  const trickFan = fanLayout(combo.length, { width: 0.058 * scale, height: 0.089 * scale, spacing: combo.length <= 4 ? 0.058 * scale * 0.75 : 0.024, maxSpread: 6 * Math.PI / 180, baseOrder: 200 })
   combo.forEach((card, i) => {
     const pose = trickFan[i]
     const position = new Vector3(...pose.position).add(new Vector3(0, 0, pose.depth)).applyEuler(plane).add(stand).toArray()
