@@ -17,7 +17,7 @@ const statusOf = (rooms) => {
   return { tone: 'idle', text: 'Mở phòng, rủ cả team nhảy' }
 }
 
-// Thẻ gọi vào Neon Dance ở sidebar Home: nền neon, 4 phím tròn nhún theo nhịp.
+// Thẻ gọi vào Au đi sần ở sidebar Home: nền neon, 4 phím tròn nhún theo nhịp.
 const AuditionLauncher = () => {
   const navigate = useNavigate()
   const [rooms, setRooms] = useState(null)
@@ -35,7 +35,7 @@ const AuditionLauncher = () => {
 
   const status = statusOf(rooms)
   return (
-    <button type='button' className={`au-launch is-${status.tone}`} onClick={() => navigate('/audition')} aria-label='Vào chơi Neon Dance'>
+    <button type='button' className={`au-launch is-${status.tone}`} onClick={() => navigate('/audition')} aria-label='Vào chơi Au đi sần'>
       <span className='au-launch__keys' aria-hidden='true'>
         {KEYS.map((dir, i) => (
           <span key={dir} style={{ '--i': i }}>
@@ -45,7 +45,7 @@ const AuditionLauncher = () => {
       </span>
       <span className='au-launch__copy'>
         <span className='au-launch__eyebrow'>MỚI · NHẢY THEO NHỊP · TỚI 6 NGƯỜI</span>
-        <strong className='au-launch__title'>NEON DANCE</strong>
+        <strong className='au-launch__title'>AU ĐI SẦN</strong>
         <span className='au-launch__status'><i />{status.text}</span>
       </span>
     </button>

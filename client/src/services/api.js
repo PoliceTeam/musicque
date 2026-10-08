@@ -243,7 +243,7 @@ export const fillWerewolfBots = () => api.post("/api/werewolf/bots");
 export const resetWerewolf = () => api.post("/api/werewolf/reset");
 export const sendWerewolfAction = (payload) => api.post("/api/werewolf/action", payload);
 
-// Audition (Neon Dance) — phòng nhảy nhiều người
+// Audition (Au đi sần) — phòng nhảy nhiều người
 export const getAuditionRooms = () => api.get("/api/audition/rooms");
 export const getMyAuditionRoom = () => api.get("/api/audition/mine");
 export const getAuditionRoom = (id) => api.get(`/api/audition/rooms/${id}`);

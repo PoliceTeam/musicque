@@ -53,7 +53,7 @@ const AuditionLobby = () => {
       <div className='au-lobby-wrap'>
         <header className='au-lobby-head'>
           <Link to='/' className='au-link'>← Trang chủ</Link>
-          <h1>Neon Dance</h1>
+          <h1>Au đi sần</h1>
           <p className='au-sub'>Chủ phòng chọn bài và sân khấu · tối đa 6 người/phòng</p>
         </header>
 

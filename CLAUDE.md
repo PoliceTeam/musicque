@@ -470,7 +470,7 @@ thư mục vì texture trùng tên `colormap.png`).
 - Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
   `canvas.toDataURL()` kiểm tra được.
 
-### Neon Dance (Audition) — `/audition`, `/audition/:roomId`
+### Au đi sần (Audition) — `/audition`, `/audition/:roomId`
 Rhythm game: each turn = 1 bar of 4 beats, type the arrow sequence then hit Space on beat 4.
 Rules are pure functions in `client/src/utils/audition.js` (tested); server only manages rooms.
 
