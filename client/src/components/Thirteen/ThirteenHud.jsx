@@ -64,7 +64,9 @@ export default function ThirteenHud({ table, userId, myHand, selectedCards, togg
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
-  return <section className={`sp-panel thirteen-hud ${myTurn ? 'is-my-turn' : ''} ${myTurn && remaining <= 5 ? 'is-urgent' : ''}`} style={{ '--turn-color': color }} aria-label='Điều khiển bàn bài'>
+  return <>
+    {myTurn && remaining > 0 && <div className='thirteen-turn-bottom' aria-hidden='true' style={{ '--turn-color': color }} />}
+    <section className={`sp-panel thirteen-hud ${myTurn ? 'is-my-turn' : ''} ${myTurn && remaining <= 5 ? 'is-urgent' : ''}`} style={{ '--turn-color': color }} aria-label='Điều khiển bàn bài'>
     {myTurn && <svg className='thirteen-turn-border' aria-hidden='true'><rect x='2' y='2' rx='14' pathLength='100' strokeDasharray='100' strokeDashoffset={100 * (1 - fraction)} /></svg>}
     {turnBanner && <div className='thirteen-turn-banner' role='status'>Đến lượt bạn</div>}
     {table && <>
@@ -90,6 +92,7 @@ export default function ThirteenHud({ table, userId, myHand, selectedCards, togg
       </div></>}
     </>}
   </section>
+  </>
 }
 
 

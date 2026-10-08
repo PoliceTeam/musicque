@@ -12,16 +12,21 @@ export default function TurnCue({ table, position, own, surfaceY, turnMs = 20000
   const sync = useMemo(() => syncTableGameTimer(table, table?.receivedAt ?? Date.now()), [table])
   const active = table?.status === 'playing' && position
   useEffect(() => {
+    let interval, lastColor
     const update = () => {
-      const color = turnColor(turnTiming(table, turnMs, Date.now(), sync).fraction)
+      const { fraction } = turnTiming(table, turnMs, Date.now(), sync)
+      if (fraction === 0) clearInterval(interval)
+      const color = turnColor(fraction)
+      if (color === lastColor) return
+      lastColor = color
       arrow.current?.material.color.set(color)
       light.current?.color.set(color)
       edge.current?.style.setProperty('--turn-color', color)
       invalidate()
     }
     update()
-    if (!active) return undefined
-    const interval = setInterval(update, 250)
+    if (!active || !table?.turnDeadlineAt || turnTiming(table, turnMs, Date.now(), sync).fraction === 0) return undefined
+    interval = setInterval(update, 250)
     return () => clearInterval(interval)
   }, [active, table, turnMs, sync, invalidate])
   useFrame(() => {

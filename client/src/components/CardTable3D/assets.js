@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
-export const TABLE_MODEL_URLS = ['/models/deck-of-cards.glb?v=webp1', '/models/dinner-table.glb?v=webp1', '/models/chibi.glb?v=1']
+import { PLAYER_MODEL_URL } from './cardPlayer'
+export const TABLE_MODEL_URLS = ['/models/deck-of-cards.glb?v=webp1', '/models/dinner-table.glb?v=webp1', PLAYER_MODEL_URL]
 const scenes = new Map(), textures = new Set(), closedImages = new WeakSet()
 let ktx2
 export function releaseTextureImage(texture) {

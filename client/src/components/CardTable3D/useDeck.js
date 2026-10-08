@@ -21,7 +21,9 @@ export const useDeck = () => {
     const cheapMaterial = source => {
       if (!materials.has(source)) {
         if (source.map) source.map.anisotropy = anisotropy
-        materials.set(source, new THREE.MeshLambertMaterial({ name: source.name, map: source.map, color: source.color, side: THREE.FrontSide }))
+        // Mặt giấy giữ màu rõ dưới mọi ánh sáng; bài không hợp lệ vẫn dùng overlay riêng.
+        const Material = source.name === 'CardFront' ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial
+        materials.set(source, new Material({ name: source.name, map: source.map, color: source.color, side: THREE.FrontSide, toneMapped: source.name !== 'CardFront' }))
       }
       return materials.get(source)
     }
