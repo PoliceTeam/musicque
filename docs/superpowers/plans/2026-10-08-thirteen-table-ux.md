@@ -96,7 +96,8 @@ Current behaviour: when all seated humans are ready, a 3 s countdown starts auto
 
 ### Client chat panel (Codex B)
 - Add a `TableChat` component as a **side panel docked on the right edge** of the room overlay (user request: "khung chat bên cạnh").
-  - Desktop: about 320 px wide, full height under the corner controls. The 3D canvas keeps the rest of the width, so the panel must not cover the HUD action bar.
+  - Desktop: about 320 px wide, positioned over the right edge under the corner controls. The 3D canvas and HUD stay full width and centred.
+  - Transparent background with light glass message/control pills. Empty space passes pointer events through to drag-look; the message scroll area and controls remain interactive.
   - It can be collapsed to a slim tab with an unread badge.
   - Mobile (≤ 700 px): a slide-up sheet, opened by a chat button.
 - It shows the message list (name, time, text), an input and a send button.
@@ -104,22 +105,7 @@ Current behaviour: when all seated humans are ready, a 3 s countdown starts auto
 - Reuse the `ChatEmojiPicker` if it fits.
 - Expose the latest chat message per seat through the context (e.g. `lastChatBySeat`) so the 3D layer can show bubbles (see C3).
 
-## Task T: throwing items (Codex B server and HUD menu, Codex A 3D)
-
-User request: "ném đá, ném cà chua". Players can throw a stone or a tomato at another seated player.
-
-- **Items:** `stone` and `tomato`. Throwing is free. Cooldown is 3 s per thrower (429 `THROW_RATE_LIMIT`). The thrower and the target must both be seated humans, a bot target is allowed, and you cannot target yourself. It works while the table is waiting, playing or finished.
-- **Server (B):** `POST /tables/:id/throw {targetSeat, item, requestKey}`. It emits `table_game_throw` `{ game, tableId, id, fromSeat, targetSeat, item, at }` to every seated human's `table_game:user:<id>` room. Nothing is stored.
-- **Client trigger (B):**
-  - Click or tap an opponent avatar or nameplate to open a small menu with 🪨 Ném đá and 🍅 Ném cà chua.
-  - Also add a "Ném" button in the HUD with a seat picker, for accessibility and keyboard use.
-  - The context exposes `throwItem(targetSeat, item)` and an `onThrow` event stream (e.g. a `throws` array of recent events with ids).
-- **3D (A, after Task U):**
-  - A projectile flies from the thrower's seat (or from the camera when the thrower is me) to the target avatar's head on a short arc of about 600 ms, with a spin.
-  - **Tomato:** a red splat sprite on the target's face and a squash for about 2 s.
-  - **Stone:** a bonk with a small bounce, a star burst and a head wobble.
-  - **Target is me (first person):** a splat overlay on the screen edge that fades in about 1.5 s, and a short camera shake (reuse the existing `yawShake`/`pitchShake`).
-  - Use cheap low-poly meshes (sphere and dodecahedron with vertex colours) and a sprite. No new assets. Frameloop is on demand: start the animation activity only while projectiles exist.
+Task T was dropped at the user’s request.
 
 ### C3. Chat bubble over the speaker's model (Codex A, after Task U)
 - When someone sends a chat message, show it as a speech bubble above that player's chibi avatar for about 4 s. Truncate at about 60 chars with an ellipsis. A newer message replaces the older bubble.

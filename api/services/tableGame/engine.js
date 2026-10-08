@@ -18,7 +18,7 @@ const createTableGameService = (definition) => {
   const maxSeats = definition.seats.max
   const stakeOptions = definition.config.stakeOptions || [stake]
   const tables = []
-  const newTable = (code, visibility = 'public', createdBy = null, tableStake = stake) => ({ tableId: code, code, visibility, createdBy, hostId: createdBy, stake: tableStake, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, lobbyTimer: null, startsAt: null, readyDeadlineAt: null, status: 'waiting', autoLeft: [], chat: [], chatAt: new Map(), throwAt: new Map(), queue: Promise.resolve() })
+  const newTable = (code, visibility = 'public', createdBy = null, tableStake = stake) => ({ tableId: code, code, visibility, createdBy, hostId: createdBy, stake: tableStake, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, lobbyTimer: null, startsAt: null, readyDeadlineAt: null, status: 'waiting', autoLeft: [], chat: [], chatAt: new Map(), queue: Promise.resolve() })
   const lobby = { queue: Promise.resolve() }
   const requests = new Map()
   const remember = (key, response) => {
@@ -95,26 +95,6 @@ const createTableGameService = (definition) => {
       return remember(key, payload)
     })
   }
-  const throwItem = (userId, tableId, targetSeat, item, requestKey) => {
-    validateKey(requestKey)
-    const table = tableFor(tableId)
-    const key = `u:${userId}:throw:${tableId}:${requestKey}`
-    return enqueue(table, () => {
-      const seats = table.match?.seats || table.seats
-      const fromSeat = seats.findIndex(seat => seat?.userId?.toString() === userId.toString())
-      if (fromSeat < 0) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
-      if (requests.has(key)) return requests.get(key)
-      if (!['stone', 'tomato'].includes(item) || !Number.isInteger(targetSeat) || targetSeat === fromSeat || !seats[targetSeat]) throw new TableGameError('Invalid throw target or item', 400, 'INVALID_THROW')
-      const at = Date.now()
-      if (at - (table.throwAt.get(userId.toString()) ?? -Infinity) < 3000) throw new TableGameError('Throw too fast', 429, 'THROW_RATE_LIMIT')
-      table.throwAt.set(userId.toString(), at)
-      const payload = { game: name, tableId: table.tableId, id: randomUUID(), fromSeat, targetSeat, item, at }
-      touchSeat(table, userId)
-      scheduleLobby(table)
-      emitSeated(table, 'table_game_throw', payload)
-      return remember(key, payload)
-    })
-  }
   const emitPublic = (table, event, payload) => {
     const rooms = table.visibility === 'private' ? (table.match?.seats || table.seats).filter(seat => seat?.userId).map(seat => `table_game:user:${seat.userId}`) : `table_game:watch:${name}`
     if (rooms.length) ioRef?.to(rooms).emit(event, payload)
@@ -126,7 +106,6 @@ const createTableGameService = (definition) => {
     emitPublic(table, 'table_game_state', { ...serializeTable(table), deleted: true })
     table.chat = []
     table.chatAt.clear()
-    table.throwAt.clear()
     const index = tables.indexOf(table)
     if (index >= 0) tables.splice(index, 1)
   }
@@ -577,6 +556,6 @@ const createTableGameService = (definition) => {
       throw error
     }
   }
-  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), chat, throwItem, start, setStake, move }
+  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), chat, start, setStake, move }
 }
 module.exports = { createTableGameService, TableGameError }

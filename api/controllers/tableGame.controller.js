@@ -15,7 +15,6 @@ const createTableGameController = (service) => {
     table: respond((req) => service.getTable(req.params.id, req.user?._id)),
     sit: respond((req) => service.sit(req.user, req.params.id, req.body.requestKey)),
     stake: respond((req) => service.setStake(req.user._id, req.params.id, req.body.stake, req.body.requestKey)),
-    throw: respond(req => service.throwItem(req.user._id, req.params.id, req.body.targetSeat, req.body.item, req.body.requestKey)),
     chat: respond(req => service.chat(req.user._id, req.params.id, req.body.text, req.body.requestKey)),
     move: respond((req) => service.move(req.user._id, req.params.id, req.body.move, req.body.requestKey)),
   }

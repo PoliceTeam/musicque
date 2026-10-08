@@ -217,28 +217,3 @@ it('restores chat history, deduplicates events, and exposes the latest message b
   await waitFor(() => expect(screen.getByLabelText('Chat history')).toHaveTextContent('hi|hello'))
   expect(tableGameApi.action).toHaveBeenCalledWith('thirteen', 'K7Q2', 'chat', { text: 'hello', requestKey: expect.any(String) })
 })
-
-function ThrowProbe() {
-  const { throws, throwItem } = useThirteen()
-  return <><output aria-label='Throws'>{throws.map(event => event.item).join('|')}</output><button onClick={() => throwItem(1, 'stone')}>Throw stone</button></>
-}
-it('exposes a bounded, deduplicated throw stream and posts the selected seat/item', async () => {
-  mocks.user = { _id: 'a' }
-  mocks.requireAuth.mockReturnValue(true)
-  mocks.tables = [stakeTable]
-  mocks.table = stakeTable
-  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ThrowProbe /></ThirteenProvider></PlaylistContext.Provider>)
-  await waitFor(() => expect(tableGameApi.table).toHaveBeenCalled())
-  await act(async () => {})
-  const event = { game: 'thirteen', tableId: 'K7Q2', id: 'throw-1', fromSeat: 0, targetSeat: 1, item: 'stone', at: 1 }
-  act(() => { mocks.handlers.table_game_throw(event); mocks.handlers.table_game_throw(event) })
-  expect(screen.getByLabelText('Throws')).toHaveTextContent(/^stone$/)
-  act(() => mocks.handlers.table_game_throw({ ...event, tableId: 'other', id: 'wrong', item: 'tomato' }))
-  expect(screen.getByLabelText('Throws')).not.toHaveTextContent('tomato')
-  tableGameApi.action.mockResolvedValueOnce({ data: event })
-  fireEvent.click(screen.getByText('Throw stone'))
-  await waitFor(() => expect(tableGameApi.action).toHaveBeenCalledWith('thirteen', 'K7Q2', 'throw', { targetSeat: 1, item: 'stone', requestKey: expect.any(String) }))
-  expect(screen.getByLabelText('Throws')).toHaveTextContent(/^stone$/)
-  act(() => { for (let i = 0; i < 40; i++) mocks.handlers.table_game_throw({ ...event, id: String(i), item: 'tomato' }) })
-  expect(screen.getByLabelText('Throws').textContent.split('|')).toHaveLength(32)
-})

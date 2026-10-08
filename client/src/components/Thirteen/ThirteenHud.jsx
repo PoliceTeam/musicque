@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from 'antd'
-import TableChatThrowMenu from './TableChatThrowMenu'
 import { syncTableGameTimer, getTableGameRemaining } from '../../utils/tableGame'
 import { classify, canBeat, isValidLead } from '../../utils/thirteen'
 export default function ThirteenHud({ table, userId, myHand, selectedCards, toggleCard, action, busy, handLowered, toggleHand, resetView, shortcutsEnabled = true }) {
@@ -53,7 +52,6 @@ export default function ThirteenHud({ table, userId, myHand, selectedCards, togg
         <Button className='sp-btn sp-btn--primary' disabled={!canPlay} aria-keyshortcuts='Enter' onClick={() => action('play')}>Đánh bài</Button>
         {toggleHand && <Button className='sp-btn' aria-pressed={Boolean(handLowered)} onClick={toggleHand}>{handLowered ? 'Nâng bài' : 'Hạ bài'}</Button>}
         {table.trick && <Button className='sp-btn' disabled={!canPass} aria-keyshortcuts='Space' onClick={() => action('pass')}>Bỏ lượt</Button>}
-        <TableChatThrowMenu table={table} userId={userId} />
         {resetView && <Button className='sp-btn' onClick={resetView}>Góc mặc định</Button>}
       </div>}
     </>}

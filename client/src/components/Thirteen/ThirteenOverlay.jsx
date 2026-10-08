@@ -6,7 +6,6 @@ import ThirteenHud from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
 import StakePicker from './StakePicker'
 import TableChat from './TableChat'
-import TableChatThrowMenu from './TableChatThrowMenu'
 import { tableMoneyText } from '../CardTable3D/tableBoard'
 import { resetCardTableView } from '../CardTable3D/dragLook'
 import { inviteUrl, roomRemaining, roomStatus, stakeLabel, stakeOptionsOf } from '../../utils/tableGame'
@@ -84,7 +83,6 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
           ? <StakePicker options={stakeOptionsOf(state.config)} value={table.stake} balance={state.balance} disabled={Boolean(table.startsAt) || table.fundingPending || state.busy} onChange={stake => state.action('setStake', table.tableId, stake)} />
           : <><span>Mức cược</span><strong>{stakeLabel(table.stake)}</strong></>}</div>}
         {hasStake && !isHost && host && <p>Chủ bàn: {host.username}</p>}
-        <TableChatThrowMenu table={table} userId={userId} />
         <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.userId === table.hostId ? 'Chủ bàn' : seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
         {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : isHost ? <p>Bắt đầu khi mọi người sẵn sàng</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>{isHost ? 'Bot sẽ lấp các ghế trống khi bắt đầu.' : table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}
         {!isHost && finished && table.readyDeadlineAt && !table.startsAt && <p>{table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}

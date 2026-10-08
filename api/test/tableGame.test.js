@@ -657,37 +657,6 @@ test('two authenticated accounts use HTTP start and chat with seated history', a
   assert.equal(h.service.getTable(room.tableId, 'b').chat.length, 2)
 })
 
-test('throws validate sender/target/items, rate limit, deduplicate and emit only to humans', async t => {
-  const h = harness(t)
-  const room = await h.service.create(player('a'), 'public', undefined, 'create')
-  await h.service.sit(player('b'), room.code, 'sit')
-  await assert.rejects(h.service.throwItem('outsider', room.code, 0, 'stone', 'no'), { code: 'NOT_SEATED', status: 403 })
-  for (const [target, item] of [[0, 'stone'], [2, 'tomato'], [-1, 'stone'], [4, 'stone'], ['1', 'stone'], [1, 'rock'], [1.5, 'stone']]) await assert.rejects(h.service.throwItem('a', room.code, target, item, 'bad'), { code: 'INVALID_THROW', status: 400 })
-  const event = await h.service.throwItem('a', room.code, 1, 'tomato', 'throw')
-  assert.deepEqual({ ...event, id: 'id' }, { game: 'fake', tableId: room.code, id: 'id', fromSeat: 0, targetSeat: 1, item: 'tomato', at: Date.now() })
-  assert.deepEqual(await h.service.throwItem('a', room.code, 1, 'tomato', 'throw'), event)
-  assert.equal(h.emitted.filter(event => event.event === 'table_game_throw').length, 1)
-  assert.deepEqual(h.emitted.find(event => event.event === 'table_game_throw').room, ['table_game:user:a', 'table_game:user:b'])
-  await assert.rejects(h.service.throwItem('a', room.code, 1, 'stone', 'fast'), { code: 'THROW_RATE_LIMIT', status: 429 })
-  await h.service.throwItem('b', room.code, 0, 'stone', 'reply')
-  await h.fire({ at: Date.now() + 2999, fn() {} })
-  await assert.rejects(h.service.throwItem('a', room.code, 1, 'stone', 'still-fast'), { code: 'THROW_RATE_LIMIT' })
-  await h.fire({ at: Date.now() + 1, fn() {} })
-  await h.service.throwItem('a', room.code, 1, 'stone', 'again')
-  assert.equal(h.service.getTable(room.code, 'a').throws, undefined)
-  assert.equal(h.debits.length, 0)
-})
-test('throws work during play at bots and after the match finishes', async t => {
-  const h = harness(t, [fixture()])
-  await h.service.resume(h.io)
-  const event = await h.service.throwItem('a', '1', 2, 'stone', 'bot')
-  assert.equal(event.targetSeat, 2)
-  assert.equal(h.debits.length, 0)
-  for (let i = 0; i < 4; i++) await h.fire([...h.timers.values()].find(timer => timer.ms <= 20000))
-  assert.equal(h.service.getTable(1).status, 'finished')
-  await h.service.throwItem('a', '1', 1, 'tomato', 'finished')
-})
-
 test('AFK host is idle-kicked during a ready window and the successor can start', async t => {
   const h = harness(t, [fixture('settling')], { ...definition, config: { ...definition.config, idleSeatMs: 10000 } })
   await h.service.resume(h.io)
@@ -736,7 +705,7 @@ test('AFK host remains subject to idle expiry after guests confirm readiness', a
   assert.ok(h.service.getTable(1).startsAt)
 })
 test('successful host actions refresh idle expiry, including after a cancelled start', async t => {
-  for (const action of ['start', 'stake', 'chat', 'throw']) await t.test(action, async t => {
+  for (const action of ['start', 'stake', 'chat']) await t.test(action, async t => {
     const h = harness(t)
     const room = await h.service.create(player('a'), 'public', undefined, 'create')
     await h.service.sit(player('b'), room.code, 'b')
@@ -748,8 +717,7 @@ test('successful host actions refresh idle expiry, including after a cancelled s
       await h.service.unready('b', room.code, 'cancel')
       await h.service.ready('b', room.code, 'again')
     } else if (action === 'stake') await h.service.setStake('a', room.code, 20, 'stake')
-    else if (action === 'chat') await h.service.chat('a', room.code, 'here', 'chat')
-    else await h.service.throwItem('a', room.code, 1, 'tomato', 'throw')
+    else await h.service.chat('a', room.code, 'here', 'chat')
     await h.fire({ at: initialExpiry, fn() {} })
     const due = [...h.timers.values()].find(timer => timer.at <= Date.now())
     if (due) await h.fire(due)
@@ -759,19 +727,16 @@ test('successful host actions refresh idle expiry, including after a cancelled s
     assert.ok(h.emitted.some(event => event.data.auto_left?.some(seat => seat.userId === 'a' && seat.reason === 'idle')))
   })
 })
-test('chat and throw activity refresh a guests idle expiry too', async t => {
-  for (const action of ['chat', 'throw']) await t.test(action, async t => {
-    const h = harness(t)
-    const room = await h.service.create(player('a'), 'public', undefined, 'a')
-    await h.service.sit(player('b'), room.code, 'b')
-    const originalExpiry = Date.now() + 300000
-    await h.fire({ at: Date.now() + 100000, fn() {} })
-    if (action === 'chat') await h.service.chat('b', room.code, 'here', 'chat')
-    else await h.service.throwItem('b', room.code, 0, 'stone', 'throw')
-    await h.fire([...h.timers.values()].find(timer => timer.at === originalExpiry))
-    assert.equal(h.service.getTable(room.code).hostId, 'b')
-    assert.equal(h.service.getTable(room.code).seats[1].readyDeadlineAt, null)
-    await h.fire([...h.timers.values()].find(timer => timer.at === originalExpiry + 100000))
-    assert.throws(() => h.service.getTable(room.code), { code: 'TABLE_NOT_FOUND' })
-  })
+test('chat activity refreshes a guests idle expiry too', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', undefined, 'a')
+  await h.service.sit(player('b'), room.code, 'b')
+  const originalExpiry = Date.now() + 300000
+  await h.fire({ at: Date.now() + 100000, fn() {} })
+  await h.service.chat('b', room.code, 'here', 'chat')
+  await h.fire([...h.timers.values()].find(timer => timer.at === originalExpiry))
+  assert.equal(h.service.getTable(room.code).hostId, 'b')
+  assert.equal(h.service.getTable(room.code).seats[1].readyDeadlineAt, null)
+  await h.fire([...h.timers.values()].find(timer => timer.at === originalExpiry + 100000))
+  assert.throws(() => h.service.getTable(room.code), { code: 'TABLE_NOT_FOUND' })
 })
