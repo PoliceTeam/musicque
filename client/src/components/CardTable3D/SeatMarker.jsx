@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { syncTableGameTimer } from '../../utils/tableGame'
 import { turnColor, turnTiming } from './turn'
 import './turn.css'
+import ChatBubble from './ChatBubble'
 import { Html } from '@react-three/drei'
 const RANKS = ['Nhất', 'Nhì', 'Ba', 'Bét']
-export default function SeatMarker({ seat, position, active, turnDeadlineAt, serverNow, turnMs = 20000, phase = 'playing' }) {
+export default function SeatMarker({ seat, position, active, turnDeadlineAt, serverNow, turnMs = 20000, phase = 'playing', message, serverOffset = 0, onSeatClick }) {
   const tag = useRef(), timer = useRef()
   const [count, setCount] = useState(seat.handCount ?? 0)
   const sync = useMemo(() => syncTableGameTimer({ serverNow }), [serverNow])
@@ -24,12 +25,12 @@ export default function SeatMarker({ seat, position, active, turnDeadlineAt, ser
     return () => window.clearInterval(interval)
   }, [active, turnDeadlineAt, sync, turnMs])
   const showReady = !seat.isBot && ['waiting', 'finished'].includes(phase)
-  return <Html position={position} center zIndexRange={[20, 0]}><div ref={tag} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''}`}>
+  return <Html position={position} center zIndexRange={[20, 0]}><div style={{ position: 'relative' }}><ChatBubble message={message} offset={serverOffset} /><div ref={tag} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''} ${onSeatClick ? 'is-interactive' : ''}`} role={onSeatClick ? 'button' : undefined} tabIndex={onSeatClick ? 0 : undefined} aria-label={onSeatClick ? `Ném vào ${seat.username}` : undefined} onClick={onSeatClick} onKeyDown={onSeatClick ? event => { if (event.key === 'Enter' || event.code === 'Space') { event.preventDefault(); onSeatClick() } } : undefined}>
     <strong>{seat.username}{seat.isBot && <em>BOT</em>}</strong>{showReady ? <span className={`card-table-ready ${seat.ready ? 'is-ready' : ''}`}>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span> : phase === 'playing' && <span>{count} lá <b ref={timer} /></span>}
     {active && phase === 'playing' && <span className='card-table-turn-label'>Đang đánh…</span>}
     {seat.passed && <b className='card-table-pass'>Bỏ lượt</b>}
     {seat.finishedPlace && <b className='card-table-rank'>{RANKS[seat.finishedPlace - 1]}</b>}
-  </div></Html>
+  </div></div></Html>
 }
 
 export function EmptySeatMarker({ position }) {

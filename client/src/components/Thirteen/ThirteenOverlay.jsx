@@ -14,7 +14,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const [showResult, setShowResult] = useState(false)
   const [now, setNow] = useState(Date.now())
   const dialog = useRef()
-  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered])
+  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} lastChatBySeat={state.lastChatBySeat} throws={state.throws} throwItem={state.throwItem} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered, state.lastChatBySeat, state.throws, state.throwItem])
   useEffect(() => { setHandLowered(false) }, [table?.matchId])
   useEffect(() => {
     if (!open) return undefined

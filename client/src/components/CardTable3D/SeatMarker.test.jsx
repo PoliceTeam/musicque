@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, cleanup } from '@testing-library/react'
+import { fireEvent, render, screen, cleanup } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import SeatMarker, { EmptySeatMarker } from './SeatMarker'
 vi.mock('@react-three/drei', () => ({Html:({children})=><div>{children}</div>}))
@@ -20,4 +20,14 @@ it('reads each human ready state in waiting and finished phases, hiding the stal
   rerender(<SeatMarker seat={seat} phase='playing' />)
   expect(screen.getByText(/13 lá/)).toBeTruthy()
   expect(screen.queryByText('Chưa sẵn sàng')).toBeNull()
+})
+
+it('opens the throw menu from an opponent nameplate with a pointer or keyboard', () => {
+  const onSeatClick = vi.fn()
+  render(<SeatMarker seat={{ username: 'Bình' }} phase='waiting' onSeatClick={onSeatClick} />)
+  const button = screen.getByRole('button', { name: 'Ném vào Bình' })
+  fireEvent.click(button)
+  fireEvent.keyDown(button, { key: 'Enter' })
+  fireEvent.keyDown(button, { key: ' ', code: 'Space' })
+  expect(onSeatClick).toHaveBeenCalledTimes(3)
 })
