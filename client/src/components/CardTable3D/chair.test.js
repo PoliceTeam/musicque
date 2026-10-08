@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { CHAIR_RADIUS, chairGeometry, chairPlacement } from './chair'
+import { CHAIR_HEIGHT, CHAIR_RADIUS, chairGeometry, chairPlacement } from './chair'
 it('places four chairs at quarter turns facing the centre', () => {
   for (let seat = 0; seat < 4; seat++) {
     const { position: [x, y, z], yaw } = chairPlacement(seat)
@@ -12,5 +12,18 @@ it('places four chairs at quarter turns facing the centre', () => {
   }
   const geometry = chairGeometry(); geometry.computeBoundingBox()
   expect(geometry.boundingBox.max.y).toBeCloseTo(0.9)
+  geometry.dispose()
+})
+
+it('keeps the backrest away from the centre with clearance behind the seated pelvis', () => {
+  const geometry = chairGeometry(), points = geometry.attributes.position
+  for (let seat = 0; seat < 4; seat++) {
+    const {position,yaw} = chairPlacement(seat)
+    const forward = [Math.sin(yaw),Math.cos(yaw)]
+    const back = [-Math.sin(yaw)*0.2725,-Math.cos(yaw)*0.2725]
+    expect(back[0]*forward[0]+back[1]*forward[1]).toBeLessThan(-0.25)
+    expect(Math.hypot(position[0]+back[0],position[2]+back[1])).toBeGreaterThan(CHAIR_RADIUS)
+  }
+  for(let i=0;i<points.count;i++) if(points.getY(i)>CHAIR_HEIGHT+0.001) expect(points.getZ(i)).toBeLessThan(-0.25)
   geometry.dispose()
 })
