@@ -11,6 +11,29 @@
 .thirteen-lobby ul { list-style: none; padding: 0; line-height: 1.8; }
 .thirteen-lobby .thirteen-status h2 { margin-right: auto; }
 .thirteen-chip--stake { background: var(--sp-green-soft); font-weight: 700; }
+.stake-slider { --st-thumb-w: 16px; --st-h: 30px; display: grid; flex: 1 1 200px; gap: 6px; min-width: 0; max-width: 320px; }
+.stake-slider__value { font-size: 13px; text-align: right; }
+.stake-slider__track { position: relative; height: var(--st-h); border-radius: 999px; background: var(--sp-surface-active); }
+.stake-slider__fill, .stake-slider__thumb { position: absolute; transition: width 0.2s ease, left 0.2s ease; }
+.stake-slider__fill { inset: 0 auto 0 0; width: calc(var(--st-thumb-w) / 2 + (100% - var(--st-thumb-w)) * var(--p)); overflow: hidden; border-radius: 999px 0 0 999px; background: color-mix(in srgb, var(--sp-green) 45%, transparent); }
+.stake-slider__track[data-min] .stake-slider__fill { width: 0; }
+.stake-slider__tick { position: absolute; top: 50%; left: calc(var(--st-thumb-w) / 2 + (100% - var(--st-thumb-w)) * var(--p)); width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--sp-text-faint); transition: background 0.2s ease; }
+.stake-slider__tick[data-on] { background: var(--sp-green); }
+.stake-slider__tick[data-locked] { opacity: 0.35; }
+.stake-slider__thumb { top: 3px; bottom: 3px; left: calc(var(--st-thumb-w) / 2 + (100% - var(--st-thumb-w)) * var(--p)); width: var(--st-thumb-w); margin-left: calc(var(--st-thumb-w) / -2); border-radius: 8px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--sp-border-strong); }
+/* input gốc phủ kín track, trong suốt: lo phím, kéo, chạm; thumb gốc cùng cỡ thumb vẽ để bấm trúng tick nào thì ra đúng stop đó */
+.stake-slider__track input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; appearance: none; background: transparent; }
+.stake-slider__track input::-webkit-slider-thumb { appearance: none; width: var(--st-thumb-w); height: var(--st-h); }
+.stake-slider__track input::-moz-range-thumb { width: var(--st-thumb-w); height: var(--st-h); border: 0; }
+.stake-slider__track:has(input:focus-visible) { outline: 2px solid var(--sp-green); outline-offset: 2px; }
+.stake-slider__hint { color: var(--sp-text-muted); font-size: 12px; }
+.stake-slider[data-disabled] { opacity: 0.5; }
+.stake-slider[data-disabled] input { cursor: not-allowed; }
+/* Mức cao nhất: phần tô thành lưới pixel, một vệt sáng chạy qua (chỉ CSS, nhẹ) */
+.stake-slider__track[data-max] .stake-slider__fill { background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 6px), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 6px), var(--sp-green); }
+.stake-slider__track[data-max] .stake-slider__fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%); transform: translateX(-100%); animation: stake-sweep 2.6s ease-in-out infinite; }
+@keyframes stake-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .stake-slider__fill, .stake-slider__thumb, .stake-slider__tick { transition: none; } .stake-slider__track[data-max] .stake-slider__fill::after { animation: none; display: none; } }
 .thirteen-stake-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .thirteen-stake-row span { color: var(--sp-text-muted); font-size: 13px; }
 .th-game-end .thirteen-stake-row { margin: 0 0 8px; }

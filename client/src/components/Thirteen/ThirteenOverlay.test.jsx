@@ -254,9 +254,11 @@ describe('stake in the lobby', () => {
     render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
     const dialog = screen.getByRole('dialog', { name: 'Tạo bàn' })
-    expect(within(dialog).getByRole('radio', { name: '10 PC' })).toBeChecked()
-    expect(within(dialog).getByRole('radio', { name: '50 PC' })).toBeDisabled()
-    await userEvent.click(within(dialog).getByText('20 PC'))
+    const slider = within(dialog).getByRole('slider', { name: 'Mức cược' })
+    expect(slider).toHaveAttribute('aria-valuetext', '10 PC')
+    expect(within(dialog).getByText('Không đủ PC cho mức từ 50 PC trở lên')).toBeInTheDocument()
+    fireEvent.change(slider, { target: { value: '4' } })
+    expect(slider).toHaveAttribute('aria-valuetext', '20 PC')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo bàn' }))
     expect(mocks.state.action).toHaveBeenCalledWith('create', 'public', { stake: 20 })
   })
@@ -267,7 +269,7 @@ describe('stake in the lobby', () => {
     render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
     const dialog = screen.getByRole('dialog', { name: 'Tạo bàn' })
-    expect(within(dialog).getByRole('radio', { name: 'Chơi vui' })).toBeChecked()
+    expect(within(dialog).getByRole('slider', { name: 'Mức cược' })).toHaveAttribute('aria-valuetext', 'Chơi vui')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo bàn' }))
     expect(mocks.state.action).toHaveBeenCalledWith('create', 'public', { stake: 0 })
   })
@@ -290,28 +292,27 @@ describe('stake in the lobby', () => {
 describe('stake in the waiting panel', () => {
   const waiting = { ...table, status: 'waiting', matchId: null, pot: 0, stake: 20, hostId: 'a', seats: [{ userId: 'a', username: 'An', ready: false }, { userId: 'b', username: 'Bình', ready: true }, null, null] }
   const overlay = (overrides = {}) => <ThirteenOverlay {...props} config={stakeConfig} balance={500} open table={{ ...waiting, ...overrides }} />
-  const radios = () => screen.getAllByRole('radio')
+  const slider = () => screen.getByRole('slider', { name: 'Mức cược' })
 
   it('lets the host change the stake', async () => {
     render(overlay())
-    expect(screen.getByRole('radiogroup', { name: 'Mức cược' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: '20 PC' })).toBeChecked()
-    await userEvent.click(screen.getByText('50 PC'))
+    expect(slider()).toHaveAttribute('aria-valuetext', '20 PC')
+    fireEvent.change(slider(), { target: { value: '3' } })
     expect(props.action).toHaveBeenCalledWith('setStake', 1, 50)
   })
 
   it('locks the host control during the countdown and while funding is pending', () => {
     const view = render(overlay({ startsAt: Date.now() + 3000 }))
-    for (const radio of radios()) expect(radio).toBeDisabled()
+    expect(slider()).toBeDisabled()
     view.rerender(overlay({ fundingPending: true }))
-    for (const radio of radios()) expect(radio).toBeDisabled()
+    expect(slider()).toBeDisabled()
     view.rerender(overlay())
-    for (const radio of radios()) expect(radio).toBeEnabled()
+    expect(slider()).toBeEnabled()
   })
 
   it('shows other players the stake read-only with the host name', () => {
     render(overlay({ hostId: 'b' }))
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
     expect(screen.getByText('Mức cược')).toBeInTheDocument()
     expect(screen.getByText('20 PC')).toBeInTheDocument()
     expect(screen.getByText('Chủ bàn: Bình')).toBeInTheDocument()
@@ -320,7 +321,7 @@ describe('stake in the waiting panel', () => {
   it('hides the stake row when the server sends no stake', () => {
     render(overlay({ stake: undefined, hostId: undefined }))
     expect(screen.queryByText('Mức cược')).not.toBeInTheDocument()
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 
   it('puts the amount on the ready button, but not for free play', () => {
