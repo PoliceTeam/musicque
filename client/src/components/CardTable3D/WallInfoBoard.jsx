@@ -3,10 +3,14 @@ import { useThree } from '@react-three/fiber'
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three'
 import { useTheme } from '../../contexts/ThemeContext'
 import { roomPalettes } from './roomPalette'
-import { tableBoardText } from './tableBoard'
+import { relocateWallBoardFrame, tableBoardText, WALL_BOARD_POSITION, WALL_BOARD_SIZE } from './tableBoard'
 export default function WallInfoBoard({ table }) {
   const { isDark } = useTheme()
-  const invalidate = useThree(state => state.invalidate)
+  const { scene, invalidate } = useThree()
+  useEffect(() => {
+    scene.traverse(object => { if (object.geometry?.getAttribute('paletteKey')) relocateWallBoardFrame(object.geometry) })
+    invalidate()
+  }, [scene, invalidate])
   const board = useMemo(() => {
     const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 512
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; texture.generateMipmaps = false; texture.minFilter = LinearFilter
@@ -38,7 +42,7 @@ export default function WallInfoBoard({ table }) {
     return () => { cancelled = true; clearInterval(interval) }
   }, [table, isDark, board, invalidate])
   useEffect(() => () => board.texture.dispose(), [board])
-  return <mesh position={[1.5, 1.85, -2.84]} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}>
-    <planeGeometry args={[1.1, 0.55]} /><meshBasicMaterial map={board.texture} />
+  return <mesh position={WALL_BOARD_POSITION} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}>
+    <planeGeometry args={WALL_BOARD_SIZE} /><meshBasicMaterial map={board.texture} />
   </mesh>
 }
