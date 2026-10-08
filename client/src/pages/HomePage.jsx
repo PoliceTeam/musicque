@@ -15,7 +15,7 @@ import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
-import ThirteenPromo from '../components/Thirteen/ThirteenPromo';
+import CardGamesPromo from '../components/Home/CardGamesPromo';
 import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
 import WordChainPromo from '../components/WordChain/WordChainPromo';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
@@ -283,7 +283,7 @@ const HomePage = () => {
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <aside className="sp-sidebar">
           <SidebarNav>
-            <ThirteenPromo />
+            <CardGamesPromo />
             {/* Easter egg gói gọn thành hàng icon để chừa chỗ cho form thêm bài */}
             <div className="sp-quicktoys">
               <Tooltip title="Contra">

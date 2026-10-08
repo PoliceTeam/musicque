@@ -35,10 +35,10 @@ button.thirteen-card { cursor: pointer; }
 .thirteen-card:focus-visible { outline: 3px solid #1db954; outline-offset: 4px; }
 .thirteen-actions { justify-content: flex-start; }
 .thirteen-actions span { color: var(--sp-text-muted); font-size: 13px; }
-.thirteen-promo { display: flex; align-items: center; gap: 12px; padding: 16px; color: var(--sp-text); text-decoration: none; margin: 16px 0; }
-.thirteen-promo > span { font-size: 36px; color: var(--sp-green); }
-.thirteen-promo p { margin: 4px 0 0; color: var(--sp-text-muted); font-size: 12px; }
-.thirteen-promo b { margin-left: auto; font-size: 12px; }
+.card-games-promo { display: flex; align-items: center; gap: 12px; padding: 16px; color: var(--sp-text); text-decoration: none; margin: 16px 0; }
+.card-games-promo > span { font-size: 36px; color: var(--sp-green); }
+.card-games-promo p { margin: 4px 0 0; color: var(--sp-text-muted); font-size: 12px; }
+.card-games-promo b { margin-left: auto; font-size: 12px; }
 @media (max-width: 700px) { .thirteen-lobby { grid-template-columns: 1fr; } .thirteen-page { padding: 16px; } .thirteen-surface { height: 380px; } }
 @media (prefers-reduced-motion: reduce) { .thirteen-card { transition: none; } }
 
