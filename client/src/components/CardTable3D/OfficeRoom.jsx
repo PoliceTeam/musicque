@@ -19,7 +19,20 @@ export default function OfficeRoom({ table, turnMs }) {
   const { isDark } = useTheme()
   const { scene, invalidate } = useThree()
   const room = useMemo(buildOfficeRoom, [])
-  const roomMaterial = useMemo(() => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), [])
+  const lampGlow = useMemo(() => ({ value: 0 }), [])
+  const lampTarget = useMemo(() => { const target = new THREE.Object3D(); target.position.set(0, .785, 0); return target }, [])
+  const roomMaterial = useMemo(() => {
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
+    material.customProgramCacheKey = () => 'office-lamps-v1'
+    material.onBeforeCompile = shader => {
+      shader.uniforms.lampGlow = lampGlow
+      shader.vertexShader = 'attribute float lampEmission; varying float vLampEmission;\n' + shader.vertexShader
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLampEmission = lampEmission;')
+      shader.fragmentShader = 'uniform float lampGlow; varying float vLampEmission;\n' + shader.fragmentShader
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, .72, .35) * vLampEmission * lampGlow;')
+    }
+    return material
+  }, [lampGlow])
   const logo = useMemo(() => {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.generateMipmaps = false; texture.minFilter = THREE.LinearFilter
@@ -42,14 +55,15 @@ export default function OfficeRoom({ table, turnMs }) {
   useLayoutEffect(() => {
     const palette = roomPalettes[isDark ? 'dark' : 'light']
     recolorRoom(room.geometry, room.paletteKeys, palette)
+    lampGlow.value = isDark ? 1 : 0
     roomMaterial.emissive.set(isDark ? '#202720' : '#000000'); roomMaterial.emissiveIntensity = 0.65
     scene.background.set(palette.fog); scene.fog = new THREE.Fog(palette.fog, 4, 9)
     scene.traverse(node => {
-      if (node.isHemisphereLight) { node.color.set(isDark ? '#bac8bc' : '#fff8ef'); node.groundColor.set(palette.floorB); node.intensity = 1.8 }
+      if (node.isHemisphereLight) { node.color.set(isDark ? '#bac8bc' : '#fff8ef'); node.groundColor.set(palette.floorB); node.intensity = isDark ? 2.1 : 1.8 }
       if (node.isDirectionalLight) { node.color.set(isDark ? '#d2dccf' : '#fff2dc'); node.intensity = isDark ? 1.3 : 1.7 }
     })
     invalidate()
-  }, [isDark, room, roomMaterial, scene, invalidate])
+  }, [isDark, room, roomMaterial, lampGlow, scene, invalidate])
   useEffect(() => {
     let cancelled = false, url, image
     logoSource ||= fetch('/brand/logo-wordmark.svg').then(response => { if (!response.ok) throw new Error('Wordmark failed to load'); return response.text() })
@@ -68,6 +82,7 @@ export default function OfficeRoom({ table, turnMs }) {
   useEffect(() => () => { scene.fog = null; room.geometry.dispose(); roomMaterial.dispose(); logo.texture.dispose() }, [scene, room, roomMaterial, logo])
   useEffect(() => () => { resources.chair.dispose(); resources.wood.dispose(); resources.quad.dispose(); resources.shadow.map.dispose(); resources.shadow.dispose() }, [resources])
   return <>
+    {isDark && <><primitive object={lampTarget} /><spotLight name='pendant-light' position={[0, 1.535, 0]} target={lampTarget} color='#ffe1ad' intensity={3} angle={Math.PI / 3} penumbra={.65} distance={4} decay={2} castShadow={false} /></>}
     <mesh geometry={room.geometry} material={roomMaterial} matrixAutoUpdate={false} dispose={null} />
     <mesh position={[0, 2.1, -2.855]} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}><planeGeometry args={[1.6, 0.4]} /><meshBasicMaterial map={logo.texture} transparent depthWrite={false} /></mesh>
     {table && <WallInfoBoard table={table} turnMs={turnMs} />}
