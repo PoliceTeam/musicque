@@ -9,7 +9,7 @@ const renderPromo = () => render(<MemoryRouter><CardGamesPromo /></MemoryRouter>
 
 it('links to the card games hub, not straight into one game', () => {
   renderPromo()
-  expect(screen.getByRole('link', { name: 'Vào sảnh game bài' })).toHaveAttribute('href', '/games')
+  expect(screen.getByRole('link', { name: 'Vào sảnh game bài' })).toHaveAttribute('href', '/card-games')
 })
 
 it('has the same parts as the Ma Sói and Cờ thú banners: eyebrow, big uppercase title, subtitle, status pill', () => {

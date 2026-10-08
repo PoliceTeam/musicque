@@ -20,5 +20,5 @@ it('sends the Arcade card games entry to the games hub so players pick a game', 
   await userEvent.click(screen.getByRole('button', { name: 'Vào Arcade' }))
   expect(screen.queryByRole('button', { name: /Tiến Lên Miền Nam/ })).not.toBeInTheDocument()
   await userEvent.click(await screen.findByRole('button', { name: /Game bài/ }))
-  expect(screen.getByLabelText('Location')).toHaveTextContent(/^\/games$/)
+  expect(screen.getByLabelText('Location')).toHaveTextContent(/^\/card-games$/)
 })

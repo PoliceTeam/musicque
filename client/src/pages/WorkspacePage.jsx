@@ -170,7 +170,7 @@ const WorkspacePage = () => {
           <button type='button' onClick={() => openNesGame({ file: '/nes/super_mario.nes', name: 'Super Mario' })}>
             <span>🍄</span><strong>Super Mario</strong><small>Đi cảnh tuổi thơ</small>
           </button>
-          <button type='button' onClick={() => navigate('/games')}>
+          <button type='button' onClick={() => navigate('/card-games')}>
             <span>♠</span><strong>Game bài</strong><small>Tiến Lên và các game bài khác</small>
           </button>
           <button type='button' onClick={() => navigate('/xiangqi')}>

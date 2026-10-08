@@ -8,7 +8,7 @@ const SOON = CARD_GAMES.filter(game => !game.available).length
 
 // Thẻ gọi vào sảnh game bài ở sidebar Home, cùng kiểu poster với Ma Sói và Cờ thú: bàn nỉ xanh, ba lá bài xoè quạt.
 export default function CardGamesPromo() {
-  return <Link to='/games' className='cg-launch' aria-label='Vào sảnh game bài'>
+  return <Link to='/card-games' className='cg-launch' aria-label='Vào sảnh game bài'>
     <span className='cg-launch__felt' aria-hidden='true' />
     <span className='cg-launch__cards' aria-hidden='true'>
       {CARDS.map(([rank, suit, red], i) => <span key={suit} className={`cg-launch__card${red ? ' is-red' : ''}`} style={{ '--i': i }}><b>{rank}</b><i>{suit}</i></span>)}

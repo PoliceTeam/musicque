@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import UserMenu from '../components/Auth/UserMenu'
 import { CARD_GAMES } from '../utils/cardGames'
 // Bố cục theo sảnh Thirteen (thirteen-page / thirteen-header / lưới sp-panel) để cùng một kiểu giao diện.
-export default function GamesPage() {
+export default function CardGamesPage() {
   return <div className='thirteen-page'>
     <header className='thirteen-header'><Link to='/' className='sp-btn sp-btn--ghost'>← Về trang chủ</Link><div><h1>Game bài</h1><p>Chọn một game để vào sảnh</p></div><UserMenu /></header>
     <main>

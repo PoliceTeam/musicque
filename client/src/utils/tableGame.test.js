@@ -12,7 +12,7 @@ describe('table game countdown', () => {
 
 it('builds invite links to the games lobby so old /thirteen links are no longer minted', async () => {
   const { inviteUrl } = await import('./tableGame')
-  expect(inviteUrl('K7Q2')).toBe(`${window.location.origin}/games/thirteen?room=K7Q2`)
+  expect(inviteUrl('K7Q2')).toBe(`${window.location.origin}/card-games/thirteen?room=K7Q2`)
 })
 
 it('validates unambiguous room codes and counts down with server offset after receipt', async () => {
