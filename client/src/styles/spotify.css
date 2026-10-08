@@ -102,6 +102,12 @@ body {
   flex-direction: column;
   gap: var(--sp-gap);
   min-height: 0;
+  overflow-y: auto;
+}
+
+/* Menu + các thẻ game giữ nguyên chiều cao; màn hình thấp thì cả sidebar cuộn, thay vì để thẻ tràn lên ô chat */
+.sp-sidebar > nav.sp-panel {
+  flex-shrink: 0;
 }
 
 .sp-main-add {

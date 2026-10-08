@@ -279,7 +279,6 @@ const HomePage = () => {
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <aside className="sp-sidebar">
           <SidebarNav>
-            <CardGamesPromo />
             {/* Easter egg gói gọn thành hàng icon để chừa chỗ cho form thêm bài */}
             <div className="sp-quicktoys">
               <Tooltip title="Contra">
@@ -347,6 +346,7 @@ const HomePage = () => {
             </div>
             <WerewolfLauncher />
             <JungleLauncher />
+            <CardGamesPromo />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />
