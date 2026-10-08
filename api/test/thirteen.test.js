@@ -183,3 +183,12 @@ test('public last move identifies bombs and passes without exposing a hand', () 
   assert.deepEqual(definition.publicView(state).lastMove, { seat: 2, cards: [], isBomb: false, sequence: 3 })
   assert.ok(!JSON.stringify(view).includes('9S'))
 })
+
+test('room documentation describes readiness without duplicate legacy host instructions', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const section = fs.readFileSync(path.join(__dirname, '../../README.md'), 'utf8').split('### Tiến Lên Miền Nam')[1].split('\n### ')[0]
+  assert.ok(!section.includes('Chủ bàn bắt đầu ván'))
+  assert.equal(section.split('bấm Sẵn sàng').length - 1, 1)
+  assert.ok(section.includes('người vào muộn có đủ 30 giây riêng'))
+})

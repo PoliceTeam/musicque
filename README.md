@@ -92,11 +92,12 @@ dependencies và lệnh chạy riêng; repository không có `package.json` ở 
 
 ### Tiến Lên Miền Nam
 
-Tiến Lên Miền Nam: Chơi nhanh, tạo bàn công khai/riêng tư hoặc nhập mã bàn. Mọi người bấm Sẵn sàng để tự bắt đầu sau 3 giây; sau ván có 30 giây sẵn sàng lại. Ghế chưa sẵn sàng ở bàn mới tự rời sau 5 phút. Link `/thirteen?room=K7Q2` mời vào bàn; thu nhỏ vẫn giữ ghế, không thể rời giữa ván.
-
-
-- Vào `/thirteen` để xem bàn; đăng nhập để ngồi và chơi. Chủ bàn bắt đầu ván,
-  bot tự lấp các ghế trống để đủ bốn người.
+- Vào `/thirteen` để chơi nhanh, tạo bàn công khai/riêng tư hoặc nhập mã bàn.
+  Đăng nhập để ngồi và chơi; bot tự lấp ghế trống để đủ bốn người.
+- Mọi người bấm Sẵn sàng để tự bắt đầu sau 3 giây. Sau ván có 30 giây
+  sẵn sàng lại; người vào muộn có đủ 30 giây riêng. Bàn mới giữ ghế chưa
+  sẵn sàng tối đa 5 phút. Link `/thirteen?room=K7Q2` mời vào bàn;
+  thu nhỏ vẫn giữ ghế, không thể rời giữa ván.
 - Mỗi người cược `10 PC` khi có ít nhất hai người thật. Chơi một mình với bot
   là luyện tập, không trừ PC. Tiền cược chỉ chia cho người thật theo thứ hạng:
   hai người `100/0`, ba người `70/30/0`, bốn người `60/30/10/0` phần trăm.
