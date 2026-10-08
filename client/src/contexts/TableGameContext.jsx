@@ -34,6 +34,7 @@ export const TableGameProvider = ({ game, children }) => {
   const closeResult = useCallback(() => setResult(null), [])
   const busyRef = useRef(false)
   const tablesRef = useRef([])
+  const deletedTables = useRef(new Map())
   const toast = (content, type = 'info') => message.open({ key: 'table-game', type, content })
   const userId = user?._id
   const userRef = useRef(userId)
@@ -44,6 +45,9 @@ export const TableGameProvider = ({ game, children }) => {
   const acceptTable = useCallback((table) => {
     const { myView: view, ...publicTable } = table
     publicTable.receivedAt = Date.now()
+    const deletedAt = deletedTables.current.get(table.tableId)
+    if (!table.deleted && deletedAt !== undefined && table.serverNow <= deletedAt) return
+    if (table.deleted) deletedTables.current.set(table.tableId, table.serverNow)
     const previous = tablesRef.current.find(t => t.tableId === table.tableId)
     if (previous && previous.serverNow > table.serverNow) return
     if (table.auto_left?.some(seat => seat.userId === userId && ['not_ready', 'idle'].includes(seat.reason)) && !previous?.auto_left?.some(seat => seat.userId === userId)) {

@@ -6,7 +6,7 @@ import { ThirteenProvider, useThirteen } from './ThirteenContext'
 import { tableGameApi } from '../services/api'
 const mocks = vi.hoisted(() => ({ user: null, tables: [], table: null, handlers: {}, refreshBalance: vi.fn(), requireAuth: vi.fn() }))
 vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mocks.user, refreshBalance: mocks.refreshBalance, requireAuth: mocks.requireAuth }) }))
-vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: async () => ({ data: mocks.table }), action: vi.fn(async () => ({ data: mocks.table })), create: vi.fn(async () => ({ data: mocks.table })), quickJoin: vi.fn(async () => ({ data: mocks.table })) } }))
+vi.mock('../services/api', () => ({ getStoredToken: () => null, tableGameApi: { tables: vi.fn(async () => ({ data: mocks.tables })), config: async () => ({ data: { stake: 10 } }), table: vi.fn(async () => ({ data: mocks.table })), action: vi.fn(async () => ({ data: mocks.table })), create: vi.fn(async () => ({ data: mocks.table })), quickJoin: vi.fn(async () => ({ data: mocks.table })) } }))
 function Probe() {
   const { currentTable, myHand } = useThirteen()
   return <div>{currentTable ? `Bàn ${currentTable.tableId}` : 'Phòng chờ'}<output>{myHand.join(',')}</output></div>
@@ -76,4 +76,20 @@ it('reconnect replaces rooms deleted while the viewer was offline', async () => 
   mocks.tables = []
   act(() => mocks.handlers.connect())
   await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('0'))
+})
+
+it('does not restore a deleted room from an in-flight list or seated detail request', async () => {
+  mocks.user = { _id: 'a' }
+  const room = { game: 'thirteen', tableId: 'K7Q2', seats: [{ userId: 'a' }, null, null, null], serverNow: 10 }
+  let resolveList, resolveDetail
+  tableGameApi.tables.mockImplementationOnce(() => new Promise(resolve => { resolveList = resolve }))
+  tableGameApi.table.mockImplementationOnce(() => new Promise(resolve => { resolveDetail = resolve }))
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  act(() => mocks.handlers.table_game_state({ ...room, serverNow: 20, deleted: true }))
+  await act(async () => { resolveList({ data: [room] }) })
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('0')
+  await act(async () => { resolveDetail({ data: { ...room, serverNow: 15, myView: { hand: ['3S'] } } }) })
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('0')
+  act(() => mocks.handlers.table_game_state({ ...room, serverNow: 30 }))
+  expect(screen.getByLabelText('Room count')).toHaveTextContent('1')
 })
