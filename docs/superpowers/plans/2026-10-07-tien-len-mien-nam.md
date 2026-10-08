@@ -1,10 +1,10 @@
 # Tiến Lên Miền Nam — Implementation Plan
 
-> ## ▶ Progress status — last updated 2026-10-08 ~01:00 (stopped for the day)
+> ## ▶ Progress status — last updated 2026-10-08 (3D visual QA completed)
 >
-> **Branch:** `feat/tien-len-mien-nam` at `7bf6990`. Nothing has been pushed.
+> **Branch:** `feat/tien-len-mien-nam`; latest 3D fix `342e872`. Nothing has been pushed.
 > `feat/thirteen-rooms` (Codex B, worktree `../musicque-rooms`) is **merged** (`221fe8a`).
-> Tests: API 80/80, client 215/215 (47 files), build OK.
+> Tests: API 80/80, client 220/220 (47 files), scoped 3D lint clean, build OK.
 > The live local check passed: create room → join → both ready → 3 s countdown → match starts (pot 20, 13 cards), with no JS errors.
 >
 > | Task | Status |
@@ -12,26 +12,26 @@
 > | 1–7 rules, bot, engine, client state, 3D table, docs, reusable table-game engine | ✅ done |
 > | 8 full-screen overlay, first-person view, animations | ✅ done |
 > | 10 performance: on-demand render, 1 WebGL context, DPR cap, KTX2 support, nginx cache, perf script | ✅ done. KTX2 *asset conversion* is still pending: it needs `toktx` (Homebrew `ktx-software`), awaiting the user's OK |
-> | 12 chairs, contact shadows, seated avatars | ✅ done. 12.1 photo panorama: ❌ rejected and removed |
-> | 12.1b stylized low-poly office break room (light/dark) | ✅ done |
-> | Trick readability (upright, display stand, 1.4×) + HUD "last play" chip | ✅ done |
+> | 12 chairs, contact shadows, seated avatars | ✅ done; backrests cleared behind seated avatars and checked in both themes. 12.1 photo panorama: ❌ rejected and removed |
+> | 12.1b stylized low-poly office break room (light/dark) | ✅ done; wall wordmark E corrected and checked in both themes |
+> | Trick readability (upright, display stand, 1.4×) + HUD "last play" chip | ✅ done; wider small-combo spacing shows both pair faces in both themes |
 > | 11.1 dynamic tables with codes, quick-join | ✅ done |
 > | 11.2 ready-check, ready window, idle seats | ✅ done, plus review fixes in `7bf6990` |
 > | 11.3 lobby (Chơi nhanh / Tạo bàn / Nhập mã, resume banner, room grid, `?room=`) | ✅ done |
-> | 11.4 overlay phases (waiting / playing / result), action bar, toasts | ✅ DOM done. 3D bits are 🟡 **WIP** (`1a143de`: waiting poses, empty-seat tags, ready badges) and need a visual check |
-> | 11.5 header removed → corner controls + wall info board | ✅ done |
+> | 11.4 overlay phases (waiting / playing / result), action bar, toasts | ✅ DOM and 3D done; waiting poses, empty-seat tags and seats[i].ready badges visually checked at 1440×900 in both themes (`63e4510`) |
+> | 11.5 header removed → corner controls + wall info board | ✅ done; board readable at the default view in both themes |
 > | 9.1 drag-to-look, **yaw only ±30°** (pitch locked) | ✅ done |
-> | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done, needs a visual check from all 3 seats |
+> | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done; all three grips and 300 ms mid-reaches checked in both themes; opaque-card lift direction corrected |
 > | 9.3 broadcast only to the watch room / private tables only to seated users | ✅ done |
 > | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | ⏳ not started |
 >
 > **Open items for next session**, in priority order:
-> 1. **Visual QA in the browser:**
->    - the 11.4 3D WIP;
->    - opponent hand/fan attachment;
->    - wall board readability;
->    - the side chairs and characters (in the 2026-10-08 screenshot the chairs look like they sit in front of the side characters, so check the orientation);
->    - the Musicque wordmark on the wall: the last letter renders like a mirrored "Ǝ", so check the SVG rasterisation.
+> 1. ✅ **Visual QA completed:** headless Chrome, 1440×900, light and dark; client-only fixtures and deterministic mid-reach captures. One WebGL context, 0 idle draws/s, no JS errors. HUD timer ticks no longer redraw the table (`9fe3dcd`).
+>    - ✅ the 11.4 3D WIP finished: resting arms, empty-seat tags and ready badges;
+>    - ✅ opponent hand/fan attachment and play rhythm from all three seats;
+>    - ✅ wall board readability in both themes;
+>    - ✅ side chairs face the centre, with backrests farther behind the characters and hips supported by the seat;
+>    - ✅ Musicque wordmark: the source SVG’s final sound bars lacked an E stem; wall rasterisation adds the stem without flipping the SVG or changing the brand asset.
 > 2. **Remaining review findings for Codex B's code**, 2026-10-08. Not yet fixed:
 >    - leave idempotency check is outside the queue (`engine.js` `leave`);
 >    - late joiners get kicked by the ready window. Give each late joiner its own deadline;
