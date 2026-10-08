@@ -472,3 +472,21 @@ test('concurrent identical leave requests share the queued result, including del
   assert.deepEqual(await h.service.leave('a', room.code, 'leave'), results[0])
   assert.equal(h.emitted.filter(event => event.data.deleted).length, 1)
 })
+
+test('late joiners receive a full ready window without extending existing seats', async t => {
+  const h = harness(t, [fixture('settling')])
+  await h.service.resume(h.io)
+  const originalDeadline = h.service.getTable(1).readyDeadlineAt
+  const windowTimer = [...h.timers.values()].find(timer => timer.ms === 30000)
+  // Move to just before the original deadline using a fake timer.
+  await h.fire({ at: originalDeadline - 2000, fn() {} })
+  const joined = await h.service.sit(player('c'), 1, 'late-join')
+  assert.equal(joined.seats[2].readyDeadlineAt, Date.now() + 30000)
+  assert.equal(joined.seats[0].readyDeadlineAt, originalDeadline)
+  await h.fire([...h.timers.values()].find(timer => timer.at === originalDeadline))
+  assert.deepEqual(h.service.getTable(1).seats.filter(Boolean).map(seat => seat.userId), ['c'])
+  assert.equal(h.service.getTable(1).readyDeadlineAt, joined.seats[2].readyDeadlineAt)
+  await h.fire([...h.timers.values()].find(timer => timer.at === joined.seats[2].readyDeadlineAt))
+  assert.throws(() => h.service.getTable(1), { code: 'TABLE_NOT_FOUND' })
+  assert.ok(windowTimer)
+})

@@ -47,7 +47,7 @@ const createTableGameService = (definition) => {
     startsAt: table.startsAt, readyDeadlineAt: table.readyDeadlineAt, auto_left: table.autoLeft, startError: table.startError || null,
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),
-      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot), ready: Boolean(seat.ready),
+      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot), ready: Boolean(seat.ready), readyDeadlineAt: seat.readyDeadlineAt || table.readyDeadlineAt || null,
     } : null),
     currentSeat: match ? definition.currentSeat(match.state) : null,
     stake: match?.stake ?? stake,
@@ -99,7 +99,7 @@ const createTableGameService = (definition) => {
   const armCountdown = (table) => { if (allReady(table) && !table.startsAt) table.startsAt = Date.now() + readyCountdownMs }
   const resetReady = (table) => {
     const now = Date.now()
-    table.seats.forEach(seat => { if (seat) { seat.ready = false; seat.idleDeadlineAt = now + idleSeatMs } })
+    table.seats.forEach(seat => { if (seat) { seat.ready = false; seat.readyDeadlineAt = null; seat.idleDeadlineAt = now + idleSeatMs } })
     table.status = 'waiting'
   }
   const removeSeats = (table, predicate, reason) => {
@@ -115,15 +115,16 @@ const createTableGameService = (definition) => {
   const scheduleLobby = (table) => {
     clearTimeout(table.lobbyTimer)
     if (!tables.includes(table) || table.match || table.fundingMatch) return
-    const deadlines = [table.startsAt, table.readyDeadlineAt, ...(!table.readyDeadlineAt ? table.seats.filter(seat => seat && !seat.ready).map(seat => seat.idleDeadlineAt) : [])].filter(Boolean)
+    const readyDeadlines = table.seats.filter(seat => seat && !seat.ready && seat.readyDeadlineAt).map(seat => seat.readyDeadlineAt)
+    const deadlines = [table.startsAt, ...(table.readyDeadlineAt ? readyDeadlines.length ? readyDeadlines : [table.readyDeadlineAt] : []), ...(!table.readyDeadlineAt ? table.seats.filter(seat => seat && !seat.ready).map(seat => seat.idleDeadlineAt) : [])].filter(Boolean)
     if (!deadlines.length) return
     table.lobbyTimer = setTimeout(() => enqueue(table, async () => {
       if (!tables.includes(table) || table.match || table.fundingMatch) return
       const now = Date.now()
-      if (table.readyDeadlineAt && table.readyDeadlineAt <= now) {
-        removeSeats(table, seat => !seat.ready, 'not_ready')
-        table.readyDeadlineAt = null
-        table.status = 'waiting'
+      if (table.readyDeadlineAt && deadlines.some(deadline => deadline <= now)) {
+        removeSeats(table, seat => !seat.ready && (seat.readyDeadlineAt || table.readyDeadlineAt) <= now, 'not_ready')
+        table.readyDeadlineAt = Math.max(0, ...table.seats.filter(seat => seat && !seat.ready).map(seat => seat.readyDeadlineAt || 0)) || null
+        if (!table.readyDeadlineAt) table.status = 'waiting'
         if (allReady(table) && !table.startsAt) table.startsAt = now + readyCountdownMs
       } else if (!table.readyDeadlineAt) {
         removeSeats(table, seat => !seat.ready && seat.idleDeadlineAt <= now, 'idle')
@@ -241,6 +242,7 @@ const createTableGameService = (definition) => {
     table.status = 'finished'
     table.lastPot = game.stake * game.humanCount
     table.readyDeadlineAt = Date.now() + readyTimeoutMs
+    table.seats.forEach(seat => { if (seat) seat.readyDeadlineAt = table.readyDeadlineAt })
     table.match = null
     clearTimeout(table.timer)
     table.timer = null
@@ -313,7 +315,7 @@ const createTableGameService = (definition) => {
       if (seat < 0) throw new TableGameError('Table is full', 409, 'TABLE_FULL')
       cancelCountdown(table)
       table.autoLeft = []
-      table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs }
+      table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs, readyDeadlineAt: table.readyDeadlineAt ? Math.max(table.readyDeadlineAt, Date.now() + readyTimeoutMs) : null }
       scheduleLobby(table)
       broadcast(table)
       return snapshot(table, userId)

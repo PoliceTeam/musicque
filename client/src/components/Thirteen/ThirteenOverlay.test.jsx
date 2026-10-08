@@ -152,3 +152,9 @@ it('puts joinable rooms before full and playing rooms', () => {
   const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
   expect([...container.querySelectorAll('.thirteen-lobby h2')].map(node => node.textContent)).toEqual(['Bàn OPEN', 'Bàn FULL', 'Bàn PLAY'])
 })
+
+it('shows a late joiner their own remaining ready window', () => {
+  const now = Date.now()
+  render(<ThirteenOverlay {...props} open table={{ ...table, status: 'finished', serverNow: now, readyDeadlineAt: now + 2000, seats: [{ ...table.seats[0], readyDeadlineAt: now + 30000 }, ...table.seats.slice(1)] }} />)
+  expect(screen.getByRole('timer')).toHaveTextContent('30s')
+})

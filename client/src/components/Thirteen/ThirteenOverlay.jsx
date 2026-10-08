@@ -47,7 +47,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const finished = table.status === 'finished'
   const me = table.seats.find(seat => seat?.userId === userId)
   const countdown = roomRemaining(table, table.startsAt, now)
-  const readyTime = roomRemaining(table, table.readyDeadlineAt, now)
+  const readyTime = roomRemaining(table, me?.readyDeadlineAt || table.readyDeadlineAt, now)
   const copyInvite = async () => {
     try { await navigator.clipboard.writeText(inviteUrl(table.code || table.tableId)); message.open({ key: 'table-game', type: 'success', content: 'Đã sao chép link mời' }) }
     catch { message.open({ key: 'table-game', type: 'error', content: 'Không sao chép được link mời. Hãy thử lại.' }) }
