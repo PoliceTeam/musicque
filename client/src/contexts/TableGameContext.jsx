@@ -1,11 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { message } from 'antd'
 import { PlaylistContext } from './PlaylistContext'
 import { useAuth } from './AuthContext'
 import { tableGameApi, getStoredToken } from '../services/api'
 import { stakeChangeNotice } from '../utils/tableGame'
 const TableGameContext = createContext(null)
+const NO_CHAT = []
 export const useTableGame = (gameName) => {
   const value = useContext(TableGameContext)
   if (!value || value.game !== gameName) throw new Error('useTableGame must be used within TableGameProvider')
@@ -156,8 +157,10 @@ export const TableGameProvider = ({ game, children }) => {
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  const chat = chatByTable[table?.tableId] || []
-  const lastChatBySeat = Object.fromEntries((table?.seats || []).map((seat, index) => [index, chat.findLast(item => item.userId === seat?.userId)]).filter(([, item]) => item))
+  const chat = chatByTable[table?.tableId] || NO_CHAT
+  const seats = table?.seats
+  // Stable identity: the overlay memoizes the 3D scene on this prop.
+  const lastChatBySeat = useMemo(() => Object.fromEntries((seats || []).map((seat, index) => [index, chat.findLast(item => item.userId === seat?.userId)]).filter(([, item]) => item)), [chat, seats])
   const sendChat = async text => {
     if (!requireAuth('Đăng nhập để trò chuyện.') || !table) return false
     try {
