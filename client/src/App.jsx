@@ -11,11 +11,13 @@ import { LotteryProvider } from './contexts/LotteryContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
+import ThirteenRedirect from './components/Thirteen/ThirteenRedirect'
 import { useTheme } from './contexts/ThemeContext'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
+const GamesPage = lazy(() => import('./pages/GamesPage'))
 const ThirteenPage = lazy(() => import('./pages/ThirteenPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
@@ -50,7 +52,9 @@ function AppContent() {
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       <Route path='/' element={<HomePage />} />
-                      <Route path='/thirteen' element={<ThirteenPage />} />
+                      <Route path='/games' element={<GamesPage />} />
+                      <Route path='/games/thirteen' element={<ThirteenPage />} />
+                      <Route path='/thirteen' element={<ThirteenRedirect />} />
                       <Route path='/login' element={<LoginPage initialMode='login' />} />
                       <Route path='/register' element={<LoginPage initialMode='register' />} />
                       <Route

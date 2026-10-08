@@ -67,7 +67,7 @@ function ThirteenContent() {
   const joinable = table => ['waiting', 'finished'].includes(table.status) && table.seats.some(seat => !seat)
   const publicTables = tables.filter(table => table.visibility !== 'private').sort((a, b) => Number(joinable(b)) - Number(joinable(a)) || b.seats.filter(Boolean).length - a.seats.filter(Boolean).length)
   return <div className='thirteen-page'>
-    <header className='thirteen-header'><Link to='/' className='sp-btn sp-btn--ghost'>← Về trang chủ</Link><div><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Luật chơi</Button><UserMenu /></header>
+    <header className='thirteen-header'><Link to='/games' className='sp-btn sp-btn--ghost'>← Chọn game</Link><div><h1>Tiến Lên Miền Nam</h1><p>13 lá bài. Bốn ghế. Ai hết bài trước?</p></div><Button className='sp-btn' onClick={() => setRulesOpen(true)}>Luật chơi</Button><UserMenu /></header>
     <main>
       {seated && <div className='sp-panel thirteen-resume'>Bạn đang ở bàn {currentTable.code || currentTable.tableId} · {roomStatus(currentTable, now)}<Button className='sp-btn sp-btn--primary' onClick={() => { setDealOnMount(false); setOverlayOpen(true) }}>Quay lại bàn</Button></div>}
       <div className='thirteen-hero'>
