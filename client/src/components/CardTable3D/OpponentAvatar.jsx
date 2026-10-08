@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useTableGLTF } from './assets'
+import { disposeClonedSkeletons, useTableGLTF } from './assets'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
 import { blendPose, poses, poseTargets, prepareRig, updateHandAnchor, playPosePhase } from './poses'
@@ -92,7 +92,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   const head = avatar.rig.get('mixamorigHead').bone
   const hand = avatar.rig.get('mixamorigRightHand').bone
   spaces.current[`seat:${seatIndex}`] = handAnchor
-  useEffect(() => () => { avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
+  useEffect(() => () => { disposeClonedSkeletons(avatar.model); avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
   useFrame((_, delta) => {
     delta = activity.step(delta)
     if (playedKey !== lastPlay.current) {

@@ -56,3 +56,9 @@ export function warmTableScene(scene, camera, gl) {
   })
   for (const texture of textures) gl.initTexture(texture)
 }
+
+export function disposeClonedSkeletons(scene) {
+  const skeletons = new Set()
+  scene.traverse(node => { if (node.isSkinnedMesh) skeletons.add(node.skeleton) })
+  for (const skeleton of skeletons) skeleton.dispose()
+}

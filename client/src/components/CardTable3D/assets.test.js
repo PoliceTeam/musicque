@@ -1,10 +1,10 @@
 import { renderHook } from '@testing-library/react'
-import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from 'three'
+import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Skeleton, SkinnedMesh } from 'three'
 import { expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ data: null, clear: vi.fn() }))
 vi.mock('@react-three/drei', () => { const useGLTF = () => mocks.data; useGLTF.clear = mocks.clear; return { useGLTF } })
 vi.mock('@react-three/fiber', () => ({ useThree: fn => fn({ gl: { extensions: { has: () => false }, capabilities: { isWebGL2: true, getMaxAnisotropy: () => 8 } } }) }))
-import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF, warmTableScene } from './assets'
+import { clearTableAssets, releaseTextureImage, TABLE_MODEL_URLS, useTableGLTF, warmTableScene, disposeClonedSkeletons } from './assets'
 it('disposes shared resources once and clears parsed models for a fresh context', () => {
   const image = { close: vi.fn() }, texture = new Texture(image)
   const material = new MeshBasicMaterial({ map: texture }), geometry = new PlaneGeometry()
@@ -35,4 +35,13 @@ it('warms programs and shared textures once, including hidden meshes', () => {
   warmTableScene(scene, camera, gl)
   expect(gl.compile).toHaveBeenCalledWith(scene, camera)
   expect(gl.initTexture).toHaveBeenCalledExactlyOnceWith(texture)
+})
+it('disposes each cloned skeleton bone texture once across shared meshes', () => {
+  const scene = new Group(), skeleton = new Skeleton(), texture = new Texture()
+  skeleton.boneTexture = texture
+  const dispose = vi.spyOn(texture, 'dispose')
+  for (let i = 0; i < 2; i++) { const mesh = new SkinnedMesh(); mesh.skeleton = skeleton; scene.add(mesh) }
+  disposeClonedSkeletons(scene)
+  expect(dispose).toHaveBeenCalledTimes(1)
+  expect(skeleton.boneTexture).toBeNull()
 })
