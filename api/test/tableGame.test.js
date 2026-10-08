@@ -589,3 +589,65 @@ test('resume keeps the table stake and host from the active match', async t => {
     assert.equal(h.service.getTable(1).stake, 10)
   })
 })
+
+test('table chat validates, limits, deduplicates and keeps history private to seated users', async t => {
+  const h = harness(t)
+  const room = await h.service.create(player('a'), 'public', undefined, 'create')
+  await h.service.sit(player('b'), room.code, 'sit')
+  for (const text of ['', ' ', null, 'x'.repeat(201)]) await assert.rejects(h.service.chat('a', room.code, text, 'bad'), { code: 'INVALID_CHAT', status: 400 })
+  await assert.rejects(h.service.chat('outsider', room.code, 'hi', 'no'), { code: 'NOT_SEATED' })
+  const sent = await h.service.chat('a', room.code, '  xin   chào  ', 'hi')
+  assert.equal(sent.message.text, 'xin chào')
+  assert.deepEqual(await h.service.chat('a', room.code, 'retry', 'hi'), sent)
+  await assert.rejects(h.service.chat('a', room.code, 'fast', 'fast'), { code: 'CHAT_RATE_LIMIT', status: 429 })
+  await h.service.chat('b', room.code, 'chào', 'reply')
+  assert.equal(h.service.getTable(room.code, 'b').chat.length, 2)
+  assert.equal(h.service.getTable(room.code, 'outsider').chat, undefined)
+  assert.equal(h.service.listTables('a')[0].chat, undefined)
+  assert.deepEqual(h.emitted.find(event => event.event === 'table_game_chat').room, ['table_game:user:a', 'table_game:user:b'])
+  for (let i = 0; i < 51; i++) {
+    await h.fire({ at: Date.now() + 700, fn() {} })
+    await h.service.chat('a', room.code, String(i), `history-${i}`)
+  }
+  assert.equal(h.service.getTable(room.code, 'a').chat.length, 50)
+  assert.equal(h.service.getTable(room.code, 'a').chat.at(-1).text, '50')
+})
+
+test('two authenticated accounts use HTTP start and chat with seated history', async t => {
+  const h = harness(t)
+  const express = require('express')
+  const jwt = require('jsonwebtoken')
+  const { createTableGameRouter } = require('../services/tableGame/router')
+  const secret = 'table-game-test-secret'
+  const previousSecret = process.env.JWT_SECRET
+  process.env.JWT_SECRET = secret
+  t.after(() => { if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret })
+  t.mock.method(User, 'findById', id => ({ select() { return this }, lean: async () => ({ polites: 100 }), then: resolve => Promise.resolve(player(id)).then(resolve) }))
+  const app = express()
+  app.use(express.json())
+  app.use('/tables-test', createTableGameRouter({ ...h.service, start: h.service.hostStart }))
+  const server = app.listen(0, '127.0.0.1')
+  await new Promise(resolve => server.once('listening', resolve))
+  t.after(() => { server.closeAllConnections(); server.close() })
+  const post = (user, path, body = {}) => new Promise((resolve, reject) => {
+    const request = require('node:http').request({ host: '127.0.0.1', port: server.address().port, path: `/tables-test${path}`, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt.sign({ userId: user }, secret)}` } }, response => {
+      let text = ''
+      response.on('data', chunk => { text += chunk })
+      response.on('end', () => resolve({ status: response.statusCode, data: JSON.parse(text) }))
+    })
+    request.on('error', reject)
+    request.end(JSON.stringify({ requestKey: require('node:crypto').randomUUID(), ...body }))
+  })
+  const room = (await post('a', '/tables', { visibility: 'private' })).data
+  await post('b', `/tables/${room.tableId}/sit`)
+  assert.equal((await post('b', `/tables/${room.tableId}/start`)).status, 403)
+  assert.equal((await post('a', `/tables/${room.tableId}/start`)).status, 409)
+  await post('b', `/tables/${room.tableId}/ready`)
+  const started = await post('a', `/tables/${room.tableId}/start`)
+  assert.equal(started.status, 200)
+  assert.ok(started.data.startsAt)
+  const sent = await post('a', `/tables/${room.tableId}/chat`, { text: 'hello' })
+  assert.equal(sent.status, 200)
+  assert.equal((await post('b', `/tables/${room.tableId}/chat`, { text: 'reply' })).status, 200)
+  assert.equal(h.service.getTable(room.tableId, 'b').chat.length, 2)
+})

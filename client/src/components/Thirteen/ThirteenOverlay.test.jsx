@@ -49,7 +49,7 @@ describe('ThirteenOverlay', () => {
   it('keeps keyboard focus within the floating controls', () => {
     render(<ThirteenOverlay {...props} open />)
     const first = screen.getByRole('button', { name: 'Luật chơi' })
-    const last = screen.getByRole('button', { name: 'Góc mặc định' })
+    const last = screen.getByRole('button', { name: 'Chọn emoji' })
     last.focus()
     fireEvent.keyDown(window, { key: 'Tab' })
     expect(first).toHaveFocus()

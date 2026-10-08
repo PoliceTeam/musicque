@@ -1,7 +1,8 @@
-const { randomInt } = require('node:crypto')
+const { randomInt, randomUUID } = require('node:crypto')
 const Game = require('../../models/tableGameMatch.model')
 const User = require('../../models/user.model')
 const coins = require('../coins.service')
+const { normalizeContent } = require('../chat.service')
 const { assertDefinition } = require('./definition')
 class TableGameError extends Error {
   constructor(message, status = 400, code = 'TABLE_GAME_ERROR') {
@@ -17,7 +18,7 @@ const createTableGameService = (definition) => {
   const maxSeats = definition.seats.max
   const stakeOptions = definition.config.stakeOptions || [stake]
   const tables = []
-  const newTable = (code, visibility = 'public', createdBy = null, tableStake = stake) => ({ tableId: code, code, visibility, createdBy, hostId: createdBy, stake: tableStake, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, lobbyTimer: null, startsAt: null, readyDeadlineAt: null, status: 'waiting', autoLeft: [], queue: Promise.resolve() })
+  const newTable = (code, visibility = 'public', createdBy = null, tableStake = stake) => ({ tableId: code, code, visibility, createdBy, hostId: createdBy, stake: tableStake, createdAt: new Date(), seats: Array(maxSeats).fill(null), lastWinnerSeat: null, hasPlayed: false, match: null, fundingMatch: null, timer: null, lobbyTimer: null, startsAt: null, readyDeadlineAt: null, status: 'waiting', autoLeft: [], chat: [], chatAt: new Map(), queue: Promise.resolve() })
   const lobby = { queue: Promise.resolve() }
   const requests = new Map()
   const remember = (key, response) => {
@@ -66,7 +67,32 @@ const createTableGameService = (definition) => {
     const seat = match.seats.findIndex((s) => s.userId?.toString() === userId.toString())
     return seat >= 0 ? definition.playerView(match.state, seat) : null
   }
-  const snapshot = (table, userId) => ({ ...serializeTable(table), myView: viewFor(table.match, userId) })
+  const snapshot = (table, userId) => ({ ...serializeTable(table), myView: viewFor(table.match, userId), ...((table.match?.seats || table.seats).some(seat => userId && seat?.userId?.toString() === userId.toString()) ? { chat: [...table.chat] } : {}) })
+  const emitSeated = (table, event, payload) => {
+    const rooms = (table.match?.seats || table.seats).filter(seat => seat?.userId).map(seat => `table_game:user:${seat.userId}`)
+    if (rooms.length) ioRef?.to(rooms).emit(event, payload)
+  }
+  const chat = (userId, tableId, text, requestKey) => {
+    validateKey(requestKey)
+    const table = tableFor(tableId)
+    const key = `u:${userId}:chat:${tableId}:${requestKey}`
+    return enqueue(table, () => {
+      const seat = (table.match?.seats || table.seats).find(seat => seat?.userId?.toString() === userId.toString())
+      if (!seat) throw new TableGameError('You are not seated', 403, 'NOT_SEATED')
+      if (requests.has(key)) return requests.get(key)
+      let content
+      try { content = normalizeContent(text, { maxLength: 200 }) } catch (error) { throw new TableGameError(error.message, 400, 'INVALID_CHAT') }
+      const at = Date.now()
+      if (at - (table.chatAt.get(userId.toString()) ?? -Infinity) < 700) throw new TableGameError('Chat too fast', 429, 'CHAT_RATE_LIMIT')
+      const message = { id: randomUUID(), userId: userId.toString(), username: seat.username, text: content, at }
+      // ponytail: in-memory, lost on restart; persist if room history must survive restarts.
+      table.chat = [...table.chat, message].slice(-50)
+      table.chatAt.set(userId.toString(), at)
+      const payload = { game: name, tableId: table.tableId, message }
+      emitSeated(table, 'table_game_chat', payload)
+      return remember(key, payload)
+    })
+  }
   const emitPublic = (table, event, payload) => {
     const rooms = table.visibility === 'private' ? (table.match?.seats || table.seats).filter(seat => seat?.userId).map(seat => `table_game:user:${seat.userId}`) : `table_game:watch:${name}`
     if (rooms.length) ioRef?.to(rooms).emit(event, payload)
@@ -76,6 +102,8 @@ const createTableGameService = (definition) => {
     clearTimeout(table.timer)
     clearTimeout(table.lobbyTimer)
     emitPublic(table, 'table_game_state', { ...serializeTable(table), deleted: true })
+    table.chat = []
+    table.chatAt.clear()
     const index = tables.indexOf(table)
     if (index >= 0) tables.splice(index, 1)
   }
@@ -517,6 +545,6 @@ const createTableGameService = (definition) => {
       throw error
     }
   }
-  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), start, setStake, move }
+  return { TableGameError, definition, bindSocket, onSocketDisconnect, init, resume, publicConfig, serializeTable, viewFor, listTables: (userId) => tables.filter(table => table.visibility === 'public' || (userId && (table.match?.seats || table.seats).some(seat => seat?.userId?.toString() === userId.toString()))).map(table => serializeTable(table)), getTable: (id, userId) => snapshot(tableFor(id), userId), create, quickJoin, sit, leave, ready: (id, tableId, key) => setReady(id, tableId, key, true), unready: (id, tableId, key) => setReady(id, tableId, key, false), chat, start, setStake, move }
 }
 module.exports = { createTableGameService, TableGameError }

@@ -194,3 +194,26 @@ describe('table stake', () => {
     toast.mockRestore()
   })
 })
+
+function ChatProbe() {
+  const { chat, lastChatBySeat, sendChat } = useThirteen()
+  return <><output aria-label='Chat history'>{chat.map(item => item.text).join('|')}</output><output aria-label='Seat bubble'>{lastChatBySeat[1]?.text}</output><button onClick={() => sendChat('hello')}>Send chat</button></>
+}
+it('restores chat history, deduplicates events, and exposes the latest message by seat', async () => {
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  const item = { id: 'm1', userId: 'b', username: 'Bình', text: 'hi', at: 1 }
+  mocks.tables = [stakeTable]
+  mocks.table = { ...stakeTable, chat: [item] }
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ChatProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  await waitFor(() => expect(screen.getByLabelText('Chat history')).toHaveTextContent('hi'))
+  act(() => mocks.handlers.table_game_chat({ game: 'thirteen', tableId: 'K7Q2', message: item }))
+  expect(screen.getByLabelText('Chat history')).toHaveTextContent(/^hi$/)
+  expect(screen.getByLabelText('Seat bubble')).toHaveTextContent('hi')
+  act(() => mocks.handlers.table_game_chat({ game: 'other', tableId: 'K7Q2', message: { ...item, id: 'wrong', text: 'wrong' } }))
+  expect(screen.getByLabelText('Chat history')).not.toHaveTextContent('wrong')
+  tableGameApi.action.mockResolvedValueOnce({ data: { game: 'thirteen', tableId: 'K7Q2', message: { ...item, id: 'm2', userId: 'a', text: 'hello' } } })
+  fireEvent.click(screen.getByText('Send chat'))
+  await waitFor(() => expect(screen.getByLabelText('Chat history')).toHaveTextContent('hi|hello'))
+  expect(tableGameApi.action).toHaveBeenCalledWith('thirteen', 'K7Q2', 'chat', { text: 'hello', requestKey: expect.any(String) })
+})

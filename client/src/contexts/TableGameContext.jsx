@@ -25,6 +25,8 @@ const ERROR_COPY = {
   NOT_HOST: 'Chỉ chủ bàn mới thực hiện được thao tác này.',
   NOT_ALL_READY: 'Hãy chờ mọi người sẵn sàng.',
   INVALID_STAKE: 'Mức cược không hợp lệ.',
+  INVALID_CHAT: 'Tin nhắn cần có 1–200 ký tự.',
+  CHAT_RATE_LIMIT: 'Bạn gửi quá nhanh. Hãy chờ một chút.',
   TABLE_BUSY: 'Bàn đang bắt đầu hoặc đang chơi, chưa đổi được mức cược.',
 }
 // Cùng mã INSUFFICIENT_COINS: lúc bắt đầu ván là "đã hoàn cược" (ERROR_COPY), lúc bấm sẵn sàng là thiếu PC cho mức cược.
@@ -36,6 +38,7 @@ export const TableGameProvider = ({ game, children }) => {
   const [config, setConfig] = useState({ stake: 10, turnMs: 20000 })
   const [tableId, setTableId] = useState(null)
   const [privateViews, setPrivateViews] = useState({})
+  const [chatByTable, setChatByTable] = useState({})
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const closeResult = useCallback(() => setResult(null), [])
@@ -50,13 +53,15 @@ export const TableGameProvider = ({ game, children }) => {
   const privateView = privateViews[table?.tableId]
   const myView = userId && privateView && table && privateView.userId === userId && privateView.matchId === table.matchId && privateView.version === table?.version ? privateView.view : null
   const acceptTable = useCallback((table) => {
-    const { myView: view, ...publicTable } = table
+    const { myView: view, chat, ...publicTable } = table
     publicTable.receivedAt = Date.now()
     const deletedAt = deletedTables.current.get(table.tableId)
     if (!table.deleted && deletedAt !== undefined && table.serverNow <= deletedAt) return
     if (table.deleted) deletedTables.current.set(table.tableId, table.serverNow)
     const previous = tablesRef.current.find(t => t.tableId === table.tableId)
     if (previous && previous.serverNow > table.serverNow) return
+    if (chat) setChatByTable(current => ({ ...current, [table.tableId]: [...new Map([...chat, ...(current[table.tableId] || [])].map(item => [item.id, item])).values()].sort((a, b) => a.at - b.at).slice(-50) }))
+    if (table.deleted) setChatByTable(current => { const next = { ...current }; delete next[table.tableId]; return next })
     if (table.auto_left?.some(seat => seat.userId === userId && ['not_ready', 'idle'].includes(seat.reason)) && !previous?.auto_left?.some(seat => seat.userId === userId)) {
       toast('Bạn đã được mời ra khỏi bàn vì chưa sẵn sàng')
       setTableId(null)
@@ -93,6 +98,7 @@ export const TableGameProvider = ({ game, children }) => {
     setTables(tablesRef.current)
     setTableId(null)
     setPrivateViews({})
+    setChatByTable({})
     setResult(null)
     if (!socket) load()
   }, [load, socket, userId])
@@ -106,6 +112,11 @@ export const TableGameProvider = ({ game, children }) => {
       if (payload.ranking.some((s) => s.userId === userId)) setResult(payload)
       refreshBalance()
     }
+    const onChat = payload => {
+      if (payload.game !== game || !tablesRef.current.some(table => table.tableId === payload.tableId && table.seats.some(seat => seat?.userId === userId))) return
+      setChatByTable(current => ({ ...current, [payload.tableId]: [...new Map([...(current[payload.tableId] || []), payload.message].map(item => [item.id, item])).values()].slice(-50) }))
+    }
+    socket.on('table_game_chat', onChat)
     socket.on('connect', bind)
     socket.on('table_game_state', onState)
     socket.on('table_game_private', onPrivate)
@@ -113,6 +124,7 @@ export const TableGameProvider = ({ game, children }) => {
     bind()
     return () => {
       socket.emit('table_game:unwatch', { game })
+      socket.off('table_game_chat', onChat)
       socket.off('connect', bind)
       socket.off('table_game_state', onState)
       socket.off('table_game_private', onPrivate)
@@ -144,5 +156,15 @@ export const TableGameProvider = ({ game, children }) => {
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), start: (id) => action('start', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  const chat = chatByTable[table?.tableId] || []
+  const lastChatBySeat = Object.fromEntries((table?.seats || []).map((seat, index) => [index, chat.findLast(item => item.userId === seat?.userId)]).filter(([, item]) => item))
+  const sendChat = async text => {
+    if (!requireAuth('Đăng nhập để trò chuyện.') || !table) return false
+    try {
+      const { data } = await tableGameApi.action(game, table.tableId, 'chat', { text, requestKey: crypto.randomUUID() })
+      setChatByTable(current => ({ ...current, [data.tableId]: [...new Map([...(current[data.tableId] || []), data.message].map(item => [item.id, item])).values()].slice(-50) }))
+      return true
+    } catch (error) { toast(ERROR_COPY[error.response?.data?.code] || 'Không gửi được tin nhắn.', 'error'); return false }
+  }
+  return <TableGameContext.Provider value={{ game, chat, sendChat, lastChatBySeat, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), start: (id) => action('start', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }
