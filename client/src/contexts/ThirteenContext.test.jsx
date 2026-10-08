@@ -112,3 +112,22 @@ it('retries a transient invite join once with the same request key and does not 
   await act(async () => {})
   expect(tableGameApi.action).toHaveBeenCalledTimes(1)
 })
+
+it('uses join-specific errors for playing rooms and accepts finished rooms', async () => {
+  const { message } = await import('antd')
+  const toast = vi.spyOn(message, 'open')
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  mocks.tables = []
+  mocks.table = { game: 'thirteen', tableId: 'K7Q2', status: 'finished', seats: [{ userId: 'a' }, null, null, null], serverNow: Date.now() }
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 409, data: { code: 'TABLE_PLAYING' } } })
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' }))
+  await act(async () => {})
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(screen.getByLabelText('Room count')).toHaveTextContent('1'))
+  expect(toast.mock.calls.some(([value]) => value.content?.includes('rời ghế'))).toBe(false)
+  toast.mockRestore()
+})

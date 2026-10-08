@@ -129,7 +129,9 @@ export const TableGameProvider = ({ game, children }) => {
       await refreshBalance()
       return true
     } catch (error) {
-      toast(ERROR_COPY[error.response?.data?.code] || 'Không thực hiện được. Hãy thử lại.', 'error')
+      const code = error.response?.data?.code
+      const joinError = ['sit', 'quickJoin'].includes(name) && code === 'TABLE_PLAYING'
+      toast(joinError ? 'Bàn đang chơi. Hãy chờ ván kết thúc để vào bàn.' : ERROR_COPY[code] || 'Không thực hiện được. Hãy thử lại.', 'error')
       load()
       return false
     } finally { busyRef.current = false; setBusy(false) }
