@@ -20,6 +20,7 @@ import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
 import JungleLauncher from '../components/Jungle/JungleLauncher';
+import AuditionLauncher from '../components/Audition/AuditionLauncher';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -346,6 +347,7 @@ const HomePage = () => {
             </div>
             <WerewolfLauncher />
             <JungleLauncher />
+            <AuditionLauncher />
             <CardGamesPromo />
           </SidebarNav>
 
