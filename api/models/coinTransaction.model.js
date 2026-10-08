@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const TRANSACTION_TYPES = [
   'signup_grant',
   'daily_bonus',
+  'lucky_rain_reward',
   'song_bid',
   'song_bid_refund',
   'song_skip_contribution',
@@ -20,6 +21,10 @@ const TRANSACTION_TYPES = [
   'wordchain_payout',
   'wordchain_refund',
   'redlight_payout',
+  'werewolf_payout',
+  'jungle_bet',
+  'jungle_payout',
+  'jungle_refund',
   'lottery_bet',
   'lottery_payout',
   'lottery_refund',
@@ -29,6 +34,7 @@ const TRANSACTION_TYPES = [
   'admin_adjustment',
   'core_purchase',
   'core_bonus',
+  'profile_rename',
 ]
 
 const coinTransactionSchema = new mongoose.Schema(
@@ -68,7 +74,7 @@ const coinTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'WordChainRound', 'RedLightRound', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'TableGameMatch'],
+      enum: ['Song', 'GameRound', 'SignupGrant', 'BilliardsGame', 'XiangqiGame', 'XiangqiPvp', 'WordChainRound', 'RedLightRound', 'WerewolfGame', 'JungleGame', 'LotteryBet', 'LotteryDraw', 'CoreMembership', 'LuckyRainClaim', 'TableGameMatch'],
       default: undefined,
     },
     referenceId: {

@@ -340,6 +340,44 @@ The overlay's height is driven by the **table**, not the side column: `.bil-side
 is absolutely positioned so a growing pot log scrolls inside its box instead of
 stretching the modal. Don't make that column static again.
 
+### Ma Sói (Werewolf)
+Multiplayer social-deduction game at `/werewolf`, **not tied to a music session**. Rules are
+modelled on GreyWolfDev/Werewolf (GPL-3.0) but the code and Vietnamese copy are a clean-room
+rewrite — do not paste code or strings from that repo. 36 roles (`api/services/werewolf/roles.js`).
+
+- The engine is pure (state + now + rng in, events out), split into `roles.js` (catalog,
+  teams, balance strengths), `balance.js` (role dealing), `core.js` (config, state, log,
+  `killPlayer`, `transform`, `roleChanges`), `night.js` (night resolution) and `engine.js`
+  (phases, day abilities, win check, per-viewer serialization). Tests: `api/test/werewolf.test.js`
+  and `werewolfRoles.test.js` (includes a 600-game all-bot simulation). One in-memory game; a
+  server restart drops it (nothing is staked).
+- **Night order mirrors the original** and matters: snow-wolf freeze → arsonist → pack →
+  serial killer → cult hunter → cult → harlot → seers/sorcerer/fool/oracle/augur → guardian
+  fate → `roleChanges` → thief. All "X visits Y" outcomes go through the single `visit()` in
+  `night.js` (burning house, SK, wolf den, harlot away…) — add new visiting roles there.
+- Role dealing thresholds live in `DEAL_RULES` (`balance.js`) and are served through
+  `GET /api/werewolf/config` (`dealing` + per-role `appears`) to the rules modal and lobby
+  hint — change them there and the player-facing rules follow. Notes deliberately avoid
+  percentages: the roll chance is not the real frequency after balance rejection.
+- Wolf "pack" (`PACK_ROLES`, votes on the kill) ≠ "wolfish" (`WOLFISH_ROLES`, adds Snow Wolf;
+  used for counts, pack visibility and wolf chat). Sorcerer is team wolf but in neither.
+- Secret circles see each other's roles: wolfish, cultists (`cult` chat channel), masons.
+  The Fool is served as `seer` to themselves until death/game end (`shownRoleFor`).
+- **Privacy is enforced by per-viewer serialization.** Every watcher socket joins room
+  `werewolf` and receives `serializeFor(state, itsUserId)` — never broadcast one shared payload.
+  Log entries carry a `channel` (`public`/`wolves`/`dead`/`private`) filtered per viewer.
+- Actions go over REST (`/api/werewolf/*`); the socket only does `werewolf:watch`/`unwatch`.
+- Winners get `CONFIG.WIN_REWARD` (30 PC) via `creditOnce`; games containing bots
+  (`POST /bots`, admin only) pay nothing.
+- Timers are **not env vars**: defaults are constants in `engine.js` `CONFIG`, and admins edit
+  them on `/admin` (`WerewolfSettings` card → `PUT /api/werewolf/settings`). Saved values live
+  in the single `WerewolfSettings` doc and are re-applied on boot; bounds are `TIMING_FIELDS`.
+  A change takes effect from the next phase.
+- `revealRoleOnDeath` (admin switch, **default off**): dead players' roles stay hidden until the
+  game ends. It is frozen onto the game at start. When hidden, night death causes that imply a
+  role (`guard_wolf`, `hunter_night`, …) are announced generically and `death.cause` is masked
+  to `night` in the payload; the hunter becomes `revealed` once they take their final shot.
+
 ## Conventions
 
 - **Vietnamese is the working language** — code comments, `console.log` prefixes, API
@@ -384,3 +422,50 @@ the files remain: `api/controllers/worldCup.controller.js`,
 `client/src/components/WorldCup/`, `client/src/pages/WorldCupPage.jsx`. The routes are
 not mounted in `api/app.js` and the page is not routed in `client/src/App.jsx`.
 Don't assume it's reachable; re-enabling means restoring both registrations.
+
+### Cờ Thú (Jungle / Dou Shou Qi) — PvP 3D + bot
+`/jungle` (sảnh) và `/jungle/:gameId` (bàn). Đây là game **3D đầu tiên** của app
+(react-three-fiber + drei, asset Kenney CC0 ở `client/public/models/jungle/`, mỗi pack một
+thư mục vì texture trùng tên `colormap.png`).
+
+- **Luật** nằm duy nhất ở `api/services/jungle/rules.js` (hàm thuần, bàn 7×9, ô `a1`..`g9`,
+  Đỏ ở hàng 1, đi trước). Thế quân theo bàn in Việt Nam (lật trái–phải so với Wikipedia).
+  Luật nhà đã chốt với chủ dự án: chỉ Chuột xuống nước; Voi không ăn Chuột (trừ khi Chuột
+  trong hang); quân trong hang địch cấp 0 và **không ăn được ai**; Sư tử/Hổ nhảy sông dọc+ngang,
+  bị Chuột (phe nào cũng được) chặn; Báo không nhảy; hết nước đi = thua; hòa khi cùng thế cờ lặp
+  `JUNGLE_REPETITION_LIMIT` lần (mặc định 12; bot đọc cùng ngưỡng) / mỗi bên còn 1 Chuột / 100 ply không ăn quân / đồng ý hòa. Thắng dứt điểm xét trước hòa.
+  Mọi nước bị từ chối trả `code` + câu tiếng Việt — client hiển thị nguyên câu đó.
+- **PvP** (`jungle.service.js`): cược `JUNGLE_STAKE_PC` (100) mỗi bên, thắng nhận gấp đôi,
+  hòa hoàn cược; đồng hồ `JUNGLE_CLOCK_MS` (15') mỗi bên; mất socket quá
+  `JUNGLE_DISCONNECT_MS` (3') là thua. Ván lưu Mongo (`JungleGame`), nước đi là update nguyên tử
+  lọc theo `position.ply` (chống gửi trùng). Thu cược = giành chỗ nguyên tử → `debitOnce` từng
+  người → hoàn nếu bước sau hỏng; ván kẹt ở `starting` khi restart được huỷ và **chỉ hoàn phần
+  đã thực sự trừ** (kiểm `appliedCoinOperations`). Vòng `runTick` 1s xử lý hết giờ/bỏ ván/phòng
+  chờ bỏ hoang; lúc khởi động đồng hồ bên đang đi chạy lại từ mốc đã lưu.
+- **Tập với máy** (`mode: 'practice'`): không cược, không đồng hồ, không hiện ở sảnh, không nhận
+  hòa. Bot `api/services/jungle/bot.js` là negamax alpha-beta + iterative deepening + Zobrist TT
+  + quiescence, chạy trong `worker_threads` (`botQueue.js`). Nó có **bộ sinh nước riêng trên mảng
+  số** — `jungleBot.test.js` đối chiếu với `rules.js` trên >10k thế cờ; sửa luật thì phải sửa cả
+  hai. Lực kéo tiến quân trong `evaluate` phải lớn hơn `noise` của mức độ, nếu không bot đi lòng
+  vòng tới hòa 100 ply (đã gặp). Đo: Vừa thắng ngẫu nhiên 16/16; Khó vs Vừa 8 thắng 4 hòa 0 thua.
+- **Client**: `components/Jungle/` — `JungleBoard3D` điều phối (sự kiện nước đi suy từ state cũ →
+  mới bằng `deriveMoveEvent`; nhảy cóc nhiều ply thì đặt quân thẳng chỗ), `JunglePiece` (tween đi
+  /nhảy parabol, bơi, xám + sao khi bị yếu, ghost khi bị ăn), `JungleScenery`, `JungleEffects`.
+  Quân có id cố định `side-type` (mỗi phe mỗi loài một con). Báo/Sói/Chuột mượn model Hổ/Cáo/Koala
+  và đổi màu texture bằng canvas (`jungleAssets.js`). Nước sai nhưng "trông như" nước đi vẫn gửi
+  server để lấy lý do. Màn chơi dời thẻ Mưa lì xì xuống góc dưới trái (`jungle.css`).
+- HUD người chơi nổi trên khung 3D (`JungleHud`): đối thủ góc trên trái, mình góc dưới phải
+  (khán giả nhìn từ phe Đỏ). Bấm quân bất kỳ mở `JunglePieceCard` ở **đầu cột phải** — cố ý không
+  nổi trên bàn vì ở 1366px nó che cột f–g. Nội dung lấy từ `PIECE_GUIDE` / `preyOf` /
+  `predatorsOf` / `pieceSituation` trong `utils/jungle.js`; đổi luật thì sửa cả ở đó.
+- Nền cỏ và khối viền đất dưới bàn **không được trùng cao độ** — trùng là z-fighting thành vệt
+  nhiễu quanh mép bàn (đã gặp). Ô ổ thú (`tile-dirt` dày 0.1) được kéo `scale y = 2` cho chạm nền.
+- **Âm thanh** (`jungleAudio.js`) tổng hợp hoàn toàn bằng Web Audio — không file, không giấy phép.
+  SFX theo đúng mốc hoạt cảnh (bước chân, nhảy/tiếp đất, nước bắn, ngoạm + bụp khi ăn, kèn
+  "wah wah" khi Chuột hạ Voi, bẫy sập, nước sai, tới lượt, đề nghị hòa, tích tắc khi còn <30s,
+  thắng/thua/hòa). Nhạc nền tự sinh: suối (nhiễu nâu) + chim + kalimba ngũ cung 88 bpm, lên lịch
+  trước 0.5s. Chỉ phát sau thao tác đầu tiên (chính sách autoplay), dừng khi rời trang, tạm dừng
+  khi tab ẩn. Bật/tắt Nhạc / Hiệu ứng trên thanh trên, lưu ở localStorage `musicque_jungle_audio`.
+  DEV có `window.__jungleAudio.level()` để đo mức tín hiệu ra loa khi kiểm thử tự động.
+- Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
+  `canvas.toDataURL()` kiểm tra được.

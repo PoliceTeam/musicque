@@ -25,6 +25,22 @@ describe('XiangqiBoard', () => {
     expect(onMove).toHaveBeenCalledWith('g1', 'g4')
   })
 
+  it('quân Đen chọn được nước của mình và nhìn bàn từ phía Đen', () => {
+    const board = emptyBoard()
+    board[0][0] = { color: 'b', type: 'r' }
+    board[9][0] = { color: 'r', type: 'r' }
+    const onMove = vi.fn()
+    render(<XiangqiBoard playerColor='b' game={{ board, legalMoves: [{ from: 'a9', to: 'a8' }] }} onMove={onMove} />)
+    const black = screen.getByRole('button', { name: 'Đen rook tại a9' })
+    expect(black.style.getPropertyValue('--xq-col')).toBe('8')
+    expect(black.style.getPropertyValue('--xq-row')).toBe('9')
+    fireEvent.click(screen.getByRole('button', { name: 'Đỏ rook tại a0' }))
+    expect(screen.queryByRole('button', { name: 'Đi tới a8' })).not.toBeInTheDocument()
+    fireEvent.click(black)
+    fireEvent.click(screen.getByRole('button', { name: 'Đi tới a8' }))
+    expect(onMove).toHaveBeenCalledWith('a9', 'a8')
+  })
+
   it('không cho thao tác khi đang đợi NPC', () => {
     const board = emptyBoard()
     board[8][6] = { color: 'r', type: 'r' }

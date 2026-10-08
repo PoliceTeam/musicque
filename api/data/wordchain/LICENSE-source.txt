@@ -1,8 +1,19 @@
-Nguồn dữ liệu đầy đủ dự kiến: Kaikki.org machine-readable Vietnamese dictionary,
+Nguồn dữ liệu: Kaikki.org machine-readable Vietnamese dictionary,
 trích xuất từ Wiktionary và phát hành theo CC BY-SA 4.0 / GFDL.
 
 https://kaikki.org/dictionary/Vietnamese/
 https://kaikki.org/dictionary/rawdata.html
+
+Nguồn bổ sung: Kaikki.org machine-readable Tiếng Việt dictionary từ viwiktionary.
+https://kaikki.org/viwiktionary/Tiếng%20Việt/index.html
+https://kaikki.org/viwiktionary/Tiếng%20Việt/kaikki.org-dictionary-TiếngViệt.jsonl
+Dump: 2026-09-01; trích xuất: 2026-10-03; tải: 2026-10-05.
+https://vi.wiktionary.org/
+https://creativecommons.org/licenses/by-sa/4.0/
+https://www.gnu.org/licenses/fdl-1.3.html
+
+Catalog đã được sửa để chỉ giữ cụm hai tiếng có định nghĩa, hợp nhất mục trùng
+và bổ sung số từ nối tiếp dùng cho game. Dữ liệu phái sinh vẫn theo giấy phép nguồn.
 
 File starter-words.json là danh sách bootstrap nhỏ được biên tập thủ công cho MusicQue,
 chỉ dùng để game có thể chạy trước khi import catalog Kaikki đầy đủ.

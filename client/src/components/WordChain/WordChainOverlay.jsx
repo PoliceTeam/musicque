@@ -19,7 +19,6 @@ const WordChainOverlay = ({ open, onClose }) => {
     const interval = window.setInterval(() => setNow(Date.now()), 200)
     const onKey = (event) => event.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
-    window.setTimeout(() => inputRef.current?.focus(), 80)
     return () => {
       window.clearInterval(interval)
       window.removeEventListener('keydown', onKey)
@@ -30,8 +29,13 @@ const WordChainOverlay = ({ open, onClose }) => {
 
   const remaining = getWordChainRemaining(round, now)
   const canSubmit = canSubmitWordChain({ round, userId: user?._id, balance, remaining })
+  const inputDisabled = !isAuthenticated || !canSubmit || submitting
   const isMyTurnBlocked = round?.lastPlayer?.userId?.toString() === user?._id?.toString()
   const recentMoves = useMemo(() => [...(round?.moves || [])].reverse(), [round?.moves])
+
+  useEffect(() => {
+    if (open && !rulesOpen && !inputDisabled) inputRef.current?.focus()
+  }, [open, rulesOpen, inputDisabled])
 
   if (!open) return null
 
@@ -43,7 +47,6 @@ const WordChainOverlay = ({ open, onClose }) => {
     const ok = await submitAnswer(value)
     if (ok) setPhrase('')
     setSubmitting(false)
-    inputRef.current?.focus()
   }
 
   const showLogin = () => {
@@ -106,7 +109,7 @@ const WordChainOverlay = ({ open, onClose }) => {
                       placeholder={`${round?.requiredSyllable || 'tiếng'} ...`}
                       maxLength={80}
                       autoComplete='off'
-                      disabled={!isAuthenticated || !canSubmit || submitting}
+                      disabled={inputDisabled}
                     />
                     <button type='submit' disabled={!phrase.trim() || !canSubmit || submitting}>
                       {submitting ? 'Đang gửi...' : `Nối · ${config.answerCost} PC`}

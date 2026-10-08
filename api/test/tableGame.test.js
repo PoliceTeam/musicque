@@ -326,7 +326,7 @@ test('overlapping socket binds keep only the newest authenticated hand room', as
   const registry = require('../services/tableGame')
   registry.services.fake = h.service
   t.after(() => { delete registry.services.fake })
-  t.mock.method(global, 'setInterval', () => ({}))
+  t.mock.method(global, 'setInterval', () => ({ unref() {} }))
   const auth = require('../services/auth.service')
   const pending = {}
   t.mock.method(auth, 'resolveUserFromToken', (token) => new Promise((resolve) => { pending[token] = resolve }))

@@ -4,6 +4,8 @@ const chatService = require('./services/chat.service')
 const redLight = require('./services/redLight.service')
 const workspace = require('./services/workspace.service')
 const workspaceVoice = require('./services/workspaceVoice.service')
+const werewolf = require('./services/werewolf.service')
+const jungle = require('./services/jungle.service')
 const { saveStrokeToRedis, getBoardData, clearBoardInRedis, appendPointToStroke, undoStrokeInRedis } = require('./redis')
 const { getAllowedOrigins } = require('./utils/cors')
 
@@ -20,6 +22,7 @@ const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
+    require('./sockets/secretShift.socket')(socket)
     console.log('Client connected');
 
     socket.on('chat:join', async (data = {}) => {
@@ -124,6 +127,10 @@ const initSocket = (server) => {
     socket.on('workspace:voice:leave', async (ack) => {
       await workspaceVoice.leave(socket.id)
       if (typeof ack === 'function') ack({ ok: true })
+    })
+
+    socket.on('workspace:voice:sync', () => {
+      workspaceVoice.syncWerewolfPermissions().catch((error) => console.error('[Workspace voice] Không thể đồng bộ quyền Ma Sói:', error.message))
     })
 
     socket.on('workspace:chat', (data = {}) => {
@@ -253,6 +260,34 @@ const initSocket = (server) => {
       }
     })
 
+    // Ma Sói: token tuỳ chọn — khách vẫn xem được, nhưng chỉ nhận bản state công khai
+    socket.on('werewolf:watch', async (data = {}) => {
+      try {
+        const user = data.token ? await resolveUserFromToken(data.token) : null
+        werewolf.watch(socket, user)
+      } catch (error) {
+        console.error('[Ma Sói] Watch lỗi:', error.message)
+      }
+    })
+
+    socket.on('werewolf:unwatch', () => werewolf.unwatch(socket))
+
+    // Cờ thú: ai cũng xem được; token chỉ để server biết người chơi còn kết nối.
+    socket.on('jungle:watch', async (data = {}) => {
+      try {
+        if (!data.gameId) return
+        const user = data.token ? await resolveUserFromToken(data.token) : null
+        await jungle.watchGame(socket, String(data.gameId), user)
+      } catch (error) {
+        socket.emit('jungle_error', { message: error.message })
+      }
+    })
+    socket.on('jungle:unwatch', () => jungle.unwatchGame(socket))
+    socket.on('jungle:lobby:watch', () => {
+      jungle.watchLobby(socket).catch((error) => console.error('[Cờ thú] Sảnh lỗi:', error.message))
+    })
+    socket.on('jungle:lobby:unwatch', () => jungle.unwatchLobby(socket))
+
     socket.on('disconnect', () => {
       tableGameBindSequence++
       for (const service of Object.values(require('./services/tableGame').services)) service.onSocketDisconnect(socket.id)
@@ -260,6 +295,7 @@ const initSocket = (server) => {
       workspace.leave(socket)
       workspaceVoice.leave(socket.id).catch((error) => console.error('[Workspace voice] Lỗi ngắt kết nối:', error.message))
       redLight.onSocketDisconnect(socket.id)
+      werewolf.onSocketGone(socket)
       if (socket.poliboardRoom) {
         // Notify others to remove this cursor
         socket.to(socket.poliboardRoom).emit('cursor:remove', { id: socket.id });

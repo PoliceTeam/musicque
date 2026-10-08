@@ -4,6 +4,7 @@ import { BarChartOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
 import SidebarNav from '../components/Layout/SidebarNav'
 import SessionManager from '../components/Admin/SessionManager'
 import IdiomManager from '../components/Admin/IdiomManager'
+import WerewolfSettings from '../components/Admin/WerewolfSettings'
 import MusicPlayer from '../components/Player/MusicPlayer'
 import PlaylistView from '../components/Playlist/PlaylistView'
 import LiveActivityFeed from '../components/Home/LiveActivityFeed'
@@ -57,6 +58,7 @@ const AdminPage = () => {
         >
           <MusicPlayer />
           <IdiomManager />
+          <WerewolfSettings />
         </div>
       </main>
 

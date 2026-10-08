@@ -15,9 +15,14 @@ const chohan = require('./services/chohan.service')
 const billiards = require('./services/billiards.service')
 const songSkip = require('./services/songSkip.service')
 const xiangqi = require('./services/xiangqi.service')
+const xiangqiPvp = require('./services/xiangqiPvp.service')
 const wordChain = require('./services/wordChain.service')
 const redLight = require('./services/redLight.service')
 const lottery = require('./services/lottery.service')
+const werewolf = require('./services/werewolf.service')
+const jungle = require('./services/jungle.service')
+const sessionScheduler = require('./services/sessionScheduler.service')
+const luckyRain = require('./services/luckyRain.service')
 
 const PORT = process.env.PORT || 5000
 
@@ -64,6 +69,8 @@ mongoose
 
     // Unique index phải sẵn sàng trước khi nhận đăng ký đồng thời lúc launch.
     await ensureSignupGrantIndexes()
+    // Unique claim và phục hồi thưởng phải sẵn sàng trước khi mở HTTP.
+    await luckyRain.init(io)
 
     // Đồng bộ tài khoản admin từ env — không chặn khởi động nếu lỗi
     try {
@@ -93,8 +100,11 @@ mongoose
       console.error('[Cờ tướng] Khôi phục ván dở lỗi:', error.message)
     }
 
+    // Hoàn cược/trả thưởng PvP dở trước khi nhận ván mới.
+    await xiangqiPvp.init(io)
+
     // Khởi động server
-    server.listen(PORT, () => {
+    server.listen(PORT, async () => {
       console.log(`Server running on port ${PORT}`)
 
       require('./services/tableGame').resumeAll(io).catch((error) => {
@@ -103,6 +113,13 @@ mongoose
 
       // Start the midnight scheduler after server is up
       scheduleMidnightClear()
+
+      // Phải dọn phiên quá hạn trước khi các game khôi phục state sau restart.
+      try {
+        await sessionScheduler.init(io)
+      } catch (error) {
+        console.error('[Scheduler] Khởi động lịch kết thúc phiên lỗi:', error.message)
+      }
 
       // Nếu đang có phiên chạy dở (server restart giữa chừng) thì mở lại game Cho-Han
       chohan.resumeIfActiveSession(io).catch((error) => {
@@ -115,6 +132,14 @@ mongoose
 
       redLight.resumeIfActiveSession(io).catch((error) => {
         console.error('[Đèn xanh] Resume lỗi:', error.message)
+      })
+
+      // Ma Sói không gắn với phiên nhạc: sảnh luôn mở, state chỉ nằm trong RAM.
+      werewolf.init(io)
+
+      // Cờ thú PvP: chốt ván treo/trả thưởng dở rồi mới chạy vòng kiểm tra giờ.
+      jungle.init(io).catch((error) => {
+        console.error('[Cờ thú] Khởi động lỗi:', error.message)
       })
 
       // Kèo bi-a còn treo từ lần chạy trước (server tắt giữa ván) phải được chốt,

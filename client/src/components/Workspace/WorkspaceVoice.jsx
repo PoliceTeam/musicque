@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Room, RoomEvent } from 'livekit-client'
 import { speakerSocketIds } from './voiceIdentity'
 
-const names = { 'las-vegas': 'Las Vegas', dubai: 'Dubai', koitomo: 'Koitomo', sankaku: 'Sankaku' }
+const names = { 'las-vegas': 'Las Vegas', dubai: 'Dubai', koitomo: 'Koitomo', sankaku: 'Sankaku', werewolf: 'Làng Ma Sói' }
 
 const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
   const roomRef = useRef(null)
@@ -14,6 +14,7 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
   const [speakers, setSpeakers] = useState(0)
   const [endsAt, setEndsAt] = useState(null)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
+  const [canSpeak, setCanSpeak] = useState(true)
 
   useEffect(() => {
     if (!endsAt) return undefined
@@ -37,6 +38,7 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
     setSpeakers(0)
     setEndsAt(null)
     setRemainingSeconds(0)
+    setCanSpeak(true)
     onActiveSpeakersChange([])
   }, [onActiveSpeakersChange])
 
@@ -49,12 +51,22 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
 
   useEffect(() => {
     const ended = ({ reason }) => { disconnect(); setError(reason || 'Đã rời phòng voice') }
+    const permission = ({ canSpeak: allowed, roomId: changedRoom }) => {
+      if (changedRoom !== 'werewolf') return
+      setCanSpeak(Boolean(allowed))
+      if (!allowed && roomRef.current) {
+        roomRef.current.localParticipant.setMicrophoneEnabled(false).catch(() => {})
+        setMicOn(false)
+      }
+    }
     const lost = () => disconnect()
     socket?.on('workspace:voice:ended', ended)
     socket?.on('disconnect', lost)
+    socket?.on('workspace:voice:permission', permission)
     return () => {
       socket?.off('workspace:voice:ended', ended)
       socket?.off('disconnect', lost)
+      socket?.off('workspace:voice:permission', permission)
       socket?.emit('workspace:voice:leave')
       disconnect()
     }
@@ -98,7 +110,9 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
         if (roomRef.current !== room) { room.disconnect(); return }
         setRemainingSeconds(Math.max(0, Math.ceil((localEndsAt - Date.now()) / 1000)))
         setConnectedRoom(response.roomId)
+        setCanSpeak(response.canSpeak !== false)
         setEndsAt(localEndsAt)
+        if (response.roomId === 'werewolf') socket?.emit('workspace:voice:sync')
       } catch {
         disconnect()
         socket?.emit('workspace:voice:leave')
@@ -111,7 +125,7 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
 
   const toggleMic = async () => {
     const room = roomRef.current
-    if (!room) return
+    if (!room || !canSpeak) return
     try {
       await room.localParticipant.setMicrophoneEnabled(!micOn)
       setMicOn(!micOn)
@@ -128,10 +142,11 @@ const WorkspaceVoice = ({ socket, roomId, onActiveSpeakersChange }) => {
     <section className='workspace-voice' aria-live='polite'>
       <strong>🎙️ {names[roomId] || names[connectedRoom] || 'Voice room'}</strong>
       <small>{connectedRoom ? `${speakers} người đang nói · ${micOn ? 'Mic đang bật' : 'Mic đang tắt'}` : 'Chỉ người trong phòng mới nghe được nhau'}</small>
+      {connectedRoom === 'werewolf' && <small>{canSpeak ? '☀️ Bạn còn sống và đang được phát biểu' : '🌙 Chỉ người còn sống được nói vào ban ngày'}</small>}
       {connectedRoom && <small>Phiên còn {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')} · tự ngắt sau 10 phút</small>}
       <div>
         {!connectedRoom ? <button type='button' onClick={join} disabled={busy}>{busy ? 'Đang kết nối…' : 'Tham gia voice'}</button> : <>
-          <button type='button' onClick={toggleMic}>{micOn ? 'Tắt mic' : 'Bật mic'}</button>
+          <button type='button' onClick={toggleMic} disabled={!canSpeak}>{micOn ? 'Tắt mic' : canSpeak ? 'Bật mic' : 'Mic đang bị khóa'}</button>
           <button type='button' onClick={leave}>Rời voice</button>
         </>}
       </div>

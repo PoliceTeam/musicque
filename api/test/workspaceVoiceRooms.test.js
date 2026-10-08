@@ -14,9 +14,10 @@ const socketFor = (id) => ({
   nsp: { to() { return { emit() {} } } },
 })
 
-test('bốn phòng voice có biên và sức chứa riêng', () => {
-  assert.deepEqual(ROOMS.map((room) => room.capacity), [8, 8, 4, 4])
+test('các phòng voice có biên và Làng Ma Sói đủ chỗ cho một ván đầy', () => {
+  assert.deepEqual(ROOMS.map((room) => room.capacity), [8, 8, 4, 4, 16])
   assert.equal(roomAt(300, 1110)?.id, 'las-vegas')
+  assert.equal(roomAt(800, 1510)?.id, 'werewolf')
   assert.equal(roomAt(800, 680), null)
 })
 
@@ -43,6 +44,26 @@ test('không thể nhảy tọa độ vào phòng và người thứ chín bị 
     assert.equal(workspace.roomState()[0].occupancy, 8)
   } finally {
     sockets.forEach((socket) => workspace.leave(socket))
+  }
+})
+
+test('Làng Ma Sói vào được qua cửa trên và cửa dưới, nhưng không xuyên tường bên', () => {
+  const socket = socketFor('werewolf-door-test')
+  try {
+    workspace.join({ socket, user: { _id: { toString: () => 'werewolf-door-user' }, username: 'dooruser' } })
+    const member = workspace.getMember(socket.id)
+    const moveFrom = (x, y, toX, toY) => {
+      Object.assign(member, { x, y, roomId: null, lastMoveAt: 0, lastAcceptedAt: Date.now() - 100 })
+      return workspace.move({ socket, position: { x: toX, y: toY } })
+    }
+
+    assert.equal(moveFrom(800, 1350, 800, 1362)?.roomId, 'werewolf')
+    workspace.getMember(socket.id).roomId = null
+    assert.equal(moveFrom(800, 1670, 800, 1658)?.roomId, 'werewolf')
+    workspace.getMember(socket.id).roomId = null
+    assert.equal(moveFrom(548, 1510, 562, 1510), null)
+  } finally {
+    workspace.leave(socket)
   }
 })
 

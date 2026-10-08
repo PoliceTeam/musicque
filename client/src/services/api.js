@@ -2,6 +2,11 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+export const getLuckyRainState = () => api.get('/api/lucky-rain/state');
+export const claimLuckyRain = (roundId) => api.post('/api/lucky-rain/claim', { roundId });
+
+export const fetchSecretShiftRooms = () => api.get('/api/secret-shift/rooms');
+
 // Tạo instance axios
 const api = axios.create({
   baseURL: API_URL,
@@ -79,6 +84,12 @@ export const fetchMe = () => api.get("/api/auth/me");
 
 export const updateMyAvatar = (avatarId) =>
   api.patch("/api/auth/me/avatar", { avatarId });
+
+export const updateMyProfile = (profile) =>
+  api.patch("/api/auth/me/profile", profile);
+
+export const changeMyPassword = (passwords) =>
+  api.patch("/api/auth/me/password", passwords);
 
 // Polite Coins API
 export const getCoinBalance = () => api.get("/api/coins/me");
@@ -220,6 +231,22 @@ export const getXiangqiHint = (gameId) => api.post(`/api/xiangqi/games/${gameId}
 export const getXiangqiAnswer = (gameId) => api.post(`/api/xiangqi/games/${gameId}/answer`);
 export const resignXiangqiGame = (gameId) => api.post(`/api/xiangqi/games/${gameId}/resign`);
 
+// Ma Sói — server giữ toàn bộ vai bí mật, client chỉ gửi lựa chọn
+export const getWerewolfConfig = () => api.get("/api/werewolf/config");
+export const getWerewolfState = () => api.get("/api/werewolf/state");
+export const getWerewolfSummary = () => api.get("/api/werewolf/summary");
+export const getWerewolfHistory = (limit = 5) => api.get("/api/werewolf/history", { params: { limit } });
+export const joinWerewolf = () => api.post("/api/werewolf/join");
+export const leaveWerewolf = () => api.post("/api/werewolf/leave");
+export const startWerewolf = () => api.post("/api/werewolf/start");
+export const fillWerewolfBots = () => api.post("/api/werewolf/bots");
+export const resetWerewolf = () => api.post("/api/werewolf/reset");
+export const sendWerewolfAction = (payload) => api.post("/api/werewolf/action", payload);
+export const setWerewolfReady = (ready) => api.post("/api/werewolf/ready", { ready });
+export const sendWerewolfChat = (content) => api.post("/api/werewolf/chat", { content });
+export const getWerewolfSettings = () => api.get("/api/werewolf/settings");
+export const updateWerewolfSettings = (payload) => api.put("/api/werewolf/settings", payload);
+
 // TTS API (VieNeu-TTS)
 export const generateTTS = (songId, config = {}) =>
   api.post(`/api/tts/generate/${songId}`, {}, config);
@@ -237,3 +264,29 @@ export const tableGameApi = {
   table: (game, id) => api.get(`/api/${game}/tables/${id}`),
   action: (game, id, action, payload) => api.post(`/api/${game}/tables/${id}/${action}`, payload),
 };
+
+// Cờ thú (Jungle) — PvP có cược và tập với máy
+export const getJungleConfig = () => api.get("/api/jungle/config");
+export const getJungleLobby = () => api.get("/api/jungle/lobby");
+export const getJungleActive = () => api.get("/api/jungle/games/active");
+export const getJunglePracticeActive = () => api.get("/api/jungle/practice/active");
+export const getJungleGame = (id) => api.get(`/api/jungle/games/${id}`);
+export const createJungleGame = () => api.post("/api/jungle/games");
+export const createJunglePractice = (payload) => api.post("/api/jungle/practice", payload);
+export const joinJungleGame = (id) => api.post(`/api/jungle/games/${id}/join`);
+export const cancelJungleGame = (id) => api.post(`/api/jungle/games/${id}/cancel`);
+export const playJungleMove = (id, payload) => api.post(`/api/jungle/games/${id}/moves`, payload);
+export const resignJungleGame = (id) => api.post(`/api/jungle/games/${id}/resign`);
+export const offerJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/offer`);
+export const acceptJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/accept`);
+export const declineJungleDraw = (id) => api.post(`/api/jungle/games/${id}/draw/decline`);
+
+// Cờ tướng PvP — phòng hai người, cược mặc định 30 PC mỗi bên
+export const getActiveXiangqiPvp = () => api.get('/api/xiangqi/pvp/active');
+export const getXiangqiPvp = (id) => api.get(`/api/xiangqi/pvp/${id}`);
+export const createXiangqiPvp = () => api.post('/api/xiangqi/pvp');
+export const joinXiangqiPvp = (code) => api.post('/api/xiangqi/pvp/join', { code });
+export const moveXiangqiPvp = (id, from, to, expectedPlyVersion) =>
+  api.post(`/api/xiangqi/pvp/${id}/moves`, { from, to, expectedPlyVersion });
+export const actionXiangqiPvp = (id, action, expectedPlyVersion) =>
+  api.post(`/api/xiangqi/pvp/${id}/actions`, { action, expectedPlyVersion });

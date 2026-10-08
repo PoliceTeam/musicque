@@ -9,6 +9,8 @@ import { WordChainProvider } from './contexts/WordChainContext'
 import { RedLightProvider } from './contexts/RedLightContext'
 import { LotteryProvider } from './contexts/LotteryContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { LuckyRainProvider } from './contexts/LuckyRainContext'
+import LuckyRain from './components/LuckyRain/LuckyRain'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
 import ThirteenRedirect from './components/Thirteen/ThirteenRedirect'
@@ -21,7 +23,11 @@ const GamesPage = lazy(() => import('./pages/GamesPage'))
 const ThirteenPage = lazy(() => import('./pages/ThirteenPage'))
 const XiangqiPage = lazy(() => import('./pages/XiangqiPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
+const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
+const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
+const JunglePage = lazy(() => import('./pages/JunglePage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
+const LuckyRainPreview = import.meta.env.DEV ? lazy(() => import('./components/LuckyRain/LuckyRainPreview')) : null
 
 const TORNADO_EVENT_START = Date.parse('2026-06-09T00:00:00Z')
 const TORNADO_EVENT_END = Date.parse('2026-06-23T23:59:59Z')
@@ -44,6 +50,7 @@ function AppContent() {
     <ConfigProvider locale={viVN} theme={antdTheme}>
       <AuthProvider>
         <PlaylistProvider>
+          <LuckyRainProvider>
           <ChohanProvider>
             <WordChainProvider>
               <RedLightProvider>
@@ -51,6 +58,7 @@ function AppContent() {
                 <Router>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
+                      {import.meta.env.DEV && <Route path='/dev/lucky-rain' element={<LuckyRainPreview />} />}
                       <Route path='/' element={<HomePage />} />
                       <Route path='/games' element={<GamesPage />} />
                       <Route path='/games/thirteen' element={<ThirteenPage />} />
@@ -73,6 +81,10 @@ function AppContent() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route path='/werewolf' element={<WerewolfPage />} />
+                      <Route path='/secret-shift' element={<SecretShiftPage />} />
+                      <Route path='/jungle' element={<JunglePage />} />
+                      <Route path='/jungle/:gameId' element={<JunglePage />} />
                       <Route
                         path='/admin'
                         element={
@@ -85,11 +97,13 @@ function AppContent() {
                   </Suspense>
                   {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
                   <AuthModal />
+                  <LuckyRain />
                 </Router>
                 </LotteryProvider>
               </RedLightProvider>
             </WordChainProvider>
           </ChohanProvider>
+          </LuckyRainProvider>
         </PlaylistProvider>
       </AuthProvider>
     </ConfigProvider>

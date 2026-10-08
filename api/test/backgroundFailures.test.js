@@ -73,6 +73,7 @@ test('Word Chain handles its Mongo timer failure locally rather than emitting an
   t.mock.method(console, 'error', (...args) => logs.push(args))
   t.mock.method(WordEntry, 'init', async () => {})
   t.mock.method(WordEntry, 'countDocuments', async () => 1)
+  t.mock.method(WordEntry, 'bulkWrite', async () => ({}))
   t.mock.method(WordEntry, 'aggregate', async () => [{ phrase: 'thể thao', normalizedPhrase: 'thể thao', lastSyllable: 'thao' }])
   t.mock.method(Round, 'countDocuments', async () => 0)
   t.mock.method(Round, 'create', async data => ({ ...data, _id: 'round', moves: [] }))

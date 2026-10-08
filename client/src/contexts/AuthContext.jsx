@@ -5,6 +5,8 @@ import {
   login as loginApi,
   register as registerApi,
   updateMyAvatar,
+  updateMyProfile,
+  changeMyPassword,
   getStoredToken,
   setStoredToken,
   getCoinBalance,
@@ -148,6 +150,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
+  const updateProfile = useCallback(async (profile) => {
+    try {
+      const response = await updateMyProfile(profile)
+      setUser(response.data.user)
+      setBalanceState(response.data.user.polites)
+      message.success(response.data.message || 'Đã đổi tên')
+      return { ok: true, user: response.data.user }
+    } catch (error) {
+      return { ok: false, error: extractError(error, 'Không đổi được tên') }
+    }
+  }, [])
+
+  const changePassword = useCallback(async (passwords) => {
+    try {
+      const response = await changeMyPassword(passwords)
+      message.success(response.data.message || 'Đã đổi mật khẩu thành công')
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: extractError(error, 'Không đổi được mật khẩu') }
+    }
+  }, [])
+
   const purchaseCore = useCallback(async () => {
     try {
       const requestKey = globalThis.crypto?.randomUUID?.() || `core:${Date.now()}`
@@ -221,6 +245,8 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateAvatar,
+      updateProfile,
+      changePassword,
       purchaseCore,
       updateCorePreferences,
       requireAuth,
@@ -242,6 +268,8 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateAvatar,
+      updateProfile,
+      changePassword,
       purchaseCore,
       updateCorePreferences,
       requireAuth,

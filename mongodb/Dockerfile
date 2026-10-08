@@ -1,4 +1,6 @@
-FROM mongo:latest
+# Ghim bản production; build arg cho phép chạy bản trung gian khi nâng dữ liệu.
+ARG MONGO_IMAGE=mongo:9.0.2
+FROM ${MONGO_IMAGE}
 
 # Tạo thư mục cho dữ liệu và scripts
 RUN mkdir -p /docker-entrypoint-initdb.d /data/db
@@ -15,4 +17,4 @@ EXPOSE 27017
 # Thiết lập volume cho dữ liệu
 VOLUME ["/data/db"]
 
-# Sử dụng CMD mặc định từ image mongo 
+# Sử dụng CMD mặc định từ image mongo

@@ -6,6 +6,12 @@ import {
 } from './userVote';
 
 describe('userVote utils', () => {
+  it('giữ vote theo ID sau đổi tên và không nhận vote của người lấy tên cũ', () => {
+    const entry = { userId: { _id: 'u1', username: 'old_name' } };
+    expect(voteEntryBelongsToUser(entry, 'new_name', 'u1')).toBe(true);
+    expect(voteEntryBelongsToUser(entry, 'old_name', 'u2')).toBe(false);
+  });
+
   it('matches populated voter username', () => {
     const song = {
       _id: 'song-1',

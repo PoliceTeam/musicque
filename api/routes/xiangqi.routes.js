@@ -3,6 +3,14 @@ const controller = require('../controllers/xiangqi.controller')
 const { authenticate } = require('../middlewares/auth.middleware')
 
 const router = express.Router()
+const pvp = require('../controllers/xiangqiPvp.controller')
+
+router.get('/pvp/active', authenticate, pvp.active)
+router.post('/pvp', authenticate, pvp.create)
+router.post('/pvp/join', authenticate, pvp.join)
+router.get('/pvp/:id', authenticate, pvp.get)
+router.post('/pvp/:id/moves', authenticate, pvp.move)
+router.post('/pvp/:id/actions', authenticate, pvp.action)
 
 router.get('/config', controller.getConfig)
 router.get('/games/active', authenticate, controller.getActive)

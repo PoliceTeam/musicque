@@ -16,9 +16,10 @@ import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
 import CardGamesPromo from '../components/Home/CardGamesPromo';
-import XiangqiPromo from '../components/Xiangqi/XiangqiPromo';
-import WordChainPromo from '../components/WordChain/WordChainPromo';
+import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
+import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
+import JungleLauncher from '../components/Jungle/JungleLauncher';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -57,8 +58,7 @@ const HomePage = () => {
   const [showWealthLeaderboard, setShowWealthLeaderboard] = useState(false);
   const [newsTab, setNewsTab] = useState('1');
   const [showNewsReader, setShowNewsReader] = useState(false);
-  const [xiangqiPromoDismissed, setXiangqiPromoDismissed] = useState(false);
-  const [wordChainPromoDismissed, setWordChainPromoDismissed] = useState(false);
+  const [wordChainOpen, setWordChainOpen] = useState(false);
   const [redLightOpen, setRedLightOpen] = useState(false);
   const [redLightPreview, setRedLightPreview] = useState(false);
   const [coreLaunchOpen, setCoreLaunchOpen] = useState(false);
@@ -105,10 +105,6 @@ const HomePage = () => {
     setRedLightOpen(false)
     setRedLightPreview(false)
   }
-
-  const dismissXiangqiPromo = () => {
-    setXiangqiPromoDismissed(true);
-  };
 
   const handlePlayNesGame = (gameFile, gameName) => {
     setCurrentGame({ file: gameFile, name: gameName });
@@ -306,25 +302,23 @@ const HomePage = () => {
                   🍄
                 </button>
               </Tooltip>
-              {xiangqiPromoDismissed && (
-                <Tooltip title="Chiến cờ chiếm PCs">
-                  <button
-                    type="button"
-                    className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
-                    aria-label="Chơi cờ tướng"
-                    onClick={() => navigate('/xiangqi')}
-                  >
-                    帥
-                  </button>
-                </Tooltip>
-              )}
-              {currentSession && wordChainPromoDismissed && (
+              <Tooltip title="Chiến cờ chiếm PCs">
+                <button
+                  type="button"
+                  className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
+                  aria-label="Chơi cờ tướng"
+                  onClick={() => navigate('/xiangqi')}
+                >
+                  帥
+                </button>
+              </Tooltip>
+              {currentSession && (
                 <Tooltip title="Nối từ giành PCs">
                   <button
                     type="button"
                     className="sp-quicktoys__btn sp-quicktoys__btn--wordchain"
                     aria-label="Mở game nối từ"
-                    onClick={() => setWordChainPromoDismissed(false)}
+                    onClick={() => setWordChainOpen(true)}
                   >
                     🔗
                   </button>
@@ -351,6 +345,8 @@ const HomePage = () => {
                 </button>
               </Tooltip>
             </div>
+            <WerewolfLauncher />
+            <JungleLauncher />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />
@@ -388,6 +384,16 @@ const HomePage = () => {
           </header>
 
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <button
+                type="button"
+                className="sp-btn sp-btn--primary"
+                onClick={() => navigate('/secret-shift')}
+                aria-label="Chơi Ca trực bí mật"
+              >
+                <span aria-hidden="true">🕵️</span> Chơi Ca trực bí mật
+              </button>
+            </div>
             <NationalDayBanner />
             <TetCountdown />
             <DailyIdiom />
@@ -462,16 +468,7 @@ const HomePage = () => {
           </section>
         </aside>
 
-        {!xiangqiPromoDismissed && (
-          <XiangqiPromo onDismiss={dismissXiangqiPromo} bottomInset={hasPlayer ? 96 : 12} />
-        )}
-
-        {currentSession && !wordChainPromoDismissed && (
-          <WordChainPromo
-            onDismiss={() => setWordChainPromoDismissed(true)}
-            bottomInset={hasPlayer ? 96 : 12}
-          />
-        )}
+        <WordChainOverlay open={wordChainOpen} onClose={() => setWordChainOpen(false)} />
 
         <RedLightOverlay
           open={redLightOpen}
