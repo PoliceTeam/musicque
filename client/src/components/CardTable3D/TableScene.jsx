@@ -80,7 +80,10 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   const [contextLost, setContextLost] = useState(false)
   const onContextLost = React.useCallback(() => setContextLost(true), [])
   useEffect(() => clearTableAssets, [])
-  const [dpr, setDpr] = useState([1, 1.25])
+  // Render at the screen's real density (Retina = 2) so card faces stay sharp; rendering is on demand,
+  // so the cost is only paid while something moves. A slow GPU steps down, but never below 1.
+  const maxDpr = Math.min(window.devicePixelRatio || 1, 2)
+  const [dpr, setDpr] = useState([1, maxDpr])
   const showPerf = import.meta.env.DEV && new URLSearchParams(window.location.search).get('perf') === '1'
   const supported = useMemo(canRender3D, [])
   if (!supported) return fallback
@@ -88,9 +91,9 @@ export default function TableScene({ fallback, firstPerson = false, ...props }) 
   return <ErrorBoundary label='CardTable3D' fallback={fallback}>
     <Suspense fallback={<div className='card-table-surface' role='status'>Đang tải bàn bài...</div>}>
       <div className='card-table-surface'>
-        <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: Math.min(window.devicePixelRatio || 1, 1.25) < 1.25, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl, scene, invalidate }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1); if (import.meta.env.DEV) window.__thirteenSceneState = { camera, gl, scene, invalidate, defaultPitch: camera.rotation.x } }}>
+        <Canvas frameloop='demand' dpr={dpr} gl={{ antialias: maxDpr < 2, powerPreference: 'high-performance' }} camera={{ position: firstPerson ? [0, 1.15, 1.16] : [0, 1.6, 1.07], fov: firstPerson ? 75 : 40, near: 0.01, far: 10 }} onCreated={({ camera, gl, scene, invalidate }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0.785, firstPerson ? -0.03 : 0.1); if (import.meta.env.DEV) window.__thirteenSceneState = { camera, gl, scene, invalidate, defaultPitch: camera.rotation.x } }}>
           <RendererLifetime onContextLost={onContextLost} />
-          <PerformanceMonitor onDecline={() => setDpr(value => Array.isArray(value) ? 1 : 0.85)} onFallback={() => setDpr(0.85)} />
+          <PerformanceMonitor onDecline={() => setDpr(Math.max(1, Math.min(maxDpr, 1.5)))} onFallback={() => setDpr(1)} />
           {showPerf && firstPerson && <Stats className='card-table-stats' />}
           <AnimationActivity><TableSurface {...props} firstPerson={firstPerson} /></AnimationActivity>
         </Canvas>
