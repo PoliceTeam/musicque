@@ -1,5 +1,5 @@
 import { Quaternion, Vector3 } from 'three'
-import { cardQuaternion } from './anim'
+import { cardQuaternion, easeInOutCubic } from './anim'
 const position = new Vector3(), quaternion = new Quaternion(), anchorQuaternion = new Quaternion()
 export const createPose = () => ({ position: [0, 0, 0], quaternion: [0, 0, 0, 1], scale: 1 })
 export const worldPose = (pose, spaces, out = createPose()) => {
@@ -47,4 +47,15 @@ export const poseInSpace = (pose, spaces, space, out = createPose()) => {
   position.toArray(out.position); quaternion.toArray(out.quaternion)
   out.scale = pose.scale ?? 1; out.space = space
   return out
+}
+
+const deltaQuaternion = new Quaternion(), identity = new Quaternion(), blend = new Quaternion()
+export const blendAnchorDelta = (pose, launch, current, progress) => {
+  const weight = easeInOutCubic(Math.max(0, Math.min(1, (progress - 0.75) / 0.25)))
+  for (let i = 0; i < 3; i++) pose.position[i] += (current.position[i] - launch.position[i]) * weight
+  deltaQuaternion.fromArray(current.quaternion).multiply(quaternion.fromArray(launch.quaternion).invert())
+  if (deltaQuaternion.w < 0) deltaQuaternion.set(-deltaQuaternion.x, -deltaQuaternion.y, -deltaQuaternion.z, -deltaQuaternion.w)
+  blend.slerpQuaternions(identity, deltaQuaternion, weight)
+  quaternion.fromArray(pose.quaternion).premultiply(blend).toArray(pose.quaternion)
+  return pose
 }

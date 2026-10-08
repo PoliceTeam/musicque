@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { dealSchedule, dealMotion, groupFlight, sweepMotion } from './cardMotion'
 import { MOTION, animationTimeScale } from './anim'
 
-const sourcePose = card => Object.fromEntries(['id', 'zone', 'seat', 'position', 'faceUp', 'rotation', 'tilt', 'yaw', 'scale', 'space', 'order'].filter(key => card[key] !== undefined).map(key => [key, card[key]]))
+const sourcePose = card => Object.fromEntries(['id', 'cardId', 'zone', 'seat', 'position', 'faceUp', 'rotation', 'tilt', 'yaw', 'scale', 'space', 'order'].filter(key => card[key] !== undefined).map(key => [key, card[key]]))
 
 // Opaque opponent slots contain no card identity until it appears in public state.
 export const diffCardTransitions = (previous, next, isBomb) => {
@@ -28,13 +28,13 @@ export const diffCardTransitions = (previous, next, isBomb) => {
 
   })
   // A removed opponent slot becomes the revealed trick card, never a duplicate back.
-  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: sourcePose(card), duration: MOTION.play, delay: 0, height: 0 }))
+  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, motionKind: 'move', flightGroup: undefined, zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: sourcePose(card), duration: MOTION.play, delay: 0, height: 0 }))
   const playing = cards.filter(card => card.motionKind === 'play')
   if (playing.length) {
     const group = groupFlight(playing)
     playing.forEach(card => { card.flightGroup = group })
   }
-  const swept = removed.filter(card => !consumed.has(card.id) && !under.some(combo => combo.id === card.id) && card.zone !== 'hand')
+  const swept = removed.filter(card => !consumed.has(card.id) && !under.some(combo => combo.id === card.id) && card.zone !== 'hand' && card.zone !== 'discard')
   const center = swept.length ? [0, 1, 2].map(axis => swept.reduce((sum, card) => sum + card.position[axis], 0) / swept.length) : [0, 0, 0]
   const exiting = swept.map((card, i) => sweepMotion(sourcePose(card), i, center, next.discardPosition, next.surfaceY ?? next.deckPosition[1]))
   return { ...next, cards: [...cards, ...under, ...exiting], winnerSeat: next.winnerSeat ?? previous?.winnerSeat, deal, dealDuration: schedule?.duration || 0, dealTiming: deal ? { startedAt: null } : null }

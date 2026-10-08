@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import WebSocket from 'ws'
 import { createRequire } from 'node:module'
+import { captureThirteenMotion } from './motion-thirteen.mjs'
 const require = createRequire(import.meta.url)
 const { chooseMove } = require('../../api/services/thirteen/bot.js')
 const { classify } = require('../../api/services/thirteen/rules.js')
@@ -116,7 +117,7 @@ try {
   })
   await new Promise(resolve => socket.once('open', resolve))
   await call('Page.enable'); await call('Runtime.enable'); await call('Network.enable')
-  await call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false })
+  await call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: process.env.PERF_MOTION_DIR ? 1 : 2, mobile: false })
   await call('Page.addScriptToEvaluateOnNewDocument', { source: instrument + `;localStorage.setItem('theme', ${JSON.stringify(process.env.PERF_THEME || 'light')});localStorage.setItem('musicque_token', ${JSON.stringify(token)});` })
   await call('Page.navigate', { url: pageUrl })
   await until('document.querySelector(".thirteen-lobby")')
@@ -135,6 +136,12 @@ try {
   await until('document.querySelector(".th-game canvas")')
   await pause(3500)
   await measure('waiting')
+  if (process.env.PERF_MOTION_DIR) {
+    const motion = await captureThirteenMotion({ evaluate, call, pause, userId, directory: process.env.PERF_MOTION_DIR })
+    assert.equal(errors.length, 0, 'Browser runtime errors during motion capture')
+    console.log(JSON.stringify({ motion, errors }, null, 2))
+    return
+  }
   const cycles = []
   const heapObjects = async () => {
     await call('HeapProfiler.takeHeapSnapshot')
@@ -191,7 +198,8 @@ try {
   await api(`/thirteen/tables/${tableId}/ready`, { requestKey: randomUUID() })
   let table
   do { await pause(150); table = await api(`/thirteen/tables/${tableId}`) } while (table.status !== 'playing')
-  await pause(1800)
+  // The table-level deal and synchronized pickup take about 4.1 seconds.
+  await pause(4500)
   // Hold the human turn for stable idle and animation samples; bots retain their real timer.
   const idle = []
   const moves = []

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Group, PerspectiveCamera, Vector3 } from 'three'
-import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose } from './cardSpaces'
+import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose, poseInSpace, blendAnchorDelta } from './cardSpaces'
 describe('camera and character card spaces', () => {
   it('detaches a held card without changing its world pose', () => {
     const camera = new PerspectiveCamera(); camera.position.set(0, 1.15, 1.16); camera.lookAt(0, 0.785, 0)
@@ -52,4 +52,28 @@ it('lifts an upright opaque fan toward its visible top instead of downward', () 
   const pose=liftWorldPose(worldPose(source),0.02,source.faceUp)
   expect(pose.position[1]).toBeCloseTo(0.92)
   expect(pose.position[2]).toBeCloseTo(0)
+})
+
+
+it('tweens in hand-local space and blends cross-space anchor motion only in the last quarter', () => {
+  const anchor = new Group(), spaces = { current: { camera: anchor } }
+  anchor.position.set(1, 2, 3); anchor.rotation.y = 0.4
+  const target = { position: [0.1, -0.2, -0.4], faceUp: true, space: 'camera' }
+  const launch = worldPose(target, spaces), local = poseInSpace(launch, spaces, 'camera')
+  local.position.forEach((value, i) => expect(value).toBeCloseTo(target.position[i]))
+  anchor.position.x += 0.5; anchor.rotation.y += 0.3
+  const moved = worldPose(target, spaces)
+  worldPose(local, spaces).position.forEach((value, i) => expect(value).toBeCloseTo(moved.position[i]))
+  const sample = createPose()
+  sample.position.splice(0, 3, ...launch.position); sample.quaternion.splice(0, 4, ...launch.quaternion)
+  const position = sample.position, quaternion = sample.quaternion
+  for (const progress of [0, 0.5, 0.75]) {
+    blendAnchorDelta(sample, launch, moved, progress)
+    sample.position.forEach((value, i) => expect(value).toBeCloseTo(launch.position[i]))
+    sample.quaternion.forEach((value, i) => expect(value).toBeCloseTo(launch.quaternion[i]))
+  }
+  blendAnchorDelta(sample, launch, moved, 1)
+  sample.position.forEach((value, i) => expect(value).toBeCloseTo(moved.position[i]))
+  sample.quaternion.forEach((value, i) => expect(value).toBeCloseTo(moved.quaternion[i]))
+  expect(sample.position).toBe(position); expect(sample.quaternion).toBe(quaternion)
 })

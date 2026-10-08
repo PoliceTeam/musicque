@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { setCardFaceVisibility } from './assets'
 import { useAnimationActivity } from './activity'
 import { sameCardTarget, tween, motionTiming, easeInOutCubic } from './anim'
-import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose, poseInSpace } from './cardSpaces'
+import { applyWorldPose, createPose, readWorldPose, worldPose, liftWorldPose, poseInSpace, blendAnchorDelta } from './cardSpaces'
 import { playMetrics } from './cardMotion'
 export default function Card3D({ deck, cardId, target: explicitTarget, position, rotation = 0, faceDown = false, scale = 1, tilt = 0, from, delay = 0, duration = 480, height = 0, reducedMotion = false, selected = false, onClick, dim = false, spaces, poseStore, poseId }) {
   const { glowGeometry, glowMaterial, dimGeometry, dimMaterial } = deck.overlays
@@ -46,6 +46,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
   }, [target, from, delay, duration, height, reducedMotion, spaces, poseStore, poseId, clone, scratch, activity, played])
   useFrame((_, delta) => {
     const animation = motion.current
+    if (import.meta.env.DEV) ref.current.userData.motion = animation
     const lift = selected ? 0.03 : hovered ? 0.01 : 0
     const lifting = inner.current && Math.abs(inner.current.position.y - lift) > 1e-5
     if ((!animation || animation.done) && !lifting) { activity.stop(); return }
@@ -79,7 +80,7 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
         liftWorldPose(released, 0.02, animation.from.faceUp); applyWorldPose(ref.current, released)
       }
       const initial = readWorldPose(ref.current), previousSpace = index ? animation.stages[index - 1].target.space : animation.sourceSpace
-      const local = stage.kind === 'fan' && previousSpace === stage.target.space
+      const local = previousSpace === (stage.target.space || 'world')
       const destination = local ? worldPose(stage.target, null) : worldPose(stage.target, spaces)
       const source = local ? poseInSpace(initial, spaces, stage.target.space) : initial
       let group
@@ -99,13 +100,9 @@ export default function Card3D({ deck, cardId, target: explicitTarget, position,
     const elapsed = animation.elapsed - stage.start
     let pose = animation.sample(elapsed, scratch.sample)
     if (animation.local) { pose.space = stage.target.space; pose = worldPose(pose, spaces, scratch.world) }
-    else {
+    else if (elapsed >= stage.duration * 0.75) {
       const destination = worldPose(stage.target, spaces, scratch.destination)
-      if (pose.done) pose = destination
-      else {
-        const progress = Math.max(0, Math.min(1, elapsed / stage.duration))
-        for (let i = 0; i < 3; i++) pose.position[i] += (destination.position[i] - animation.to.position[i]) * progress
-      }
+      blendAnchorDelta(pose, animation.to, destination, stage.duration > 0 ? elapsed / stage.duration : 1)
     }
     applyWorldPose(ref.current, pose)
     if (index === animation.stages.length - 1 && elapsed >= stage.duration) {

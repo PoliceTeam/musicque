@@ -1,10 +1,10 @@
 # Tiến Lên Miền Nam — Implementation Plan
 
-> ## ▶ Progress status — last updated 2026-10-08 (Task 13 performance review completed)
+> ## ▶ Progress status — last updated 2026-10-08 (Tasks 13 performance review and 14 card motion completed)
 >
-> **Branch:** `feat/tien-len-mien-nam`; latest 3D fix `342e872`. Nothing has been pushed.
-> `feat/thirteen-rooms` (Codex B, worktree `../musicque-rooms`) is **merged** (`221fe8a`).
-> Tests: API 80/80, client 220/220 (47 files), scoped 3D lint clean, build OK.
+> **Branch:** `feat/tien-len-mien-nam`; Tasks 13/14 reviewed and locally committed. Nothing has been pushed.
+> `feat/thirteen-rooms` (Codex B, worktree `../musicque-rooms`) is **merged** (latest merge `72ade03`).
+> Tests: API 88/88, client 250/250 (48 files), scoped 3D lint clean, build OK.
 > The live local check passed: create room → join → both ready → 3 s countdown → match starts (pot 20, 13 cards), with no JS errors.
 >
 > | Task | Status |
@@ -24,6 +24,7 @@
 > | 9.2 opponent fan attached to the hand bone + play rhythm | ✅ done; all three grips and 300 ms mid-reaches checked in both themes; opaque-card lift direction corrected |
 > | 9.3 broadcast only to the watch room / private tables only to seated users | ✅ done |
 > | 13 final perf/robustness review (user asked: "after Codex finishes, review again and optimize further") | ✅ robustness and perf/trace/leak review done; see [performance report](../reports/2026-10-08-thirteen-performance.md). KTX2 asset conversion remains pending (`toktx` approval) |
+> | 14 realistic card motion | ✅ done: table-level deal and synchronized pickup, grouped low plays, single-axis flips, flat sweep, stable spaces; 148 headless frames, 0 idle draws, full bot-game trace passed. See [motion report](../reports/2026-10-08-thirteen-motion.md) |
 >
 > **Open items for next session**, in priority order:
 > 1. ✅ **Visual QA completed:** headless Chrome, 1440×900, light and dark; client-only fixtures and deterministic mid-reach captures. One WebGL context, 0 idle draws/s, no JS errors. HUD timer ticks no longer redraw the table (`9fe3dcd`).
@@ -1323,3 +1324,6 @@ Commits:
 - `feat(card-table-3d): realistic deal with table slide and pick-up`
 - `fix(card-table-3d): single-axis flips and shared easing for plays`
 - `fix(card-table-3d): stable flight targets during camera and avatar motion`
+
+
+**Task 14 completion (2026-10-08):** implemented and verified with pure motion/space/transition regressions, a clean 20 fps logical headless sequence (148 frames), and a full real bot-game trace. Client 250/250, build and scoped lint pass; idle draws remain 0. See [motion report](../reports/2026-10-08-thirteen-motion.md). The first Task 14 commit includes the queued plan edit. Codex B's camera and board files were not edited.

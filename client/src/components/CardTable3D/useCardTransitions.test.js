@@ -95,9 +95,11 @@ it('shares a group flight and gathers before a flat sweep without retaining moti
   expect(played.cards[0].flightGroup).toBe(played.cards[1].flightGroup)
   const swept = diffCardTransitions(played, snapshot([]))
   for (const card of swept.cards) {
+    expect(card.cardId).toBeDefined()
     expect(card.motion.map(stage => stage.duration)).toEqual([150, 350])
     expect(card.motion[1]).toMatchObject({ height: 0, flip: true, kind: 'slide' })
     expect(card.from.from).toBeUndefined()
     expect(card.from.flightGroup).toBeUndefined()
   }
+  expect(diffCardTransitions(swept, snapshot([])).cards).toHaveLength(0)
 })
