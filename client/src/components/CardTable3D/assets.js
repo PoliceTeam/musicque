@@ -48,6 +48,8 @@ export const clearTableAssets = () => {
 // Run after the loaded scene commits, before its first animation frame.
 export function warmTableScene(scene, camera, gl) {
   gl.compile(scene, camera)
+  // compile() creates programs lazily; resolve their uniforms before a draw can block.
+  for (const program of gl.info.programs) { program.getUniforms(); program.getAttributes() }
   const textures = new Set()
   scene.traverse(node => {
     for (const material of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) {

@@ -31,9 +31,12 @@ it('warms programs and shared textures once, including hidden meshes', () => {
   const scene = new Group(), texture = new Texture(), material = new MeshBasicMaterial({ map: texture })
   scene.add(new Mesh(new PlaneGeometry(), material), new Mesh(new PlaneGeometry(), material))
   scene.children[0].visible = false
-  const camera = {}, gl = { compile: vi.fn(), initTexture: vi.fn() }
+  const program = { getUniforms: vi.fn(), getAttributes: vi.fn() }
+  const camera = {}, gl = { compile: vi.fn(), initTexture: vi.fn(), info: { programs: [program] } }
   warmTableScene(scene, camera, gl)
   expect(gl.compile).toHaveBeenCalledWith(scene, camera)
+  expect(program.getUniforms).toHaveBeenCalledTimes(1)
+  expect(program.getAttributes).toHaveBeenCalledTimes(1)
   expect(gl.initTexture).toHaveBeenCalledExactlyOnceWith(texture)
 })
 it('disposes each cloned skeleton bone texture once across shared meshes', () => {
