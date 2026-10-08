@@ -193,3 +193,23 @@ test('room documentation describes readiness without duplicate legacy host instr
   assert.equal(section.split('bấm Sẵn sàng').length - 1, 1)
   assert.ok(section.includes('người vào muộn có đủ 30 giây riêng'))
 })
+
+test('move snapshots omit unused/false fields and retain active seat markers', () => {
+  const state = stateFor([['3S'], ['4S'], ['5S'], ['6S']])
+  state.seats[1].passed = true
+  state.seats[2].finishedPlace = 1
+  state.trick = { cards: ['7S'], type: 'single', bySeat: 3 }
+  const match = { _id: 'g', state, seats: [{ userId: 'a', ready: true }, {}, {}, {}] }
+  const payload = service.serializeTable({ tableId: 'PERF' }, match)
+  assert.equal(Object.hasOwn(payload, 'leaderSeat'), false)
+  assert.equal(Object.hasOwn(payload.trick, 'type'), false)
+  assert.equal(Object.hasOwn(payload.seats[0], 'ready'), false)
+  assert.equal(Object.hasOwn(payload.seats[0], 'readyDeadlineAt'), false)
+  assert.equal(Object.hasOwn(payload.seats[0], 'passed'), false)
+  assert.equal(Object.hasOwn(payload.seats[0], 'finishedPlace'), false)
+  assert.equal(payload.seats[1].passed, true)
+  assert.equal(payload.seats[2].finishedPlace, 1)
+  const waiting = service.serializeTable({ tableId: 'PERF', seats: [{ userId: 'a', ready: true, readyDeadlineAt: 123 }] })
+  assert.equal(waiting.seats[0].ready, true)
+  assert.equal(waiting.seats[0].readyDeadlineAt, 123)
+})

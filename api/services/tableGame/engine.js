@@ -48,7 +48,8 @@ const createTableGameService = (definition) => {
     startsAt: table.startsAt, readyDeadlineAt: table.readyDeadlineAt, auto_left: table.autoLeft, startError: table.startError || null,
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),
-      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot), ready: Boolean(seat.ready), readyDeadlineAt: seat.readyDeadlineAt || table.readyDeadlineAt || null,
+      userId: seat.userId?.toString() || null, username: seat.username, isBot: Boolean(seat.isBot),
+      ...(!match ? { ready: Boolean(seat.ready), readyDeadlineAt: seat.readyDeadlineAt || table.readyDeadlineAt || null } : {}),
     } : null),
     currentSeat: match ? definition.currentSeat(match.state) : null,
     stake: match?.stake ?? stake,

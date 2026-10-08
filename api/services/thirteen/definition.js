@@ -40,9 +40,8 @@ module.exports = {
   },
   playerView: (state, seat) => ({ hand: [...state.seats[seat].hand] }),
   publicView: (state) => ({
-    seats: state.seats.map((seat) => ({ handCount: seat.hand.length, finishedPlace: seat.finishedPlace, passed: seat.passed })),
-    leaderSeat: state.leaderSeat,
-    trick: state.trick ? { cards: [...state.trick.cards], type: state.trick.type, bySeat: state.trick.bySeat, isBomb: Boolean(state.moves.findLast(move => move.cards.length)?.isBomb) } : null,
+    seats: state.seats.map((seat) => ({ handCount: seat.hand.length, ...(seat.finishedPlace ? { finishedPlace: seat.finishedPlace } : {}), ...(seat.passed ? { passed: true } : {}) })),
+    trick: state.trick ? { cards: [...state.trick.cards], bySeat: state.trick.bySeat, isBomb: Boolean(state.moves.findLast(move => move.cards.length)?.isBomb) } : null,
     lastMove: state.moves.length ? { ...state.moves.at(-1), sequence: state.moves.length } : null,
     mustInclude: mustIncludeFor(state) || null,
     ...(state.finishOrder.length === 4 ? { remainingHands: state.seats.map((seat) => [...seat.hand]) } : {}),
