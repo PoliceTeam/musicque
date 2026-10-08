@@ -20,6 +20,6 @@ const schema = new mongoose.Schema({
   startRequestKey: String,
   moves: { type: [new mongoose.Schema({ requestKey: String, seat: Number, move: mongoose.Schema.Types.Mixed, at: Date }, { _id: false })], default: [] },
 }, { timestamps: true, versionKey: false })
-schema.index({ game: 1, tableId: 1, status: 1 })
+schema.index({ game: 1, tableId: 1, status: 1, createdAt: -1 })
 schema.index({ game: 1, tableId: 1, 'moves.requestKey': 1 })
 module.exports = mongoose.model('TableGameMatch', schema)

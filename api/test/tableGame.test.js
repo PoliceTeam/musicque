@@ -43,10 +43,10 @@ const harness = (t, records = [], gameDefinition = definition) => {
   let creditFailures = 0
   t.mock.method(global, 'setTimeout', (fn, ms) => { const timer = { fn, ms, at: now + ms }; timers.set(timer, timer); return timer })
   t.mock.method(global, 'clearTimeout', (timer) => timers.delete(timer))
-  const matches = (game, filter) => Object.entries(filter).every(([key, value]) => key === 'moves.requestKey' ? game.moves.some((m) => m.requestKey === value) : game[key] === value)
-  const query = (get) => ({ sort() { return this }, lean: async () => clone(get()) })
+  const matches = (game, filter) => Object.entries(filter).every(([key, value]) => key === '$or' ? value.some(part => matches(game, part)) : value && typeof value === 'object' && '$in' in value ? value.$in.includes(game[key]) : key === 'moves.requestKey' ? game.moves.some((m) => m.requestKey === value) : game[key] === value)
+  const query = (get, single = false) => ({ order: null, sort(order) { this.order = order; return this }, async lean() { let value = clone(get()); if (this.order && Array.isArray(value)) value.sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0))); return single ? value[0] : value } })
   t.mock.method(Game, 'find', (filter) => query(() => records.filter((game) => matches(game, filter))))
-  t.mock.method(Game, 'findOne', (filter) => query(() => [...records].reverse().find((game) => matches(game, filter))))
+  t.mock.method(Game, 'findOne', (filter) => query(() => [...records].reverse().filter((game) => matches(game, filter)), true))
   t.mock.method(Game, 'findById', (id) => query(() => records.find((game) => game._id === id)))
   t.mock.method(Game, 'exists', async (filter) => Boolean(records.find((game) => matches(game, filter))))
   t.mock.method(Game, 'create', async (data) => {
@@ -489,4 +489,19 @@ test('late joiners receive a full ready window without extending existing seats'
   await h.fire([...h.timers.values()].find(timer => timer.at === joined.seats[2].readyDeadlineAt))
   assert.throws(() => h.service.getTable(1), { code: 'TABLE_NOT_FOUND' })
   assert.ok(windowTimer)
+})
+
+test('resume fetches only recoverable matches and selects previous winners by creation time', async t => {
+  const recent = { ...fixture('settled'), _id: 'recent', createdAt: new Date('2026-10-07'), state: { ...fixture('settled').state, finishOrder: [2, 0, 1, 3] } }
+  const old = { ...fixture('settled'), _id: 'old', createdAt: new Date('2026-10-01') }
+  const active = { ...fixture(), _id: 'active' }
+  const result = t.mock.fn(definition.result)
+  const h = harness(t, [recent, active, old], { ...definition, result })
+  const find = t.mock.method(Game, 'find', Game.find)
+  const findOne = t.mock.method(Game, 'findOne', Game.findOne)
+  await h.service.resume(h.io)
+  assert.deepEqual(find.mock.calls[0].arguments[0], { game: 'fake', $or: [{ fundingPending: true }, { status: { $in: ['playing', 'settling'] } }] })
+  assert.deepEqual(findOne.mock.calls[0].arguments[0], { game: 'fake', tableId: '1', status: 'settled' })
+  assert.deepEqual(result.mock.calls[0].arguments[0].finishOrder, recent.state.finishOrder)
+  assert.equal(h.service.listTables().length, 1)
 })

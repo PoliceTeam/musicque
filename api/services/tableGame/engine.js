@@ -447,12 +447,12 @@ const createTableGameService = (definition) => {
     try {
       for (const table of tables) { clearTimeout(table.timer); clearTimeout(table.lobbyTimer) }
       tables.length = 0
-      const records = await Game.find({ game: name }).lean()
+      const records = await Game.find({ game: name, $or: [{ fundingPending: true }, { status: { $in: ['playing', 'settling'] } }] }).lean()
       for (const game of records.filter(game => game.fundingPending)) await refund(game)
       for (const game of records.filter(game => !game.fundingPending && ['playing', 'settling'].includes(game.status))) {
         const table = newTable(String(game.tableId), game.visibility || 'public', game.createdBy)
         tables.push(table)
-        const last = records.filter(previous => String(previous.tableId) === table.tableId && previous.status === 'settled').at(-1)
+        const last = await Game.findOne({ game: name, tableId: game.tableId, status: 'settled' }).sort({ createdAt: -1 }).lean()
         table.hasPlayed = Boolean(last)
         table.lastWinnerSeat = last ? definition.result(last.state).ranking[0] : null
         table.seats = game.seats.map(seat => seat.userId ? { userId: seat.userId.toString(), username: seat.username } : null)
