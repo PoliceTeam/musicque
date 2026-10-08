@@ -127,7 +127,7 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)
   return <>
-    <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
+    <group onClick={event => { event.stopPropagation(); window.dispatchEvent(new CustomEvent('card-table:throw-menu', { detail: { seat: seatIndex } })) }} position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
     <primitive object={handAnchor}>{children}</primitive>
     <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
   </>

@@ -22,7 +22,7 @@ export default function SeatMarker({ seat, position, active, turnDeadlineAt, ser
     return () => window.clearInterval(interval)
   }, [active, turnDeadlineAt, deadlineMs, serverNow, turnMs])
   const showReady = !seat.isBot && ['waiting', 'finished'].includes(phase)
-  return <Html position={position} center zIndexRange={[20, 0]}><div ref={tag} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''}`}>
+  return <Html position={position} center zIndexRange={[20, 0]}><div ref={tag} role='button' tabIndex={0} aria-label={`Ném đồ vào ${seat.username}`} onClick={() => window.dispatchEvent(new CustomEvent('card-table:throw-menu', { detail: { userId: seat.userId, username: seat.username } }))} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); event.currentTarget.click() } }} className={`card-table-seat ${active ? 'is-turn' : ''} ${seat.passed ? 'has-passed' : ''}`}>
     <strong>{seat.username}{seat.isBot && <em>BOT</em>}</strong>{showReady ? <span className={`card-table-ready ${seat.ready ? 'is-ready' : ''}`}>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span> : phase === 'playing' && <span>{count} lá <b ref={timer} /></span>}
     {seat.passed && <b className='card-table-pass'>Bỏ lượt</b>}
     {seat.finishedPlace && <b className='card-table-rank'>{RANKS[seat.finishedPlace - 1]}</b>}

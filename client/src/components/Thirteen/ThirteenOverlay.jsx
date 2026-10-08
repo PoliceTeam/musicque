@@ -6,6 +6,7 @@ import ThirteenHud from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
 import StakePicker from './StakePicker'
 import TableChat from './TableChat'
+import TableChatThrowMenu from './TableChatThrowMenu'
 import { tableMoneyText } from '../CardTable3D/tableBoard'
 import { resetCardTableView } from '../CardTable3D/dragLook'
 import { inviteUrl, roomRemaining, roomStatus, stakeLabel, stakeOptionsOf } from '../../utils/tableGame'
@@ -31,7 +32,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
         else onClose()
       }
       if (event.key === 'Tab' && !rulesOpen) {
-        const buttons = [...(dialog.current?.querySelectorAll('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)') || [])].filter(element => !element.closest('[hidden]'))
+        const buttons = [...(dialog.current?.querySelectorAll('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || [])].filter(element => !element.closest('[hidden]'))
         const first = buttons?.[0], last = buttons?.[buttons.length - 1]
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first?.focus() }
@@ -83,8 +84,10 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
           ? <StakePicker options={stakeOptionsOf(state.config)} value={table.stake} balance={state.balance} disabled={Boolean(table.startsAt) || table.fundingPending || state.busy} onChange={stake => state.action('setStake', table.tableId, stake)} />
           : <><span>Mức cược</span><strong>{stakeLabel(table.stake)}</strong></>}</div>}
         {hasStake && !isHost && host && <p>Chủ bàn: {host.username}</p>}
+        <TableChatThrowMenu table={table} userId={userId} />
         <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.userId === table.hostId ? 'Chủ bàn' : seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
         {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>{isHost ? 'Bot sẽ lấp các ghế trống khi bắt đầu.' : table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}
+        {!isHost && finished && table.readyDeadlineAt && !table.startsAt && <p>{table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}
         <div className='thirteen-actions'>{isHost ? <button type='button' className='sp-btn sp-btn--primary' disabled={Boolean(table.startsAt) || table.fundingPending || state.busy || table.seats.some(seat => seat?.userId && seat.userId !== userId && !seat.ready)} onClick={() => state.action('start', table.tableId)}>Bắt đầu{readyAmount}</button> : <button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : `${finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}${readyAmount}`}</button>}<button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
       </div>}
       <TableChat />

@@ -25,6 +25,8 @@ const ERROR_COPY = {
   NOT_HOST: 'Chỉ chủ bàn mới thực hiện được thao tác này.',
   NOT_ALL_READY: 'Hãy chờ mọi người sẵn sàng.',
   INVALID_STAKE: 'Mức cược không hợp lệ.',
+  INVALID_THROW: 'Hãy chọn người khác và vật ném hợp lệ.',
+  THROW_RATE_LIMIT: 'Hãy chờ 3 giây trước khi ném tiếp.',
   INVALID_CHAT: 'Tin nhắn cần có 1–200 ký tự.',
   CHAT_RATE_LIMIT: 'Bạn gửi quá nhanh. Hãy chờ một chút.',
   TABLE_BUSY: 'Bàn đang bắt đầu hoặc đang chơi, chưa đổi được mức cược.',
@@ -38,6 +40,7 @@ export const TableGameProvider = ({ game, children }) => {
   const [config, setConfig] = useState({ stake: 10, turnMs: 20000 })
   const [tableId, setTableId] = useState(null)
   const [privateViews, setPrivateViews] = useState({})
+  const [throwEvents, setThrowEvents] = useState([])
   const [chatByTable, setChatByTable] = useState({})
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -99,6 +102,7 @@ export const TableGameProvider = ({ game, children }) => {
     setTableId(null)
     setPrivateViews({})
     setChatByTable({})
+    setThrowEvents([])
     setResult(null)
     if (!socket) load()
   }, [load, socket, userId])
@@ -116,6 +120,11 @@ export const TableGameProvider = ({ game, children }) => {
       if (payload.game !== game || !tablesRef.current.some(table => table.tableId === payload.tableId && table.seats.some(seat => seat?.userId === userId))) return
       setChatByTable(current => ({ ...current, [payload.tableId]: [...new Map([...(current[payload.tableId] || []), payload.message].map(item => [item.id, item])).values()].slice(-50) }))
     }
+    const onThrow = payload => {
+      if (payload.game !== game || !tablesRef.current.some(table => table.tableId === payload.tableId && table.seats.some(seat => seat?.userId === userId))) return
+      setThrowEvents(current => [...new Map([...current, payload].map(item => [item.id, item])).values()].slice(-32))
+    }
+    socket.on('table_game_throw', onThrow)
     socket.on('table_game_chat', onChat)
     socket.on('connect', bind)
     socket.on('table_game_state', onState)
@@ -124,6 +133,7 @@ export const TableGameProvider = ({ game, children }) => {
     bind()
     return () => {
       socket.emit('table_game:unwatch', { game })
+      socket.off('table_game_throw', onThrow)
       socket.off('table_game_chat', onChat)
       socket.off('connect', bind)
       socket.off('table_game_state', onState)
@@ -166,5 +176,14 @@ export const TableGameProvider = ({ game, children }) => {
       return true
     } catch (error) { toast(ERROR_COPY[error.response?.data?.code] || 'Không gửi được tin nhắn.', 'error'); return false }
   }
-  return <TableGameContext.Provider value={{ game, chat, sendChat, lastChatBySeat, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), start: (id) => action('start', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  const throws = throwEvents.filter(event => event.tableId === table?.tableId)
+  const throwItem = async (targetSeat, item) => {
+    if (!requireAuth('Đăng nhập để ném đồ.') || !table) return false
+    try {
+      const { data } = await tableGameApi.action(game, table.tableId, 'throw', { targetSeat, item, requestKey: crypto.randomUUID() })
+      setThrowEvents(current => [...new Map([...current, data].map(event => [event.id, event])).values()].slice(-32))
+      return true
+    } catch (error) { toast(ERROR_COPY[error.response?.data?.code] || 'Không ném được. Hãy thử lại.', 'error'); return false }
+  }
+  return <TableGameContext.Provider value={{ game, throws, throwItem, chat, sendChat, lastChatBySeat, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), start: (id) => action('start', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility, options) => action('create', null, visibility, options), setStake: (id, stake) => action('stake', id, stake), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }
