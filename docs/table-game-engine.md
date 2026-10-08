@@ -22,8 +22,8 @@ definition and `api/services/tableGame/definition.js` for the validated contract
    game-specific; Thirteen uses `{ type: 'play', cards }` or `{ type: 'pass' }`.
 
 The router provides `GET /config`, `GET /tables`, `GET /tables/:id` and
-`POST /tables`, `POST /quick-join`, `POST /tables/:id/{sit,leave,ready,unready,move}`. Mutations require authentication and a
-`requestKey`; move also requires `move`. Keys must be unique across matches at a
+`POST /tables`, `POST /quick-join`, `POST /tables/:id/{sit,leave,ready,unready,stake,move}`. Mutations require authentication and a
+`requestKey`; move also requires `move`; `POST /tables` takes an optional `stake` and `stake` takes a required one. Keys must be unique across matches at a
 table for that user. Client keys are stored as `u:<userId>:<key>`; the `timer:`
 prefix is reserved for engine moves and rejected in client requests.
 Repeating an applied request returns the current snapshot without applying
@@ -33,6 +33,14 @@ it twice. An authenticated table snapshot contains only that user's `myView`.
 
 The engine owns seats, readiness, bots, turn deadlines, per-table queues, version
 checks and recovery. Fewer than two humans makes a practice match with zero stake.
+Each table has its own `stake` (one of `config.stakeOptions`, default `config.stake`;
+`INVALID_STAKE` otherwise) and a `hostId` (the creator). Only the host may change the
+stake, and only with no match, funding or countdown running (`NOT_HOST` / `TABLE_BUSY`);
+a change clears every ready flag and the result window. Whenever a seat is removed the
+host passes to the lowest-index remaining human. Quick join only joins default-stake
+tables. `ready` rejects `INSUFFICIENT_COINS` early when two or more humans are seated
+and the balance is below the stake; the debit at start stays authoritative. Matches
+persist `tableStake` and `hostId`, and resume restores both.
 Tables always fill to `seats.max` with bots, even when `seats.min` is smaller.
 Funding is recorded before debits; partial failure refunds charged users and retries
 failed refunds. Settlement uses idempotent payouts and a guarded retry. Operation
