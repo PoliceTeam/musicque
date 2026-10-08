@@ -66,3 +66,41 @@ describe('legacy /thirteen route', () => {
     expect(screen.getByLabelText('Location')).toHaveTextContent(/^\/card-games\/thirteen$/)
   })
 })
+
+describe('CardGamesPage design', () => {
+  const TONES = ['blue', 'green', 'red', 'yellow']
+
+  it('gives every game one of the four Politetech brand tones, with Tiến Lên in blue', () => {
+    for (const game of CARD_GAMES) expect(TONES).toContain(game.tone)
+    expect(CARD_GAMES.find(game => game.id === 'thirteen').tone).toBe('blue')
+  })
+
+  it('leads with a hero tile for the playable game: eyebrow, title, subtitle, status pill and a Vào sảnh call to action', () => {
+    const { container } = renderHub()
+    const hero = container.querySelector('.cgl-tile--hero')
+    expect(container.querySelectorAll('.cgl-tile--hero')).toHaveLength(1)
+    expect(hero).toHaveClass('cgl-tone--blue')
+    expect(hero.querySelector('.cgl-eyebrow')).toBeInTheDocument()
+    expect(within(hero).getByRole('heading', { level: 2, name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    expect(hero.querySelector('.cgl-pill')).toHaveTextContent('2–4 người')
+    expect(within(hero).getByRole('link', { name: 'Vào sảnh Tiến Lên Miền Nam' })).toHaveAttribute('href', '/card-games/thirteen')
+    expect(hero.querySelector('.cgl-fan')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('shows the other five games as equal tinted tiles in their own tone, each with a Sắp ra mắt pill', () => {
+    const { container } = renderHub()
+    const soon = [...container.querySelectorAll('.cgl-tile--soon')]
+    expect(soon).toHaveLength(5)
+    soon.forEach((tile, i) => {
+      const game = CARD_GAMES.filter(entry => !entry.available)[i]
+      expect(tile).toHaveClass(`cgl-tone--${game.tone}`)
+      expect(within(tile).getByRole('button', { name: `${game.name} — Sắp ra mắt` })).toHaveClass('cgl-pill')
+    })
+  })
+
+  it('draws the four brand dots next to the page eyebrow', () => {
+    const { container } = renderHub()
+    expect(container.querySelector('.cgl-header .cgl-dots')).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('.cgl-header h1')).toHaveTextContent('Game bài')
+  })
+})

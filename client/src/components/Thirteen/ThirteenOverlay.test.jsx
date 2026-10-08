@@ -343,3 +343,65 @@ describe('stake in the waiting panel', () => {
     expect(container.ownerDocument.querySelector('.thirteen-sr-only[aria-live="polite"]')).toHaveTextContent('Bàn FQ8X, đang chờ 2/4, cược 50 PC')
   })
 })
+
+describe('lobby design', () => {
+  const room = (code, patch = {}) => ({ ...table, tableId: code, code, visibility: 'public', status: 'waiting', stake: 10, seats: [{ userId: 'u0', username: 'An' }, null, null, null], ...patch })
+  const cardOf = (container, code) => container.querySelector('.thirteen-lobby').querySelectorAll('section')[[...container.querySelectorAll('.thirteen-lobby h2')].findIndex(h2 => h2.textContent === `Bàn ${code}`)]
+
+  it('colours each table card by its status: waiting green, starting yellow, playing red, finished blue', () => {
+    lobbyState({ tables: [room('WAIT'), room('SOON', { startsAt: Date.now() + 3000 }), room('PLAY', { status: 'playing' }), room('DONE', { status: 'finished' })] })
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    expect(cardOf(container, 'WAIT')).toHaveClass('cgl-table', 'cgl-tone--green')
+    expect(cardOf(container, 'SOON')).toHaveClass('cgl-tone--yellow')
+    expect(cardOf(container, 'PLAY')).toHaveClass('cgl-tone--red')
+    expect(cardOf(container, 'DONE')).toHaveClass('cgl-tone--blue')
+  })
+
+  it('colours seat avatars with the four brand colours by seat, and marks empty seats', () => {
+    lobbyState({ tables: [room('SEAT', { seats: [{ userId: 'a0', username: 'An' }, null, { userId: 'a2', username: 'Cường' }, null] })] })
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    const avatars = [...cardOf(container, 'SEAT').querySelectorAll('.cgl-seats li > span:first-child')]
+    expect(avatars.map(node => node.className)).toEqual(['cgl-seat cgl-seat--0', 'cgl-seat cgl-seat--empty', 'cgl-seat cgl-seat--2', 'cgl-seat cgl-seat--empty'])
+  })
+
+  it('wraps the three entry actions in a hero banner with a live count of waiting tables', () => {
+    lobbyState({ tables: [room('WAIT'), room('PLAY', { status: 'playing' })] })
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    const hero = container.querySelector('.cgl-hero')
+    expect(hero.querySelector('.cgl-eyebrow')).toBeInTheDocument()
+    expect(hero.querySelector('.cgl-pill')).toHaveTextContent('1 bàn còn chỗ')
+    for (const name of ['Chơi nhanh', 'Tạo bàn']) expect(within(hero).getByRole('button', { name })).toBeInTheDocument()
+    expect(within(hero).getByRole('textbox', { name: 'Nhập mã bàn' })).toBeInTheDocument()
+  })
+
+  it('says so in the hero pill when no table is waiting, and shows the empty state card', () => {
+    lobbyState({ tables: [] })
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    expect(container.querySelector('.cgl-hero .cgl-pill')).toHaveTextContent('Chưa có bàn còn chỗ')
+    expect(screen.getByRole('status')).toHaveClass('cgl-empty')
+  })
+
+  it('presents the stake explanation as an info note and the page header with brand dots', () => {
+    lobbyState()
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    expect(container.querySelector('.cgl-note')).toHaveTextContent('Mỗi bàn có mức cược riêng')
+    expect(container.querySelector('.cgl-header .cgl-dots')).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('.cgl-header h1')).toHaveTextContent('Tiến Lên Miền Nam')
+  })
+
+  it('shows the resume bar as a banner strip when seated and minimized', async () => {
+    mocks.state = { ...props, tables: [table], currentTable: table, config: stakeConfig, closeResult: vi.fn() }
+    const { container } = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await userEvent.click(await screen.findByRole('button', { name: 'Thu nhỏ — về sảnh, vẫn giữ ghế' }))
+    const bar = container.querySelector('.cgl-resume')
+    expect(bar).toHaveClass('cgl-tone--green')
+    expect(within(bar).getByRole('button', { name: 'Quay lại bàn' })).toBeInTheDocument()
+  })
+
+  it('opens the create-table modal with the brand-styled shell', async () => {
+    lobbyState()
+    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo bàn' }))
+    expect(screen.getByRole('dialog', { name: 'Tạo bàn' }).closest('.cgl-modal')).not.toBeNull()
+  })
+})

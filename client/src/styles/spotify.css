@@ -34,6 +34,23 @@
   --sp-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
 
   /* Khung layout */
+  /* Bốn màu Politetech (politetech-mark.svg). -deep: nền poster / nút có chữ trắng; -soft: nền nhạt; -ink: chữ đọc được trên nền nhạt */
+  --pt-blue: #3d7dee;
+  --pt-green: #4caf50;
+  --pt-red: #e8443a;
+  --pt-yellow: #f5c13d;
+  --pt-blue-deep: #2159c4;
+  --pt-green-deep: #2e7d32;
+  --pt-red-deep: #c0362d;
+  --pt-blue-soft: #e8f0fd;
+  --pt-green-soft: #e7f4e8;
+  --pt-red-soft: #fdebe9;
+  --pt-yellow-soft: #fff4d3;
+  --pt-blue-ink: #1d4fae;
+  --pt-green-ink: #25702a;
+  --pt-red-ink: #a8281f;
+  --pt-yellow-ink: #6d4c00;
+
   --sp-sidebar-w: 340px;
   --sp-rail-w: 340px;
   --sp-rail-news-min: 380px;
@@ -56,6 +73,14 @@
   --sp-text-on-accent: #000000;
 
   --sp-green-soft: rgba(29, 185, 84, 0.18);
+  --pt-blue-soft: rgba(61, 125, 238, 0.2);
+  --pt-green-soft: rgba(76, 175, 80, 0.2);
+  --pt-red-soft: rgba(232, 68, 58, 0.2);
+  --pt-yellow-soft: rgba(245, 193, 61, 0.18);
+  --pt-blue-ink: #9bbcff;
+  --pt-green-ink: #9bd99e;
+  --pt-red-ink: #ff9d96;
+  --pt-yellow-ink: #ffd877;
   --sp-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   --sp-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
 }

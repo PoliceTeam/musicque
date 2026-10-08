@@ -1,0 +1,178 @@
+/* Sảnh game bài (/card-games) và sảnh Tiến Lên (/card-games/thirteen).
+   Cùng ngôn ngữ với các thẻ Ma Sói / Cờ thú / Game bài ở sidebar Home: poster bo tròn, dòng eyebrow, tiêu đề in hoa,
+   pill trạng thái, gradient mềm + quầng sáng. Màu chủ đạo là bốn màu Politetech (--pt-* ở spotify.css).
+   Poster (.cgl-poster) giữ nguyên ở cả hai theme như các thẻ sidebar; phần còn lại theo --sp-* nên tự đổi sáng/tối. */
+
+/* Mỗi thẻ chọn một trong bốn màu bằng class cgl-tone--*; các biến --tone-* là thứ mọi thành phần bên dưới đọc. */
+.cgl-tone--blue { --tone: var(--pt-blue); --tone-deep: var(--pt-blue-deep); --tone-soft: var(--pt-blue-soft); --tone-ink: var(--pt-blue-ink); --tone-fill: var(--pt-blue-deep); --on-tone: #fff; }
+.cgl-tone--green { --tone: var(--pt-green); --tone-deep: var(--pt-green-deep); --tone-soft: var(--pt-green-soft); --tone-ink: var(--pt-green-ink); --tone-fill: var(--pt-green-deep); --on-tone: #fff; }
+.cgl-tone--red { --tone: var(--pt-red); --tone-deep: var(--pt-red-deep); --tone-soft: var(--pt-red-soft); --tone-ink: var(--pt-red-ink); --tone-fill: var(--pt-red-deep); --on-tone: #fff; }
+.cgl-tone--yellow { --tone: var(--pt-yellow); --tone-deep: #c98f00; --tone-soft: var(--pt-yellow-soft); --tone-ink: var(--pt-yellow-ink); --tone-fill: var(--pt-yellow); --on-tone: #2b1d00; }
+
+.cgl-page {
+  background:
+    radial-gradient(ellipse 55% 38% at 6% -4%, color-mix(in srgb, var(--pt-blue) 18%, transparent), transparent 72%),
+    radial-gradient(ellipse 45% 36% at 100% 0%, color-mix(in srgb, var(--pt-yellow) 14%, transparent), transparent 72%),
+    var(--sp-bg);
+}
+.cgl-page { box-sizing: border-box; }
+.cgl-page main { max-width: 1200px; margin: 26px auto 40px; }
+.cgl-page a.sp-btn, .cgl-page a.sp-btn:hover { text-decoration: none; }
+.cgl-page :focus-visible, .cgl-page .ant-btn:focus-visible, .cgl-page .sp-btn:focus-visible { outline: 3px solid var(--pt-blue); outline-offset: 2px; }
+.cgl-poster :focus-visible, .cgl-poster .ant-btn:focus-visible, .cgl-poster .sp-btn:focus-visible { outline-color: #fff; }
+
+/* ── Header: nút quay lại · eyebrow + tiêu đề + phụ đề · hành động ───────────────────────── */
+.cgl-header {
+  display: grid;
+  grid-template-areas: 'back title actions';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.cgl-back { grid-area: back; border: 1px solid var(--sp-border-strong); background: var(--sp-surface); color: var(--sp-text); }
+.cgl-back:hover { border-color: var(--sp-text-muted); background: var(--sp-surface-hover); color: var(--sp-text); }
+.cgl-title { grid-area: title; min-width: 0; }
+.cgl-header__actions { grid-area: actions; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
+.cgl-eyebrow { display: inline-flex; align-items: center; color: var(--sp-text-muted); font-size: 10px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; }
+/* Bốn chấm Politetech: một phần tử + bốn box-shadow */
+.cgl-dots { display: inline-block; flex: none; width: 6px; height: 6px; margin-right: 30px; border-radius: 50%; background: var(--pt-blue); box-shadow: 9px 0 0 var(--pt-green), 18px 0 0 var(--pt-yellow), 27px 0 0 var(--pt-red); }
+.cgl-title h1 { margin: 8px 0 0; font-size: clamp(26px, 4.4vw, 40px); font-weight: 950; line-height: 1.2; letter-spacing: 0.03em; text-transform: uppercase; }
+.cgl-title p { margin: 5px 0 0; color: var(--sp-text-muted); font-size: 13px; }
+
+/* ── Pill trạng thái (giống pill trên banner) ─────────────────────────────────────────── */
+.cgl-pill { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 3px 10px 3px 8px; border: 0; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.cgl-pill i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.cgl-poster .cgl-pill { background: rgba(6, 10, 30, 0.5); color: #fff; backdrop-filter: blur(4px); }
+.cgl-poster .cgl-pill i { background: var(--pt-yellow); box-shadow: 0 0 0 3px rgba(245, 193, 61, 0.3); }
+.cgl-poster .cgl-eyebrow { color: rgba(255, 255, 255, 0.86); }
+
+/* ── Poster dùng chung ────────────────────────────────────────────────────────────────── */
+.cgl-poster {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  color: #fff;
+  background:
+    radial-gradient(ellipse 70% 100% at 92% 0%, rgba(255, 255, 255, 0.3), transparent 60%),
+    linear-gradient(135deg, var(--tone-deep) 0%, var(--tone) 100%);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--tone) 38%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+/* Nút gọi hành động; trên poster là nút trắng chữ màu poster. Không gạch chân dù là thẻ <a>. */
+.cgl-cta { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border: 0; border-radius: 999px; background: var(--tone-fill); color: var(--on-tone); font-size: 14px; font-weight: 800; line-height: 1.3; text-decoration: none; cursor: pointer; box-shadow: 0 6px 16px color-mix(in srgb, var(--tone) 35%, transparent); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.cgl-cta:hover:not(:disabled) { transform: translateY(-2px); color: var(--on-tone); text-decoration: none; }
+.cgl-cta:disabled { cursor: not-allowed; opacity: 0.5; box-shadow: none; }
+.cgl-poster .cgl-cta { background: #fff; color: var(--tone-deep); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22); }
+.cgl-poster .cgl-cta:hover:not(:disabled) { color: var(--tone-deep); }
+
+/* ── Lá bài xoè quạt: hình minh hoạ cho poster (kích thước theo em để thu nhỏ bằng font-size) ── */
+.cgl-fan { position: absolute; z-index: -1; right: 4.4em; bottom: 1.2em; width: calc(var(--n) * 1.9em + 2.6em); height: 7em; font-size: 16px; pointer-events: none; animation: cgl-bob 2.8s ease-in-out infinite; }
+.cgl-fan__card { position: absolute; bottom: 0; left: calc(var(--i) * 1.9em); display: flex; flex-direction: column; align-items: center; width: 4.4em; height: 6.2em; padding: 0.2em 0 0; border-radius: 0.5em; background: #fff; color: #1c1f21; box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.35); transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 13deg)); transform-origin: 50% 130%; }
+.cgl-fan__card.is-red { color: #d6283c; }
+.cgl-fan__card b { align-self: flex-start; padding-left: 0.35em; font-size: 0.85em; line-height: 1.1; }
+.cgl-fan__card i { margin-top: 0.3em; font-size: 2.1em; font-style: normal; line-height: 1; }
+@keyframes cgl-bob { 50% { transform: translateY(-0.25em); } }
+
+/* ── Hub: tile hero + tile "sắp ra mắt" ───────────────────────────────────────────────── */
+.cgl-hub { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.cgl-tile--hero { display: flex; grid-column: 1 / -1; align-items: center; min-height: 220px; padding: 28px 32px; }
+.cgl-tile__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: min(560px, 62%); }
+.cgl-tile--hero h2 { margin: 8px 0 0; font-size: clamp(28px, 4.6vw, 46px); font-weight: 950; line-height: 1.12; letter-spacing: 0.03em; text-transform: uppercase; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.28); }
+.cgl-tile--hero p { margin: 0; color: rgba(255, 255, 255, 0.9); font-size: 14px; font-style: italic; line-height: 1.45; }
+.cgl-tile__row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-top: 14px; }
+
+.cgl-tile--soon { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 140px; padding: 18px; border: 1.5px dashed color-mix(in srgb, var(--tone) 55%, transparent); border-radius: 16px; background: linear-gradient(160deg, var(--tone-soft), transparent 90%), var(--sp-surface); filter: saturate(0.75); }
+.cgl-tile--soon::before { content: '♠'; content: '♠' / ''; position: absolute; right: 8px; bottom: -20px; color: var(--tone); font-size: 96px; line-height: 1; opacity: 0.16; pointer-events: none; }
+.cgl-tile--soon.cgl-tone--green::before { content: '♣'; content: '♣' / ''; }
+.cgl-tile--soon.cgl-tone--red::before { content: '♥'; content: '♥' / ''; }
+.cgl-tile--soon.cgl-tone--yellow::before { content: '♦'; content: '♦' / ''; }
+.cgl-tile--soon h2 { position: relative; margin: 0; font-size: 18px; font-weight: 900; letter-spacing: 0.04em; line-height: 1.2; text-transform: uppercase; }
+.cgl-tile--soon .cgl-pill { position: relative; align-self: flex-start; border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent); background: var(--tone-soft); color: var(--tone-ink); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; cursor: default; }
+
+/* ── Sảnh Tiến Lên: poster "Vào bàn" ──────────────────────────────────────────────────── */
+.cgl-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 22px; padding: 26px 30px; }
+.cgl-hero .cgl-fan { right: 2.2em; bottom: auto; top: 1.4em; font-size: 13px; }
+.cgl-hero__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: min(560px, 64%); }
+.cgl-hero__title { padding-top: 6px; font-size: clamp(24px, 3.6vw, 34px); font-weight: 950; line-height: 1.2; letter-spacing: 0.03em; text-transform: uppercase; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.28); }
+.cgl-hero__sub { color: rgba(255, 255, 255, 0.9); font-size: 13px; font-style: italic; }
+.cgl-hero .cgl-pill { margin-top: 8px; }
+.cgl-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.cgl-hero__actions form { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.cgl-hero .sp-btn { height: auto; padding: 10px 22px; border: 1px solid transparent; font-size: 14px; font-weight: 800; box-shadow: none; transition: transform 0.15s ease, background 0.15s ease; }
+.cgl-hero .sp-btn:hover:not(:disabled) { transform: translateY(-2px); }
+.cgl-hero .sp-btn--primary, .cgl-hero .sp-btn--primary:hover:not(:disabled) { background: var(--pt-yellow); color: #2b1d00; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24); }
+.cgl-hero .sp-btn:not(.sp-btn--primary), .cgl-hero .sp-btn:not(.sp-btn--primary):hover:not(:disabled) { border-color: rgba(255, 255, 255, 0.55); background: rgba(255, 255, 255, 0.16); color: #fff; }
+.cgl-hero .sp-btn:disabled { opacity: 0.5; }
+.cgl-hero .ant-input { width: 150px; height: auto; padding: 9px 16px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.95); color: #14213d; font-weight: 800; letter-spacing: 0.2em; text-align: center; text-transform: uppercase; box-shadow: none; }
+.cgl-hero .ant-input::placeholder { color: #6b7488; font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
+
+.cgl-resume { position: sticky; top: 12px; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin-top: 22px; padding: 12px 18px; border-radius: 16px; font-size: 14px; font-weight: 700; }
+.cgl-resume + .cgl-hero { margin-top: 16px; }
+.cgl-resume .sp-btn { height: auto; padding: 8px 18px; }
+
+.cgl-note { margin: 22px 0; padding: 12px 16px 12px 18px; border-left: 4px solid var(--pt-yellow); border-radius: 4px 14px 14px 4px; background: var(--pt-yellow-soft); color: var(--sp-text); font-size: 13px; line-height: 1.55; }
+
+/* ── Thẻ bàn: mini card, màu nhấn theo trạng thái ─────────────────────────────────────── */
+.cgl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.cgl-table { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 20px 18px 16px; border: 1px solid var(--sp-border); border-radius: 16px; background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--tone) 22%, transparent), transparent 55%), var(--sp-surface); box-shadow: var(--sp-shadow); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.cgl-table::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--tone-deep), var(--tone)); }
+.cgl-table:hover { transform: translateY(-3px); box-shadow: 0 14px 30px color-mix(in srgb, var(--tone) 28%, transparent); }
+.cgl-table__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cgl-table h2 { margin: 0 auto 0 0; font-size: 20px; font-weight: 950; letter-spacing: 0.05em; line-height: 1.2; text-transform: uppercase; }
+.cgl-pill--status { background: var(--tone-soft); color: var(--tone-ink); }
+.cgl-pill--status i { background: var(--tone); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 28%, transparent); }
+.cgl-pill--stake { border: 1px solid var(--sp-border-strong); background: var(--sp-surface-2); color: var(--sp-text); }
+.cgl-seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 0; padding: 0; list-style: none; }
+.cgl-seats li { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; }
+.cgl-seats li > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Bốn ghế = bốn màu Politetech */
+.cgl-seat { display: inline-grid; flex: none; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 800; box-shadow: 0 0 0 2px var(--sp-surface); }
+.cgl-seat--0 { background: var(--pt-blue-deep); }
+.cgl-seat--1 { background: var(--pt-green-deep); }
+.cgl-seat--2 { background: var(--pt-yellow); color: #2b1d00; }
+.cgl-seat--3 { background: var(--pt-red-deep); }
+.cgl-seat--empty { border: 1.5px dashed var(--sp-border-strong); background: transparent; box-shadow: none; color: var(--sp-text-faint); }
+.cgl-table .cgl-cta { width: 100%; margin-top: auto; height: auto; }
+/* Bàn không vào được (đang chơi / đầy): vẫn đọc rõ, chỉ nhạt hơn nút bấm được */
+.cgl-table .cgl-cta:disabled { border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent); background: var(--tone-soft); color: var(--tone-ink); opacity: 1; }
+
+.cgl-empty { display: grid; justify-items: center; gap: 6px; margin: 8px 0 0; padding: 30px 20px; border: 2px dashed var(--sp-border-strong); border-radius: 18px; color: var(--sp-text-muted); font-weight: 700; text-align: center; }
+.cgl-empty::before { content: '♠ ♥ ♦ ♣'; content: '♠ ♥ ♦ ♣' / ''; background: linear-gradient(90deg, var(--pt-blue), var(--pt-green) 35%, var(--pt-yellow) 65%, var(--pt-red)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 30px; letter-spacing: 0.3em; }
+
+/* ── Modal tạo bàn: dải bốn màu trên cùng, tiêu đề in hoa ─────────────────────────────── */
+.cgl-modal .ant-modal-content { position: relative; overflow: hidden; padding: 28px 24px 20px; border-radius: 20px; }
+.cgl-modal .ant-modal-content::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--pt-blue) 0 25%, var(--pt-green) 25% 50%, var(--pt-yellow) 50% 75%, var(--pt-red) 75%); }
+.cgl-modal .ant-modal-title { font-size: 20px; font-weight: 950; letter-spacing: 0.05em; text-transform: uppercase; }
+.cgl-modal .ant-modal-footer .sp-btn--primary { height: auto; padding: 10px 24px; background: var(--pt-yellow); color: #2b1d00; font-weight: 800; }
+
+/* ── Điện thoại ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) { .cgl-hub { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+@media (max-width: 700px) {
+  .cgl-hub { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cgl-header { grid-template-areas: 'actions' 'back' 'title'; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .cgl-back { justify-self: start; }
+  .cgl-tile--hero { min-height: 0; padding: 22px 20px 20px; }
+  .cgl-tile__copy, .cgl-hero__copy { max-width: 100%; }
+  .cgl-tile--hero .cgl-fan { right: 2.6em; top: 1em; bottom: auto; font-size: 8px; opacity: 0.9; }
+  .cgl-tile--hero h2 { max-width: 62%; }
+  .cgl-hero { padding: 22px 20px 20px; }
+  .cgl-hero .cgl-fan { right: 2.4em; top: 1em; font-size: 8px; }
+  .cgl-hero__copy { max-width: 62%; }
+  .cgl-hero__actions { align-items: stretch; flex-direction: column; }
+  .cgl-hero__actions .sp-btn { width: 100%; }
+  .cgl-hero__actions form { margin-left: 0; width: 100%; }
+  .cgl-hero .ant-input { flex: 1; width: 100%; min-width: 0; }
+  .cgl-hero__actions form .sp-btn { width: auto; flex: none; }
+  .cgl-resume { position: static; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cgl-fan { animation: none; }
+  .cgl-cta, .cgl-table, .cgl-hero .sp-btn { transition: none; }
+  .cgl-cta:hover:not(:disabled), .cgl-table:hover, .cgl-hero .sp-btn:hover:not(:disabled) { transform: none; }
+}
