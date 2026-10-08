@@ -111,13 +111,19 @@ export const TableGameProvider = ({ game, children }) => {
       socket.off('table_game_result', onResult)
     }
   }, [game, socket, userId, load, acceptTable, refreshBalance])
-  const action = async (name, id = table?.tableId, payload) => {
+  const action = async (name, id = table?.tableId, payload, options = {}) => {
     if (!requireAuth('Đăng nhập để tham gia bàn chơi.') || busyRef.current) return false
     busyRef.current = true
     setBusy(true)
     try {
       const body = { requestKey: crypto.randomUUID(), ...(name === 'move' ? { move: payload } : name === 'create' ? { visibility: payload } : {}) }
-      const { data } = await (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
+      const send = () => (name === 'create' ? tableGameApi.create(game, body) : name === 'quickJoin' ? tableGameApi.quickJoin(game, body) : tableGameApi.action(game, id, name, body))
+      let response
+      try { response = await send() } catch (error) {
+        if (!options.retryTransient || (error.response && error.response.status < 500)) throw error
+        response = await send()
+      }
+      const { data } = response
       acceptTable(data)
       setTableId(name === 'leave' ? null : data.tableId)
       await refreshBalance()
@@ -128,5 +134,5 @@ export const TableGameProvider = ({ game, children }) => {
       return false
     } finally { busyRef.current = false; setBusy(false) }
   }
-  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id) => action('sit', id), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
+  return <TableGameContext.Provider value={{ game, tables, config, table, myView, busy, result, closeResult, sit: (id, options) => action('sit', id, undefined, options), leave: (id) => action('leave', id), ready: (id) => action('ready', id), unready: (id) => action('unready', id), create: (visibility) => action('create', null, visibility), quickJoin: () => action('quickJoin'), move: (move) => action('move', table?.tableId, move) }}>{children}</TableGameContext.Provider>
 }

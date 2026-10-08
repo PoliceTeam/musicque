@@ -1,5 +1,5 @@
 import React from 'react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { act, within, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -131,7 +131,7 @@ it('quick joins, creates private rooms and validates room codes in the lobby', a
 it('joins a room deep link once', async () => {
   mocks.state = { ...props, tables: [], currentTable: null, config: { stake: 10 }, closeResult: vi.fn(), action: vi.fn(async () => true) }
   render(<MemoryRouter initialEntries={['/thirteen?room=K7Q2']}><ThirteenPage /></MemoryRouter>)
-  await waitFor(() => expect(mocks.state.action).toHaveBeenCalledWith('sit', 'K7Q2'))
+  await waitFor(() => expect(mocks.state.action).toHaveBeenCalledWith('sit', 'K7Q2', { retryTransient: true }))
   expect(mocks.state.action).toHaveBeenCalledTimes(1)
 })
 
@@ -157,4 +157,22 @@ it('shows a late joiner their own remaining ready window', () => {
   const now = Date.now()
   render(<ThirteenOverlay {...props} open table={{ ...table, status: 'finished', serverNow: now, readyDeadlineAt: now + 2000, seats: [{ ...table.seats[0], readyDeadlineAt: now + 30000 }, ...table.seats.slice(1)] }} />)
   expect(screen.getByRole('timer')).toHaveTextContent('30s')
+})
+
+function LocationProbe() { return <output aria-label='Search params'>{useLocation().search}</output> }
+it('clears a successful deep link while preserving unrelated search parameters', async () => {
+  mocks.state = { ...props, tables: [], currentTable: null, config: { stake: 10 }, closeResult: vi.fn(), action: vi.fn(async () => true) }
+  render(<MemoryRouter initialEntries={['/thirteen?room=K7Q2&other=keep']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByLabelText('Search params')).toHaveTextContent('?other=keep'))
+  expect(mocks.state.action).toHaveBeenCalledTimes(1)
+})
+it('toasts invalid invite codes and clears the attempted link without an API call', async () => {
+  const { message } = await import('antd')
+  const toast = vi.spyOn(message, 'open')
+  mocks.state = { ...props, tables: [], currentTable: null, config: { stake: 10 }, closeResult: vi.fn(), action: vi.fn() }
+  render(<MemoryRouter initialEntries={['/thirteen?room=OI01']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByLabelText('Search params')).toHaveTextContent(''))
+  expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Mã bàn không tồn tại' })
+  expect(mocks.state.action).not.toHaveBeenCalled()
+  toast.mockRestore()
 })

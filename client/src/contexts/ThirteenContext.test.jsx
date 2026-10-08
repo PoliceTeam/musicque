@@ -53,7 +53,7 @@ it('watches only the mounted game, re-watches on reconnect and unwatches on exit
 
 function ActionProbe() {
   const { tables, action } = useThirteen()
-  return <div><output aria-label='Room count'>{tables.length}</output><button onClick={() => action('quickJoin')}>Quick join</button><button onClick={() => action('create', 'private')}>Create private</button></div>
+  return <div><output aria-label='Room count'>{tables.length}</output><button onClick={() => action('quickJoin')}>Quick join</button><button onClick={() => action('create', 'private')}>Create private</button><button onClick={() => action('sit', 'K7Q2', { retryTransient: true })}>Join link</button></div>
 }
 it('quick join and create send authenticated API requests with independent request keys', async () => {
   mocks.user = { _id: 'a' }
@@ -92,4 +92,23 @@ it('does not restore a deleted room from an in-flight list or seated detail requ
   expect(screen.getByLabelText('Room count')).toHaveTextContent('0')
   act(() => mocks.handlers.table_game_state({ ...room, serverNow: 30 }))
   expect(screen.getByLabelText('Room count')).toHaveTextContent('1')
+})
+
+it('retries a transient invite join once with the same request key and does not retry permanent errors', async () => {
+  mocks.user = { _id: 'a' }
+  mocks.requireAuth.mockReturnValue(true)
+  mocks.tables = []
+  mocks.table = { game: 'thirteen', tableId: 'K7Q2', seats: [{ userId: 'a' }, null, null, null], serverNow: Date.now() }
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 503 } })
+  render(<PlaylistContext.Provider value={{ socket }}><ThirteenProvider><ActionProbe /></ThirteenProvider></PlaylistContext.Provider>)
+  fireEvent.click(screen.getByText('Join link'))
+  await waitFor(() => expect(tableGameApi.action).toHaveBeenCalledTimes(2))
+  expect(tableGameApi.action.mock.calls[0]).toEqual(tableGameApi.action.mock.calls[1])
+  await act(async () => {})
+  tableGameApi.action.mockClear()
+  tableGameApi.action.mockRejectedValueOnce({ response: { status: 404, data: { code: 'TABLE_NOT_FOUND' } } })
+  fireEvent.click(screen.getByText('Join link'))
+  await act(async () => {})
+  expect(tableGameApi.action).toHaveBeenCalledTimes(1)
 })
