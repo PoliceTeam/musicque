@@ -60,7 +60,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
       <div className='th-game-corner-controls'>
         <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
         <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
-        <Tooltip title={playing ? 'Không thể rời khi đang chơi' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
+        <Tooltip title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
       </div>
       {playing && <ThirteenHud {...state} resetView={() => setViewResetKey(key => key + 1)} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
       {!playing && <div className='th-game-end'>
@@ -70,7 +70,7 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
         })}</ol>}
         <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
         {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>Bot sẽ lấp các ghế trống khi bắt đầu.</p>}
-        <div className='thirteen-actions'><button type='button' className='sp-btn sp-btn--primary' disabled={state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}</button><button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
+        <div className='thirteen-actions'><button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}</button><button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
       </div>}
       <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </section>

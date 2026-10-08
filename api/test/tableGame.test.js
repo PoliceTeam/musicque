@@ -124,10 +124,12 @@ test('failed refund retries without restart and preserves the original start err
   await h.service.sit(player('b'), 1, 'b')
   h.failDebit('b'); h.failCredit(1)
   await assert.rejects(h.service.start('a', 1, 'start'), { code: 'INSUFFICIENT_COINS' })
+  assert.equal(h.service.getTable(1).fundingPending, true)
   await assert.rejects(h.service.start('a', 1, 'another'), { code: 'TABLE_PLAYING' })
   await h.fire([...h.timers.values()].find((timer) => timer.ms === 1000))
   assert.equal(h.credits.length, 1)
   assert.equal(h.records[0].fundingPending, false)
+  assert.equal(h.service.getTable(1).fundingPending, false)
 })
 test('one human practices without any coin operations and bots fill three seats', async (t) => {
   const h = harness(t)

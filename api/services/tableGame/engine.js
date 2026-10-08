@@ -44,6 +44,7 @@ const createTableGameService = (definition) => {
     game: name, tableId: table.tableId, code: table.code, visibility: table.visibility,
     matchId: match?._id?.toString() || null,
     status: match?.status || table.status,
+    fundingPending: Boolean(table.fundingMatch),
     startsAt: table.startsAt, readyDeadlineAt: table.readyDeadlineAt, auto_left: table.autoLeft, startError: table.startError || null,
     seats: (match?.seats || table.seats).map((seat, index) => seat ? {
       ...(view.seats?.[index] || {}),

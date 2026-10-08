@@ -176,3 +176,11 @@ it('toasts invalid invite codes and clears the attempted link without an API cal
   expect(mocks.state.action).not.toHaveBeenCalled()
   toast.mockRestore()
 })
+
+it('disables every leave control until refund recovery completes', () => {
+  const room = { ...table, status: 'finished', fundingPending: true }
+  const view = render(<ThirteenOverlay {...props} open table={room} />)
+  for (const button of screen.getAllByRole('button', { name: 'Rời bàn' })) expect(button).toBeDisabled()
+  view.rerender(<ThirteenOverlay {...props} open table={{ ...room, fundingPending: false }} />)
+  for (const button of screen.getAllByRole('button', { name: 'Rời bàn' })) expect(button).toBeEnabled()
+})
