@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input, Modal, Radio, message } from 'antd'
 import { Link, useSearchParams } from 'react-router-dom'
+import { tableGameApi } from '../services/api'
 import UserMenu from '../components/Auth/UserMenu'
 import { useAuth } from '../contexts/AuthContext'
 import { ThirteenProvider, useThirteen } from '../contexts/ThirteenContext'
@@ -12,7 +13,7 @@ import CardFan from '../components/Thirteen/CardFan'
 import { canAffordStake, isRoomCode, roomStatus, stakeLabel, stakeOptionsOf } from '../utils/tableGame'
 function ThirteenContent() {
   useEffect(() => clearTableAssets, [])
-  const { user, requireAuth, balance } = useAuth()
+  const { user, loading, requireAuth, balance } = useAuth()
   const state = useThirteen()
   const { tables, currentTable, config, action, busy } = state
   const [params, setParams] = useSearchParams()
@@ -49,9 +50,11 @@ function ThirteenContent() {
     previousTable.current = currentTable
   }, [currentTable, seated, playing, clearResult, closeOverlay])
   useEffect(() => {
+    if (loading) return
     if (room === undefined) { joinedLink.current = null; return }
-    if (joinedLink.current === `${room}:${userId || 'guest'}`) return
-    joinedLink.current = `${room}:${userId || 'guest'}`
+    const link = `${room}:${userId || 'guest'}`
+    if (joinedLink.current === link) return
+    joinedLink.current = link
     const clearRoom = () => setParams(current => {
       if (current.get('room')?.toUpperCase() !== room) return current
       const next = new URLSearchParams(current)
@@ -61,9 +64,19 @@ function ThirteenContent() {
     if (!isRoomCode(room)) {
       message.open({ key: 'table-game', type: 'error', content: 'Mã bàn không tồn tại' })
       clearRoom()
-    } else if (!userId) requireAuth('Đăng nhập để vào bàn được mời.')
+    } else if (!userId) {
+      tableGameApi.table('thirteen', room).then(() => {
+        if (joinedLink.current === link) requireAuth('Đăng nhập để vào bàn được mời.')
+      }, error => {
+        if (joinedLink.current !== link) return
+        if (error.response?.status === 404) {
+          message.open({ key: 'table-game', type: 'error', content: 'Bàn không tồn tại hoặc đã đóng.' })
+          clearRoom()
+        } else requireAuth('Đăng nhập để vào bàn được mời.')
+      })
+    }
     else action('sit', room, { retryTransient: true }).then(ok => { if (ok) setOverlayOpen(true) }).finally(clearRoom)
-  }, [room, userId, action, requireAuth, setParams])
+  }, [room, userId, loading, action, requireAuth, setParams])
   const join = async (name, value) => { if (await action(name, value)) { setOverlayOpen(true); setCreateOpen(false) } }
   // Mức mặc định của server; nếu số dư không đủ thì mở sẵn "Chơi vui" thay vì một lựa chọn bị khoá.
   const wantedStake = pickedStake ?? config.stake

@@ -96,6 +96,7 @@ it('does not restore a deleted room from an in-flight list or seated detail requ
 })
 
 it('retries a transient invite join once with the same request key and does not retry permanent errors', async () => {
+  const toast = vi.spyOn(message, 'open')
   mocks.user = { _id: 'a' }
   mocks.requireAuth.mockReturnValue(true)
   mocks.tables = []
@@ -112,6 +113,8 @@ it('retries a transient invite join once with the same request key and does not 
   fireEvent.click(screen.getByText('Join link'))
   await act(async () => {})
   expect(tableGameApi.action).toHaveBeenCalledTimes(1)
+  expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Bàn không tồn tại hoặc đã đóng.' })
+  toast.mockRestore()
 })
 
 it('uses join-specific errors for playing rooms and accepts finished rooms', async () => {
