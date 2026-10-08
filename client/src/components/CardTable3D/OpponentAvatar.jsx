@@ -8,7 +8,7 @@ import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 import { CHAIR_HEIGHT } from './chair'
 const AVATAR_SCALE = 0.85
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, phase: roomPhase = 'playing', children }) {
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, message, serverOffset, phase: roomPhase = 'playing', children }) {
   const { scene } = useTableGLTF('/models/chibi.glb?v=1')
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
@@ -129,6 +129,6 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
   return <>
     <group position={[position[0], avatar.hipOffset, position[2]]} rotation={[0, yaw, 0]} scale={AVATAR_SCALE}><primitive object={avatar.model} dispose={null} /></group>
     <primitive object={handAnchor}>{children}</primitive>
-    <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} /></group>
+    <group ref={headAnchor}><SeatMarker phase={roomPhase} seat={seat} position={[0, 0, 0]} active={active} turnDeadlineAt={turnDeadlineAt} serverNow={serverNow} turnMs={turnMs} message={message} serverOffset={serverOffset} /></group>
   </>
 }

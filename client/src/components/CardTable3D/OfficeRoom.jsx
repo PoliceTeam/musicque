@@ -15,11 +15,24 @@ function shadowTexture() {
   return new THREE.CanvasTexture(canvas)
 }
 let logoSource
-export default function OfficeRoom({ table }) {
+export default function OfficeRoom({ table, turnMs }) {
   const { isDark } = useTheme()
   const { scene, invalidate } = useThree()
   const room = useMemo(buildOfficeRoom, [])
-  const roomMaterial = useMemo(() => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), [])
+  const lampGlow = useMemo(() => ({ value: 0 }), [])
+  const lampTarget = useMemo(() => { const target = new THREE.Object3D(); target.position.set(0, .785, 0); return target }, [])
+  const roomMaterial = useMemo(() => {
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
+    material.customProgramCacheKey = () => 'office-lamps-v2'
+    material.onBeforeCompile = shader => {
+      shader.uniforms.lampGlow = lampGlow
+      shader.vertexShader = 'attribute float lampEmission; attribute float wallSurface; varying float vLampEmission; varying float vWallSurface; varying vec3 vRoomPosition;\n' + shader.vertexShader
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLampEmission = lampEmission; vWallSurface = wallSurface; vRoomPosition = position;')
+      shader.fragmentShader = 'uniform float lampGlow; varying float vLampEmission; varying float vWallSurface; varying vec3 vRoomPosition;\nfloat wallFalloff(vec3 source) { vec3 delta = vRoomPosition - source; float strength = max(0.0, 1.0 - dot(delta, delta) / .8); return strength * strength; }\n' + shader.fragmentShader
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, .72, .35) * vLampEmission * lampGlow;\nfloat wallPool = wallFalloff(vec3(-1.9, 1.7, -2.95)) + wallFalloff(vec3(1.9, 1.7, -2.95)) + wallFalloff(vec3(2.95, 2.1, -.7)) + wallFalloff(vec3(2.95, 2.1, -1.6));\ntotalEmissiveRadiance += vec3(.4, .22, .08) * wallPool * vWallSurface * lampGlow;')
+    }
+    return material
+  }, [lampGlow])
   const logo = useMemo(() => {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.generateMipmaps = false; texture.minFilter = THREE.LinearFilter
@@ -42,14 +55,15 @@ export default function OfficeRoom({ table }) {
   useLayoutEffect(() => {
     const palette = roomPalettes[isDark ? 'dark' : 'light']
     recolorRoom(room.geometry, room.paletteKeys, palette)
-    roomMaterial.emissive.set(isDark ? '#202720' : '#000000'); roomMaterial.emissiveIntensity = 0.65
+    lampGlow.value = isDark ? 1.6 : 0
+    roomMaterial.emissive.set(isDark ? '#343c32' : '#000000'); roomMaterial.emissiveIntensity = 0.65
     scene.background.set(palette.fog); scene.fog = new THREE.Fog(palette.fog, 4, 9)
     scene.traverse(node => {
-      if (node.isHemisphereLight) { node.color.set(isDark ? '#bac8bc' : '#fff8ef'); node.groundColor.set(palette.floorB); node.intensity = 1.8 }
-      if (node.isDirectionalLight) { node.color.set(isDark ? '#d2dccf' : '#fff2dc'); node.intensity = isDark ? 1.3 : 1.7 }
+      if (node.isHemisphereLight) { node.color.set(isDark ? '#e1d7bd' : '#fff8ef'); node.groundColor.set(isDark ? '#7d7160' : palette.floorB); node.intensity = isDark ? 3.8 : 1.8 }
+      if (node.isDirectionalLight) { node.color.set(isDark ? '#d2dccf' : '#fff2dc'); node.intensity = isDark ? 2 : 1.7 }
     })
     invalidate()
-  }, [isDark, room, roomMaterial, scene, invalidate])
+  }, [isDark, room, roomMaterial, lampGlow, scene, invalidate])
   useEffect(() => {
     let cancelled = false, url, image
     logoSource ||= fetch('/brand/logo-wordmark.svg').then(response => { if (!response.ok) throw new Error('Wordmark failed to load'); return response.text() })
@@ -68,9 +82,10 @@ export default function OfficeRoom({ table }) {
   useEffect(() => () => { scene.fog = null; room.geometry.dispose(); roomMaterial.dispose(); logo.texture.dispose() }, [scene, room, roomMaterial, logo])
   useEffect(() => () => { resources.chair.dispose(); resources.wood.dispose(); resources.quad.dispose(); resources.shadow.map.dispose(); resources.shadow.dispose() }, [resources])
   return <>
+    {isDark && <><primitive object={lampTarget} /><spotLight name='pendant-light' position={[.55, 1.465, -.25]} target={lampTarget} color='#ffd49a' intensity={9} angle={Math.PI / 3} penumbra={.5} distance={4} decay={2} castShadow={false} /></>}
     <mesh geometry={room.geometry} material={roomMaterial} matrixAutoUpdate={false} dispose={null} />
     <mesh position={[0, 2.1, -2.855]} onUpdate={object => { object.updateMatrix(); object.matrixAutoUpdate = false }}><planeGeometry args={[1.6, 0.4]} /><meshBasicMaterial map={logo.texture} transparent depthWrite={false} /></mesh>
-    {table && <WallInfoBoard table={table} />}
+    {table && <WallInfoBoard table={table} turnMs={turnMs} />}
     <instancedMesh ref={chairs} args={[resources.chair, resources.wood, 4]} matrixAutoUpdate={false} />
     <instancedMesh ref={shadows} args={[resources.quad, resources.shadow, 5]} matrixAutoUpdate={false} />
   </>

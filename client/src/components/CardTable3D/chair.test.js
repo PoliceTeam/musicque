@@ -27,3 +27,9 @@ it('keeps the backrest away from the centre with clearance behind the seated pel
   for(let i=0;i<points.count;i++) if(points.getY(i)>CHAIR_HEIGHT+0.001) expect(points.getZ(i)).toBeLessThan(-0.25)
   geometry.dispose()
 })
+
+it('puts the next server seat on the anchor player’s right', () => {
+  expect(chairPlacement(0).position[2]).toBeGreaterThan(0)
+  expect(chairPlacement(1).position[0]).toBeGreaterThan(0)
+  expect(chairPlacement(3).position[0]).toBeLessThan(0)
+})

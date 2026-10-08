@@ -2,6 +2,7 @@ import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import ThirteenHud from './ThirteenHud'
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ balance: 140 }) }))
 const table = { status: 'playing', currentSeat: 0, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 3 }], trick: null, mustInclude: '3S', pot: 20 }
 const props = { table, userId: 'a', myHand: ['3S', '4S', '5S'], selectedCards: [], action: vi.fn(), toggleCard: vi.fn(), closeResult: vi.fn(), busy: false }
 describe('ThirteenHud', () => {
@@ -58,7 +59,7 @@ it('announces the top cards, bomb and a brief pass, then hides on an empty trick
   vi.useFakeTimers()
   const top = { ...table, mustInclude: null, trick: { bySeat: 0, cards: ['3S', '3C', '3D', '3H'], isBomb: true }, lastMove: { seat: 0, cards: ['3S', '3C', '3D', '3H'], sequence: 1 } }
   const { rerender, container } = render(<ThirteenHud {...props} table={top} />)
-  const chip = container.querySelector('[aria-live="polite"]')
+  const chip = container.querySelector('.thirteen-last-play')
   expect(chip).toHaveTextContent('An đánh:')
   expect(chip).toHaveTextContent('3♠')
   expect(chip).toHaveTextContent('Chặt!')
@@ -69,6 +70,76 @@ it('announces the top cards, bomb and a brief pass, then hides on an empty trick
   expect(chip).not.toHaveTextContent('Bình bỏ lượt')
   expect(chip).toHaveTextContent('An đánh:')
   rerender(<ThirteenHud {...props} table={{ ...table, trick: null }} />)
-  expect(container.querySelector('[aria-live="polite"]')).toBeNull()
+  expect(container.querySelector('.thirteen-last-play')).toBeNull()
   vi.useRealTimers()
+})
+
+
+it('shows my turn, remaining coins and a border that depletes through the shared colour scale', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(100000)
+  const timed = { ...table, serverNow: 100000, turnDeadlineAt: 120000 }
+  const { container, rerender } = render(<ThirteenHud {...props} table={timed} />)
+  expect(screen.getByRole('status')).toHaveTextContent('Đến lượt bạn')
+  expect(screen.getByLabelText('Số dư của bạn: 140 PC')).toBeInTheDocument()
+  expect(container.querySelector('.thirteen-hud')).toHaveClass('is-my-turn')
+  expect(container.querySelector('rect')).toHaveAttribute('stroke-dashoffset', '0')
+  act(() => vi.advanceTimersByTime(14000))
+  expect(container.querySelector('.thirteen-hud').style.getPropertyValue('--turn-color')).toBe('#f5c13d')
+  expect(container.querySelector('rect')).toHaveAttribute('stroke-dashoffset', '70')
+  expect(screen.queryByRole('status')).toBeNull()
+  act(() => vi.advanceTimersByTime(4000))
+  expect(container.querySelector('.thirteen-hud')).toHaveClass('is-urgent')
+  rerender(<ThirteenHud {...props} table={{ ...timed, currentSeat: 1, seats: [...timed.seats, { username: 'Bình' }] }} />)
+  expect(screen.getByText('Lượt: Bình')).toBeInTheDocument()
+  expect(container.querySelector('rect')).toBeNull()
+  vi.useRealTimers()
+})
+
+it('shows combo feedback and the exact invalid reason next to the disabled play action', () => {
+  const response = { ...table, mustInclude: null, trick: { cards: ['8S', '8H'] } }
+  const { rerender } = render(<ThirteenHud {...props} table={response} myHand={['7S', '7H', '9S', '9H']} selectedCards={['9S', '9H']} />)
+  expect(screen.getByText('Đôi 9 · Chặt được')).toHaveClass('is-valid')
+  rerender(<ThirteenHud {...props} table={response} myHand={['7S', '7H']} selectedCards={['7S', '7H']} />)
+  expect(screen.getByText('Đôi 7 · Nhỏ hơn bài trên bàn')).toHaveClass('is-invalid')
+  expect(screen.getByRole('button', { name: 'Đánh bài' })).toBeDisabled()
+  rerender(<ThirteenHud {...props} selectedCards={['4S']} />)
+  expect(screen.getByText('Lẻ 4 · Phải có 3♠')).toBeVisible()
+})
+it('cycles hints from smallest to largest, wraps, and resets for a new trick', () => {
+  const select = vi.fn()
+  const response = { ...table, mustInclude: null, trick: { cards: ['8S', '8H'] } }
+  const hand = ['9S', '9H', '10S', '10H']
+  const { rerender } = render(<ThirteenHud {...props} table={response} myHand={hand} setSelectedCards={select} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý' }))
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Gợi ý' }), { key: 'h' })
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý' }))
+  expect(select.mock.calls).toEqual([[['9S', '9H']], [['10S', '10H']], [['9S', '9H']]])
+  rerender(<ThirteenHud {...props} table={{ ...response, trick: { cards: ['9S', '9H'] } }} myHand={hand} setSelectedCards={select} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý' }))
+  expect(select).toHaveBeenLastCalledWith(['10S', '10H'])
+})
+it('announces no legal response and pulses pass without changing the selection', () => {
+  const select = vi.fn()
+  const { container } = render(<ThirteenHud {...props} table={{ ...table, trick: { cards: ['2H'] } }} setSelectedCards={select} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý' }))
+  expect(screen.getByText('Không có bài chặt được')).toBeVisible()
+  expect(container.querySelector('.thirteen-pass-pulse')).toBeInTheDocument()
+  expect(select).not.toHaveBeenCalled()
+})
+it('clears selection and moves the keyboard focus without consuming chat input keys', () => {
+  const clear = vi.fn(), focus = vi.fn(), toggle = vi.fn(), paint = vi.fn()
+  render(<ThirteenHud {...props} selectedCards={['3S']} focusedCard='4S' setFocusedCard={focus} clearSelection={clear} toggleCard={toggle} setCardSelected={paint} />)
+  fireEvent.keyDown(window, { key: 'ArrowRight' })
+  expect(focus).toHaveBeenLastCalledWith('5S')
+  fireEvent.keyDown(window, { key: 'ArrowLeft' })
+  expect(focus).toHaveBeenLastCalledWith('3S')
+  fireEvent.keyDown(window, { key: 'ArrowUp' })
+  fireEvent.keyDown(window, { key: 'Shift' })
+  expect(paint.mock.calls).toEqual([['4S', true], ['4S', true]])
+  fireEvent.keyDown(window, { key: 'Escape' })
+  fireEvent.click(screen.getByRole('button', { name: 'Bỏ chọn' }))
+  expect(clear).toHaveBeenCalledTimes(2)
+  fireEvent.keyDown(screen.getByRole('checkbox', { name: 'Chọn 3S' }), { key: 'h' })
+  expect(toggle).not.toHaveBeenCalled()
 })

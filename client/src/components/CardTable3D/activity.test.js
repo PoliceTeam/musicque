@@ -14,3 +14,12 @@ describe('on-demand animation activity', () => {
     expect(activity.size).toBe(0)
   })
 })
+it('notifies subscribers only when motion starts or fully stops', () => {
+  const activity = createAnimationActivity(vi.fn()), listener = vi.fn(), a = Symbol(), b = Symbol()
+  const unsubscribe = activity.subscribe(listener)
+  activity.start(a); activity.start(b); activity.start(a)
+  expect(listener).toHaveBeenCalledTimes(1)
+  activity.stop(a); activity.stop(a); expect(listener).toHaveBeenCalledTimes(1)
+  activity.stop(b); activity.stop(b); expect(listener).toHaveBeenCalledTimes(2)
+  unsubscribe(); activity.start(a); expect(listener).toHaveBeenCalledTimes(2)
+})

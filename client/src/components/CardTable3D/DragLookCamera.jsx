@@ -27,6 +27,11 @@ export default function DragLookCamera({ reducedMotion }) {
     }
     const down = event => {
       if (event.button !== 0) return
+      const rect = canvas.getBoundingClientRect()
+      scratch.pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1)
+      scratch.ray.setFromCamera(scratch.pointer, camera)
+      let hit = scratch.ray.intersectObjects(scene.children, true)[0]?.object
+      while (hit) { if (hit.userData.selectionCard) return; hit = hit.parent }
       const current = state.current
       current.inertia = 0
       candidate = { id: event.pointerId, x: event.clientX, yaw: current.yawTarget, rawYaw: current.yawTarget, radiansPerPixel: degreesPerPixel(camera.fov, camera.aspect, canvas.clientWidth) * Math.PI / 180, dragging: false, samples: [{ time: event.timeStamp, yaw: current.yawTarget }] }

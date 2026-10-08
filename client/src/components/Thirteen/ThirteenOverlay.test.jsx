@@ -2,21 +2,22 @@ import React from 'react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { act, within, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ThirteenOverlay from './ThirteenOverlay'
 import ThirteenPage from '../../pages/ThirteenPage'
+import { tableGameApi } from '../../services/api'
 const mocks = vi.hoisted(() => ({ state: null, balance: undefined }))
 vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => { mocks.sceneRenders = (mocks.sceneRenders || 0) + 1; return <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> } }))
 vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> }))
-vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' }, balance: mocks.balance }) }))
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: mocks.user, loading: mocks.loading, requireAuth: mocks.requireAuth, balance: mocks.balance }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
 const table = { tableId: 1, matchId: 'g1', version: 0, status: 'playing', currentSeat: 0, pot: 20, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 1 }, { userId: 'b', username: 'Bình', handCount: 1 }, { isBot: true, username: 'Bot 1', handCount: 1 }, { isBot: true, username: 'Bot 2', handCount: 1 }], trick: null, mustInclude: '3S' }
-const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), busy: false, onClose: vi.fn() }
-beforeEach(() => { mocks.balance = undefined })
+const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), clearSelection: vi.fn(), busy: false, onClose: vi.fn() }
+beforeEach(() => { mocks.balance = undefined; mocks.user = { _id: 'a' }; mocks.loading = false; mocks.requireAuth = vi.fn() })
 describe('ThirteenOverlay', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.state = { ...props, tables: [table], currentTable: table, config: { stake: 10, turnMs: 20000 }, closeResult: vi.fn() } })
   it('automatically opens the playing match, closes to the lobby and can reopen', async () => {
-    render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    const view = render(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     const dialog = await screen.findByRole('dialog', { name: 'Tiến Lên Miền Nam' })
     expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(dialog).toHaveFocus()
@@ -27,6 +28,11 @@ describe('ThirteenOverlay', () => {
     expect(document.body.style.overflow).toBe('')
     await userEvent.click(screen.getByRole('button', { name: 'Quay lại bàn' }))
     expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(props.clearSelection).toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'Tiến Lên Miền Nam' })).toBeInTheDocument()
+    mocks.state = { ...mocks.state, selectedCards: [] }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByRole('dialog', { name: 'Tiến Lên Miền Nam' })).not.toBeInTheDocument()
   })
@@ -48,7 +54,7 @@ describe('ThirteenOverlay', () => {
   it('keeps keyboard focus within the floating controls', () => {
     render(<ThirteenOverlay {...props} open />)
     const first = screen.getByRole('button', { name: 'Luật chơi' })
-    const last = screen.getByRole('button', { name: 'Góc mặc định' })
+    const last = screen.getByRole('button', { name: 'Chọn emoji' })
     last.focus()
     fireEvent.keyDown(window, { key: 'Tab' })
     expect(first).toHaveFocus()
@@ -239,7 +245,7 @@ it('dispatches a camera reset from the default-view button', async () => {
   window.addEventListener('card-table:reset-view', reset)
   try {
     render(<ThirteenOverlay {...props} open />)
-    await userEvent.click(screen.getByRole('button', { name: 'Góc mặc định' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Về góc nhìn mặc định' }))
     expect(reset).toHaveBeenCalledOnce()
   } finally { window.removeEventListener('card-table:reset-view', reset) }
 })
@@ -324,18 +330,15 @@ describe('stake in the waiting panel', () => {
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 
-  it('puts the amount on the ready button, but not for free play', () => {
-    const view = render(overlay({ stake: 50 }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng (cược 50 PC)' })).toBeInTheDocument()
-    view.rerender(overlay({ stake: 50, status: 'finished' }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới (cược 50 PC)' })).toBeInTheDocument()
-    view.rerender(overlay({ stake: 0, status: 'finished' }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng ván mới' })).toBeInTheDocument()
-  })
-
-  it('leaves the amount off the ready button when you are alone, since a solo game is free practice', () => {
-    render(overlay({ stake: 50, seats: [waiting.seats[0], null, null, null] }))
-    expect(screen.getByRole('button', { name: 'Sẵn sàng' })).toBeInTheDocument()
+  it('host starts only when other humans are ready, with no ready toggle', () => {
+    const view = render(overlay({ seats: [waiting.seats[0], { ...waiting.seats[1], ready: false }, null, null] }))
+    expect(screen.getByRole('button', { name: 'Bắt đầu (cược 20 PC)' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Sẵn sàng/ })).not.toBeInTheDocument()
+    view.rerender(overlay())
+    fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu (cược 20 PC)' }))
+    expect(props.action).toHaveBeenCalledWith('start', 1)
+    view.rerender(overlay({ seats: [waiting.seats[0], null, null, null] }))
+    expect(screen.getByRole('button', { name: 'Bắt đầu' })).toBeEnabled()
   })
 
   it('announces the stake with the other wall-board information', () => {
@@ -429,4 +432,89 @@ describe('stake picker label placement', () => {
     fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
     expect(last).toHaveFocus()
   })
+})
+
+
+describe('room invite authentication', () => {
+  beforeEach(() => {
+    lobbyState()
+    vi.spyOn(tableGameApi, 'table').mockResolvedValue({ data: { tableId: 'K7Q2' } })
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('waits for stored-token verification before joining once without prompting login', async () => {
+    mocks.user = null
+    mocks.loading = true
+    const view = render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).not.toHaveBeenCalled()
+    expect(tableGameApi.table).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Search params')).toHaveTextContent('?room=K7Q2')
+    mocks.user = { _id: 'a' }
+    mocks.loading = false
+    view.rerender(<MemoryRouter><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(mocks.state.action).toHaveBeenCalledWith('sit', 'K7Q2', { retryTransient: true }))
+    expect(mocks.state.action).toHaveBeenCalledTimes(1)
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(tableGameApi.table).not.toHaveBeenCalled()
+  })
+
+  it('tells guests a room is closed and clears only the invite parameter without prompting login', async () => {
+    const { message } = await import('antd')
+    const toast = vi.spyOn(message, 'open')
+    mocks.user = null
+    tableGameApi.table.mockRejectedValueOnce({ response: { status: 404, data: { code: 'TABLE_NOT_FOUND' } } })
+    render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2&other=keep']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(screen.getByLabelText('Search params')).toHaveTextContent('?other=keep'))
+    expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Bàn không tồn tại hoặc đã đóng.' })
+    expect(tableGameApi.table).toHaveBeenCalledExactlyOnceWith('thirteen', 'K7Q2')
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('prompts guests to log in when the room exists or lookup fails (failure: %s)', async failure => {
+    mocks.user = null
+    if (failure) tableGameApi.table.mockRejectedValueOnce({ response: { status: 503 } })
+    render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(mocks.requireAuth).toHaveBeenCalledExactlyOnceWith('Đăng nhập để vào bàn được mời.'))
+    expect(tableGameApi.table).toHaveBeenCalledExactlyOnceWith('thirteen', 'K7Q2')
+    expect(screen.getByLabelText('Search params')).toHaveTextContent('?room=K7Q2')
+    expect(mocks.state.action).not.toHaveBeenCalled()
+  })
+
+  it('ignores a guest lookup that resolves after the user has logged in', async () => {
+    mocks.user = null
+    let resolveLookup
+    tableGameApi.table.mockReturnValueOnce(new Promise(resolve => { resolveLookup = resolve }))
+    const view = render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /></MemoryRouter>)
+    mocks.user = { _id: 'a' }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await act(async () => { resolveLookup({ data: { tableId: 'K7Q2' } }) })
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).toHaveBeenCalledExactlyOnceWith('sit', 'K7Q2', { retryTransient: true })
+  })
+})
+
+it('shows host start instructions after a match and on host transfer, without a ready-kick timer', () => {
+  const finished = { ...table, status: 'finished', matchId: null, hostId: 'b', readyDeadlineAt: Date.now() + 30000, seats: [{ userId: 'a', username: 'An', ready: true, readyDeadlineAt: Date.now() + 30000 }, { userId: 'b', username: 'Bình', ready: false }, null, null] }
+  const view = render(<ThirteenOverlay {...props} open table={finished} />)
+  expect(screen.getByRole('timer')).toHaveTextContent('Tự rời bàn')
+  view.rerender(<ThirteenOverlay {...props} open table={{ ...finished, hostId: 'a', seats: [finished.seats[0], null, null, null] }} />)
+  expect(screen.queryByRole('timer')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Tự rời bàn/)).not.toBeInTheDocument()
+  expect(screen.getByText('Bắt đầu khi mọi người sẵn sàng')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Bắt đầu' })).toBeEnabled()
+  expect(screen.queryByRole('button', { name: /Sẵn sàng/ })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu' }))
+  expect(props.action).toHaveBeenCalledWith('start', 1)
+})
+
+it('keeps the default-view icon available in waiting rooms and shows its tooltip on focus', async () => {
+  render(<ThirteenOverlay {...props} open table={{ ...table, status: 'waiting' }} />)
+  const button = screen.getByRole('button', { name: 'Về góc nhìn mặc định' })
+  expect(button.closest('.th-game-corner-controls')).not.toBeNull()
+  fireEvent.focus(button)
+  const tooltip = await screen.findByRole('tooltip')
+  expect(tooltip).toHaveTextContent('Về góc nhìn mặc định')
+  expect(getComputedStyle(tooltip.closest('.ant-tooltip')).zIndex).toBe('1301')
 })
