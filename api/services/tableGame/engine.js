@@ -347,6 +347,7 @@ const createTableGameService = (definition) => {
       cancelCountdown(table)
       table.autoLeft = []
       table.seats[seat] = { userId, username: user.displayName || user.username, ready: false, idleDeadlineAt: Date.now() + idleSeatMs, readyDeadlineAt: table.readyDeadlineAt ? Math.max(table.readyDeadlineAt, Date.now() + readyTimeoutMs) : null }
+      table.hostId ||= userId
       scheduleLobby(table)
       broadcast(table)
       return snapshot(table, userId)
