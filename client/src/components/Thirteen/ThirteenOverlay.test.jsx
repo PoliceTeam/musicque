@@ -2,17 +2,18 @@ import React from 'react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { act, within, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ThirteenOverlay from './ThirteenOverlay'
 import ThirteenPage from '../../pages/ThirteenPage'
+import { tableGameApi } from '../../services/api'
 const mocks = vi.hoisted(() => ({ state: null, balance: undefined }))
 vi.mock('./ThirteenTable3D', () => ({ default: ({ handLowered, dealOnMount }) => { mocks.sceneRenders = (mocks.sceneRenders || 0) + 1; return <div aria-label='Sân chơi ba chiều' data-lowered={Boolean(handLowered)} data-deal={Boolean(dealOnMount)} /> } }))
 vi.mock('../Auth/UserMenu', () => ({ default: () => <span>Tài khoản</span> }))
-vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'a' }, balance: mocks.balance }) }))
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: mocks.user, loading: mocks.loading, requireAuth: mocks.requireAuth, balance: mocks.balance }) }))
 vi.mock('../../contexts/ThirteenContext', () => ({ ThirteenProvider: ({ children }) => children, useThirteen: () => mocks.state }))
 const table = { tableId: 1, matchId: 'g1', version: 0, status: 'playing', currentSeat: 0, pot: 20, serverNow: Date.now(), turnDeadlineAt: new Date(Date.now() + 20000).toISOString(), seats: [{ userId: 'a', username: 'An', handCount: 1 }, { userId: 'b', username: 'Bình', handCount: 1 }, { isBot: true, username: 'Bot 1', handCount: 1 }, { isBot: true, username: 'Bot 2', handCount: 1 }], trick: null, mustInclude: '3S' }
 const props = { table, userId: 'a', myHand: ['3S'], selectedCards: ['3S'], toggleCard: vi.fn(), action: vi.fn(), busy: false, onClose: vi.fn() }
-beforeEach(() => { mocks.balance = undefined })
+beforeEach(() => { mocks.balance = undefined; mocks.user = { _id: 'a' }; mocks.loading = false; mocks.requireAuth = vi.fn() })
 describe('ThirteenOverlay', () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.state = { ...props, tables: [table], currentTable: table, config: { stake: 10, turnMs: 20000 }, closeResult: vi.fn() } })
   it('automatically opens the playing match, closes to the lobby and can reopen', async () => {
@@ -428,5 +429,66 @@ describe('stake picker label placement', () => {
     expect(first).toHaveFocus()
     fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
     expect(last).toHaveFocus()
+  })
+})
+
+
+describe('room invite authentication', () => {
+  beforeEach(() => {
+    lobbyState()
+    vi.spyOn(tableGameApi, 'table').mockResolvedValue({ data: { tableId: 'K7Q2' } })
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('waits for stored-token verification before joining once without prompting login', async () => {
+    mocks.user = null
+    mocks.loading = true
+    const view = render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).not.toHaveBeenCalled()
+    expect(tableGameApi.table).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Search params')).toHaveTextContent('?room=K7Q2')
+    mocks.user = { _id: 'a' }
+    mocks.loading = false
+    view.rerender(<MemoryRouter><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(mocks.state.action).toHaveBeenCalledWith('sit', 'K7Q2', { retryTransient: true }))
+    expect(mocks.state.action).toHaveBeenCalledTimes(1)
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(tableGameApi.table).not.toHaveBeenCalled()
+  })
+
+  it('tells guests a room is closed and clears only the invite parameter without prompting login', async () => {
+    const { message } = await import('antd')
+    const toast = vi.spyOn(message, 'open')
+    mocks.user = null
+    tableGameApi.table.mockRejectedValueOnce({ response: { status: 404, data: { code: 'TABLE_NOT_FOUND' } } })
+    render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2&other=keep']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(screen.getByLabelText('Search params')).toHaveTextContent('?other=keep'))
+    expect(toast).toHaveBeenCalledWith({ key: 'table-game', type: 'error', content: 'Bàn không tồn tại hoặc đã đóng.' })
+    expect(tableGameApi.table).toHaveBeenCalledExactlyOnceWith('thirteen', 'K7Q2')
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('prompts guests to log in when the room exists or lookup fails (failure: %s)', async failure => {
+    mocks.user = null
+    if (failure) tableGameApi.table.mockRejectedValueOnce({ response: { status: 503 } })
+    render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /><LocationProbe /></MemoryRouter>)
+    await waitFor(() => expect(mocks.requireAuth).toHaveBeenCalledExactlyOnceWith('Đăng nhập để vào bàn được mời.'))
+    expect(tableGameApi.table).toHaveBeenCalledExactlyOnceWith('thirteen', 'K7Q2')
+    expect(screen.getByLabelText('Search params')).toHaveTextContent('?room=K7Q2')
+    expect(mocks.state.action).not.toHaveBeenCalled()
+  })
+
+  it('ignores a guest lookup that resolves after the user has logged in', async () => {
+    mocks.user = null
+    let resolveLookup
+    tableGameApi.table.mockReturnValueOnce(new Promise(resolve => { resolveLookup = resolve }))
+    const view = render(<MemoryRouter initialEntries={['/card-games/thirteen?room=K7Q2']}><ThirteenPage /></MemoryRouter>)
+    mocks.user = { _id: 'a' }
+    view.rerender(<MemoryRouter><ThirteenPage /></MemoryRouter>)
+    await act(async () => { resolveLookup({ data: { tableId: 'K7Q2' } }) })
+    expect(mocks.requireAuth).not.toHaveBeenCalled()
+    expect(mocks.state.action).toHaveBeenCalledExactlyOnceWith('sit', 'K7Q2', { retryTransient: true })
   })
 })

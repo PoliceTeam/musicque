@@ -13,7 +13,7 @@ export const useTableGame = (gameName) => {
 }
 const ERROR_COPY = {
   INSUFFICIENT_COINS: 'Có người chưa đủ PC. Tiền cược đã được hoàn.',
-  TABLE_NOT_FOUND: 'Mã bàn không tồn tại.',
+  TABLE_NOT_FOUND: 'Bàn không tồn tại hoặc đã đóng.',
   TABLE_LIMIT: 'Đã đạt số bàn tối đa. Hãy vào một bàn đang chờ.',
   TABLE_PLAYING: 'Bàn đang chơi. Bạn có thể rời ghế sau ván.',
   TABLE_FULL: 'Bàn đã đủ người.',
