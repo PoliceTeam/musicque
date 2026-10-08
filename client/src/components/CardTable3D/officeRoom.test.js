@@ -26,12 +26,21 @@ describe('stylized office room', () => {
     const { geometry, paletteKeys, bounds } = buildOfficeRoom()
     expect(bounds.filter(part => part.name.startsWith('pendant'))).toHaveLength(3)
     const bulb = bounds.find(part => part.name === 'pendantBulb').box
-    expect(bulb.getCenter(new Vector3()).x).toBe(0)
-    expect(bulb.getCenter(new Vector3()).z).toBe(0)
+    expect(bulb.getCenter(new Vector3()).x).toBeCloseTo(.55)
+    expect(bulb.getCenter(new Vector3()).z).toBeCloseTo(-.25)
     const emission = geometry.attributes.lampEmission
     for (let i = 0; i < emission.count; i++) {
       const key = paletteKeys[geometry.attributes.paletteKey.getX(i)]
       expect(emission.getX(i)).toBeCloseTo(key === 'lampGlow' ? 1 : key === 'lampShade' ? .08 : 0)
+    }
+    geometry.dispose()
+  })
+  it('places two wall sconces and restricts their falloff to wall surfaces', () => {
+    const { geometry, paletteKeys, bounds } = buildOfficeRoom()
+    expect(bounds.filter(part => part.name === 'wallSconceBulb')).toHaveLength(2)
+    for (let i = 0; i < geometry.attributes.wallSurface.count; i++) {
+      const key = paletteKeys[geometry.attributes.paletteKey.getX(i)]
+      expect(geometry.attributes.wallSurface.getX(i)).toBe(key.startsWith('wall') ? 1 : 0)
     }
     geometry.dispose()
   })

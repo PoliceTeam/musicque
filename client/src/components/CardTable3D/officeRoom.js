@@ -14,6 +14,7 @@ export function buildOfficeRoom() {
       const seam = key.startsWith('wall') ? 0.82 + Math.min(1, Math.max(0, position.getY(i) / 0.25)) * 0.18 : 1
       shades[i] = seam * (normal.getY(i) < -0.5 ? 0.72 : 1)
     }
+    geometry.setAttribute('wallSurface', new Float32BufferAttribute(new Float32Array(position.count).fill(key.startsWith('wall') ? 1 : 0), 1))
     geometry.setAttribute('lampEmission', new Float32BufferAttribute(new Float32Array(position.count).fill(key === 'lampGlow' ? 1 : key === 'lampShade' ? .08 : 0), 1))
     geometry.setAttribute('paletteKey', new Float32BufferAttribute(keys, 1)); geometry.setAttribute('shade', new Float32BufferAttribute(shades, 1)); geometry.setAttribute('color', new Float32BufferAttribute(new Float32Array(position.count * 3), 3))
     bounds.push({ name, box: new Box3().setFromBufferAttribute(position) }); parts.push(geometry)
@@ -53,9 +54,14 @@ export function buildOfficeRoom() {
     add(new ConeGeometry(0.22, 0.18, 12), [2.45, 2.19, z], 'lampShade')
     cylinder(0.18, 0.015, [2.45, 2.1, z], 'lampGlow')
   }
-  cylinder(.012, 1, [0, 2.2, 0], 'metal', undefined, 'pendantCord')
-  add(new ConeGeometry(.16, .16, 12), [0, 1.64, 0], 'lampShade', undefined, 'pendantShade')
-  cylinder(.12, .025, [0, 1.555, 0], 'lampGlow', undefined, 'pendantBulb')
+  for (const x of [-1.9, 1.9]) {
+    box([.23, .06, .16], [x, 1.86, -2.75], 'lampShade', 'wallSconceShade')
+    cylinder(.065, .24, [x, 1.7, -2.76], 'lampGlow', undefined, 'wallSconceBulb')
+    box([.18, .04, .13], [x, 1.56, -2.75], 'metal', 'wallSconceBase')
+  }
+  cylinder(.012, 1, [.55, 2.13, -.25], 'metal', undefined, 'pendantCord')
+  add(new ConeGeometry(.16, .16, 12), [.55, 1.57, -.25], 'lampShade', undefined, 'pendantShade')
+  cylinder(.12, .025, [.55, 1.485, -.25], 'lampGlow', undefined, 'pendantBulb')
   box([0.38, 1.05, 0.4], [2.55, 0.525, 0.35], 'metal')
   for (const y of [0.3, 0.75]) add(new CircleGeometry(0.12, 12), [2.35, y, 0.35], 'wood', [0, -Math.PI / 2, 0])
   const geometry = mergeGeometries(parts); parts.forEach(part => part.dispose())
