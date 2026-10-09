@@ -8,7 +8,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 // Độ dài tính theo thời gian (không theo số khung) để máy yếu/fps thấp không kéo vệt dài cả giây.
 
 const SAMPLES = 32
-const DURATION = 0.3 // giây
+const DURATION = 0.3 // giây (mặc định)
 
 const vertexShader = /* glsl */ `
   attribute float aFade;
@@ -35,7 +35,7 @@ const fragmentShader = /* glsl */ `
   }
 `
 
-const LimbTrail = ({ bone, color, width = 0.12 }) => {
+const LimbTrail = ({ bone, color, width = 0.12, duration = DURATION, opacity = 0.95 }) => {
   const camera = useThree((s) => s.camera)
   const started = useRef(false)
 
@@ -58,7 +58,7 @@ const LimbTrail = ({ bone, color, width = 0.12 }) => {
     g.setAttribute('aSide', new THREE.BufferAttribute(side, 1))
     g.setIndex(index)
     const m = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(color) }, uOpacity: { value: 0.95 } },
+      uniforms: { uColor: { value: new THREE.Color(color) }, uOpacity: { value: opacity } },
       vertexShader,
       fragmentShader,
       transparent: true,
@@ -77,6 +77,7 @@ const LimbTrail = ({ bone, color, width = 0.12 }) => {
   }, [])
 
   useEffect(() => { material.uniforms.uColor.value.set(color) }, [material, color])
+  useEffect(() => { material.uniforms.uOpacity.value = opacity }, [material, opacity])
   useEffect(() => () => { geometry.dispose(); material.dispose() }, [geometry, material])
 
   useFrame(({ clock }) => {
@@ -94,16 +95,16 @@ const LimbTrail = ({ bone, color, width = 0.12 }) => {
     times.copyWithin(0, 1)
     times[SAMPLES - 1] = now
 
-    // Mẫu quá DURATION bị dồn về mẫu còn hạn cũ nhất -> phần đó thành đoạn rỗng, không vẽ.
+    // Mẫu quá `duration` bị dồn về mẫu còn hạn cũ nhất -> phần đó thành đoạn rỗng, không vẽ.
     let firstLive = SAMPLES - 1
-    while (firstLive > 0 && now - times[firstLive - 1] <= DURATION) firstLive--
+    while (firstLive > 0 && now - times[firstLive - 1] <= duration) firstLive--
     for (let i = 0; i < firstLive; i++) points[i].copy(points[firstLive])
 
     const pos = geometry.attributes.position.array
     const fade = geometry.attributes.aFade.array
     for (let i = 0; i < SAMPLES; i++) {
       const p = points[i]
-      const f = i < firstLive ? 0 : Math.max(0, 1 - (now - times[i]) / DURATION) // 1 = đầu (khớp), 0 = đuôi
+      const f = i < firstLive ? 0 : Math.max(0, 1 - (now - times[i]) / duration) // 1 = đầu (khớp), 0 = đuôi
       fade[i * 2] = fade[i * 2 + 1] = f
       tangent.subVectors(points[Math.min(i + 1, SAMPLES - 1)], points[Math.max(i - 1, 0)])
       view.subVectors(camera.position, p)

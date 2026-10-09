@@ -11,6 +11,9 @@ import {
   pressSpace,
   startTurn,
   turnIndexAt,
+  barPhase,
+  FINISH_REST_BARS,
+  SUCCESS,
   WINDOWS
 } from '../../utils/audition'
 import {
@@ -27,6 +30,7 @@ import {
 } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import AuditionHud from './AuditionHud'
+import AuditionChat from './AuditionChat'
 import { useAuditionRoom } from './useAuditionRoom'
 import { slotOf } from './resultBoard'
 import {
@@ -38,8 +42,10 @@ import {
   saveBest,
   saveSettings,
   SFX_END,
+  SFX_END_VOICE,
   SFX_FINISH,
   SFX_FOR,
+  SFX_VOICE,
   SHOWTIME_CLIP,
   STAGES,
   trackOf
@@ -51,8 +57,10 @@ const AuditionStage3D = lazy(() => import('./AuditionStage3D'))
 const charUrl = (charId) => (CHARACTERS.find((c) => c.id === charId) || CHARACTERS[0]).url
 
 // Phản ứng của nhân vật với một kết quả chấm điểm (của mình hay của người khác).
-const animForResult = ({ judgement, showtime, turnLevel }, t, bar) => {
-  if (showtime) return { kind: 'showtime', clip: SHOWTIME_CLIP, synced: true, until: t + 2 * bar }
+// Qua Finish Move (Perfect/Great/Cool) luôn là Breakdance Freezes + vệt sáng/bụi sao đặc biệt.
+const animForResult = ({ judgement, showtime, finish, turnLevel }, t, bar) => {
+  // nhảy showtime suốt FINISH_REST_BARS ô nhịp nghỉ sau Finish (hit ở phách 4 -> còn 1/4 ô của lượt Finish)
+  if (showtime || (finish && SUCCESS.has(judgement))) return { kind: 'showtime', clip: SHOWTIME_CLIP, synced: true, until: t + (FINISH_REST_BARS + 0.25) * bar }
   if (judgement === 'perfect' || judgement === 'great' || judgement === 'cool') {
     return { kind: 'dance', clip: DANCE_BY_LEVEL[turnLevel] || DANCE_BY_LEVEL[1], synced: true }
   }
@@ -60,12 +68,16 @@ const animForResult = ({ judgement, showtime, turnLevel }, t, bar) => {
 }
 
 // Đổi anim chỉ khi khác clip/trạng thái (nhảy tiếp điệu đang nhảy thì không giật về đầu clip).
-const nextAnim = (prev, next) => {
+// Đang Breakdance Freezes sau Finish Move thì lượt kế không cắt ngang (trừ khi vấp) cho tới `until`.
+const nextAnim = (prev, next, t) => {
+  if (prev?.kind === 'showtime' && next.kind === 'dance' && t != null && t < prev.until) return prev
   if (prev && prev.clip === next.clip && prev.kind === next.kind && !next.restart) return { ...prev, until: next.until }
   return { ...next, key: (prev?.key || 0) + 1 }
 }
 
 const PLATFORM_OF = { showtime: 'showtime', dance: 'dance' }
+const VOICE_LOOKAHEAD = 0.25
+const END_HOLD_MS = 5000 // hết bài: cả sân khấu đứng idle chừng này rồi mới mở bảng điểm
 const LATE_START_MS = 1500 // tin bắt đầu tới trễ hơn mức này coi như lỡ ván
 
 const AuditionRoom = ({ roomId }) => {
@@ -75,6 +87,8 @@ const AuditionRoom = ({ roomId }) => {
   const [view, setView] = useState(createGameState)
   const [myAnim, setMyAnim] = useState({ clip: 'idle', synced: false, key: 0, kind: 'idle' })
   const [othersAnim, setOthersAnim] = useState({})
+  const [othersJudge, setOthersJudge] = useState({}) // chữ Perfect/Great… nổi trên đầu người khác
+  const [endHold, setEndHold] = useState(false) // vừa hết bài: đứng idle chờ mở bảng điểm
   const [liveScores, setLiveScores] = useState({})
   const [fx, setFx] = useState({ key: 0 })
   const [label, setLabel] = useState(null)
@@ -95,18 +109,21 @@ const AuditionRoom = ({ roomId }) => {
   const othersRef = useRef({})
   const labelRef = useRef(null)
   const timers = useRef([])
+  const voiceRef = useRef({ said: {}, stop: null }) // giọng Ready/Start của đoạn dạo, mỗi ván đọc một lần
 
   const audioTime = () => (audioRef.current ? audioRef.current.currentTime - latencyRef.current : 0)
 
   const onProgress = useCallback((ev) => {
     setLiveScores((s) => ({ ...s, [ev.userId]: ev.score }))
     if (ev.userId === user?._id || ev.gameNo !== gameMeta.current.gameNo || !chartRef.current) return
-    const next = nextAnim(othersRef.current[ev.userId], animForResult(ev, audioTime(), chartRef.current.bar))
+    const now = audioTime()
+    const next = nextAnim(othersRef.current[ev.userId], animForResult(ev, now, chartRef.current.bar), now)
     othersRef.current = { ...othersRef.current, [ev.userId]: next }
     setOthersAnim(othersRef.current)
+    setOthersJudge((j) => ({ ...j, [ev.userId]: { judgement: ev.judgement, key: (j[ev.userId]?.key || 0) + 1 } }))
   }, [user?._id])
 
-  const { room, gone, clockOffset, run, userId } = useAuditionRoom(roomId, { onProgress })
+  const { room, gone, chat, clockOffset, run, userId } = useAuditionRoom(roomId, { onProgress })
   const me = room?.players.find((p) => p.userId === userId) || null
   const isHost = Boolean(room && room.hostId === userId)
   const track = trackOf(room?.songId)
@@ -137,8 +154,8 @@ const AuditionRoom = ({ roomId }) => {
     }
   }, [sfx])
 
-  const setMine = useCallback((next) => {
-    const a = nextAnim(myAnimRef.current, next)
+  const setMine = useCallback((next, t) => {
+    const a = nextAnim(myAnimRef.current, next, t)
     const changed = a.key !== myAnimRef.current.key
     myAnimRef.current = a
     if (changed) setMyAnim(a)
@@ -159,7 +176,7 @@ const AuditionRoom = ({ roomId }) => {
     sfx.play(SFX_FOR[ev.judgement](ev.combo))
     if (ev.finish && ev.reason === 'timing' && ev.judgement !== 'missed') sfx.play(SFX_FINISH)
     setFx((f) => ({ key: f.key + 1, judgement: ev.judgement, points: ev.points, showtime: ev.showtime, burst: { key: f.key + 1, miss: !ev.success } }))
-    setMine(animForResult({ judgement: ev.judgement, showtime: ev.showtime, turnLevel: ev.level }, t, chartRef.current.bar))
+    setMine(animForResult({ judgement: ev.judgement, showtime: ev.showtime, finish: ev.finish, turnLevel: ev.level }, t, chartRef.current.bar), t)
     const meta = gameMeta.current
     reportAuditionTurn(roomId, {
       gameNo: meta.gameNo,
@@ -169,7 +186,8 @@ const AuditionRoom = ({ roomId }) => {
       combo: r.state.combo,
       level: r.state.level,
       turnLevel: ev.level,
-      showtime: ev.showtime
+      showtime: ev.showtime,
+      finish: Boolean(ev.finish)
     }).catch(() => {})
   }, [roomId, sfx, setMine])
 
@@ -180,6 +198,8 @@ const AuditionRoom = ({ roomId }) => {
     setMine({ kind: 'idle', clip: 'idle', synced: false, restart: true })
     showLabel(null)
     setLocal('done')
+    setEndHold(true)
+    timers.current.push(setTimeout(() => setEndHold(false), END_HOLD_MS))
     finishAuditionGame(roomId, gameMeta.current.gameNo).catch(() => {})
   }, [roomId, setMine, showLabel])
 
@@ -214,8 +234,10 @@ const AuditionRoom = ({ roomId }) => {
       setLiveScores({})
       othersRef.current = {}
       setOthersAnim({})
+      setOthersJudge({})
       labelRef.current = null
       setLabel(null)
+      voiceRef.current = { said: {}, stop: null }
       setMine({ kind: 'idle', clip: 'idle', synced: true, restart: true })
       audio.pause()
       audio.currentTime = 0
@@ -273,9 +295,23 @@ const AuditionRoom = ({ roomId }) => {
       const t = audio.currentTime - latencyRef.current
       const meta = gameMeta.current
 
-      if (t < chart.goAt) showLabel(t >= chart.readyAt - chart.beat ? 'ready' : null)
-      else if (t < chart.goAt + chart.bar) showLabel('go')
+      // đoạn dạo 6 ô nhịp: vạch sáng ô 5 "Ready", vạch sáng ô 6 "Start", ô 7 hiện phím
+      const firstStart = chart.turns[0]?.start ?? chart.goAt + chart.beat
+      if (t < chart.readyAt) showLabel(null)
+      else if (t < chart.goAt) showLabel('ready')
+      else if (t < firstStart) showLabel('go')
       else if (labelRef.current && labelRef.current.name !== 'finish') showLabel(null)
+
+      // Hẹn giờ trước VOICE_LOOKAHEAD giây trên đồng hồ Web Audio để giọng rơi đúng phách dù khung hình giật.
+      const voice = voiceRef.current
+      for (const [cue, at] of [['ready', chart.readyAt], ['go', chart.goAt]]) {
+        if (voice.said[cue] || t < at - VOICE_LOOKAHEAD) continue
+        voice.said[cue] = true
+        if (t - at > 0.3) continue // vào trễ (tua bù) thì bỏ qua, không đọc lệch phách
+        const delay = Math.max(0, at - t)
+        voice.stop?.(delay) // "Ready" dài hơn 1 phách: cắt đúng lúc "Start" vào
+        voice.stop = sfx.play(SFX_VOICE[cue], 1, delay)
+      }
 
       let g = gameRef.current
       if (g.turn && !g.turn.result && t > g.turn.hit + WINDOWS.bad) {
@@ -291,11 +327,10 @@ const AuditionRoom = ({ roomId }) => {
         g = r.state
       }
 
+      // con trỏ chạy theo lưới ô nhịp suốt bài (cả đoạn dạo và ô nhịp nghỉ); mờ đi khi bị khoá lượt
       if (markerRef.current) {
-        const ct = g.turn ? chart.turns[g.turn.index] : null
-        const p = ct ? (t - ct.start) / chart.bar : 0
-        markerRef.current.style.left = `${Math.min(Math.max(p, 0), 1) * 100}%`
-        markerRef.current.style.opacity = ct && !g.turn.skipped ? '1' : '0.3'
+        markerRef.current.style.left = `${barPhase(chart, t) * 100}%`
+        markerRef.current.style.opacity = t >= chart.offset && !g.turn?.skipped ? '1' : '0.3'
       }
       if (progressRef.current && audio.duration) {
         progressRef.current.style.width = `${Math.min(1, audio.currentTime / audio.duration) * 100}%`
@@ -322,7 +357,7 @@ const AuditionRoom = ({ roomId }) => {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [local, commit, finishLocal, setMine, showLabel])
+  }, [local, commit, finishLocal, setMine, showLabel, sfx])
 
   // ---- Hành động phòng ----
   const join = () => {
@@ -345,16 +380,8 @@ const AuditionRoom = ({ roomId }) => {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (local !== 'playing') {
-        if (e.key === 'Enter' && room?.status === 'finished' && resultsSeen !== room.gameNo && me) {
-          e.preventDefault()
-          setResultsSeen(room.gameNo)
-          return
-        }
-        const inLobby = room && room.status !== 'playing' && !(room.status === 'finished' && resultsSeen !== room.gameNo)
-        if (e.key === 'Enter' && isHost && inLobby && e.target.tagName !== 'SELECT') { e.preventDefault(); start() }
-        return
-      }
+      // Enter dành cho chat (AuditionChat); phím gõ trong ô chat không tính vào bài nhảy
+      if (local !== 'playing' || e.target?.closest?.('.au-chat')) return
       const dir = KEY_TO_DIR[e.key]
       const isSpace = e.code === 'Space'
       if (dir || isSpace) e.preventDefault() // không cuộn trang
@@ -365,12 +392,12 @@ const AuditionRoom = ({ roomId }) => {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [local, isHost, room, resultsSeen, start, commit, me])
+  }, [local, commit])
 
   // DEV: kiểm thử tự động đọc trạng thái / điều khiển.
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined
-    window.__audition = { game: () => gameRef.current, chart: () => chartRef.current, audio: () => audioRef.current, local: () => local }
+    window.__audition = { game: () => gameRef.current, chart: () => chartRef.current, audio: () => audioRef.current, local: () => local, anim: () => myAnimRef.current, others: () => othersRef.current }
     return () => { delete window.__audition }
   }, [local])
 
@@ -381,12 +408,13 @@ const AuditionRoom = ({ roomId }) => {
   // Bảng điểm cuối bài mở ra (cả phòng đã xong): tiếng thắng cho hạng 1–2, tiếng thua từ hạng 3.
   const endPlayedFor = useRef(0)
   useEffect(() => {
-    if (room?.status !== 'finished' || !room.results || endPlayedFor.current === room.gameNo) return
+    if (endHold || room?.status !== 'finished' || !room.results || endPlayedFor.current === room.gameNo) return
     const rank = room.results.find((r) => r.userId === userId)?.rank
     if (!rank) return
     endPlayedFor.current = room.gameNo
     sfx.play(SFX_END(rank))
-  }, [room, userId, sfx])
+    sfx.play(SFX_END_VOICE(rank))
+  }, [room, userId, sfx, endHold])
 
   // Điểm hiện tại của từng người (mình lấy từ máy mình, người khác từ luồng progress).
   const scoreOf = useCallback(
@@ -405,6 +433,19 @@ const AuditionRoom = ({ roomId }) => {
   const dancers = useMemo(() => {
     if (!room) return []
     // bảng điểm đã chốt: hạng 1–2 ăn mừng (lặp), từ hạng 3 làm động tác thua
+    // hết bài: mọi người về idle (nhún nhẹ, crossfade) trong END_HOLD_MS rồi mới lên bục
+    if (endHold) {
+      const rest = { clip: 'idle', synced: false, key: 2000 + room.gameNo, kind: 'idle' }
+      const list = room.players.filter((p) => p.userId !== userId).map((p) => ({
+        id: p.userId, url: charUrl(p.charId), anim: rest, name: p.name, isMe: false, isLeader: p.userId === leaderId, platform: 'idle'
+      }))
+      if (me) {
+        list.splice(Math.floor(list.length / 2), 0, {
+          id: me.userId, url: charUrl(me.charId), anim: rest, name: me.name, isMe: true, isLeader: me.userId === leaderId, platform: 'idle'
+        })
+      }
+      return list
+    }
     const podiumRank = room.status === 'finished' && room.results && resultsSeen !== room.gameNo
       ? new Map(room.results.map((r) => [r.userId, r.rank]))
       : null
@@ -425,7 +466,7 @@ const AuditionRoom = ({ roomId }) => {
     const others = room.players.filter((p) => p.userId !== userId)
     const list = others.map((p) => {
       const anim = othersAnim[p.userId] || idle
-      return { id: p.userId, url: charUrl(p.charId), anim, name: p.name, isMe: false, isLeader: p.userId === leaderId, platform: PLATFORM_OF[anim.kind] || 'idle' }
+      return { id: p.userId, url: charUrl(p.charId), anim, name: p.name, isMe: false, isLeader: p.userId === leaderId, platform: PLATFORM_OF[anim.kind] || 'idle', judge: playing ? othersJudge[p.userId] : null }
     })
     if (me) {
       list.splice(Math.floor(list.length / 2), 0, {
@@ -433,7 +474,7 @@ const AuditionRoom = ({ roomId }) => {
       })
     }
     return list
-  }, [room, userId, me, othersAnim, myAnim, local, leaderId, resultsSeen])
+  }, [room, userId, me, othersAnim, othersJudge, myAnim, local, leaderId, resultsSeen, endHold])
 
   const ranking = useMemo(() => {
     if (!room) return []
@@ -453,7 +494,7 @@ const AuditionRoom = ({ roomId }) => {
   }, [room?.seed, room?.id, room?.stageId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Bảng điểm cuối bài (dựng trong scene WebGL, xem ResultScene) ----
-  const showResults = Boolean(room) && local !== 'playing' && local !== 'countdown' &&
+  const showResults = Boolean(room) && !endHold && local !== 'playing' && local !== 'countdown' &&
     ((room.status === 'finished' && resultsSeen !== room.gameNo) || (local === 'done' && room.status === 'playing'))
   const finalResults = showResults && room.status === 'finished' && room.results ? room.results : null
   const resultView = useMemo(() => {
@@ -479,7 +520,7 @@ const AuditionRoom = ({ roomId }) => {
   }, [showResults, finalResults, ranking, userId, view, track.label, me, room?.gameNo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Phòng chờ (dựng trong scene WebGL, xem LobbyHud) ----
-  const showLobby = Boolean(room) && !showResults && local !== 'playing' && local !== 'countdown' && !(local === 'done' && room.status === 'playing')
+  const showLobby = Boolean(room) && !endHold && !showResults && local !== 'playing' && local !== 'countdown' && !(local === 'done' && room.status === 'playing')
   const lobbyView = showLobby
     ? {
         room,
@@ -546,6 +587,8 @@ const AuditionRoom = ({ roomId }) => {
       {needTap && local === 'playing' && (
         <button type='button' className='au-tap' onClick={resume}>Bấm để vào nhạc ▶</button>
       )}
+
+      {room && <AuditionChat roomId={roomId} messages={chat} meId={userId} canSend={Boolean(me)} />}
 
       {!room && <div className='au-loading au-loading--page'>Đang vào phòng…</div>}
 

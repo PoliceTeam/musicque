@@ -42,7 +42,7 @@ const LobbyHud = ({ lobby }) => {
   add(34, (yy) => <Text key='title' x={left} y={yy} w={cw} h={34} text={room.name} size={24} weight={900} italic gradient />, 4)
   add(22, (yy) => (
     <React.Fragment key='sub'>
-      <Text x={left} y={yy} w={cw - 92} h={22} text={`♪ ${track.label} · ${Math.round(track.bpm)} BPM · mã ${room.id}`} size={12} color='rgba(243,240,255,0.7)' />
+      <Text x={left} y={yy} w={cw - 92} h={22} text={`♪ ${track.label} · ${Math.round(track.bpm)} BPM · mã ${room.id}`} size={12} color='rgba(243,240,255,0.7)' shrink minSize={9} />
       <Button
         x={left + cw - 86} y={yy} w={86} h={22} size={11} label={copied ? 'Đã chép ✓' : 'Chép link'}
         onClick={() => { navigator.clipboard?.writeText(window.location.href).then(() => setCopied(true)) }}
@@ -84,7 +84,7 @@ const LobbyHud = ({ lobby }) => {
     if (isHost) {
       add(30, (yy) => (
         <Stepper
-          key='song' x={left} y={yy} w={cw} label='Bài hát' value={`${track.label} · ${Math.round(track.bpm)} BPM`}
+          key='song' x={left} y={yy} w={cw} labelW={70} label='Bài hát' value={`${track.label} · ${Math.round(track.bpm)} BPM`}
           onPrev={() => actions.onSong(cycle(SONGS.map((s) => s.id), room.songId, -1))}
           onNext={() => actions.onSong(cycle(SONGS.map((s) => s.id), room.songId, 1))}
           disabled={SONGS.length < 2}
@@ -98,7 +98,7 @@ const LobbyHud = ({ lobby }) => {
         />
       ), 8)
     } else {
-      add(22, (yy) => <Text key='song-ro' x={left} y={yy} w={cw} h={22} text={`Bài hát: ${track.label} · ${Math.round(track.bpm)} BPM`} size={13} />, 4)
+      add(22, (yy) => <Text key='song-ro' x={left} y={yy} w={cw} h={22} text={`Bài hát: ${track.label} · ${Math.round(track.bpm)} BPM`} size={13} shrink />, 4)
       add(22, (yy) => <Text key='stage-ro' x={left} y={yy} w={cw} h={22} text={`Sân khấu: ${stageLabel(room.stageId)}`} size={13} />, 8)
     }
     add(34, (yy) => (
@@ -144,7 +144,7 @@ const LobbyHud = ({ lobby }) => {
       add(46, (yy) => (
         <Button
           key='start' x={left} y={yy} w={cw} h={46} size={16} variant='primary' disabled={!room.allReady}
-          label={room.allReady ? 'Bắt đầu (Enter)' : `Chờ ${notReady} người sẵn sàng…`} onClick={actions.onStart}
+          label={room.allReady ? 'Bắt đầu' : `Chờ ${notReady} người sẵn sàng…`} onClick={actions.onStart}
         />
       ), 8)
     } else {

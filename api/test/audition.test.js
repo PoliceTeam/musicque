@@ -112,11 +112,11 @@ test('người cuối chưa xong mà rời phòng giữa bài thì ván vẫn ch
   assert.equal(room.status, 'finished')
 })
 
-test('lịch lượt server khớp client: 80 lượt, tối đa 2 Finish Move mỗi người', () => {
+test('lịch lượt server khớp client: 76 lượt, tối đa 2 Finish Move mỗi người', () => {
   // client/src/utils/audition.test.js khẳng định cùng các con số này — sửa luật thì sửa cả hai
-  assert.equal(core.CHART.turns.length, 80)
+  assert.equal(core.CHART.turns.length, 76)
   assert.equal(core.CHART.maxFinishes, 2)
-  assert.equal(core.CHART.turns[79].last, true)
+  assert.equal(core.CHART.turns[75].last, true)
 })
 
 test('bot: chủ phòng thêm/bớt được, tính vào giới hạn 6 người', () => {
@@ -219,7 +219,7 @@ test('mỗi bài có lịch lượt riêng; danh sách bài khớp client', () =
     return [s.id, [c.turns.length, c.maxFinishes]]
   }))
   // client/src/utils/audition.test.js kiểm cùng các con số này
-  assert.deepEqual(shape, { tttY: [80, 2], chiLaAoGiac: [133, 3], khongTin: [79, 2] })
+  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2] })
 })
 
 test('chủ phòng không rời được khi đang nhảy; hết ván thì rời được', () => {
@@ -242,4 +242,40 @@ test('bảng điểm cuối bài có chuỗi Perfect liên tiếp dài nhất c�
   assert.equal(r.maxPerfect, 3)
   assert.deepEqual(r.counts, { perfect: 6, great: 1, cool: 0, bad: 0, missed: 1 })
   assert.equal(r.rank, 1)
+})
+
+test('chat: chỉ người trong phòng, cắt gọn, chặn spam, giữ lịch sử có hạn', () => {
+  const { room } = setup(2)
+  const msg = core.postChat(room, 'u2', '  chào   cả nhà  ', 1000)
+  assert.deepEqual({ userId: msg.userId, name: msg.name, text: msg.text }, { userId: 'u2', name: 'P2', text: 'chào cả nhà' })
+  assert.throws(() => core.postChat(room, 'u2', 'nữa', 1100), { code: 'CHAT_TOO_FAST' })
+  assert.throws(() => core.postChat(room, 'u9', 'hi', 5000), { code: 'NOT_IN_ROOM' })
+  assert.throws(() => core.postChat(room, 'u1', '   ', 5000), { code: 'EMPTY_MESSAGE' })
+  assert.equal(core.postChat(room, 'u1', 'x'.repeat(500), 5000).text.length, core.CHAT_MAX_LEN)
+  for (let i = 0; i < 60; i++) core.postChat(room, 'u1', `tin ${i}`, 10000 + i * 1000)
+  const chat = core.serializeRoom(room).chat
+  assert.equal(chat.length, 40)
+  assert.equal(chat[chat.length - 1].text, 'tin 59')
+  // vẫn chat được khi đang nhảy
+  core.startGame(room, 'u1', 100000, rng)
+  assert.equal(core.postChat(room, 'u2', 'gg', 200000).text, 'gg')
+})
+
+test('bot nghỉ một ô nhịp sau lượt từ level 6 (khớp luật client), Missed thì không nghỉ thêm', () => {
+  const chart = require('../services/audition/chart')
+  const bot = { ...chart.createBotState(), level: 6 }
+  chart.applyResult(bot, false, 'perfect')
+  assert.equal(bot.restLeft, 1)
+  const low = { ...chart.createBotState(), level: 5 }
+  chart.applyResult(low, false, 'perfect')
+  assert.equal(low.restLeft, 0)
+  const missed = { ...chart.createBotState(), level: 8 }
+  chart.applyResult(missed, false, 'missed')
+  assert.deepEqual([missed.skipNext, missed.restLeft], [true, 0])
+  const fin = { ...chart.createBotState(), level: 9 }
+  chart.applyResult(fin, true, 'great')
+  assert.deepEqual([fin.restLeft, fin.level], [5, 6])
+  const finMiss = { ...chart.createBotState(), level: 9 }
+  chart.applyResult(finMiss, true, 'missed')
+  assert.deepEqual([finMiss.restLeft, finMiss.skipNext, finMiss.level], [5, false, 6])
 })

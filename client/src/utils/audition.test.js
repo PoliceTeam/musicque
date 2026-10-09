@@ -18,11 +18,15 @@ import {
   seededRng,
   sequenceFor,
   startTurn,
-  turnIndexAt
+  turnIndexAt,
+  barPhase,
+  REST_FROM_LEVEL,
+  FINISH_REST_BARS,
+  SCORING
 } from './audition'
 import { TRACKS } from '../components/DanceLab/danceLab'
 
-const chart = createChart({ bpm: 60, offset: 1, duration: 60 }) // phách 1s, ô nhịp 4s
+const chart = createChart({ bpm: 60, offset: 1, duration: 60, introBars: 2 }) // phách 1s, ô nhịp 4s; dạo 2 ô cho gọn -> lượt đầu ở giây 9
 const normalTurn = chart.turns[0]
 const finishTurn = chart.turns[3]
 // trạng thái đã đánh đủ số lượt ở level 9 -> lượt kế là Finish
@@ -32,12 +36,23 @@ const arrows = (...dirs) => dirs.map((dir) => ({ dir, reverse: false }))
 
 // Bắt đầu một lượt thường (hit ở giây 12) với chuỗi phím cho trước.
 const begin = (state, seq) => {
-  const s = startTurn(state, chart.turns[0]).state
+  const s = startTurn({ ...state, restLeft: 0 }, chart.turns[0]).state // bỏ qua ô nghỉ của level cao
   return seq ? { ...s, turn: { ...s.turn, seq } } : s
 }
 const typeAll = (state, t) => state.turn.seq.reduce((s, a) => pressArrow(s, expectedKey(a), t).state, state)
 
 describe('createChart', () => {
+  it('runs 6 intro bars: Ready on the hit line of bar 5, Start on bar 6, keys from bar 7', () => {
+    const c = createChart({ bpm: 60, offset: 1, duration: 120 })
+    expect(c.readyAt).toBe(1 + 4 * 4 + 3) // vạch sáng ô nhịp 5
+    expect(c.goAt).toBe(1 + 5 * 4 + 3) // vạch sáng ô nhịp 6
+    expect(c.turns[0].start).toBe(1 + 6 * 4) // ô nhịp 7
+    // con trỏ chạy theo lưới ô nhịp suốt đoạn dạo
+    expect(barPhase(c, 1)).toBe(0)
+    expect(barPhase(c, 4)).toBe(0.75)
+    expect(barPhase(c, 0.5)).toBe(0)
+  })
+
   it('lays out one turn per bar after the intro, hit on beat 4', () => {
     expect(chart.turns[0]).toMatchObject({ index: 0, start: 9, hit: 12, end: 13 })
     expect(chart.turns[1].start).toBe(13)
@@ -51,14 +66,14 @@ describe('createChart', () => {
     expect(chart.turns.filter((t) => t.last).map((t) => t.index)).toEqual([chart.turns.length - 1])
     // bài thật: phải khớp api/services/audition/chart.js (api/test/audition.test.js kiểm cùng số)
     const song = createChart({ bpm: 84.065, offset: 0.58, duration: 239.05 })
-    expect(song.turns).toHaveLength(80)
+    expect(song.turns).toHaveLength(76)
     expect(song.maxFinishes).toBe(2)
     // mọi bài trong TRACKS — khớp api/test/audition.test.js
     const shape = Object.fromEntries(TRACKS.map((t) => {
       const c = createChart(t)
       return [t.id, [c.turns.length, c.maxFinishes]]
     }))
-    expect(shape).toEqual({ tttY: [80, 2], chiLaAoGiac: [133, 3], khongTin: [79, 2] })
+    expect(shape).toEqual({ tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2] })
   })
 
   it('finds the turn under a timestamp', () => {
@@ -189,27 +204,70 @@ describe('judging and scoring', () => {
 
   it('multiplies Perfect/Great points by combo', () => {
     expect(comboMultiplier(1)).toBe(1)
-    expect(comboMultiplier(11)).toBeCloseTo(2)
-    expect(comboMultiplier(50)).toBeCloseTo(2.9)
+    expect(comboMultiplier(11)).toBeCloseTo(1 + 10 * SCORING.comboStep)
+    expect(comboMultiplier(50)).toBeCloseTo(1 + (SCORING.maxCombo - 1) * SCORING.comboStep) // trần
     const r = pressSpace(typeAll(begin({ ...createGameState(), combo: 10 }, arrows('up', 'up')), 10), 12)
-    expect(r.event.points).toBe(Math.round(200 * 1 * 2))
+    expect(r.event.points).toBe(Math.round(2 * SCORING.perKey * comboMultiplier(11)))
   })
 
   it('turns the next turn into a Finish Move after 3 turns played at level 9', () => {
     let s = { ...createGameState(), level: 9 }
     for (let i = 0; i < TURNS_AT_9_BEFORE_FINISH; i++) {
-      const t = startTurn(s, chart.turns[i]).state
+      const ct = chart.turns[i * 2]
+      const t = startTurn(s, ct).state
       expect(t.turn.finish).toBe(false)
       expect(t.turn.seq).toHaveLength(9)
-      s = expireTurn(pressSpace(typeAll(t, chart.turns[i].hit - 1), chart.turns[i].hit).state, 99).state // Perfect
+      s = expireTurn(pressSpace(typeAll(t, ct.hit - 1), ct.hit).state, 99).state // Perfect
+      s = startTurn(s, chart.turns[i * 2 + 1]).state // ô nhịp nghỉ, không tính là lượt đã đánh
+      expect(s.turn.rest).toBe(true)
     }
     expect(s.turnsAt9).toBe(TURNS_AT_9_BEFORE_FINISH)
-    const fin = startTurn(s, chart.turns[3])
+    const fin = startTurn(s, chart.turns[6])
     expect(fin.state.turn.finish).toBe(true)
     expect(fin.event.finish).toBe(true)
     // một lượt hỏng ở level 9 vẫn tính là đã đánh; lượt bị khoá thì không tính
     const bad = pressSpace(typeAll(startTurn({ ...createGameState(), level: 9 }, chart.turns[0]).state, 10), 11.8).state
     expect(bad.turnsAt9).toBe(1)
+  })
+
+  it('rests one bar after every played turn from level 6, but not after a Missed or on the last turn', () => {
+    const play = (state, ct, dt = 0) => pressSpace(typeAll(startTurn(state, ct).state, ct.hit - 1), ct.hit + dt).state
+    // level 5: không nghỉ
+    let s = play({ ...createGameState(), level: REST_FROM_LEVEL - 1 }, chart.turns[0])
+    expect(s.restLeft).toBe(0)
+    // level 6: lượt kế là ô nghỉ (không phím, không chấm), lượt sau nữa bấm tiếp
+    s = play(s, chart.turns[1])
+    expect(s.restLeft).toBe(1)
+    const rest = startTurn(s, chart.turns[2])
+    expect(rest.event.type).toBe('rest')
+    expect(rest.state.turn).toMatchObject({ rest: true, result: 'rest', seq: [] })
+    expect(pressSpace(rest.state, chart.turns[2].hit).event).toBe(null)
+    expect(startTurn(rest.state, chart.turns[3]).state.turn.rest).toBeFalsy()
+    // Missed ở level cao: lượt sau bị khoá, không cộng thêm ô nghỉ
+    const missed = play({ ...createGameState(), level: 7 }, chart.turns[0], 0.5)
+    expect(missed).toMatchObject({ skipNext: true, restLeft: 0 })
+    // lượt cuối bài không bao giờ là ô nghỉ
+    const last = chart.turns[chart.turns.length - 1]
+    expect(startTurn({ ...createGameState(), level: 7, restLeft: 3 }, last).state.turn.rest).toBeFalsy()
+  })
+
+  it('rests 5 bars after any Finish Move result, then plays again at level 6', () => {
+    const ct = chart.turns[0]
+    let s = pressSpace(typeAll(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, ct.hit - 1), ct.hit + 0.12).state // Cool vẫn là qua
+    expect(s).toMatchObject({ restLeft: FINISH_REST_BARS, level: FINISH_RESET_LEVEL })
+    for (let i = 1; i <= FINISH_REST_BARS; i++) {
+      s = startTurn(s, chart.turns[i]).state
+      expect(s.turn.rest).toBe(true)
+    }
+    s = startTurn(s, chart.turns[FINISH_REST_BARS + 1]).state
+    expect(s.turn.rest).toBeFalsy()
+    expect(s.turn.level).toBe(FINISH_RESET_LEVEL)
+    expect(s.turn.seq).toHaveLength(FINISH_RESET_LEVEL)
+    // Finish Bad / Missed cũng nghỉ đúng 5 ô (đồng bộ với người qua), Missed không bị khoá thêm
+    const bad = pressSpace(typeAll(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, ct.hit - 1), ct.hit + 0.2).state
+    expect(bad).toMatchObject({ restLeft: FINISH_REST_BARS, skipNext: false })
+    const missed = expireTurn(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, 99).state
+    expect(missed).toMatchObject({ restLeft: FINISH_REST_BARS, skipNext: false, level: FINISH_RESET_LEVEL })
   })
 
   it('caps Finish Moves per song and forces one on the last turn if none yet', () => {

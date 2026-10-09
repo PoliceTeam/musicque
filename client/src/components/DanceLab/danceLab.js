@@ -75,7 +75,10 @@ export const TRACKS = [
   // 106 BPM (khớp số bài gửi kèm); offset = phách 1 của ô nhịp đầu sau khi nhạc vào (kick + snare 2/4)
   { id: 'chiLaAoGiac', label: 'Chỉ là ảo giác', url: '/dance/music/chi-la-ao-giac.mp3', bpm: 106.0, offset: 1.745, duration: 311.68 },
   // đo ra 84 BPM (kick đều mỗi phách); con số ~112 nổi lên là nhấn lệch phách 3-3-2, không phải nhịp chính
-  { id: 'khongTin', label: 'Không tin một sớm mai bình yên', url: '/dance/music/khong-tin-mot-som-mai-binh-yen.mp3', bpm: 84.005, offset: 2.929, duration: 236.99 }
+  { id: 'khongTin', label: 'Không tin một sớm mai bình yên', url: '/dance/music/khong-tin-mot-som-mai-binh-yen.mp3', bpm: 84.005, offset: 2.929, duration: 236.99 },
+  // lưới phách 140 BPM rất đều (nhạc dựng máy), nhưng trống chơi nửa nhịp (kick phách 1, snare phách 3)
+  // nên nhịp nghe/nhảy là 70 BPM — mỗi lượt 3.43s, gần với các bài 84 BPM. offset = kick đầu tiên.
+  { id: 'ngunger', label: 'Ngunger - A Sốt ft Phấn Đào', url: '/dance/music/ngunger.mp3', bpm: 70.0, offset: 0.236, duration: 249.75 }
 ]
 
 export const FOLLOW_ALL = '__all__'

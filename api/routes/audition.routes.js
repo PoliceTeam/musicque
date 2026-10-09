@@ -17,6 +17,7 @@ router.post('/rooms/:id/bots', authenticate, controller.addBot)
 router.delete('/rooms/:id/bots/:botId', authenticate, controller.removeBot)
 router.post('/rooms/:id/start', authenticate, controller.start)
 router.post('/rooms/:id/report', authenticate, controller.report)
+router.post('/rooms/:id/chat', authenticate, controller.chat)
 router.post('/rooms/:id/done', authenticate, controller.done)
 
 module.exports = router

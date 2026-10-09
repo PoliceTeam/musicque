@@ -257,6 +257,7 @@ export const setAuditionReady = (id, ready) => api.post(`/api/audition/rooms/${i
 export const addAuditionBot = (id, skill) => api.post(`/api/audition/rooms/${id}/bots`, { skill });
 export const removeAuditionBot = (id, botId) => api.delete(`/api/audition/rooms/${id}/bots/${botId}`);
 export const reportAuditionTurn = (id, body) => api.post(`/api/audition/rooms/${id}/report`, body);
+export const sendAuditionChat = (id, text) => api.post(`/api/audition/rooms/${id}/chat`, { text });
 export const finishAuditionGame = (id, gameNo) => api.post(`/api/audition/rooms/${id}/done`, { gameNo });
 export const setWerewolfReady = (ready) => api.post("/api/werewolf/ready", { ready });
 export const sendWerewolfChat = (content) => api.post("/api/werewolf/chat", { content });

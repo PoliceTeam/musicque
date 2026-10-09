@@ -88,11 +88,18 @@ export const Panel = ({ x, y, w, h }) => (
   />
 )
 
-export const Text = ({ x, y, w, h, text, size = 14, weight = 600, color = C.ink, align = 'left', italic = false, gradient = false }) => (
+// shrink: chữ dài thì thu nhỏ cỡ chữ (tới minSize) cho vừa ô trước khi phải cắt "…".
+export const Text = ({ x, y, w, h, text, size = 14, weight = 600, color = C.ink, align = 'left', italic = false, gradient = false, shrink = false, minSize = 10 }) => (
   <Surface
-    {...at(x, y, w, h)} w={w} h={h} deps={[text, size, weight, color, align, italic, gradient]}
+    {...at(x, y, w, h)} w={w} h={h} deps={[text, size, weight, color, align, italic, gradient, shrink, minSize]}
     draw={(ctx, W, H) => {
-      ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${fontFamily()}`
+      let px = size
+      const font = () => `${italic ? 'italic ' : ''}${weight} ${px}px ${fontFamily()}`
+      ctx.font = font()
+      while (shrink && px > minSize && ctx.measureText(text).width > W) {
+        px -= 0.5
+        ctx.font = font()
+      }
       ctx.textBaseline = 'middle'
       ctx.textAlign = align
       if (gradient) {
@@ -159,7 +166,7 @@ export const Stepper = ({ x, y, w, h = 30, label, value, onPrev, onNext, disable
     <>
       <Text x={x} y={y} w={labelW - 6} h={h} text={label} size={13} color={C.dim} />
       <Button x={vx} y={y} w={bw} h={h} label='◀' onClick={onPrev} disabled={disabled} size={12} />
-      <Text x={vx + bw + 4} y={y} w={vw} h={h} text={value} size={14} weight={700} align='center' color={disabled ? C.dim : C.ink} />
+      <Text x={vx + bw + 4} y={y} w={vw} h={h} text={value} size={14} weight={700} align='center' color={disabled ? C.dim : C.ink} shrink minSize={9} />
       <Button x={vx + bw + 8 + vw} y={y} w={bw} h={h} label='▶' onClick={onNext} disabled={disabled} size={12} />
     </>
   )

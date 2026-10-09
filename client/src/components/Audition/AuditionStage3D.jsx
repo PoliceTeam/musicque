@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useRef } from 'react'
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
@@ -6,12 +6,16 @@ import { ContactShadows, Environment, Html, Hud, Lightformer, useGLTF } from '@r
 import { CLIP_TEMPO, TARGET_HEIGHT, TRAIL_BONES } from '../DanceLab/danceLab'
 import LimbTrail from '../DanceLab/LimbTrail'
 import { clipTimeAt } from '../../utils/danceSync'
-import { ASSET, DANCER_SPACING, LOBBY_PANEL_SPACE, TRAIL_COLORS } from './auditionConfig'
+import { ASSET, DANCER_SPACING, FRAME, LOBBY_PANEL_SPACE, TRAIL_COLORS } from './auditionConfig'
+import StarDust from './StarDust'
 import LobbyHud from './LobbyHud'
 import { PodiumWorld, ResultOverlay } from './ResultScene'
-import { fontFamily, makeTexture, slotOf } from './resultBoard'
+import { drawFrame, fontFamily, loadAtlasImage, makeTexture, slotOf } from './resultBoard'
 
 const FADE = 0.25
+const FX_LINGER_MS = 1500 // hết Finish Move thì vẫn giữ vệt/bụi sao chừng này cho hạt rơi nốt
+// Qua Finish Move: vệt vàng rộng, dài hơn bọc ngoài vệt thường + bụi sao rơi từ tay chân.
+const FINISH_TRAIL = { hand: '#ffd84d', foot: '#ffb3f2' }
 const DRIFT_TAU = 1.2 // giây — trượt chậm hơn mức này bị khử (giữ nhân vật trên bục), lắc hông nhanh thì giữ nguyên
 
 // Chiều cao bind-pose của bản gốc (đo một lần, trước khi gắn vào group nào).
@@ -26,7 +30,7 @@ const baseHeightOf = (scene) => {
 // anim = { clip, synced, once, timeScale, key }: đổi clip hoặc key thì crossfade sang clip đó.
 // synced: thời gian clip lấy từ đồng hồ bài nhạc (khớp phách) thay vì tự chạy.
 // Mỗi người chơi một bản clone (SkeletonUtils) — hai người chọn cùng nhân vật vẫn đứng hai chỗ.
-const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isMe, isLeader, platform }) => {
+const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isMe, isLeader, platform, judge, fancy }) => {
   const { scene: source, animations } = useGLTF(url)
   const scene = useMemo(() => cloneSkinned(source), [source])
   const mixer = useMemo(() => new THREE.AnimationMixer(scene), [scene])
@@ -42,6 +46,14 @@ const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isM
     const h = baseHeightOf(source)
     return h > 0 ? TARGET_HEIGHT / h : 1
   }, [source])
+
+  // giữ hiệu ứng Finish thêm một lúc sau khi hết để bụi sao rơi hết, không tắt cụt
+  const [fxOn, setFxOn] = useState(false)
+  useEffect(() => {
+    if (fancy) { setFxOn(true); return undefined }
+    const t = setTimeout(() => setFxOn(false), FX_LINGER_MS)
+    return () => clearTimeout(t)
+  }, [fancy])
 
   const limbs = useMemo(
     () => TRAIL_BONES.map((l) => ({ ...l, bone: scene.getObjectByName(l.bone) })).filter((l) => l.bone),
@@ -117,9 +129,16 @@ const Dancer = ({ url, pos, anim, audioRef, track, latencyRef, trails, name, isM
         {/* vòng sáng chỉ đánh dấu nhân vật của mình */}
         {isMe && <Platform kind={platform} />}
         {name && <NameTag name={name} isMe={isMe} isLeader={isLeader} />}
+        {judge && <JudgeTag judgement={judge.judgement} playKey={judge.key} />}
       </group>
-      {/* vệt sáng dựng theo toạ độ thế giới nên phải nằm ngoài group đã dời chỗ */}
-      {trails && limbs.map((l) => <LimbTrail key={l.id} bone={l.bone} color={TRAIL_COLORS[l.kind]} />)}
+      {/* vệt sáng / bụi sao dựng theo toạ độ thế giới nên phải nằm ngoài group đã dời chỗ */}
+      {(trails || fxOn) && limbs.map((l) => <LimbTrail key={l.id} bone={l.bone} color={TRAIL_COLORS[l.kind]} />)}
+      {fxOn && limbs.map((l) => (
+        <React.Fragment key={`fx-${l.id}`}>
+          <LimbTrail bone={l.bone} color={FINISH_TRAIL[l.kind]} width={0.36} duration={0.6} opacity={0.85} />
+          <StarDust bone={l.bone} active={fancy} size={0.11} />
+        </React.Fragment>
+      ))}
     </>
   )
 }
@@ -152,6 +171,47 @@ const NameTag = ({ name, isMe, isLeader }) => {
   return (
     <sprite position={[0, TARGET_HEIGHT + 0.16, 0]} scale={[0.9, 0.169, 1]} renderOrder={5}>
       <spriteMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+    </sprite>
+  )
+}
+
+// Chữ Perfect/Great/Cool/Bad/Missed nổi trên đầu người chơi khác (ảnh lấy từ atlas như HUD):
+// bật to rồi về cỡ thường, bay lên chậm và mờ dần. `playKey` đổi = chạy lại hiệu ứng.
+const JUDGE_SHOW = 1.3 // giây
+const JudgeTag = ({ judgement, playKey }) => {
+  const sprite = useRef(null)
+  const mat = useRef(null)
+  const started = useRef(null)
+  const [ready, setReady] = useState(0)
+  const canvas = useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = 512
+    c.height = 160
+    return c
+  }, [])
+  const tex = useMemo(() => makeTexture(canvas), [canvas])
+  useEffect(() => () => tex.dispose(), [tex])
+  useEffect(() => {
+    const img = loadAtlasImage(() => setReady((n) => n + 1))
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, 512, 160)
+    if (img) drawFrame(ctx, img, FRAME.judgement(judgement), 0, 0, 160)
+    tex.needsUpdate = true
+  }, [canvas, tex, judgement, ready])
+  useEffect(() => { started.current = null }, [playKey])
+  useFrame(({ clock }) => {
+    if (!sprite.current) return
+    if (started.current === null) started.current = clock.elapsedTime
+    const t = clock.elapsedTime - started.current
+    const pop = t < 0.12 ? 0.55 + (t / 0.12) * 0.65 : t < 0.24 ? 1.2 - ((t - 0.12) / 0.12) * 0.2 : 1
+    sprite.current.scale.set(0.95 * pop, 0.3 * pop, 1)
+    sprite.current.position.y = TARGET_HEIGHT + 0.42 + Math.min(t, JUDGE_SHOW) * 0.1
+    mat.current.opacity = t > JUDGE_SHOW ? 0 : Math.min(1, (JUDGE_SHOW - t) / 0.4)
+    sprite.current.visible = t <= JUDGE_SHOW
+  })
+  return (
+    <sprite ref={sprite} position={[0, TARGET_HEIGHT + 0.42, 0]} renderOrder={6}>
+      <spriteMaterial ref={mat} map={tex} transparent depthWrite={false} depthTest={false} toneMapped={false} />
     </sprite>
   )
 }
@@ -230,11 +290,11 @@ const DevHook = () => {
 // Đội hình: người điểm cao nhất (isLeader) đứng giữa, bước lên trước; những người còn lại
 // đứng ngang hàng phía sau. Chưa ai dẫn đầu thì cả phòng đứng một hàng.
 export const LEADER_Z = 1.3
-// Có người dẫn đầu thì hàng sau chừa trống chính giữa (không ai bị người đứng trước che khuất):
-// lấy các ô ±0.5, ±1.5… khoảng cách gần tâm trước, rồi xếp trái → phải theo thứ tự trang đưa vào.
+// Có người dẫn đầu thì hàng sau chừa trống chính giữa đủ rộng một người (đứng gần camera trông to hơn,
+// chừa hẹp thì vẫn che người phía sau): lấy các ô ±1, ±2… khoảng cách gần tâm trước, rồi xếp trái → phải.
 const backSlots = (n) => {
   const slots = []
-  for (let j = 0; slots.length < n; j++) slots.push(-(j + 0.5), j + 0.5)
+  for (let j = 0; slots.length < n; j++) slots.push(-(j + 1), j + 1)
   return slots.slice(0, n).sort((a, b) => a - b).map((k) => k * DANCER_SPACING)
 }
 
@@ -299,6 +359,8 @@ const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime, resul
           isMe={d.isMe && !results}
           isLeader={d.isLeader}
           platform={d.platform}
+          judge={!results && !d.isMe ? d.judge : null}
+          fancy={!results && d.anim?.kind === 'showtime'}
         />
       ))}
       {results && <PodiumWorld ranks={results.ranks} />}

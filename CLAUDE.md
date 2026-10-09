@@ -378,6 +378,14 @@ rewrite — do not paste code or strings from that repo. 36 roles (`api/services
   role (`guard_wolf`, `hunter_night`, …) are announced generically and `death.cause` is masked
   to `night` in the payload; the hunter becomes `revealed` once they take their final shot.
 
+### Static asset cache (service worker)
+`client/public/asset-sw.js` is registered in `src/main.jsx`. It serves `/models/`, `/dance/` and
+`/audition/` files (glb, images, mp3…) **cache-first from Cache Storage**, keyed by path with the
+query string ignored, so a second visit loads nothing heavy from the network. `<audio>` Range
+requests get 206 slices of the cached file. Replacing a file under the **same name** keeps serving
+the old copy to clients that already have it, so rename the file or bump `CACHE_VERSION` in the
+worker. nginx `location /` keeps `asset-sw.js` at `no-cache`, so a new worker is picked up.
+
 ## Conventions
 
 - **Vietnamese is the working language** — code comments, `console.log` prefixes, API
@@ -492,7 +500,7 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
 - **Chart length uses `TRACK.duration` (ffprobe), never `audio.duration`** — browsers estimate
   MP3 length differently (Chrome: 240.76s vs 239.05s) and Finish Move positions must match on
   every machine. `api/services/audition/chart.js` mirrors the chart + level rules for bots;
-  both test suites pin the same numbers (80 turns, `maxFinishes` 2).
+  both test suites pin the same numbers per song (tttY 76 turns, `maxFinishes` 2).
 - **Bots** (host adds them while waiting) are simulated on the server clock in `botTick` by skill
   profile; they finish only when the real song time ends, so a room with bots can't end early.
 - **Room flow**: host picks song (`songId`, from `SONGS` in `api/services/audition/chart.js` =
@@ -523,5 +531,41 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   canvas sprites. Boards show rank, name, score, Perfect/Great/Cool/Bad/Missed and the longest
   Perfect chain (`maxPerfect`, tracked on both client and server). Only the room-list page
   (`AuditionLobby`) and the in-game HUD are still HTML.
+- **Intro**: `INTRO_BARS` (6) empty bars before the first key turn, which starts on bar 7. The rhythm
+  marker follows the bar grid the whole song (`barPhase`), including the intro and rest bars.
+  `voice_ready` plays on bar 5's hit line (`chart.readyAt`) and `voice_start` on bar 6's
+  (`chart.goAt`). Both are scheduled `VOICE_LOOKAHEAD` ahead on the Web Audio clock, and "Ready" is
+  cut when "Start" begins. The server chart (`chart.js`) mirrors `INTRO_BARS`.
+- **Rest bars**: after a turn played at level `REST_FROM_LEVEL` (6) or higher, the next bar has no
+  keys (`turn.rest`, counted down by `restLeft`) and the dancer keeps dancing. A Missed normal turn
+  adds no rest bar (the lock already takes that bar).
+  - After **any** Finish Move result, the player rests exactly `FINISH_REST_BARS` (5) bars, with no
+    Missed lock, then resumes at level 6. Everyone who finished on the same turn therefore comes
+    back together.
+  - Clearing the Finish keeps Breakdance Freezes for those 5 bars.
+  - The last turn of the song is never a rest bar.
+  - Bots mirror these rules in `chart.js` and `botTick`.
+- **Scoring weights** live in `SCORING` (client `utils/audition.js` and server `chart.js`; change
+  both). Normal turn = `perKey × keys × judge × combo`; Finish Move = `finishBase × judge × combo`;
+  combo multiplier = `1 + (min(combo, maxCombo) − 1) × comboStep` (Perfect/Great only). The server's
+  `MAX_TURN_POINTS` is derived from it.
+- **End of song**: everyone idles for `END_HOLD_MS` (5s, `endHold`) before the podium/results open
+  and the end sounds play.
+- **Chat** works in every room state, including mid-song. `POST /rooms/:id/chat` is members only,
+  limited to 200 chars and one message per 400ms. The room keeps the last 40 messages in `room.chat`
+  (included in `serializeRoom`), and each new message is also emitted as `audition_chat`.
+  `AuditionChat` is HTML at the bottom-left. Enter opens the input, Enter sends, Esc closes. Enter is
+  reserved for chat, so there are no Enter shortcuts for Start or Continue. Keys typed in `.au-chat`
+  are ignored by the game input handler.
+- **Other players' judgements** float above their heads (`JudgeTag` sprite, atlas art, pop + fade).
+  Your own judgement stays in the HUD. Reports carry `finish`, so every client knows when someone
+  clears a Finish Move. Clearing one with Perfect, Great or Cool switches that dancer to Breakdance
+  Freezes (kind `showtime`) for 2 bars; the next turn cannot cut it short. Showtime also adds a wide
+  gold `LimbTrail` and falling `StarDust` particles from hands and feet, visible for every player and
+  bot.
+- The score count-up (`useCountUp` in `AuditionHud`) scales the digits up while counting.
+  `DANCER_SPACING` is 2.0, and the back row leaves a gap one dancer wide behind the leader.
+- Results voices: ranks 1–2 hear `end_win` + `cheers`, rank 3 and below hear `end_lose` + `voice_m`
+  (`SFX_END_VOICE`).
 - **Audio levels are fixed** (`AUDIO` in `auditionConfig.js`: latency 250ms, music 40%, sfx 25%);
   players cannot change them — only mute is stored per device.

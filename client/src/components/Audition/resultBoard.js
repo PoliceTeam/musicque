@@ -36,7 +36,7 @@ export const loadAtlasImage = (onReady) => {
   return null
 }
 
-const drawFrame = (ctx, img, name, x, y, h, { align = 'left' } = {}) => {
+export const drawFrame = (ctx, img, name, x, y, h, { align = 'left' } = {}) => {
   const f = atlas.frames[name]?.frame
   if (!f || !img) return 0
   const w = (f.w * h) / f.h

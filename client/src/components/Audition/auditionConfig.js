@@ -38,7 +38,7 @@ export const BOT_SKILLS = [
 ]
 
 // Bộ âm thanh "audition-effects-final" (đổi sang MP3 trong public/audition/sfx/).
-export const SFX_NAMES = ['perfect_1', 'perfect_2', 'perfect_3', 'great', 'cool', 'bad', 'missed', 'finish', 'end_win', 'end_lose']
+export const SFX_NAMES = ['perfect_1', 'perfect_2', 'perfect_3', 'great', 'cool', 'bad', 'missed', 'finish', 'end_win', 'end_lose', 'voice_ready', 'voice_start', 'cheers', 'voice_m']
 
 // Perfect có 3 mức, càng giữ combo lâu càng "đã": x1–x2, x3–x9, từ x10 (Fever).
 export const SFX_FOR = {
@@ -51,8 +51,12 @@ export const SFX_FOR = {
 
 // Hoàn thành Finish Move (nhập đủ chuỗi rồi chốt, kể cả chỉ được Bad) phát thêm tiếng này.
 export const SFX_FINISH = 'finish'
+// Giọng đọc đoạn dạo: phách 5 "Ready", phách 6 "Start", phách 7 vào lượt đầu.
+export const SFX_VOICE = { ready: 'voice_ready', go: 'voice_start' }
 // Bảng điểm cuối bài: hạng 1–2 nghe tiếng thắng, từ hạng 3 trở đi nghe tiếng thua.
 export const SFX_END = (rank) => (rank <= 2 ? 'end_win' : 'end_lose')
+// Kèm theo khi bảng điểm mở: hạng 1–2 tiếng reo hò (cheers), từ hạng 3 giọng voice_m.
+export const SFX_END_VOICE = (rank) => (rank <= 2 ? 'cheers' : 'voice_m')
 
 // Danh sách bài (chủ phòng chọn). Thêm bài: thêm vào TRACKS (danceLab.js) VÀ SONGS ở
 // api/services/audition/chart.js với cùng id/bpm/offset/duration.
@@ -76,7 +80,7 @@ export const DANCE_BY_LEVEL = {
 export const SHOWTIME_CLIP = 'Breakdance Freezes'
 
 // Khoảng cách giữa các nhân vật trên sân khấu (m) khi cả phòng cùng nhảy.
-export const DANCER_SPACING = 1.3
+export const DANCER_SPACING = 2.0 // rộng đủ để điệu nhảy dang tay/chân không đè lên người bên cạnh
 
 // Bề rộng (px) bảng phòng chờ dựng trong WebGL ở mép phải — camera dời sân khấu sang trái chừng này.
 export const LOBBY_PANEL_W = 400

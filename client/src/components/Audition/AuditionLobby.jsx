@@ -82,7 +82,7 @@ const AuditionLobby = () => {
               <div key={r.id} className={`au-room is-${r.status}`}>
                 <div className='au-room__main'>
                   <b>{r.name}</b>
-                  <span>{r.host ? `Chủ: ${r.host}` : ''} · ♪ {trackOf(r.songId).label}{r.del ? ' · Del' : ''}</span>
+                  <span>{r.host ? `Chủ: ${r.host}` : ''} · ♪ {trackOf(r.songId).label} · {Math.round(trackOf(r.songId).bpm)} BPM{r.del ? ' · Del' : ''}</span>
                 </div>
                 <span className='au-room__count'>{r.players}/{r.maxPlayers}</span>
                 <span className={`au-room__status is-${r.status}`}>{STATUS[r.status]}</span>

@@ -34,15 +34,25 @@ export const createSfx = () => {
     return c.state === 'suspended' ? c.resume() : Promise.resolve()
   }
 
-  const play = (name, gainScale = 1) => {
-    if (muted || !ctx || ctx.state === 'closed' || !name || !buffers[name]) return
+  // Trả về hàm dừng (tắt dần ~60ms) để cắt tiếng đang phát, ví dụ "Ready" khi tới "Start".
+  // `delay` (giây) hẹn giờ phát trên đồng hồ Web Audio — chính xác hơn chờ tới khung hình kế tiếp.
+  const play = (name, gainScale = 1, delay = 0) => {
+    if (muted || !ctx || ctx.state === 'closed' || !name || !buffers[name]) return () => {}
     if (ctx.state === 'suspended') ctx.resume()
-    const src = ctx.createBufferSource()
+    const c = ctx
+    const src = c.createBufferSource()
     src.buffer = buffers[name]
-    const gain = ctx.createGain()
+    const gain = c.createGain()
     gain.gain.value = volume * gainScale
-    src.connect(gain).connect(ctx.destination)
-    src.start()
+    src.connect(gain).connect(c.destination)
+    const at = c.currentTime + Math.max(0, delay)
+    src.start(at)
+    return (when = 0) => {
+      if (c.state === 'closed') return
+      const t = Math.max(c.currentTime + Math.max(0, when), at)
+      gain.gain.setTargetAtTime(0, t, 0.02)
+      try { src.stop(t + 0.1) } catch { /* đã dừng */ }
+    }
   }
 
   return {

@@ -4,12 +4,11 @@
 // Việc chấm Perfect/Great… chạy ở client theo đồng hồ bài nhạc của từng máy (trễ mạng không ảnh
 // hưởng). Điểm không có giá trị quy đổi nên server chỉ chặn số liệu vô lý, không chấm lại.
 
-const { SONGS, DEFAULT_SONG, createChart, createBotState, isFinishTurn, applyResult, MAX_LEVEL: MAX_PLAYABLE_LEVEL } = require('./chart')
+const { SONGS, DEFAULT_SONG, createChart, createBotState, isFinishTurn, applyResult, MAX_LEVEL: MAX_PLAYABLE_LEVEL, MAX_TURN_POINTS } = require('./chart')
 
 const MAX_PLAYERS = 6
 const CHARACTERS = ['char_1', 'char_2', 'char_3', 'char_4', 'char_5', 'char_6']
 const JUDGEMENTS = ['perfect', 'great', 'cool', 'bad', 'missed']
-const MAX_TURN_POINTS = Math.ceil(3000 * 2.9) // Finish Move × combo trần — khớp client/src/utils/audition.js
 const MAX_LEVEL = MAX_PLAYABLE_LEVEL
 const START_DELAY_MS = 4000 // đủ để mọi máy nhận seed và tải xong trước phách đầu
 // Sân khấu: 'random' = chọn theo seed mỗi ván; id khác khớp BACKGROUNDS ở client.
@@ -29,6 +28,9 @@ const BOT_PROFILES = {
 }
 const BOT_NAMES = ['Bot Mai', 'Bot Tùng', 'Bot Lan', 'Bot Khoa', 'Bot Vy', 'Bot Huy', 'Bot Ngân', 'Bot Đạt']
 const END_GRACE_MS = 15000 // quá giờ này mà còn người chưa báo xong thì chốt ván
+const CHAT_MAX_LEN = 200
+const CHAT_HISTORY = 40 // số tin giữ lại cho người vào phòng / tải lại trang
+const CHAT_GAP_MS = 400 // chặn spam: mỗi người tối đa ~2 tin mỗi giây
 
 class AuditionError extends Error {
   constructor(message, status = 400, code = 'AUDITION_ERROR') {
@@ -83,7 +85,9 @@ const createRoom = (rooms, user, { name, del } = {}, now = Date.now(), rng = Mat
     startAt: null,
     createdAt: now,
     players: new Map(),
-    results: null
+    results: null,
+    chat: [],
+    chatSeq: 0
   }
   rooms.set(id, room)
   joinRoom(rooms, room, user)
@@ -223,6 +227,8 @@ const botTick = (room, now = Date.now(), rng = Math.random) => {
     while (sim.nextTurn < CHART.turns.length && CHART.turns[sim.nextTurn].hit + BOT_REPORT_DELAY <= t) {
       const turn = CHART.turns[sim.nextTurn++]
       if (sim.skipNext) { sim.skipNext = false; continue } // bị khoá lượt vì Missed
+      if (sim.restLeft > 0 && !turn.last) { sim.restLeft -= 1; continue } // ô nhịp nghỉ (level cao / sau Finish Move)
+      sim.restLeft = 0
       const finish = isFinishTurn(sim, turn, CHART.maxFinishes)
       const r = applyResult(sim, finish, pickJudgement(BOT_PROFILES[bot.skill], sim.level, finish, rng))
       events.push(applyReport(room, bot, turn.index, r))
@@ -231,6 +237,20 @@ const botTick = (room, now = Date.now(), rng = Math.random) => {
   }
   const ended = room.players.size > 0 && [...room.players.values()].every((p) => p.done) ? endGame(room) : false
   return { events, ended }
+}
+
+// Chat trong phòng (cả lúc đang nhảy). Chỉ người trong phòng được gửi; trả về tin vừa thêm.
+const postChat = (room, userId, text, now = Date.now()) => {
+  const player = requirePlayer(room, userId)
+  const body = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, CHAT_MAX_LEN)
+  if (!body) fail('Tin nhắn trống', 400, 'EMPTY_MESSAGE')
+  if (player.lastChatAt && now - player.lastChatAt < CHAT_GAP_MS) fail('Gõ chậm lại chút nhé', 429, 'CHAT_TOO_FAST')
+  player.lastChatAt = now
+  room.chatSeq += 1
+  const msg = { id: room.chatSeq, userId: player.userId, name: player.name, text: body, at: now }
+  room.chat.push(msg)
+  if (room.chat.length > CHAT_HISTORY) room.chat.splice(0, room.chat.length - CHAT_HISTORY)
+  return msg
 }
 
 const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max
@@ -250,11 +270,12 @@ const report = (room, userId, body = {}) => {
     combo,
     level,
     showtime: body.showtime === true,
+    finish: body.finish === true,
     turnLevel: isInt(body.turnLevel, 1, MAX_LEVEL) ? body.turnLevel : level
   })
 }
 
-const applyReport = (room, player, turnIndex, { judgement, points, combo, level, showtime, turnLevel }) => {
+const applyReport = (room, player, turnIndex, { judgement, points, combo, level, showtime, finish = false, turnLevel }) => {
   player.lastTurn = turnIndex
   player.score += points
   player.counts[judgement] += 1
@@ -264,7 +285,7 @@ const applyReport = (room, player, turnIndex, { judgement, points, combo, level,
   player.maxPerfect = Math.max(player.maxPerfect, player.perfectStreak)
   player.level = level
   if (showtime) player.finishes += 1
-  return { userId: player.userId, gameNo: room.gameNo, turnIndex, judgement, points, combo, level, showtime, turnLevel, score: player.score }
+  return { userId: player.userId, gameNo: room.gameNo, turnIndex, judgement, points, combo, level, showtime, finish, turnLevel, score: player.score }
 }
 
 const ranking = (room) =>
@@ -321,7 +342,8 @@ const serializeRoom = (room, now = Date.now()) => ({
       level: p.level,
       done: p.done
     })),
-  results: room.results
+  results: room.results,
+  chat: room.chat
 })
 
 const summarize = (room) => ({
@@ -362,6 +384,8 @@ module.exports = {
   CHART,
   BOT_PROFILES,
   report,
+  postChat,
+  CHAT_MAX_LEN,
   markDone,
   endGame,
   checkTimeout,

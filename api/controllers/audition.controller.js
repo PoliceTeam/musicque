@@ -25,4 +25,5 @@ exports.addBot = handle((req) => audition.addBot(req.user, req.params.id, req.bo
 exports.removeBot = handle((req) => audition.removeBot(req.user, req.params.id, req.params.botId))
 exports.start = handle((req) => audition.start(req.user, req.params.id))
 exports.report = handle((req) => audition.report(req.user, req.params.id, req.body))
+exports.chat = handle((req) => audition.chat(req.user, req.params.id, req.body.text))
 exports.done = handle((req) => audition.done(req.user, req.params.id, req.body.gameNo))

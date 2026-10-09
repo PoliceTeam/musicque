@@ -102,6 +102,13 @@ const report = (user, id, body) => {
   return { ok: true, score: event.score }
 }
 
+const chat = (user, id, text) => {
+  const room = getRoomOr404(id)
+  const msg = core.postChat(room, user._id, text)
+  io?.to(roomChannel(room.id)).emit('audition_chat', { roomId: room.id, ...msg })
+  return msg
+}
+
 const done = (user, id, gameNo) => {
   const room = getRoomOr404(id)
   if (core.markDone(room, user._id, gameNo)) changed(room)
@@ -199,6 +206,7 @@ module.exports = {
   removeBot,
   start,
   report,
+  chat,
   done,
   watch,
   unwatch,

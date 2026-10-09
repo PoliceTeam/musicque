@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { SUCCESS } from '../../utils/audition'
 import { ASSET, FRAME } from './auditionConfig'
 import AtlasImg from './AtlasImg'
@@ -17,11 +17,44 @@ export const Sprite = ({ name, size = 220, className = '', frames = 12, fps = 30
   />
 )
 
+// Điểm tăng thì đếm dần lên (ease-out) và phóng to trong lúc đếm, đếm xong về cỡ thường.
+// Điểm giảm (ván mới về 0) thì nhảy thẳng, không đếm.
+const useCountUp = (value) => {
+  const [shown, setShown] = useState(value)
+  const [counting, setCounting] = useState(false)
+  const shownRef = useRef(value)
+  useEffect(() => {
+    const from = shownRef.current
+    if (value <= from) {
+      shownRef.current = value
+      setShown(value)
+      setCounting(false)
+      return undefined
+    }
+    const dur = Math.min(900, 350 + (value - from) / 6) // ms — cộng nhiều thì đếm lâu hơn chút
+    const t0 = performance.now()
+    let raf
+    setCounting(true)
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur)
+      const v = Math.round(from + (value - from) * (1 - (1 - k) ** 3))
+      shownRef.current = v
+      setShown(v)
+      if (k < 1) raf = requestAnimationFrame(step)
+      else setCounting(false)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+  return [shown, counting]
+}
+
 // Số điểm kiểu Audition: chữ số vàng to, nhóm 3 chữ số tách bằng khoảng hở.
-const Score = ({ value }) => {
+const Score = ({ value: target }) => {
+  const [value, counting] = useCountUp(target)
   const s = String(Math.max(0, Math.floor(value)))
   return (
-    <span className='au-digits' aria-label={value.toLocaleString('vi-VN')}>
+    <span className={`au-digits${counting ? ' is-counting' : ''}`} aria-label={target.toLocaleString('vi-VN')}>
       {s.split('').map((d, i) => (
         <AtlasImg key={i} name={FRAME.digit(d)} height={64} className={(s.length - i) % 3 === 0 && i > 0 ? 'is-group' : ''} />
       ))}
@@ -46,6 +79,11 @@ const keyState = (turn, arrow, i) => {
 const KeyRow = ({ turn }) => (
   <div className={`au-pill${turn?.skipped ? ' is-locked' : ''}`}>
     {turn?.skipped && <span className='au-pill__lock'>Missed lượt trước — khoá 1 lượt</span>}
+    {turn?.rest && (
+      <span className='au-pill__rest'>
+        {turn.restAfter > 0 ? `♪ Nhảy theo nhạc — còn ${turn.restAfter + 1} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
+      </span>
+    )}
     {/* key theo wrongAt: mỗi lần bấm sai chạy lại hiệu ứng nháy đỏ + rung */}
     <div key={turn?.wrongAt ?? 'ok'} className={`au-pill__row${turn?.wrongAt != null && !turn.result ? ' is-wrong' : ''}`}>
       {turn
