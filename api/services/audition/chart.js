@@ -32,7 +32,7 @@ const KEEPS_COMBO = new Set(['perfect', 'great'])
 
 // 6 ô nhịp dạo (ô 5 "Ready", ô 6 "Start") rồi lượt đầu mới bắt đầu — khớp INTRO_BARS ở client.
 const INTRO_BARS = 6
-const REST_FROM_LEVEL = 6 // nhảy xong một lượt ở level này trở lên thì nghỉ một ô nhịp — khớp client
+const REST_FROM_LEVEL = 6 // lượt kế ở level này trở lên thì có một ô nhịp nhảy đứng trước — khớp client
 const FINISH_REST_BARS = 5 // sau Finish Move (mọi kết quả) nghỉ 5 ô nhịp — khớp client
 const createChart = ({ bpm, offset, duration } = SONG, { beatsPerTurn = 4, introBars = INTRO_BARS, outroSeconds = 3 } = {}) => {
   const beat = 60 / bpm
@@ -79,7 +79,7 @@ const applyResult = (bot, finish, judgement) => {
   bot.finishTurns += turn.finish ? 1 : 0
   bot.combo = combo
   bot.skipNext = judgement === 'missed' && !turn.finish
-  bot.restLeft = turn.finish ? FINISH_REST_BARS : turnLevel >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0
+  bot.restLeft = turn.finish ? FINISH_REST_BARS : bot.level >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0
   return { judgement, points, combo, level: bot.level, turnLevel, showtime: turn.finish && KEEPS_COMBO.has(judgement), finish: turn.finish }
 }
 

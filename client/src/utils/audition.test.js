@@ -230,13 +230,17 @@ describe('judging and scoring', () => {
     expect(bad.turnsAt9).toBe(1)
   })
 
-  it('rests one bar after every played turn from level 6, but not after a Missed or on the last turn', () => {
+  it('puts one dance bar before every key turn at level 6+, but not after a Missed or on the last turn', () => {
     const play = (state, ct, dt = 0) => pressSpace(typeAll(startTurn(state, ct).state, ct.hit - 1), ct.hit + dt).state
-    // level 5: không nghỉ
+    // level 4 -> 5: lượt kế còn dưới 6, không nghỉ
+    expect(play({ ...createGameState(), level: REST_FROM_LEVEL - 2 }, chart.turns[0]).restLeft).toBe(0)
+    // Bad ở level 5: vẫn level 5, không nghỉ
+    expect(play({ ...createGameState(), level: REST_FROM_LEVEL - 1 }, chart.turns[0], 0.2).restLeft).toBe(0)
+    // vừa lên 5 -> 6: lượt phím level 6 đầu tiên cũng phải có 1 nhịp nhảy trước (lỗi người chơi báo)
     let s = play({ ...createGameState(), level: REST_FROM_LEVEL - 1 }, chart.turns[0])
-    expect(s.restLeft).toBe(0)
+    expect(s).toMatchObject({ level: REST_FROM_LEVEL, restLeft: 1 })
     // level 6: lượt kế là ô nghỉ (không phím, không chấm), lượt sau nữa bấm tiếp
-    s = play(s, chart.turns[1])
+    s = play({ ...s, restLeft: 0 }, chart.turns[1])
     expect(s.restLeft).toBe(1)
     const rest = startTurn(s, chart.turns[2])
     expect(rest.event.type).toBe('rest')

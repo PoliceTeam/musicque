@@ -317,9 +317,25 @@ body:has(.au-page) .lr-dock { display: none; }
 }
 
 .au-pill__row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* lớp phím xanh chồng khít lên hàng phím, mở dần trái -> phải (xem KeyRow) */
+.au-pill__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  transition-property: clip-path;
+  transition-timing-function: linear;
+  filter: drop-shadow(0 0 6px rgba(90, 255, 140, 0.55));
 }
 
 .au-pill__empty {
@@ -335,15 +351,6 @@ body:has(.au-page) .lr-dock { display: none; }
   display: inline-block;
   flex-shrink: 0;
   background-repeat: no-repeat;
-}
-
-.au-key {
-  transition: transform 0.08s ease;
-}
-
-.au-key.is-hover {
-  transform: scale(1.08);
-  filter: drop-shadow(0 0 6px rgba(120, 200, 255, 0.9));
 }
 
 .au-key.is-error {

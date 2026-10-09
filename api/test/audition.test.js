@@ -261,13 +261,16 @@ test('chat: chỉ người trong phòng, cắt gọn, chặn spam, giữ lịch 
   assert.equal(core.postChat(room, 'u2', 'gg', 200000).text, 'gg')
 })
 
-test('bot nghỉ một ô nhịp sau lượt từ level 6 (khớp luật client), Missed thì không nghỉ thêm', () => {
+test('bot có 1 nhịp nhảy trước mọi lượt phím level 6+ (khớp luật client), Missed thì không nghỉ thêm', () => {
   const chart = require('../services/audition/chart')
   const bot = { ...chart.createBotState(), level: 6 }
   chart.applyResult(bot, false, 'perfect')
   assert.equal(bot.restLeft, 1)
-  const low = { ...chart.createBotState(), level: 5 }
-  chart.applyResult(low, false, 'perfect')
+  const up = { ...chart.createBotState(), level: 5 }
+  chart.applyResult(up, false, 'perfect') // lên 6
+  assert.equal(up.restLeft, 1)
+  const low = { ...chart.createBotState(), level: 4 }
+  chart.applyResult(low, false, 'perfect') // lên 5
   assert.equal(low.restLeft, 0)
   const missed = { ...chart.createBotState(), level: 8 }
   chart.applyResult(missed, false, 'missed')

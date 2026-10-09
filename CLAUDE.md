@@ -536,9 +536,10 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   `voice_ready` plays on bar 5's hit line (`chart.readyAt`) and `voice_start` on bar 6's
   (`chart.goAt`). Both are scheduled `VOICE_LOOKAHEAD` ahead on the Web Audio clock, and "Ready" is
   cut when "Start" begins. The server chart (`chart.js`) mirrors `INTRO_BARS`.
-- **Rest bars**: after a turn played at level `REST_FROM_LEVEL` (6) or higher, the next bar has no
-  keys (`turn.rest`, counted down by `restLeft`) and the dancer keeps dancing. A Missed normal turn
-  adds no rest bar (the lock already takes that bar).
+- **Rest bars**: every key turn at level `REST_FROM_LEVEL` (6) or higher is preceded by one dance
+  bar with no keys (`turn.rest`, counted down by `restLeft`). This includes the first level-6 turn
+  right after a level 5→6 success. The rest is decided by the level *after* the judged turn. A Missed
+  normal turn adds no rest bar, because the lock already takes that bar.
   - After **any** Finish Move result, the player rests exactly `FINISH_REST_BARS` (5) bars, with no
     Missed lock, then resumes at level 6. Everyone who finished on the same turn therefore comes
     back together.
@@ -563,6 +564,12 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   Freezes (kind `showtime`) for 2 bars; the next turn cannot cut it short. Showtime also adds a wide
   gold `LimbTrail` and falling `StarDust` particles from hands and feet, visible for every player and
   bot.
+- **Key row feedback** follows Audition. There is no "next key" highlight hopping between keys. A
+  layer of green `hit` keys sits on top of the row and is revealed left→right by a `clip-path`
+  transition (`FILL_MS`), so fast typing reads as one continuous sweep. The row is keyed by turn +
+  `wrongAt`, so a wrong key or a new turn resets the fill instantly instead of sliding back.
+  Headless Chrome with SwiftShader renders ~2–3 fps, so the transition looks frozen there; check
+  `getAnimations()`, not computed styles.
 - The score count-up (`useCountUp` in `AuditionHud`) scales the digits up while counting.
   `DANCER_SPACING` is 2.0, and the back row leaves a gap one dancer wide behind the leader.
 - Results voices: ranks 1–2 hear `end_win` + `cheers`, rank 3 and below hear `end_lose` + `voice_m`

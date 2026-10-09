@@ -62,36 +62,61 @@ const Score = ({ value: target }) => {
   )
 }
 
-// Phím tròn từ atlas: xanh dương = chờ bấm (normal), xanh dương sáng = phím kế tiếp (hover),
-// xanh lá = đã bấm đúng (hit), đỏ = chế độ Del, bấm ngược hướng (error), xám = lượt hỏng (disabled).
+// Phím tròn từ atlas: xanh dương = chờ bấm (normal), đỏ = chế độ Del, bấm ngược hướng (error),
+// xanh lá = đã bấm đúng (hit), xám = lượt hỏng / bị khoá (disabled).
+const KEY_PX = 50
+const KEY_GAP = 4
+const FILL_MS = 90 // thời gian lớp xanh trượt tới phím vừa bấm — bấm nhanh thì các đoạn nối liền nhau
+
 const Key = ({ dir, state }) => (
-  <AtlasImg name={FRAME.arrow(dir, state)} height={50} className={`au-key is-${state}`} alt={dir} />
+  <AtlasImg name={FRAME.arrow(dir, state)} height={KEY_PX} className={`au-key is-${state}`} alt={dir} />
 )
 
-const keyState = (turn, arrow, i) => {
+const baseState = (turn, arrow) => {
   if (turn.skipped) return 'disabled'
-  if (turn.result) return SUCCESS.has(turn.result) ? 'hit' : 'disabled'
-  if (i < turn.progress) return 'hit'
-  if (arrow.reverse) return 'error'
-  return i === turn.progress ? 'hover' : 'normal'
+  if (turn.result && !SUCCESS.has(turn.result)) return 'disabled'
+  return arrow.reverse ? 'error' : 'normal'
 }
 
-const KeyRow = ({ turn }) => (
-  <div className={`au-pill${turn?.skipped ? ' is-locked' : ''}`}>
-    {turn?.skipped && <span className='au-pill__lock'>Missed lượt trước — khoá 1 lượt</span>}
-    {turn?.rest && (
-      <span className='au-pill__rest'>
-        {turn.restAfter > 0 ? `♪ Nhảy theo nhạc — còn ${turn.restAfter + 1} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
-      </span>
-    )}
-    {/* key theo wrongAt: mỗi lần bấm sai chạy lại hiệu ứng nháy đỏ + rung */}
-    <div key={turn?.wrongAt ?? 'ok'} className={`au-pill__row${turn?.wrongAt != null && !turn.result ? ' is-wrong' : ''}`}>
-      {turn
-        ? turn.seq.map((a, i) => <Key key={i} dir={a.dir} state={keyState(turn, a, i)} />)
-        : <span className='au-pill__empty' />}
+// Kiểu Audition: không có con trỏ nhảy từ phím này sang phím khác. Lớp phím xanh nằm chồng lên và
+// được "mở" dần từ trái sang phải (clip-path có transition) như thanh tiến trình bám theo tay bấm,
+// nên bấm liên tục thấy một dải xanh chạy đều chứ không bật từng nút một.
+// Bấm sai thì hàng phím được mount lại (key = wrongAt) -> lớp xanh về 0 ngay, không trượt ngược.
+const fillWidth = (n, progress) => (progress <= 0 ? 0 : progress >= n ? n * KEY_PX + (n - 1) * KEY_GAP : progress * (KEY_PX + KEY_GAP) - KEY_GAP / 2)
+
+const KeyRow = ({ turn }) => {
+  const n = turn?.seq.length || 0
+  const total = n * KEY_PX + Math.max(0, n - 1) * KEY_GAP
+  const done = turn?.result && SUCCESS.has(turn.result)
+  const fill = !turn || turn.skipped || (turn.result && !done) ? 0 : fillWidth(n, done ? n : turn.progress)
+  return (
+    <div className={`au-pill${turn?.skipped ? ' is-locked' : ''}`}>
+      {turn?.skipped && <span className='au-pill__lock'>Missed lượt trước — khoá 1 lượt</span>}
+      {turn?.rest && (
+        <span className='au-pill__rest'>
+          {turn.restAfter > 0 ? `♪ Nhảy theo nhạc — còn ${turn.restAfter + 1} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
+        </span>
+      )}
+      {/* key theo lượt + wrongAt: sang lượt mới / bấm sai thì lớp xanh về 0 ngay (không trượt ngược), bấm sai rung lại */}
+      <div key={`${turn?.index ?? 'none'}-${turn?.wrongAt ?? 'ok'}`} className={`au-pill__row${turn?.wrongAt != null && !turn.result ? ' is-wrong' : ''}`}>
+        {n > 0
+          ? (
+            <>
+              {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state={baseState(turn, a)} />)}
+              <div
+                className='au-pill__fill'
+                style={{ width: total, clipPath: `inset(-12px ${total - fill}px -12px -12px)`, transitionDuration: `${FILL_MS}ms` }}
+                aria-hidden='true'
+              >
+                {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state='hit' />)}
+              </div>
+            </>
+            )
+          : <span className='au-pill__empty' />}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 // Thanh nhịp nhỏ: con trỏ do vòng rAF ghi thẳng vào markerRef (không re-render React mỗi khung).
 const RhythmBar = ({ markerRef, hitAt, beatsPerTurn, burst }) => (

@@ -35,7 +35,7 @@ export const FINISH_KEYS = 9 // độ dài chuỗi Finish Move
 export const TURNS_AT_9_BEFORE_FINISH = 3 // đánh xong chừng này lượt ở level 9 thì lượt kế là Finish Move
 export const FINISH_EVERY_SECONDS = 120 // mỗi ~2 phút nhạc được 1 lần Finish (bài nào cũng có ít nhất 1)
 export const FINISH_RESET_LEVEL = 6 // xong Finish Move thì về level 6 để leo lên lại cho lần sau
-export const REST_FROM_LEVEL = 6 // từ level này: nhảy xong một lượt thì nghỉ một ô nhịp rồi mới tới phím tiếp
+export const REST_FROM_LEVEL = 6 // lượt phím ở level này trở lên luôn có một ô nhịp nhảy (không phím) đứng trước
 export const FINISH_REST_BARS = 5 // sau Finish Move (mọi kết quả): nghỉ 5 ô nhịp rồi mới quay lại bấm phím ở level 6
 export const POINTS_PER_KEY = SCORING.perKey
 export const FINISH_BASE = SCORING.finishBase
@@ -243,7 +243,8 @@ const resolve = (state, judgement, t, reason = null) => {
       // ai Finish cùng lượt thì quay lại bấm phím cùng lúc.
       skipNext: judgement === 'missed' && !turn.finish,
       // Missed lượt thường thì lượt sau đã bị khoá (cũng là một ô không phím) — không cộng thêm lượt nghỉ
-      restLeft: turn.finish ? FINISH_REST_BARS : turn.level >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0,
+      // lượt kế ở level >= REST_FROM_LEVEL thì luôn có 1 nhịp nhảy trước nó (kể cả lúc vừa lên 5 -> 6)
+      restLeft: turn.finish ? FINISH_REST_BARS : level >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0,
       turn: { ...turn, result: judgement, dt }
     },
     event: { type: 'judged', judgement, points, combo, success, showtime, finish: turn.finish, level: turn.level, reason, dt }
