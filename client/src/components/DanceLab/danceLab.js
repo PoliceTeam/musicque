@@ -82,7 +82,13 @@ export const TRACKS = [
   // 101 BPM (khớp số bài gửi kèm, đo ra 101.005); offset = kick phách 1 đầu tiên sau khi nhạc vào (0.44s)
   { id: 'aloha', label: 'Aloha - Cool', url: '/dance/music/aloha-cool.mp3', bpm: 101.0, offset: 0.577, duration: 277.43 },
   // 82 BPM (đo ra 82.01, phách rất đều cả bài); offset = phách 1 (kick phách 1 & 3, snare 2 & 4)
-  { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', url: '/dance/music/thien-duong-goi-ten.mp3', bpm: 82.01, offset: 1.353, duration: 247.6 }
+  { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', url: '/dance/music/thien-duong-goi-ten.mp3', bpm: 82.01, offset: 1.353, duration: 247.6 },
+  // đo ra 125.985 BPM (kick đều, chỉ intro/bridge lệch pha); offset = phách mạnh đầu ô nhịp theo cả dàn
+  { id: 'haruHaru', label: 'Haru Haru - Bigbang', url: '/dance/music/haru-haru.mp3', bpm: 126.0, offset: 0.166, duration: 256.58 },
+  // đo ra 67.0 BPM (độ ổn định 0.96); 100 / 134 chỉ là nhịp ba / nhịp đôi của nó
+  { id: 'weddingDress', label: 'Wedding Dress - Tae Yang', url: '/dance/music/wedding-dress.mp3', bpm: 67.0, offset: 0.547, duration: 274.13 },
+  // 172 BPM (khớp số chủ dự án nhớ, đo ra 172.07, độ ổn định 0.99); offset = kick phách 1, trùng lúc nhạc vào
+  { id: 'vuDieu', label: 'Vũ điệu hoang dã', url: '/dance/music/vu-dieu-hoang-da.mp3', bpm: 172.07, offset: 1.013, duration: 186.67 }
 ]
 
 export const FOLLOW_ALL = '__all__'

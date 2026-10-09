@@ -24,7 +24,7 @@ import {
 } from './audition'
 import { TRACKS } from '../components/DanceLab/danceLab'
 
-const SHAPE = { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2] }
+const SHAPE = { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2], haruHaru: [127, 4], weddingDress: [69, 2], vuDieu: [125, 4] }
 const chart = createChart({ bpm: 60, offset: 1, duration: 60, introBars: 2 }) // phách 1s, ô nhịp 4s; dạo 2 ô cho gọn -> lượt đầu ở giây 9
 const normalTurn = chart.turns[0]
 const finishTurn = chart.turns[3]

@@ -214,7 +214,7 @@ test('mỗi bài có lịch lượt riêng; danh sách bài khớp client', () =
     return [s.id, [c.turns.length, c.finishes]]
   }))
   // client/src/utils/audition.test.js kiểm cùng các con số này
-  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2] })
+  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2], haruHaru: [127, 4], weddingDress: [69, 2], vuDieu: [125, 4] })
 })
 
 test('chủ phòng không rời được khi đang nhảy; hết ván thì rời được', () => {

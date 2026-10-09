@@ -8,7 +8,10 @@ const SONGS = {
   khongTin: { id: 'khongTin', label: 'Không tin một sớm mai bình yên', bpm: 84.005, offset: 2.929, duration: 236.99 },
   ngunger: { id: 'ngunger', label: 'Ngunger - A Sốt ft Phấn Đào', bpm: 70.0, offset: 0.236, duration: 249.75 },
   aloha: { id: 'aloha', label: 'Aloha - Cool', bpm: 101.0, offset: 0.577, duration: 277.43 },
-  thienDuong: { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', bpm: 82.01, offset: 1.353, duration: 247.6 }
+  thienDuong: { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', bpm: 82.01, offset: 1.353, duration: 247.6 },
+  haruHaru: { id: 'haruHaru', label: 'Haru Haru - Bigbang', bpm: 126.0, offset: 0.166, duration: 256.58 },
+  weddingDress: { id: 'weddingDress', label: 'Wedding Dress - Tae Yang', bpm: 67.0, offset: 0.547, duration: 274.13 },
+  vuDieu: { id: 'vuDieu', label: 'Vũ điệu hoang dã', bpm: 172.07, offset: 1.013, duration: 186.67 }
 }
 const DEFAULT_SONG = 'tttY'
 const SONG = SONGS[DEFAULT_SONG]
