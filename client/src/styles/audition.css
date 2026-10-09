@@ -335,7 +335,6 @@ body:has(.au-page) .lr-dock { display: none; }
   pointer-events: none;
   transition-property: clip-path;
   transition-timing-function: linear;
-  filter: drop-shadow(0 0 6px rgba(90, 255, 140, 0.55));
 }
 
 .au-pill__empty {

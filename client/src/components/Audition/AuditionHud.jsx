@@ -105,7 +105,7 @@ const KeyRow = ({ turn }) => {
               {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state={baseState(turn, a)} />)}
               <div
                 className='au-pill__fill'
-                style={{ width: total, clipPath: `inset(-12px ${total - fill}px -12px -12px)`, transitionDuration: `${FILL_MS}ms` }}
+                style={{ width: total, clipPath: `inset(0 ${total - fill}px 0 0)`, transitionDuration: `${FILL_MS}ms` }}
                 aria-hidden='true'
               >
                 {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state='hit' />)}
