@@ -185,6 +185,55 @@ body {
   margin-bottom: 0;
 }
 
+/* Biến thể inline: avatar · link · lời nhắn · nút, không nhãn, một dòng */
+.add-song-form--inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.add-song-form--inline .add-song-form__avatar {
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+.add-song-form--inline .add-song-form__fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.add-song-form--inline .ant-form-item {
+  margin-bottom: 0;
+}
+
+.add-song-form--inline .add-song-form__submit {
+  width: auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.add-song-form__notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface-2);
+  color: var(--sp-text-muted);
+  font-size: 13px;
+}
+
+.add-song-form__notice > span:nth-child(2) {
+  flex: 1;
+}
+
+.add-song-form__notice strong {
+  color: var(--sp-text);
+}
+
 .add-song-form--main.add-song-form__empty {
   padding: 18px 20px 20px;
 }
@@ -201,6 +250,76 @@ body {
   background: var(--sp-surface);
   border-radius: var(--sp-radius-lg);
   border: 1px solid var(--sp-border);
+}
+
+/*
+ * Cột giữa trang chủ: topbar → banner → Hàng chờ (kèm form thêm bài) → lưới game.
+ * Hàng chờ chiếm phần cao còn lại và tự cuộn bên trong, nên lưới game luôn nằm
+ * trong khung nhìn; màn quá thấp thì sàn min-height đẩy cả cột cuộn.
+ */
+.sp-main:has(> .sp-main__stack) {
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-main__stack {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 16px 20px 20px;
+}
+
+.sp-main__stack > .sp-queue {
+  flex: 1 1 0;
+  min-height: 300px;
+}
+
+.sp-queue .sp-panel__head {
+  padding: 12px 16px 8px;
+}
+
+.sp-queue__composer {
+  padding: 0 16px 10px;
+  border-bottom: 1px solid var(--sp-border);
+  margin-bottom: 6px;
+}
+
+.sp-queue .sp-empty {
+  padding: 20px 16px;
+}
+
+.sp-games {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.sp-games .ww-launch,
+.sp-games .jg-launch,
+.sp-games .au-launch,
+.sp-games .cg-launch {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 10px 14px;
+}
+
+/* Bản thu nhỏ: bỏ dòng khẩu hiệu, giữ tên game + trạng thái trực tiếp */
+.sp-games .ww-launch__tagline,
+.sp-games .jg-launch__tagline,
+.sp-games .au-launch__tagline,
+.sp-games .cg-launch__tagline {
+  display: none;
+}
+
+.sp-games .ww-launch__status,
+.sp-games .jg-launch__status,
+.sp-games .au-launch__status,
+.sp-games .cg-launch__status {
+  margin-top: 4px;
 }
 
 .sp-rail {
@@ -1233,6 +1352,10 @@ body {
   }
 
   .add-song-form--main .add-song-form__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .add-song-form--inline .add-song-form__fields {
     grid-template-columns: minmax(0, 1fr);
   }
 

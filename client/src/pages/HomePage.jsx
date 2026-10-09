@@ -345,10 +345,6 @@ const HomePage = () => {
                 </button>
               </Tooltip>
             </div>
-            <WerewolfLauncher />
-            <JungleLauncher />
-            <AuditionLauncher />
-            <CardGamesPromo />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />
@@ -385,32 +381,19 @@ const HomePage = () => {
             </div>
           </header>
 
-          <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div>
-              <button
-                type="button"
-                className="sp-btn sp-btn--primary"
-                onClick={() => navigate('/secret-shift')}
-                aria-label="Chơi Ca trực bí mật"
-              >
-                <span aria-hidden="true">🕵️</span> Chơi Ca trực bí mật
-              </button>
-            </div>
+          <div className="sp-main__stack">
             <NationalDayBanner />
             <TetCountdown />
             <DailyIdiom />
-            <section className="sp-panel sp-main-add">
-              <div className="sp-panel__head">
-                <h2 className="sp-panel__title">
-                  <span aria-hidden="true">➕</span>
-                  Thêm bài hát
-                </h2>
-              </div>
-              <div className="sp-panel__body">
-                <AddSongForm variant="main" />
-              </div>
+            {/* Form thêm bài gộp vào đầu khung Hàng chờ; danh sách cuộn bên trong để lưới game luôn lộ ra */}
+            <PlaylistView className="sp-queue" composer={<AddSongForm variant="inline" />} />
+            {/* Thẻ game chuyển từ sidebar sang đây để sidebar còn chỗ cho Phòng chat */}
+            <section className="sp-games" aria-label="Trò chơi">
+              <CardGamesPromo />
+              <AuditionLauncher />
+              <WerewolfLauncher />
+              <JungleLauncher />
             </section>
-            <PlaylistView />
           </div>
         </main>
 

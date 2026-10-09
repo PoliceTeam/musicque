@@ -29,8 +29,8 @@ vi.mock('../components/TetCountdown/TetCountdown', () => ({ default: () => null 
 vi.mock('../components/NationalDay/NationalDayBanner', () => ({ default: () => null }))
 vi.mock('../components/DailyIdiom/DailyIdiom', () => ({ default: () => null }))
 
-it('stacks the game banners under the quick-toys row: Ma Sói, Cờ thú, Au đi sần, then Game bài', () => {
+it('keeps the quick-toys row in the sidebar and the game banners in the main column: Game bài, Au đi sần, Ma Sói, then Cờ thú', () => {
   const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
   const order = [...container.querySelectorAll('.sp-quicktoys, [data-banner]')].map(node => node.dataset.banner || 'quick-toys')
-  expect(order).toEqual(['quick-toys', 'werewolf', 'jungle', 'audition', 'card-games'])
+  expect(order).toEqual(['quick-toys', 'card-games', 'audition', 'werewolf', 'jungle'])
 })

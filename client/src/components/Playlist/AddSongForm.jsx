@@ -10,6 +10,8 @@ const AddSongForm = ({ variant = 'default' }) => {
   const { addSong, currentSession } = useContext(PlaylistContext)
   const { isAuthenticated, displayName, openAuthModal, user } = useAuth()
   const isMain = variant === 'main'
+  // inline: một dòng duy nhất gắn trên đầu khung Hàng chờ ở trang chủ
+  const isInline = variant === 'inline'
   const className = `add-song-form add-song-form--${variant}`
 
   const handleSubmit = async (values) => {
@@ -29,6 +31,28 @@ const AddSongForm = ({ variant = 'default' }) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (isInline && (!currentSession || !isAuthenticated)) {
+    return (
+      <div className={`${className} add-song-form__notice`}>
+        <span aria-hidden='true'>{currentSession ? '🔒' : '🌙'}</span>
+        <span>
+          {currentSession
+            ? 'Đăng nhập để thêm bài vào hàng chờ.'
+            : <><strong>Chưa có phiên nào</strong> · chờ admin mở phiên phát nhạc để xếp hàng.</>}
+        </span>
+        {currentSession && (
+          <button
+            type='button'
+            className='sp-btn sp-btn--primary sp-btn--sm'
+            onClick={() => openAuthModal('login', 'Đăng nhập để thêm bài hát vào phiên phát nhạc.')}
+          >
+            Đăng nhập
+          </button>
+        )}
+      </div>
+    )
   }
 
   if (!currentSession) {
@@ -72,6 +96,11 @@ const AddSongForm = ({ variant = 'default' }) => {
       requiredMark={false}
       className={className}
     >
+      {isInline ? (
+        <span className='add-song-form__avatar' title={`Thêm với tên ${displayName}`}>
+          <UserAvatar user={user} name={displayName} />
+        </span>
+      ) : (
       <div className='add-song-form__identity'>
         <UserAvatar user={user} name={displayName} />
         <span>
@@ -79,11 +108,12 @@ const AddSongForm = ({ variant = 'default' }) => {
           <strong>{displayName}</strong>
         </span>
       </div>
+      )}
 
       <div className='add-song-form__fields'>
         <Form.Item
           name='youtubeUrl'
-          label='Link YouTube'
+          label={isInline ? undefined : 'Link YouTube'}
           className='add-song-form__url'
           rules={[
             { required: true, message: 'Vui lòng nhập link YouTube' },
@@ -93,19 +123,23 @@ const AddSongForm = ({ variant = 'default' }) => {
             },
           ]}
         >
-          <Input placeholder='https://www.youtube.com/watch?v=...' />
+          <Input
+            placeholder={isInline ? 'Dán link YouTube…' : 'https://www.youtube.com/watch?v=...'}
+            aria-label='Link YouTube'
+          />
         </Form.Item>
 
         <Form.Item
           name='message'
-          label='Lời nhắn'
-          extra={isMain ? null : 'Sẽ được đọc lên trước khi bài hát phát.'}
+          label={isInline ? undefined : 'Lời nhắn'}
+          extra={isMain || isInline ? null : 'Sẽ được đọc lên trước khi bài hát phát.'}
           className='add-song-form__message'
         >
           <Input.TextArea
-            rows={isMain ? 1 : 3}
-            autoSize={isMain ? { minRows: 1, maxRows: 2 } : undefined}
-            placeholder='Gửi lời nhắn tới cả team...'
+            rows={isMain || isInline ? 1 : 3}
+            autoSize={isMain || isInline ? { minRows: 1, maxRows: 2 } : undefined}
+            placeholder={isInline ? 'Lời nhắn (tuỳ chọn)…' : 'Gửi lời nhắn tới cả team...'}
+            aria-label='Lời nhắn'
             maxLength={200}
           />
         </Form.Item>
@@ -115,7 +149,7 @@ const AddSongForm = ({ variant = 'default' }) => {
           className='sp-btn sp-btn--primary add-song-form__submit'
           disabled={loading}
         >
-          {loading ? 'Đang thêm...' : 'Thêm vào hàng chờ'}
+          {loading ? 'Đang thêm...' : isInline ? '➕ Thêm bài' : 'Thêm vào hàng chờ'}
         </button>
       </div>
     </Form>

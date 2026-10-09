@@ -13,7 +13,8 @@ const scoreClass = (score) => {
   return 'sp-score'
 }
 
-const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
+// composer: nội dung chèn ngay dưới tiêu đề (form thêm bài ở trang chủ)
+const PlaylistView = ({ title = 'Hàng chờ', compact = false, composer = null, className = '' }) => {
   const { playlist: rawPlaylist, voteSong, loading, getUserVoteForSong, getLastReactionForSong } =
     useContext(PlaylistContext)
   const playlist = rawPlaylist || []
@@ -32,7 +33,7 @@ const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
   }
 
   return (
-    <section className='sp-panel sp-panel--grow' data-testid='playlist-view'>
+    <section className={`sp-panel sp-panel--grow ${className}`.trim()} data-testid='playlist-view'>
       <div className='sp-panel__head'>
         <h2 className='sp-panel__title'>
           <span aria-hidden='true'>🎧</span>
@@ -42,6 +43,8 @@ const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
           {playlist.length} bài
         </span>
       </div>
+
+      {composer && <div className='sp-queue__composer'>{composer}</div>}
 
       <div className='sp-panel__body'>
         {loading ? (
@@ -54,7 +57,7 @@ const PlaylistView = ({ title = 'Hàng chờ', compact = false }) => {
             <strong>Hàng chờ đang trống</strong>
             <span>
               {isAuthenticated
-                ? 'Dán link YouTube ở khung bên trái để mở màn.'
+                ? 'Dán link YouTube ở ô phía trên để mở màn.'
                 : 'Đăng nhập để trở thành người thêm bài đầu tiên.'}
             </span>
           </div>
