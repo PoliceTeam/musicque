@@ -323,6 +323,17 @@ body:has(.au-page) .lr-dock { display: none; }
   gap: 4px;
 }
 
+/* phím vừa được bấm tới: loé trắng rồi dịu về xanh (chạy một lần khi gắn class is-lit) */
+.au-pill__fill .au-key.is-lit {
+  animation: au-key-flash 0.22s ease-out;
+}
+
+@keyframes au-key-flash {
+  0% { filter: brightness(2.6) saturate(0.2); }
+  35% { filter: brightness(1.9) saturate(0.55); }
+  100% { filter: none; }
+}
+
 /* lớp phím xanh chồng khít lên hàng phím, mở dần trái -> phải (xem KeyRow) */
 .au-pill__fill {
   position: absolute;

@@ -68,8 +68,8 @@ const KEY_PX = 50
 const KEY_GAP = 4
 const FILL_MS = 90 // thời gian lớp xanh trượt tới phím vừa bấm — bấm nhanh thì các đoạn nối liền nhau
 
-const Key = ({ dir, state }) => (
-  <AtlasImg name={FRAME.arrow(dir, state)} height={KEY_PX} className={`au-key is-${state}`} alt={dir} />
+const Key = ({ dir, state, lit = false }) => (
+  <AtlasImg name={FRAME.arrow(dir, state)} height={KEY_PX} className={`au-key is-${state}${lit ? ' is-lit' : ''}`} alt={dir} />
 )
 
 const baseState = (turn, arrow) => {
@@ -112,7 +112,8 @@ const KeyRow = ({ turn }) => {
                 style={{ width: total, clipPath: `inset(0 ${total - fill}px 0 0)`, transitionDuration: `${FILL_MS}ms` }}
                 aria-hidden='true'
               >
-                {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state='hit' />)}
+                {/* is-lit gắn lúc phím vừa được bấm tới -> chạy một lần hiệu ứng loé sáng rồi dịu về xanh */}
+                {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state='hit' lit={i < turn.progress} />)}
               </div>
             </>
             )
