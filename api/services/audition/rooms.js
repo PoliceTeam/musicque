@@ -4,7 +4,7 @@
 // Việc chấm Perfect/Great… chạy ở client theo đồng hồ bài nhạc của từng máy (trễ mạng không ảnh
 // hưởng). Điểm không có giá trị quy đổi nên server chỉ chặn số liệu vô lý, không chấm lại.
 
-const { SONGS, DEFAULT_SONG, createChart, createBotState, isFinishTurn, applyResult, MAX_LEVEL: MAX_PLAYABLE_LEVEL, MAX_TURN_POINTS } = require('./chart')
+const { SONGS, DEFAULT_SONG, createChart, createBotState, isFinishTurn, isPreFinish, applyResult, MAX_LEVEL: MAX_PLAYABLE_LEVEL, MAX_TURN_POINTS } = require('./chart')
 
 const MAX_PLAYERS = 6
 const CHARACTERS = ['char_1', 'char_2', 'char_3', 'char_4', 'char_5', 'char_6']
@@ -226,11 +226,12 @@ const botTick = (room, now = Date.now(), rng = Math.random) => {
     const sim = bot.sim || (bot.sim = { ...createBotState(), nextTurn: 0 })
     while (sim.nextTurn < CHART.turns.length && CHART.turns[sim.nextTurn].hit + BOT_REPORT_DELAY <= t) {
       const turn = CHART.turns[sim.nextTurn++]
-      if (sim.skipNext) { sim.skipNext = false; continue } // bị khoá lượt vì Missed
+      if (sim.skipLeft > 0) { sim.skipLeft -= 1; continue } // bị khoá vì Missed
       if (sim.restLeft > 0 && !turn.last) { sim.restLeft -= 1; continue } // ô nhịp nghỉ (level cao / sau Finish Move)
       sim.restLeft = 0
       const finish = isFinishTurn(sim, turn, CHART.maxFinishes)
-      const r = applyResult(sim, finish, pickJudgement(BOT_PROFILES[bot.skill], sim.level, finish, rng))
+      const preFinish = isPreFinish(sim, finish, CHART.maxFinishes)
+      const r = applyResult(sim, finish, pickJudgement(BOT_PROFILES[bot.skill], sim.level, finish, rng), { preFinish })
       events.push(applyReport(room, bot, turn.index, r))
     }
     if (t >= CHART.endAt) bot.done = true

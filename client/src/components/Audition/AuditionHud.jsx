@@ -91,7 +91,11 @@ const KeyRow = ({ turn }) => {
   const fill = !turn || turn.skipped || (turn.result && !done) ? 0 : fillWidth(n, done ? n : turn.progress)
   return (
     <div className={`au-pill${turn?.skipped ? ' is-locked' : ''}`}>
-      {turn?.skipped && <span className='au-pill__lock'>Missed lượt trước — khoá 1 lượt</span>}
+      {turn?.skipped && (
+        <span className='au-pill__lock'>
+          {turn.skipAfter > 0 ? `Missed — bị khoá, còn ${turn.skipAfter + 1} ô nhịp nữa tới phím` : 'Missed — bị khoá, ô nhịp sau tới phím'}
+        </span>
+      )}
       {turn?.rest && (
         <span className='au-pill__rest'>
           {turn.restAfter > 0 ? `♪ Nhảy theo nhạc — còn ${turn.restAfter + 1} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
@@ -196,6 +200,9 @@ const AuditionHud = ({ view, chart, markerRef, progressRef, fx, label, best, mut
           )}
           <RhythmBar markerRef={markerRef} hitAt={chart?.hitAt ?? 0.75} beatsPerTurn={chart?.beatsPerTurn ?? 4} burst={fx.burst} />
         </div>
+        {turn?.preFinish && !turn.result && (
+          <span className='au-prefinish'>⚠ Lượt trước Finish Move — Missed lượt này là mất Finish, chờ 7 ô nhịp</span>
+        )}
         <KeyRow turn={turn} />
       </div>
     </div>

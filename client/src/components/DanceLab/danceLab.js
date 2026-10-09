@@ -78,7 +78,11 @@ export const TRACKS = [
   { id: 'khongTin', label: 'Không tin một sớm mai bình yên', url: '/dance/music/khong-tin-mot-som-mai-binh-yen.mp3', bpm: 84.005, offset: 2.929, duration: 236.99 },
   // lưới phách 140 BPM rất đều (nhạc dựng máy), nhưng trống chơi nửa nhịp (kick phách 1, snare phách 3)
   // nên nhịp nghe/nhảy là 70 BPM — mỗi lượt 3.43s, gần với các bài 84 BPM. offset = kick đầu tiên.
-  { id: 'ngunger', label: 'Ngunger - A Sốt ft Phấn Đào', url: '/dance/music/ngunger.mp3', bpm: 70.0, offset: 0.236, duration: 249.75 }
+  { id: 'ngunger', label: 'Ngunger - A Sốt ft Phấn Đào', url: '/dance/music/ngunger.mp3', bpm: 70.0, offset: 0.236, duration: 249.75 },
+  // 101 BPM (khớp số bài gửi kèm, đo ra 101.005); offset = kick phách 1 đầu tiên sau khi nhạc vào (0.44s)
+  { id: 'aloha', label: 'Aloha - Cool', url: '/dance/music/aloha-cool.mp3', bpm: 101.0, offset: 0.577, duration: 277.43 },
+  // 82 BPM (đo ra 82.01, phách rất đều cả bài); offset = phách 1 (kick phách 1 & 3, snare 2 & 4)
+  { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', url: '/dance/music/thien-duong-goi-ten.mp3', bpm: 82.01, offset: 1.353, duration: 247.6 }
 ]
 
 export const FOLLOW_ALL = '__all__'

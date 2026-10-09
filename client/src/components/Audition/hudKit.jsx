@@ -89,17 +89,17 @@ export const Panel = ({ x, y, w, h }) => (
 )
 
 // shrink: chữ dài thì thu nhỏ cỡ chữ (tới minSize) cho vừa ô trước khi phải cắt "…".
+// Nhiều dòng: tách bằng "\n" — dòng đầu cỡ chính, các dòng sau nhỏ hơn và mờ hơn (vd. tên bài / BPM).
 export const Text = ({ x, y, w, h, text, size = 14, weight = 600, color = C.ink, align = 'left', italic = false, gradient = false, shrink = false, minSize = 10 }) => (
   <Surface
     {...at(x, y, w, h)} w={w} h={h} deps={[text, size, weight, color, align, italic, gradient, shrink, minSize]}
     draw={(ctx, W, H) => {
+      const lines = String(text).split('\n')
       let px = size
-      const font = () => `${italic ? 'italic ' : ''}${weight} ${px}px ${fontFamily()}`
+      const font = (k = 1) => `${italic ? 'italic ' : ''}${weight} ${px * k}px ${fontFamily()}`
+      const widest = () => Math.max(...lines.map((l, i) => { ctx.font = font(i ? 0.8 : 1); return ctx.measureText(l).width }))
+      while (shrink && px > minSize && widest() > W) px -= 0.5
       ctx.font = font()
-      while (shrink && px > minSize && ctx.measureText(text).width > W) {
-        px -= 0.5
-        ctx.font = font()
-      }
       ctx.textBaseline = 'middle'
       ctx.textAlign = align
       if (gradient) {
@@ -111,7 +111,19 @@ export const Text = ({ x, y, w, h, text, size = 14, weight = 600, color = C.ink,
         ctx.fillStyle = color
       }
       const tx = align === 'center' ? W / 2 : align === 'right' ? W : 0
-      ctx.fillText(fitText(ctx, text, W), tx, H / 2 + 1)
+      if (lines.length === 1) {
+        ctx.fillText(fitText(ctx, text, W), tx, H / 2 + 1)
+        return
+      }
+      const heights = lines.map((_, i) => px * (i ? 0.8 : 1) * 1.25)
+      let ly = (H - heights.reduce((a, b) => a + b, 0)) / 2
+      lines.forEach((l, i) => {
+        ctx.font = font(i ? 0.8 : 1)
+        ctx.globalAlpha = i ? 0.7 : 1
+        ctx.fillText(fitText(ctx, l, W), tx, ly + heights[i] / 2 + 1)
+        ly += heights[i]
+      })
+      ctx.globalAlpha = 1
     }}
   />
 )
@@ -159,15 +171,16 @@ export const Button = ({ x, y, w, h, label, variant = 'soft', disabled = false, 
 
 // Nhãn bên trái + "◀ giá trị ▶" bên phải (thay cho ô chọn / thanh trượt HTML).
 export const Stepper = ({ x, y, w, h = 30, label, value, onPrev, onNext, disabled = false, labelW = 96 }) => {
-  const bw = h
+  const bw = Math.min(h, 30) // nút ◀ ▶ giữ cỡ 30, căn giữa theo chiều cao khi ô cao hơn (giá trị 2 dòng)
+  const by = y - (h - bw) / 2
   const vx = x + labelW
   const vw = w - labelW - bw * 2 - 8
   return (
     <>
       <Text x={x} y={y} w={labelW - 6} h={h} text={label} size={13} color={C.dim} />
-      <Button x={vx} y={y} w={bw} h={h} label='◀' onClick={onPrev} disabled={disabled} size={12} />
-      <Text x={vx + bw + 4} y={y} w={vw} h={h} text={value} size={14} weight={700} align='center' color={disabled ? C.dim : C.ink} shrink minSize={9} />
-      <Button x={vx + bw + 8 + vw} y={y} w={bw} h={h} label='▶' onClick={onNext} disabled={disabled} size={12} />
+      <Button x={vx} y={by} w={bw} h={bw} label='◀' onClick={onPrev} disabled={disabled} size={12} />
+      <Text x={vx + bw + 4} y={y} w={vw} h={h} text={value} size={14} weight={700} align='center' color={disabled ? C.dim : C.ink} shrink minSize={10} />
+      <Button x={vx + bw + 8 + vw} y={by} w={bw} h={bw} label='▶' onClick={onNext} disabled={disabled} size={12} />
     </>
   )
 }

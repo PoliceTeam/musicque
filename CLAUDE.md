@@ -538,8 +538,15 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   cut when "Start" begins. The server chart (`chart.js`) mirrors `INTRO_BARS`.
 - **Rest bars**: every key turn at level `REST_FROM_LEVEL` (6) or higher is preceded by one dance
   bar with no keys (`turn.rest`, counted down by `restLeft`). This includes the first level-6 turn
-  right after a level 5→6 success. The rest is decided by the level *after* the judged turn. A Missed
-  normal turn adds no rest bar, because the lock already takes that bar.
+  right after a level 5→6 success. The rest is decided by the level *after* the judged turn.
+- **Missed locks** (`skipLeft`, shown as greyed keys with a countdown):
+  - Below level 6, a Missed locks 1 bar.
+  - From level 6, a Missed locks 3 bars: the dance bar, the lost key bar and that bar's dance bar.
+  - Missing the **turn right before a Finish Move** (`turn.preFinish`, warned in the HUD) forfeits
+    that Finish. The player waits `PRE_FINISH_MISS_BARS` (7 = 2 + 5) bars, counts the Finish as
+    used, and returns at level 6 together with the players who did their Finish.
+  - Missing the Finish Move itself adds no lock, only the 5 rest bars.
+  - Bots use `isPreFinish` and the same rules.
   - After **any** Finish Move result, the player rests exactly `FINISH_REST_BARS` (5) bars, with no
     Missed lock, then resumes at level 6. Everyone who finished on the same turn therefore comes
     back together.

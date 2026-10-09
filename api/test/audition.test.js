@@ -138,15 +138,18 @@ test('bot tự chơi theo đồng hồ server, đúng luật level và khoá lư
   assert.equal(core.botTick(room, room.startAt + 1000).events.length, 0) // chưa tới lượt nào
   const end = room.startAt + Math.ceil(core.CHART.endAt * 1000) + 10
   const { events } = core.botTick(room, end, Math.random)
-  assert.ok(events.length > 30)
+  assert.ok(events.length > 15) // gà mờ hay Missed (khoá 3 ô từ level 6) nên số lượt báo cáo dao động
   assert.ok(events.every((e) => e.level >= 1 && e.level <= 9))
   // không lùi level trừ khi vừa qua Finish Move (về 6); Finish là lượt 9 phím có turnLevel bất kỳ
   for (let i = 1; i < events.length; i++) {
     if (events[i].level < events[i - 1].level) assert.equal(events[i].level, 6)
   }
-  // sau một Missed, lượt kế tiếp không có báo cáo (bị khoá)
-  for (const e of events.filter((x) => x.judgement === 'missed')) {
-    assert.ok(!events.some((x) => x.turnIndex === e.turnIndex + 1))
+  // Missed lượt thường: bị khoá 1 ô (dưới level 6) hoặc 3 ô (từ level 6) — không báo cáo trong các ô đó.
+  // (Missed Finish Move không khoá, chỉ nghỉ 5 ô; lượt cuối bài luôn được đánh.)
+  const lastIndex = core.CHART.turns.length - 1
+  for (const e of events.filter((x) => x.judgement === 'missed' && !x.finish)) {
+    const lock = e.turnLevel >= 6 ? 3 : 1
+    for (let k = 1; k <= lock; k++) assert.ok(!events.some((x) => x.turnIndex === e.turnIndex + k && x.turnIndex !== lastIndex))
   }
   assert.equal(bot.done, true)
   core.markDone(room, 'u1', room.gameNo)
@@ -219,7 +222,7 @@ test('mỗi bài có lịch lượt riêng; danh sách bài khớp client', () =
     return [s.id, [c.turns.length, c.maxFinishes]]
   }))
   // client/src/utils/audition.test.js kiểm cùng các con số này
-  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2] })
+  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 2], thienDuong: [77, 2] })
 })
 
 test('chủ phòng không rời được khi đang nhảy; hết ván thì rời được', () => {
@@ -274,11 +277,19 @@ test('bot có 1 nhịp nhảy trước mọi lượt phím level 6+ (khớp lu�
   assert.equal(low.restLeft, 0)
   const missed = { ...chart.createBotState(), level: 8 }
   chart.applyResult(missed, false, 'missed')
-  assert.deepEqual([missed.skipNext, missed.restLeft], [true, 0])
+  assert.deepEqual([missed.skipLeft, missed.restLeft], [3, 0]) // Missed từ level 6: chờ 3 ô
+  const lowMiss = { ...chart.createBotState(), level: 3 }
+  chart.applyResult(lowMiss, false, 'missed')
+  assert.equal(lowMiss.skipLeft, 1)
   const fin = { ...chart.createBotState(), level: 9 }
   chart.applyResult(fin, true, 'great')
   assert.deepEqual([fin.restLeft, fin.level], [5, 6])
+  // Missed lượt ngay trước Finish: mất Finish, chờ 7 ô, về level 6
+  const pre = { ...chart.createBotState(), level: 9, turnsAt9: 2 }
+  assert.equal(chart.isPreFinish(pre, false, 2), true)
+  chart.applyResult(pre, false, 'missed', { preFinish: true })
+  assert.deepEqual([pre.skipLeft, pre.finishTurns, pre.turnsAt9, pre.level], [7, 1, 0, 6])
   const finMiss = { ...chart.createBotState(), level: 9 }
   chart.applyResult(finMiss, true, 'missed')
-  assert.deepEqual([finMiss.restLeft, finMiss.skipNext, finMiss.level], [5, false, 6])
+  assert.deepEqual([finMiss.restLeft, finMiss.skipLeft, finMiss.level], [5, 0, 6])
 })

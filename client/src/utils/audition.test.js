@@ -22,6 +22,9 @@ import {
   barPhase,
   REST_FROM_LEVEL,
   FINISH_REST_BARS,
+  MISSED_LOCK_BARS,
+  MISSED_LOCK_BARS_HIGH,
+  PRE_FINISH_MISS_BARS,
   SCORING
 } from './audition'
 import { TRACKS } from '../components/DanceLab/danceLab'
@@ -73,7 +76,7 @@ describe('createChart', () => {
       const c = createChart(t)
       return [t.id, [c.turns.length, c.maxFinishes]]
     }))
-    expect(shape).toEqual({ tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2] })
+    expect(shape).toEqual({ tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 2], thienDuong: [77, 2] })
   })
 
   it('finds the turn under a timestamp', () => {
@@ -153,7 +156,7 @@ describe('levels and penalties', () => {
     const bad = pressSpace(typeAll(begin(s), 10), 11.8)
     expect(bad.event).toMatchObject({ judgement: 'bad', success: false })
     expect(bad.state.level).toBe(6)
-    expect(bad.state.skipNext).toBe(false)
+    expect(bad.state.skipLeft).toBe(0)
 
     const missed = expireTurn(begin(s), 13)
     expect(missed.state.level).toBe(6)
@@ -167,12 +170,12 @@ describe('levels and penalties', () => {
 
   it('locks the turn right after a Missed, then resumes at the same level', () => {
     const missed = expireTurn(begin({ ...createGameState(), level: 4 }), 13).state
-    expect(missed.skipNext).toBe(true)
+    expect(missed.skipLeft).toBe(MISSED_LOCK_BARS)
 
     const locked = startTurn(missed, chart.turns[1])
     expect(locked.event.type).toBe('skipped')
     expect(locked.state.turn).toMatchObject({ skipped: true, result: 'skipped', level: 4 })
-    expect(locked.state.skipNext).toBe(false)
+    expect(locked.state.skipLeft).toBe(0)
     // không bấm được gì trong lượt bị khoá
     expect(pressArrow(locked.state, 'up', 14).event).toBeNull()
     expect(pressSpace(locked.state, 16).event).toBeNull()
@@ -249,7 +252,14 @@ describe('judging and scoring', () => {
     expect(startTurn(rest.state, chart.turns[3]).state.turn.rest).toBeFalsy()
     // Missed ở level cao: lượt sau bị khoá, không cộng thêm ô nghỉ
     const missed = play({ ...createGameState(), level: 7 }, chart.turns[0], 0.5)
-    expect(missed).toMatchObject({ skipNext: true, restLeft: 0 })
+    // Missed từ level 6: mất trọn lượt kế (ô nhảy + ô phím + ô nhảy) = chờ 3 ô, ô thứ 4 bấm lại
+    expect(missed).toMatchObject({ skipLeft: MISSED_LOCK_BARS_HIGH, restLeft: 0 })
+    let w = missed
+    for (let i = 1; i <= MISSED_LOCK_BARS_HIGH; i++) {
+      w = startTurn(w, chart.turns[i]).state
+      expect(w.turn).toMatchObject({ skipped: true, skipAfter: MISSED_LOCK_BARS_HIGH - i })
+    }
+    expect(startTurn(w, chart.turns[MISSED_LOCK_BARS_HIGH + 1]).state.turn).toMatchObject({ skipped: false, result: null, level: 7 })
     // lượt cuối bài không bao giờ là ô nghỉ
     const last = chart.turns[chart.turns.length - 1]
     expect(startTurn({ ...createGameState(), level: 7, restLeft: 3 }, last).state.turn.rest).toBeFalsy()
@@ -269,9 +279,35 @@ describe('judging and scoring', () => {
     expect(s.turn.seq).toHaveLength(FINISH_RESET_LEVEL)
     // Finish Bad / Missed cũng nghỉ đúng 5 ô (đồng bộ với người qua), Missed không bị khoá thêm
     const bad = pressSpace(typeAll(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, ct.hit - 1), ct.hit + 0.2).state
-    expect(bad).toMatchObject({ restLeft: FINISH_REST_BARS, skipNext: false })
+    expect(bad).toMatchObject({ restLeft: FINISH_REST_BARS, skipLeft: 0 })
     const missed = expireTurn(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, 99).state
-    expect(missed).toMatchObject({ restLeft: FINISH_REST_BARS, skipNext: false, level: FINISH_RESET_LEVEL })
+    expect(missed).toMatchObject({ restLeft: FINISH_REST_BARS, skipLeft: 0, level: FINISH_RESET_LEVEL })
+  })
+
+  it('warns on the turn before a Finish Move; missing it forfeits the Finish and waits 7 bars', () => {
+    const opts = { maxFinishes: 2 }
+    const before = readyForFinish({ turnsAt9: TURNS_AT_9_BEFORE_FINISH - 1 })
+    const ct = chart.turns[0]
+    const turn = startTurn(before, ct, opts).state
+    expect(turn.turn).toMatchObject({ preFinish: true, finish: false })
+    // không phải lượt trước Finish: không cảnh báo
+    expect(startTurn(readyForFinish({ turnsAt9: 0 }), ct, opts).state.turn.preFinish).toBe(false)
+    expect(startTurn(readyForFinish({ turnsAt9: 1, finishTurns: 2 }), ct, opts).state.turn.preFinish).toBe(false)
+    // đánh được (kể cả Bad) thì lượt sau vẫn là Finish như thường
+    const ok = pressSpace(typeAll(turn, ct.hit - 1), ct.hit + 0.2).state
+    expect(startTurn({ ...ok, restLeft: 0 }, chart.turns[2], opts).state.turn.finish).toBe(true)
+    // Missed: mất Finish, về level 6, chờ đúng PRE_FINISH_MISS_BARS (7) ô rồi bấm lại
+    const r = expireTurn(turn, 99)
+    expect(r.event.forfeit).toBe(true)
+    expect(PRE_FINISH_MISS_BARS).toBe(7)
+    let s = r.state
+    expect(s).toMatchObject({ skipLeft: 7, finishTurns: 1, turnsAt9: 0, level: FINISH_RESET_LEVEL })
+    for (let i = 1; i <= 7; i++) {
+      s = startTurn(s, chart.turns[i], opts).state
+      expect(s.turn.skipped).toBe(true)
+    }
+    s = startTurn(s, chart.turns[8], opts).state
+    expect(s.turn).toMatchObject({ skipped: false, finish: false, level: FINISH_RESET_LEVEL })
   })
 
   it('caps Finish Moves per song and forces one on the last turn if none yet', () => {

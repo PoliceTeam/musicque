@@ -36,6 +36,10 @@ export const TURNS_AT_9_BEFORE_FINISH = 3 // đánh xong chừng này lượt �
 export const FINISH_EVERY_SECONDS = 120 // mỗi ~2 phút nhạc được 1 lần Finish (bài nào cũng có ít nhất 1)
 export const FINISH_RESET_LEVEL = 6 // xong Finish Move thì về level 6 để leo lên lại cho lần sau
 export const REST_FROM_LEVEL = 6 // lượt phím ở level này trở lên luôn có một ô nhịp nhảy (không phím) đứng trước
+// Missed lượt thường: mất trọn lượt kế. Từ level 6 một lượt = 1 ô phím + 1 ô nhảy, nên phải chờ
+// 3 ô nhịp (ô nhảy sau lượt Missed + ô phím bị khoá + ô nhảy của nó); dưới level 6 chỉ khoá 1 ô.
+export const MISSED_LOCK_BARS = 1
+export const MISSED_LOCK_BARS_HIGH = 3
 export const FINISH_REST_BARS = 5 // sau Finish Move (mọi kết quả): nghỉ 5 ô nhịp rồi mới quay lại bấm phím ở level 6
 export const POINTS_PER_KEY = SCORING.perKey
 export const FINISH_BASE = SCORING.finishBase
@@ -152,7 +156,7 @@ export const createGameState = () => ({
   finishTurns: 0, // số lượt Finish đã đánh (tính cả hỏng) — giới hạn bởi chart.maxFinishes
   turnsAt9: 0, // số lượt đã đánh ở level 9 kể từ Finish trước
   turnsPlayed: 0,
-  skipNext: false, // vừa Missed: lượt kế tiếp bị khoá
+  skipLeft: 0, // số ô nhịp còn bị khoá vì Missed (hiện phím xám, không bấm được)
   restLeft: 0, // số ô nhịp nghỉ (không phím) còn lại: 1 sau lượt level cao, FINISH_REST_BARS sau Finish Move
   turn: null
 })
@@ -173,9 +177,9 @@ export const startTurn = (state, chartTurn, opts = {}) => {
     dt: null
   }
   // Bị phạt vì Missed lượt trước: lượt này không được bấm, level giữ nguyên cho lượt sau.
-  if (state.skipNext) {
+  if (state.skipLeft > 0) {
     return {
-      state: { ...state, skipNext: false, turn: { ...base, seq: sequenceFor(chartTurn, level, seqOpts), skipped: true, result: 'skipped' } },
+      state: { ...state, skipLeft: state.skipLeft - 1, turn: { ...base, finish: false, seq: sequenceFor(chartTurn, level, seqOpts), skipped: true, skipAfter: state.skipLeft - 1, result: 'skipped' } },
       event: { type: 'skipped', index: chartTurn.index }
     }
   }
@@ -187,11 +191,18 @@ export const startTurn = (state, chartTurn, opts = {}) => {
       event: { type: 'rest', index: chartTurn.index }
     }
   }
+  // Lượt ngay trước Finish Move (lượt thứ TURNS_AT_9_BEFORE_FINISH ở level 9): HUD cảnh báo, Missed là mất Finish.
+  const preFinish = !finish && level === MAX_LEVEL && state.turnsAt9 + 1 >= TURNS_AT_9_BEFORE_FINISH &&
+    state.finishTurns < (opts.maxFinishes ?? 1)
   return {
-    state: { ...state, restLeft: 0, turn: { ...base, seq: sequenceFor(chartTurn, level, seqOpts), skipped: false, result: null } },
+    state: { ...state, restLeft: 0, turn: { ...base, preFinish, seq: sequenceFor(chartTurn, level, seqOpts), skipped: false, result: null } },
     event: { type: 'turn', index: chartTurn.index, finish }
   }
 }
+
+// Missed ngay lượt trước Finish Move: mất luôn Finish, chờ 1 ô nhảy + ô Finish + FINISH_REST_BARS ô
+// = 7 ô, rồi quay lại level 6 cùng lúc với người vừa làm Finish.
+export const PRE_FINISH_MISS_BARS = 2 + FINISH_REST_BARS
 
 const isOpen = (turn, t) => turn && !turn.result && t <= turn.hit + WINDOWS.bad
 
@@ -219,10 +230,12 @@ const resolve = (state, judgement, t, reason = null) => {
   const points = Math.round(base * JUDGE_FACTOR[judgement] * mult)
   // Không lùi level vì đánh hỏng. Lượt thường thành công thì lên 1 (tối đa 9);
   // hết Finish Move (dù kết quả nào) ai đang trên level 6 thì về 6, người dưới 6 giữ nguyên.
-  const level = turn.finish
+  // Missed lượt ngay trước Finish: coi như đã dùng (và hỏng) Finish Move này
+  const forfeit = Boolean(turn.preFinish) && judgement === 'missed'
+  const level = turn.finish || forfeit
     ? Math.min(state.level, FINISH_RESET_LEVEL)
     : success ? Math.min(MAX_LEVEL, state.level + 1) : state.level
-  const turnsAt9 = turn.finish ? 0 : state.turnsAt9 + (turn.level === MAX_LEVEL ? 1 : 0)
+  const turnsAt9 = turn.finish || forfeit ? 0 : state.turnsAt9 + (turn.level === MAX_LEVEL ? 1 : 0)
   const showtime = turn.finish && KEEPS_COMBO.has(judgement)
   const dt = reason === 'timing' ? t - turn.hit : null
   return {
@@ -236,18 +249,19 @@ const resolve = (state, judgement, t, reason = null) => {
       score: state.score + points,
       counts: { ...state.counts, [judgement]: state.counts[judgement] + 1 },
       finishes: state.finishes + (showtime ? 1 : 0),
-      finishTurns: state.finishTurns + (turn.finish ? 1 : 0),
+      finishTurns: state.finishTurns + (turn.finish || forfeit ? 1 : 0),
       turnsAt9,
       turnsPlayed: state.turnsPlayed + 1,
       // Finish Move (kết quả nào cũng vậy): nghỉ đúng FINISH_REST_BARS ô rồi về level 6, không khoá thêm —
       // ai Finish cùng lượt thì quay lại bấm phím cùng lúc.
-      skipNext: judgement === 'missed' && !turn.finish,
-      // Missed lượt thường thì lượt sau đã bị khoá (cũng là một ô không phím) — không cộng thêm lượt nghỉ
+      skipLeft: forfeit ? PRE_FINISH_MISS_BARS
+        : judgement === 'missed' && !turn.finish ? (level >= REST_FROM_LEVEL ? MISSED_LOCK_BARS_HIGH : MISSED_LOCK_BARS) : 0,
+      // Missed lượt thường: thời gian chờ đã nằm trong skipLeft — không cộng thêm ô nghỉ
       // lượt kế ở level >= REST_FROM_LEVEL thì luôn có 1 nhịp nhảy trước nó (kể cả lúc vừa lên 5 -> 6)
       restLeft: turn.finish ? FINISH_REST_BARS : level >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0,
       turn: { ...turn, result: judgement, dt }
     },
-    event: { type: 'judged', judgement, points, combo, success, showtime, finish: turn.finish, level: turn.level, reason, dt }
+    event: { type: 'judged', judgement, points, combo, success, showtime, finish: turn.finish, forfeit, level: turn.level, reason, dt }
   }
 }
 

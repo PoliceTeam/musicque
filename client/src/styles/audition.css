@@ -846,3 +846,21 @@ body:has(.au-page) .lr-dock { display: none; }
   color: rgba(255, 216, 77, 0.85);
   text-shadow: 0 1px 2px #000;
 }
+
+/* cảnh báo lượt ngay trước Finish Move */
+.au-prefinish {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 216, 77, 0.7);
+  background: rgba(60, 20, 0, 0.82);
+  color: #ffd84d;
+  font-size: 13px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px #000;
+  animation: au-pulse 0.5s ease-in-out infinite alternate;
+}
