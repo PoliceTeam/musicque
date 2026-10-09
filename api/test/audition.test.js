@@ -112,11 +112,16 @@ test('người cuối chưa xong mà rời phòng giữa bài thì ván vẫn ch
   assert.equal(room.status, 'finished')
 })
 
-test('lịch lượt server khớp client: 76 lượt, tối đa 2 Finish Move mỗi người', () => {
+test('lịch lượt server khớp client: 76 ô nhịp, 2 Finish Move chung cả phòng', () => {
   // client/src/utils/audition.test.js khẳng định cùng các con số này — sửa luật thì sửa cả hai
-  assert.equal(core.CHART.turns.length, 76)
-  assert.equal(core.CHART.maxFinishes, 2)
-  assert.equal(core.CHART.turns[75].last, true)
+  const T = core.CHART.turns
+  assert.equal(T.length, 76)
+  assert.equal(core.CHART.finishes, 2)
+  assert.equal(T[75].last, true)
+  const k = (t) => (t.kind === 'rest' ? 'r' : t.kind === 'finish' ? 'F' : 'K') + t.level
+  assert.deepEqual(T.slice(0, 11).map(k), ['K1', 'K2', 'K3', 'K4', 'K5', 'r6', 'K6', 'r6', 'K6', 'r6', 'K6'])
+  assert.deepEqual(T.filter((t) => t.kind === 'finish').map((t) => t.index), [30, 60])
+  assert.deepEqual(T.filter((t) => t.preFinish).map((t) => t.index), [28, 58])
 })
 
 test('bot: chủ phòng thêm/bớt được, tính vào giới hạn 6 người', () => {
@@ -130,7 +135,7 @@ test('bot: chủ phòng thêm/bớt được, tính vào giới hạn 6 người
   assert.ok(core.serializeRoom(room).players.some((p) => p.isBot && p.skill))
 })
 
-test('bot tự chơi theo đồng hồ server, đúng luật level và khoá lượt sau Missed', () => {
+test('bot tự chơi theo đồng hồ server, đúng lịch level chung và mất lượt phím kế sau Missed', () => {
   const { room } = setup(1)
   core.addBot(room, 'u1', { skill: 'newbie' }, rng)
   core.startGame(room, 'u1', 0, rng)
@@ -138,18 +143,18 @@ test('bot tự chơi theo đồng hồ server, đúng luật level và khoá lư
   assert.equal(core.botTick(room, room.startAt + 1000).events.length, 0) // chưa tới lượt nào
   const end = room.startAt + Math.ceil(core.CHART.endAt * 1000) + 10
   const { events } = core.botTick(room, end, Math.random)
-  assert.ok(events.length > 15) // gà mờ hay Missed (khoá 3 ô từ level 6) nên số lượt báo cáo dao động
-  assert.ok(events.every((e) => e.level >= 1 && e.level <= 9))
-  // không lùi level trừ khi vừa qua Finish Move (về 6); Finish là lượt 9 phím có turnLevel bất kỳ
-  for (let i = 1; i < events.length; i++) {
-    if (events[i].level < events[i - 1].level) assert.equal(events[i].level, 6)
+  const T = core.CHART.turns
+  assert.ok(events.length > 15)
+  // level của mọi báo cáo = level của lịch; không báo cáo ở ô nhảy
+  for (const e of events) {
+    assert.equal(e.level, T[e.turnIndex].level)
+    assert.notEqual(T[e.turnIndex].kind, 'rest')
   }
-  // Missed lượt thường: bị khoá 1 ô (dưới level 6) hoặc 3 ô (từ level 6) — không báo cáo trong các ô đó.
-  // (Missed Finish Move không khoá, chỉ nghỉ 5 ô; lượt cuối bài luôn được đánh.)
-  const lastIndex = core.CHART.turns.length - 1
+  // Missed lượt thường: lượt phím kế trong lịch không có báo cáo
+  const keys = T.filter((t) => t.kind !== 'rest').map((t) => t.index)
   for (const e of events.filter((x) => x.judgement === 'missed' && !x.finish)) {
-    const lock = e.turnLevel >= 6 ? 3 : 1
-    for (let k = 1; k <= lock; k++) assert.ok(!events.some((x) => x.turnIndex === e.turnIndex + k && x.turnIndex !== lastIndex))
+    const next = keys.find((i) => i > e.turnIndex)
+    if (next !== undefined) assert.ok(!events.some((x) => x.turnIndex === next))
   }
   assert.equal(bot.done, true)
   core.markDone(room, 'u1', room.gameNo)
@@ -163,30 +168,17 @@ test('người thật cuối cùng rời phòng thì giải tán dù còn bot', 
   assert.equal(rooms.has(room.id), false)
 })
 
-test('bot giỏi: đánh 3 lượt ở level 9 thì lượt kế là Finish, tối đa 2 lần, xong về level 6', () => {
+test('bot giỏi đánh đúng các lượt phím của lịch, Finish ở đúng ô chung của cả phòng', () => {
   const chart = require('../services/audition/chart')
   const bot = chart.createBotState()
   const finishes = []
   for (const turn of core.CHART.turns) {
-    const finish = chart.isFinishTurn(bot, turn, core.CHART.maxFinishes)
-    const levelBefore = bot.level
-    chart.applyResult(bot, finish, 'perfect')
-    if (finish) {
-      finishes.push(turn.index)
-      assert.equal(levelBefore, 9)
-      assert.equal(bot.level, 6)
-    }
+    if (turn.kind === 'rest') continue
+    const r = chart.applyResult(bot, turn, 'perfect')
+    if (r.finish) finishes.push(turn.index)
+    assert.equal(r.level, turn.level)
   }
-  // lên 9 sau 8 lượt (0..7), đánh 3 lượt ở 9 (8..10) -> Finish ở lượt 11; về 6, leo 6→9 (12..14), 3 lượt ở 9 -> lượt 18
-  assert.deepEqual(finishes, [11, 18])
-})
-
-test('bot chưa Finish lần nào thì lượt cuối bị ép thành Finish', () => {
-  const chart = require('../services/audition/chart')
-  const bot = chart.createBotState()
-  const last = core.CHART.turns[core.CHART.turns.length - 1]
-  assert.equal(chart.isFinishTurn(bot, last, core.CHART.maxFinishes), true)
-  assert.equal(chart.isFinishTurn({ ...bot, finishTurns: 2 }, last, core.CHART.maxFinishes), false)
+  assert.deepEqual(finishes, [30, 60])
 })
 
 test('chủ phòng chỉ bắt đầu được khi mọi người đã sẵn sàng; hết ván phải sẵn sàng lại', () => {
@@ -219,10 +211,10 @@ test('mỗi bài có lịch lượt riêng; danh sách bài khớp client', () =
   const chart = require('../services/audition/chart')
   const shape = Object.fromEntries(Object.values(chart.SONGS).map((s) => {
     const c = chart.createChart(s)
-    return [s.id, [c.turns.length, c.maxFinishes]]
+    return [s.id, [c.turns.length, c.finishes]]
   }))
   // client/src/utils/audition.test.js kiểm cùng các con số này
-  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 2], thienDuong: [77, 2] })
+  assert.deepEqual(shape, { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2] })
 })
 
 test('chủ phòng không rời được khi đang nhảy; hết ván thì rời được', () => {
@@ -264,32 +256,16 @@ test('chat: chỉ người trong phòng, cắt gọn, chặn spam, giữ lịch 
   assert.equal(core.postChat(room, 'u2', 'gg', 200000).text, 'gg')
 })
 
-test('bot có 1 nhịp nhảy trước mọi lượt phím level 6+ (khớp luật client), Missed thì không nghỉ thêm', () => {
+test('bot: Missed lượt thường mất lượt phím kế; Missed Finish thì không bị khoá thêm', () => {
   const chart = require('../services/audition/chart')
-  const bot = { ...chart.createBotState(), level: 6 }
-  chart.applyResult(bot, false, 'perfect')
-  assert.equal(bot.restLeft, 1)
-  const up = { ...chart.createBotState(), level: 5 }
-  chart.applyResult(up, false, 'perfect') // lên 6
-  assert.equal(up.restLeft, 1)
-  const low = { ...chart.createBotState(), level: 4 }
-  chart.applyResult(low, false, 'perfect') // lên 5
-  assert.equal(low.restLeft, 0)
-  const missed = { ...chart.createBotState(), level: 8 }
-  chart.applyResult(missed, false, 'missed')
-  assert.deepEqual([missed.skipLeft, missed.restLeft], [3, 0]) // Missed từ level 6: chờ 3 ô
-  const lowMiss = { ...chart.createBotState(), level: 3 }
-  chart.applyResult(lowMiss, false, 'missed')
-  assert.equal(lowMiss.skipLeft, 1)
-  const fin = { ...chart.createBotState(), level: 9 }
-  chart.applyResult(fin, true, 'great')
-  assert.deepEqual([fin.restLeft, fin.level], [5, 6])
-  // Missed lượt ngay trước Finish: mất Finish, chờ 7 ô, về level 6
-  const pre = { ...chart.createBotState(), level: 9, turnsAt9: 2 }
-  assert.equal(chart.isPreFinish(pre, false, 2), true)
-  chart.applyResult(pre, false, 'missed', { preFinish: true })
-  assert.deepEqual([pre.skipLeft, pre.finishTurns, pre.turnsAt9, pre.level], [7, 1, 0, 6])
-  const finMiss = { ...chart.createBotState(), level: 9 }
-  chart.applyResult(finMiss, true, 'missed')
-  assert.deepEqual([finMiss.restLeft, finMiss.skipLeft, finMiss.level], [5, 0, 6])
+  const T = core.CHART.turns
+  const bot = chart.createBotState()
+  chart.applyResult(bot, T[8], 'missed')
+  assert.equal(bot.skipNext, true)
+  const fin = chart.createBotState()
+  const r = chart.applyResult(fin, T[30], 'missed')
+  assert.deepEqual([r.finish, fin.skipNext], [true, false])
+  const ok = chart.createBotState()
+  chart.applyResult(ok, T[8], 'bad')
+  assert.equal(ok.skipNext, false)
 })

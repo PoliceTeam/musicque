@@ -15,8 +15,10 @@ const SONG = SONGS[DEFAULT_SONG]
 const WINDOW_BAD = 0.25
 const MAX_LEVEL = 9
 const FINISH_KEYS = 9
-const TURNS_AT_9_BEFORE_FINISH = 3
-const FINISH_EVERY_SECONDS = 120
+// Lịch level cố định theo bài, giống nhau cho cả phòng — khớp createChart/applySchedule ở client.
+const HIGH_FROM_LEVEL = 6
+const LEVEL_TURNS = 3
+const FINISH_REST_BARS = 5
 const FINISH_RESET_LEVEL = 6
 // Trọng số tính điểm — khớp SCORING ở client/src/utils/audition.js (sửa cả hai chỗ).
 const SCORING = {
@@ -34,11 +36,41 @@ const KEEPS_COMBO = new Set(['perfect', 'great'])
 
 // 6 ô nhịp dạo (ô 5 "Ready", ô 6 "Start") rồi lượt đầu mới bắt đầu — khớp INTRO_BARS ở client.
 const INTRO_BARS = 6
-const REST_FROM_LEVEL = 6 // lượt kế ở level này trở lên thì có một ô nhịp nhảy đứng trước — khớp client
-const MISSED_LOCK_BARS = 1 // Missed dưới level 6: khoá 1 ô — khớp client
-const MISSED_LOCK_BARS_HIGH = 3 // Missed từ level 6: chờ 3 ô (mất trọn lượt phím + ô nhảy) — khớp client
-const FINISH_REST_BARS = 5 // sau Finish Move (mọi kết quả) nghỉ 5 ô nhịp — khớp client
-const PRE_FINISH_MISS_BARS = 2 + FINISH_REST_BARS // Missed lượt ngay trước Finish: mất Finish, chờ 7 ô — khớp client
+
+const scheduleCycle = (fromStart) => {
+  const out = []
+  if (fromStart) for (let lv = 1; lv < HIGH_FROM_LEVEL; lv++) out.push(['key', lv, 0])
+  for (let lv = HIGH_FROM_LEVEL; lv <= MAX_LEVEL; lv++) {
+    for (let st = 1; st <= LEVEL_TURNS; st++) {
+      if (fromStart || lv > HIGH_FROM_LEVEL || st > 1) out.push(['rest', lv, 0])
+      out.push(['key', lv, st])
+    }
+  }
+  out.push(['rest', MAX_LEVEL, 0], ['finish', MAX_LEVEL, 0])
+  for (let i = 0; i < FINISH_REST_BARS; i++) out.push(['rest', FINISH_RESET_LEVEL, 0])
+  return out
+}
+
+const applySchedule = (turns) => {
+  let cycle = scheduleCycle(true)
+  let k = 0
+  for (const t of turns) {
+    if (k >= cycle.length) { cycle = scheduleCycle(false); k = 0 }
+    const [kind, level, step] = cycle[k++]
+    Object.assign(t, { kind, level, step })
+  }
+  if (!turns.some((t) => t.kind === 'finish')) {
+    const lastKey = [...turns].reverse().find((t) => t.kind === 'key')
+    if (lastKey) Object.assign(lastKey, { kind: 'finish', step: 0 })
+  }
+  let nextKey = null
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i]
+    t.preFinish = t.kind === 'key' && nextKey?.kind === 'finish'
+    if (t.kind !== 'rest') nextKey = t
+  }
+}
+
 const createChart = ({ bpm, offset, duration } = SONG, { beatsPerTurn = 4, introBars = INTRO_BARS, outroSeconds = 3 } = {}) => {
   const beat = 60 / bpm
   const bar = beat * beatsPerTurn
@@ -49,49 +81,34 @@ const createChart = ({ bpm, offset, duration } = SONG, { beatsPerTurn = 4, intro
     if (hit + WINDOW_BAD > duration - outroSeconds) break
     turns.push({ index: turns.length, start, hit, end: start + bar, last: false })
   }
+  applySchedule(turns)
   if (turns.length) turns[turns.length - 1].last = true
   return {
     beat,
     bar,
     turns,
-    maxFinishes: Math.max(1, Math.round(duration / FINISH_EVERY_SECONDS)),
+    finishes: turns.filter((t) => t.kind === 'finish').length,
     endAt: turns.length ? turns[turns.length - 1].end : offset
   }
 }
-
-const isFinishTurn = (bot, turn, maxFinishes) =>
-  bot.finishTurns < maxFinishes && (bot.turnsAt9 >= TURNS_AT_9_BEFORE_FINISH || turn.last)
-
-const isPreFinish = (bot, finish, maxFinishes) =>
-  !finish && bot.level === MAX_LEVEL && bot.turnsAt9 + 1 >= TURNS_AT_9_BEFORE_FINISH && bot.finishTurns < maxFinishes
 
 const comboMultiplier = (combo) => 1 + (Math.min(Math.max(combo, 1), SCORING.maxCombo) - 1) * SCORING.comboStep
 // trần điểm một lượt (Finish Move Perfect ở combo trần) — server chặn báo cáo vượt mức này
 const MAX_TURN_POINTS = Math.ceil(Math.max(SCORING.finishBase, 9 * SCORING.perKey) * comboMultiplier(SCORING.maxCombo))
 
-const createBotState = () => ({ level: 1, combo: 0, skipLeft: 0, restLeft: 0, turnsAt9: 0, finishTurns: 0 })
+const createBotState = () => ({ combo: 0, skipNext: false })
 
-// Áp một kết quả cho bot, trả về số liệu để báo như người chơi thật. `finish` = isFinishTurn(...).
-// preFinish: lượt ngay trước Finish Move (lượt thứ 3 ở level 9, còn lượt Finish) — xem isPreFinish.
-const applyResult = (bot, finish, judgement, { preFinish = false } = {}) => {
-  const turn = { finish }
-  const forfeit = preFinish && !finish && judgement === 'missed'
-  const turnLevel = bot.level
-  const keys = turn.finish ? FINISH_KEYS : turnLevel
+// Áp kết quả của một lượt phím (turn từ lịch: kind 'key' | 'finish', level) cho bot; trả về số liệu
+// để báo như người thật. Level lấy từ lịch chung, kết quả chỉ ảnh hưởng điểm/combo và khoá lượt.
+const applyResult = (bot, turn, judgement) => {
+  const finish = turn.kind === 'finish'
+  const keys = finish ? FINISH_KEYS : turn.level
   const combo = KEEPS_COMBO.has(judgement) ? bot.combo + 1 : 0
-  const base = turn.finish ? FINISH_BASE : keys * POINTS_PER_KEY
+  const base = finish ? FINISH_BASE : keys * POINTS_PER_KEY
   const points = Math.round(base * JUDGE_FACTOR[judgement] * (KEEPS_COMBO.has(judgement) ? comboMultiplier(combo) : 1))
-  const success = SUCCESS.has(judgement)
-  bot.level = turn.finish || forfeit
-    ? Math.min(bot.level, FINISH_RESET_LEVEL)
-    : success ? Math.min(MAX_LEVEL, bot.level + 1) : bot.level
-  bot.turnsAt9 = turn.finish || forfeit ? 0 : bot.turnsAt9 + (turnLevel === MAX_LEVEL ? 1 : 0)
-  bot.finishTurns += turn.finish || forfeit ? 1 : 0
   bot.combo = combo
-  bot.skipLeft = forfeit ? PRE_FINISH_MISS_BARS
-    : judgement === 'missed' && !turn.finish ? (bot.level >= REST_FROM_LEVEL ? MISSED_LOCK_BARS_HIGH : MISSED_LOCK_BARS) : 0
-  bot.restLeft = turn.finish ? FINISH_REST_BARS : bot.level >= REST_FROM_LEVEL && judgement !== 'missed' ? 1 : 0
-  return { judgement, points, combo, level: bot.level, turnLevel, showtime: turn.finish && KEEPS_COMBO.has(judgement), finish: turn.finish }
+  bot.skipNext = judgement === 'missed' && !finish // Missed lượt thường: mất lượt phím kế
+  return { judgement, points, combo, level: turn.level, turnLevel: turn.level, showtime: finish && KEEPS_COMBO.has(judgement), finish }
 }
 
-module.exports = { SONG, SONGS, DEFAULT_SONG, MAX_LEVEL, FINISH_BASE, SCORING, MAX_TURN_POINTS, FINISH_RESET_LEVEL, TURNS_AT_9_BEFORE_FINISH, createChart, createBotState, isFinishTurn, isPreFinish, applyResult }
+module.exports = { SONG, SONGS, DEFAULT_SONG, MAX_LEVEL, FINISH_BASE, SCORING, MAX_TURN_POINTS, FINISH_RESET_LEVEL, LEVEL_TURNS, createChart, createBotState, applyResult }

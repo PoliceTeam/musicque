@@ -488,19 +488,25 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   (server ms; clients correct with `serverNow` offset) and sums the per-turn `report`s.
   It only sanity-checks reports (`MAX_TURN_POINTS`), it does not re-judge — nothing is staked.
 - **Shared keys**: `sequenceFor(turn, level, { seed, del })` uses a seeded RNG of
-  (seed, turnIndex, level), so everyone at the same level on the same turn gets the same keys.
-  Finish Moves sit at fixed chart positions (`FINISH_POSITIONS`, mid-song + last turn) and are
-  identical for the whole room; every Finish Move has at least one red (Del, reversed) key.
-- **Levels never go down from failing.** Success +1 (cap 9), Bad keeps the level, Missed keeps it
-  but locks the next turn (`skipNext` → `skipped`). **Finish Move is per player**: after
-  `TURNS_AT_9_BEFORE_FINISH` (3) turns played at level 9 the next turn is a Finish (9 keys, ≥1
-  red key, sequence seeded by turn index so same-turn finishers share keys). Max
-  `chart.maxFinishes` per song (~1 per 2 min); anyone short of it gets the last turn forced to a
-  Finish. After any Finish, levels above 6 drop to 6 (`FINISH_RESET_LEVEL`).
+  (seed, turnIndex, level). Every player at a given turn has the same level, so everyone gets the
+  same keys. Every Finish Move has at least one red (Del, reversed) key.
+- **Levels follow one fixed schedule per song, shared by the whole room** (`applySchedule` in
+  `createChart`, mirrored in `chart.js`). Results never change the level.
+  - Each bar gets `kind` (`key` / `rest` / `finish`), `level`, `step` (1–3 from level 6),
+    `preFinish` and `keyIn`.
+  - Pattern: levels 1–5 one key turn each. Then levels 6, 7, 8 and 9 get `LEVEL_TURNS` (3) key turns
+    each, every one preceded by a dance (`rest`) bar. After level 9: one dance bar, the Finish Move,
+    `FINISH_REST_BARS` (5) rest bars, then back to level 6, repeating until the song ends.
+  - A song too short to reach a Finish turns its last key turn into the Finish.
+  - Penalties only affect score, combo and turns: a Missed (`skipNext`) locks the next key turn of
+    the schedule. That is 1 bar below level 6, 3 bars from level 6, and the Finish itself if the
+    Missed was on the `preFinish` turn (warned in the HUD, so the wait is 7 bars). Missing the
+    Finish Move adds no lock.
+  - Bots use the same schedule (`applyResult(bot, turn, judgement)`).
 - **Chart length uses `TRACK.duration` (ffprobe), never `audio.duration`** — browsers estimate
   MP3 length differently (Chrome: 240.76s vs 239.05s) and Finish Move positions must match on
   every machine. `api/services/audition/chart.js` mirrors the chart + level rules for bots;
-  both test suites pin the same numbers per song (tttY 76 turns, `maxFinishes` 2).
+  both test suites pin the same numbers per song (tttY 76 bars, Finish at bars 30 and 60).
 - **Bots** (host adds them while waiting) are simulated on the server clock in `botTick` by skill
   profile; they finish only when the real song time ends, so a room with bots can't end early.
 - **Room flow**: host picks song (`songId`, from `SONGS` in `api/services/audition/chart.js` =
@@ -536,29 +542,15 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   `voice_ready` plays on bar 5's hit line (`chart.readyAt`) and `voice_start` on bar 6's
   (`chart.goAt`). Both are scheduled `VOICE_LOOKAHEAD` ahead on the Web Audio clock, and "Ready" is
   cut when "Start" begins. The server chart (`chart.js`) mirrors `INTRO_BARS`.
-- **Rest bars**: every key turn at level `REST_FROM_LEVEL` (6) or higher is preceded by one dance
-  bar with no keys (`turn.rest`, counted down by `restLeft`). This includes the first level-6 turn
-  right after a level 5→6 success. The rest is decided by the level *after* the judged turn.
-- **Missed locks** (`skipLeft`, shown as greyed keys with a countdown):
-  - Below level 6, a Missed locks 1 bar.
-  - From level 6, a Missed locks 3 bars: the dance bar, the lost key bar and that bar's dance bar.
-  - Missing the **turn right before a Finish Move** (`turn.preFinish`, warned in the HUD) forfeits
-    that Finish. The player waits `PRE_FINISH_MISS_BARS` (7 = 2 + 5) bars, counts the Finish as
-    used, and returns at level 6 together with the players who did their Finish.
-  - Missing the Finish Move itself adds no lock, only the 5 rest bars.
-  - Bots use `isPreFinish` and the same rules.
-  - After **any** Finish Move result, the player rests exactly `FINISH_REST_BARS` (5) bars, with no
-    Missed lock, then resumes at level 6. Everyone who finished on the same turn therefore comes
-    back together.
-  - Clearing the Finish keeps Breakdance Freezes for those 5 bars.
-  - The last turn of the song is never a rest bar.
-  - Bots mirror these rules in `chart.js` and `botTick`.
 - **Scoring weights** live in `SCORING` (client `utils/audition.js` and server `chart.js`; change
   both). Normal turn = `perKey × keys × judge × combo`; Finish Move = `finishBase × judge × combo`;
   combo multiplier = `1 + (min(combo, maxCombo) − 1) × comboStep` (Perfect/Great only). The server's
   `MAX_TURN_POINTS` is derived from it.
 - **End of song**: everyone idles for `END_HOLD_MS` (5s, `endHold`) before the podium/results open
   and the end sounds play.
+  - Leaving the results stops those sounds (`endSoundStops`).
+  - Outside a running game every dancer is plain idle. Last-game anims are "synced" to the music
+    clock, so with the music stopped they freeze mid-pose, e.g. Breakdance Freezes upside down.
 - **Chat** works in every room state, including mid-song. `POST /rooms/:id/chat` is members only,
   limited to 200 chars and one message per 400ms. The room keeps the last 40 messages in `room.chat`
   (included in `serializeRoom`), and each new message is also emitted as `audition_chat`.
@@ -568,7 +560,7 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
 - **Other players' judgements** float above their heads (`JudgeTag` sprite, atlas art, pop + fade).
   Your own judgement stays in the HUD. Reports carry `finish`, so every client knows when someone
   clears a Finish Move. Clearing one with Perfect, Great or Cool switches that dancer to Breakdance
-  Freezes (kind `showtime`) for 2 bars; the next turn cannot cut it short. Showtime also adds a wide
+  Freezes (kind `showtime`) through the rest bars after the Finish. Showtime also adds a wide
   gold `LimbTrail` and falling `StarDust` particles from hands and feet, visible for every player and
   bot.
 - **Key row feedback** follows Audition. There is no "next key" highlight hopping between keys. A

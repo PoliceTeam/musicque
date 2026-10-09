@@ -84,7 +84,7 @@ const baseState = (turn, arrow) => {
 // Bấm sai thì hàng phím được mount lại (key = wrongAt) -> lớp xanh về 0 ngay, không trượt ngược.
 const fillWidth = (n, progress) => (progress <= 0 ? 0 : progress >= n ? n * KEY_PX + (n - 1) * KEY_GAP : progress * (KEY_PX + KEY_GAP) - KEY_GAP / 2)
 
-const KeyRow = ({ turn }) => {
+const KeyRow = ({ turn, skipNext }) => {
   const n = turn?.seq.length || 0
   const total = n * KEY_PX + Math.max(0, n - 1) * KEY_GAP
   const done = turn?.result && SUCCESS.has(turn.result)
@@ -93,12 +93,14 @@ const KeyRow = ({ turn }) => {
     <div className={`au-pill${turn?.skipped ? ' is-locked' : ''}`}>
       {turn?.skipped && (
         <span className='au-pill__lock'>
-          {turn.skipAfter > 0 ? `Missed — bị khoá, còn ${turn.skipAfter + 1} ô nhịp nữa tới phím` : 'Missed — bị khoá, ô nhịp sau tới phím'}
+          {turn.finish ? 'Missed lượt trước — mất Finish Move' : 'Missed lượt trước — mất lượt phím này'}
         </span>
       )}
       {turn?.rest && (
         <span className='au-pill__rest'>
-          {turn.restAfter > 0 ? `♪ Nhảy theo nhạc — còn ${turn.restAfter + 1} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
+          {skipNext
+            ? 'Missed — lượt phím tới bị khoá'
+            : turn.keyIn > 1 ? `♪ Nhảy theo nhạc — còn ${turn.keyIn} ô nhịp nữa tới phím` : '♪ Nhảy theo nhạc — ô nhịp sau tới phím'}
         </span>
       )}
       {/* key theo lượt + wrongAt: sang lượt mới / bấm sai thì lớp xanh về 0 ngay (không trượt ngược), bấm sai rung lại */}
@@ -204,7 +206,7 @@ const AuditionHud = ({ view, chart, markerRef, progressRef, fx, label, best, mut
         {turn?.preFinish && !turn.result && (
           <span className='au-prefinish'>⚠ Lượt trước Finish Move — Missed lượt này là mất Finish, chờ 7 ô nhịp</span>
         )}
-        <KeyRow turn={turn} />
+        <KeyRow turn={turn} skipNext={view.skipNext} />
       </div>
     </div>
   )

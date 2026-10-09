@@ -320,7 +320,7 @@ const AuditionRoom = ({ roomId }) => {
       }
       const idx = turnIndexAt(chart, t)
       if (idx >= 0 && (!g.turn || g.turn.index !== idx)) {
-        const r = startTurn(g, chart.turns[idx], { seed: meta.seed, del: meta.del, maxFinishes: chart.maxFinishes })
+        const r = startTurn(g, chart.turns[idx], { seed: meta.seed, del: meta.del })
         gameRef.current = r.state
         setView(r.state)
         showLabel(r.state.turn.finish && !r.state.turn.skipped ? 'finish' : null)
@@ -407,13 +407,13 @@ const AuditionRoom = ({ roomId }) => {
 
   // Bảng điểm cuối bài mở ra (cả phòng đã xong): tiếng thắng cho hạng 1–2, tiếng thua từ hạng 3.
   const endPlayedFor = useRef(0)
+  const endSoundStops = useRef([]) // dừng tiếng thắng/thua + cheers/voice_m khi rời bảng điểm
   useEffect(() => {
     if (endHold || room?.status !== 'finished' || !room.results || endPlayedFor.current === room.gameNo) return
     const rank = room.results.find((r) => r.userId === userId)?.rank
     if (!rank) return
     endPlayedFor.current = room.gameNo
-    sfx.play(SFX_END(rank))
-    sfx.play(SFX_END_VOICE(rank))
+    endSoundStops.current = [sfx.play(SFX_END(rank)), sfx.play(SFX_END_VOICE(rank))]
   }, [room, userId, sfx, endHold])
 
   // Điểm hiện tại của từng người (mình lấy từ máy mình, người khác từ luồng progress).
@@ -461,11 +461,14 @@ const AuditionRoom = ({ roomId }) => {
         id: p.userId, url: charUrl(p.charId), anim: animFor(p.userId), name: p.name, isMe: p.userId === userId, isLeader: false, platform: 'idle'
       }))
     }
-    const playing = local === 'playing' || local === 'done'
-    const idle = { clip: 'idle', synced: playing, key: 0, kind: 'idle' }
+    // chỉ khi phòng đang chơi thật sự (về phòng chờ sau bảng điểm thì local vẫn là 'done')
+    const playing = room.status === 'playing' && (local === 'playing' || local === 'done')
+    const idle = { clip: 'idle', synced: playing, key: playing ? 0 : 1, kind: 'idle' }
     const others = room.players.filter((p) => p.userId !== userId)
     const list = others.map((p) => {
-      const anim = othersAnim[p.userId] || idle
+      // Ngoài ván (phòng chờ) ai cũng idle: anim cuối ván của người khác thường là điệu "synced" theo đồng
+      // hồ nhạc — nhạc đã dừng thì clip đứng hình (vd. Breakdance Freezes trồng chuối thành lộn ngược).
+      const anim = (playing && othersAnim[p.userId]) || idle
       return { id: p.userId, url: charUrl(p.charId), anim, name: p.name, isMe: false, isLeader: p.userId === leaderId, platform: PLATFORM_OF[anim.kind] || 'idle', judge: playing ? othersJudge[p.userId] : null }
     })
     if (me) {
@@ -497,6 +500,12 @@ const AuditionRoom = ({ roomId }) => {
   const showResults = Boolean(room) && !endHold && local !== 'playing' && local !== 'countdown' &&
     ((room.status === 'finished' && resultsSeen !== room.gameNo) || (local === 'done' && room.status === 'playing'))
   const finalResults = showResults && room.status === 'finished' && room.results ? room.results : null
+  // Rời bảng điểm (về phòng chờ / rời phòng / ván mới): cắt các tiếng kết thúc còn đang phát dở.
+  useEffect(() => {
+    if (showResults) return
+    for (const stop of endSoundStops.current) stop()
+    endSoundStops.current = []
+  }, [showResults])
   const resultView = useMemo(() => {
     if (!showResults) return null
     // chưa chốt ván: xếp tạm theo điểm hiện tại, chỉ hiện bảng của mình

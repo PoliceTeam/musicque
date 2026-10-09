@@ -7,12 +7,12 @@ import {
   expireTurn,
   FINISH_BASE,
   FINISH_KEYS,
+  FINISH_REST_BARS,
   FINISH_RESET_LEVEL,
-  TURNS_AT_9_BEFORE_FINISH,
   generateFinish,
   generateSequence,
   judgeTiming,
-  MAX_LEVEL,
+  LEVEL_TURNS,
   pressArrow,
   pressSpace,
   seededRng,
@@ -20,26 +20,23 @@ import {
   startTurn,
   turnIndexAt,
   barPhase,
-  REST_FROM_LEVEL,
-  FINISH_REST_BARS,
-  MISSED_LOCK_BARS,
-  MISSED_LOCK_BARS_HIGH,
-  PRE_FINISH_MISS_BARS,
   SCORING
 } from './audition'
 import { TRACKS } from '../components/DanceLab/danceLab'
 
+const SHAPE = { tttY: [76, 2], chiLaAoGiac: [129, 4], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 3], thienDuong: [77, 2] }
 const chart = createChart({ bpm: 60, offset: 1, duration: 60, introBars: 2 }) // phách 1s, ô nhịp 4s; dạo 2 ô cho gọn -> lượt đầu ở giây 9
 const normalTurn = chart.turns[0]
 const finishTurn = chart.turns[3]
-// trạng thái đã đánh đủ số lượt ở level 9 -> lượt kế là Finish
-const readyForFinish = (extra = {}) => ({ ...createGameState(), level: 9, turnsAt9: TURNS_AT_9_BEFORE_FINISH, ...extra })
+// bài thật (Tiểu thuyết tình yêu) để kiểm lịch level chung
+const song = createChart(TRACKS[0])
+const kindOf = (t) => (t.kind === 'rest' ? 'r' : t.kind === 'finish' ? 'F' : 'K') + t.level
 const fixedRng = (values) => { let i = 0; return () => values[i++ % values.length] }
 const arrows = (...dirs) => dirs.map((dir) => ({ dir, reverse: false }))
 
 // Bắt đầu một lượt thường (hit ở giây 12) với chuỗi phím cho trước.
 const begin = (state, seq) => {
-  const s = startTurn({ ...state, restLeft: 0 }, chart.turns[0]).state // bỏ qua ô nghỉ của level cao
+  const s = startTurn(state, chart.turns[0]).state
   return seq ? { ...s, turn: { ...s.turn, seq } } : s
 }
 const typeAll = (state, t) => state.turn.seq.reduce((s, a) => pressArrow(s, expectedKey(a), t).state, state)
@@ -64,19 +61,30 @@ describe('createChart', () => {
     expect(last.hit + 0.25).toBeLessThanOrEqual(60 - 3)
   })
 
-  it('allows one Finish Move per ~2 minutes of song and marks the last turn', () => {
-    expect(chart.maxFinishes).toBe(1) // bài 60s
+  it('builds one level schedule for the whole room: 1–5, then 3 turns per level 6–9 with dance bars, then a Finish', () => {
+    const seq = song.turns.map(kindOf)
+    expect(seq.slice(0, 11)).toEqual(['K1', 'K2', 'K3', 'K4', 'K5', 'r6', 'K6', 'r6', 'K6', 'r6', 'K6'])
+    expect(seq.slice(11, 17)).toEqual(['r7', 'K7', 'r7', 'K7', 'r7', 'K7'])
+    // 3 lượt level 9 (lượt cuối có cảnh báo), 1 ô nhảy, Finish, 5 ô nghỉ, rồi lại level 6
+    expect(seq.slice(23, 37)).toEqual(['r9', 'K9', 'r9', 'K9', 'r9', 'K9', 'r9', 'F9', 'r6', 'r6', 'r6', 'r6', 'r6', 'K6'])
+    expect(song.turns[28].preFinish).toBe(true)
+    expect(song.turns.filter((t) => t.preFinish).map((t) => t.index)).toEqual([28, 58])
+    expect(song.turns.filter((t) => t.kind === 'finish').map((t) => t.index)).toEqual([30, 60])
+    expect(song.turns.filter((t) => t.kind === 'key' && t.level >= 6).slice(0, 4).map((t) => t.step)).toEqual([1, 2, 3, 1])
+    expect(LEVEL_TURNS).toBe(3)
+    // ô nghỉ biết còn mấy ô tới lượt phím
+    expect(song.turns[31].keyIn).toBe(5)
+    expect(song.turns[35].keyIn).toBe(1)
+    // bài ngắn chưa tới Finish: lượt phím cuối thành Finish
+    expect(chart.finishes).toBe(1)
+    expect(chart.turns.filter((t) => t.kind === 'finish').map((t) => t.index)).toEqual([chart.turns.filter((t) => t.kind !== 'rest').pop().index])
     expect(chart.turns.filter((t) => t.last).map((t) => t.index)).toEqual([chart.turns.length - 1])
-    // bài thật: phải khớp api/services/audition/chart.js (api/test/audition.test.js kiểm cùng số)
-    const song = createChart({ bpm: 84.065, offset: 0.58, duration: 239.05 })
-    expect(song.turns).toHaveLength(76)
-    expect(song.maxFinishes).toBe(2)
     // mọi bài trong TRACKS — khớp api/test/audition.test.js
     const shape = Object.fromEntries(TRACKS.map((t) => {
       const c = createChart(t)
-      return [t.id, [c.turns.length, c.maxFinishes]]
+      return [t.id, [c.turns.length, c.finishes]]
     }))
-    expect(shape).toEqual({ tttY: [76, 2], chiLaAoGiac: [129, 3], khongTin: [75, 2], ngunger: [66, 2], aloha: [109, 2], thienDuong: [77, 2] })
+    expect(shape).toEqual(SHAPE)
   })
 
   it('finds the turn under a timestamp', () => {
@@ -150,41 +158,74 @@ describe('input', () => {
   })
 })
 
+// chơi ô nhịp ct: dt = độ lệch Space so với hit, null = không bấm (Missed vì hết giờ)
+const play = (state, ct, dt = 0) => {
+  const s = startTurn(state, ct, { seed: 'room' }).state
+  if (s.turn.rest || s.turn.skipped) return s
+  if (dt === null) return expireTurn(s, ct.hit + 1).state
+  return pressSpace(typeAll(s, ct.hit - 1), ct.hit + dt).state
+}
+const runSong = (judge) => {
+  // judge(index) -> dt; trả về các lượt phím thật sự được bấm
+  let s = createGameState()
+  const played = []
+  for (const ct of song.turns) {
+    s = play(s, ct, judge(ct.index))
+    if (s.turn.result && !s.turn.rest && !s.turn.skipped) played.push(ct.index)
+  }
+  return { s, played }
+}
+
 describe('levels and penalties', () => {
-  it('never drops a level: Bad and Missed keep it, success raises it', () => {
-    const s = { ...createGameState(), level: 6 }
-    const bad = pressSpace(typeAll(begin(s), 10), 11.8)
-    expect(bad.event).toMatchObject({ judgement: 'bad', success: false })
-    expect(bad.state.level).toBe(6)
-    expect(bad.state.skipLeft).toBe(0)
-
-    const missed = expireTurn(begin(s), 13)
-    expect(missed.state.level).toBe(6)
-
-    const ok = pressSpace(typeAll(begin(s), 10), 12)
-    expect(ok.state.level).toBe(7)
-    const capped = pressSpace(typeAll(begin({ ...s, level: MAX_LEVEL }), 10), 12)
-    expect(capped.state.level).toBe(9)
-    expect(MAX_LEVEL).toBe(9)
+  it('follows the room schedule: Bad and Missed never change the level', () => {
+    const allBad = runSong(() => 0.2).s
+    expect(allBad.counts.bad).toBe(song.turns.filter((t) => t.kind !== 'rest').length)
+    // level của từng ô luôn là level của lịch, dù đánh ra sao
+    let s = createGameState()
+    for (const ct of song.turns.slice(0, 20)) {
+      s = play(s, ct, ct.index % 3 === 0 ? null : 0)
+      expect(s.turn.level).toBe(ct.level)
+    }
   })
 
-  it('locks the turn right after a Missed, then resumes at the same level', () => {
-    const missed = expireTurn(begin({ ...createGameState(), level: 4 }), 13).state
-    expect(missed.skipLeft).toBe(MISSED_LOCK_BARS)
-
-    const locked = startTurn(missed, chart.turns[1])
-    expect(locked.event.type).toBe('skipped')
-    expect(locked.state.turn).toMatchObject({ skipped: true, result: 'skipped', level: 4 })
-    expect(locked.state.skipLeft).toBe(0)
+  it('a Missed loses the next key turn of the schedule, then plays on with everyone', () => {
+    // dưới level 6: lượt kế ngay ô sau -> chờ 1 ô
+    const low = runSong((i) => (i === 1 ? null : 0)).played
+    expect(low.slice(0, 4)).toEqual([0, 1, 3, 4])
+    // từ level 6 (lượt phím 6, 8, 10…): Missed ở 8 -> mất lượt 10, bấm lại ở 12 (n+4)
+    const high = runSong((i) => (i === 8 ? null : 0)).played
+    expect(high).toContain(8)
+    expect(high).not.toContain(10)
+    expect(high).toContain(12)
+    // lượt bị khoá hiện phím xám
+    let s = createGameState()
+    for (const ct of song.turns.slice(0, 11)) s = play(s, ct, ct.index === 8 ? null : 0)
+    expect(s.turn).toMatchObject({ index: 10, skipped: true, result: 'skipped', level: 6 })
     // không bấm được gì trong lượt bị khoá
-    expect(pressArrow(locked.state, 'up', 14).event).toBeNull()
-    expect(pressSpace(locked.state, 16).event).toBeNull()
-    expect(expireTurn(locked.state, 17).event).toBeNull()
+    expect(pressArrow(s, 'up', s.turn.hit - 1).event).toBeNull()
+    expect(pressSpace(s, s.turn.hit).event).toBeNull()
+    expect(expireTurn(s, s.turn.hit + 1).event).toBeNull()
+  })
 
-    const next = startTurn(locked.state, chart.turns[2])
-    expect(next.event.type).toBe('turn')
-    expect(next.state.turn.level).toBe(4)
-    expect(next.state.turn.seq).toHaveLength(4)
+  it('missing the turn before a Finish loses the Finish (waits 7 bars) and returns at level 6 with everyone', () => {
+    const { played } = runSong((i) => (i === 28 ? null : 0))
+    expect(played).toContain(28)
+    expect(played).not.toContain(30) // Finish bị khoá
+    expect(played.find((i) => i > 28)).toBe(36) // 7 ô sau mới bấm lại, cùng lúc cả phòng
+    expect(song.turns[36]).toMatchObject({ kind: 'key', level: FINISH_RESET_LEVEL })
+    // HUD cảnh báo ở lượt trước Finish
+    let s = createGameState()
+    for (const ct of song.turns.slice(0, 29)) s = play(s, ct, ct.index === 28 ? undefined : 0)
+    expect(startTurn(s, song.turns[28]).state.turn.preFinish).toBe(true)
+    // Missed lượt đó: event báo mất Finish
+    const pre = startTurn({ ...createGameState(), skipNext: false }, song.turns[28]).state
+    expect(expireTurn(pre, song.turns[28].hit + 1).event.forfeit).toBe(true)
+  })
+
+  it('a Missed Finish adds no lock: back on level 6 after the 5 shared rest bars', () => {
+    const { played } = runSong((i) => (i === 30 ? null : 0))
+    expect(played).toContain(30)
+    expect(played.find((i) => i > 30)).toBe(30 + FINISH_REST_BARS + 1)
   })
 })
 
@@ -213,133 +254,20 @@ describe('judging and scoring', () => {
     expect(r.event.points).toBe(Math.round(2 * SCORING.perKey * comboMultiplier(11)))
   })
 
-  it('turns the next turn into a Finish Move after 3 turns played at level 9', () => {
-    let s = { ...createGameState(), level: 9 }
-    for (let i = 0; i < TURNS_AT_9_BEFORE_FINISH; i++) {
-      const ct = chart.turns[i * 2]
-      const t = startTurn(s, ct).state
-      expect(t.turn.finish).toBe(false)
-      expect(t.turn.seq).toHaveLength(9)
-      s = expireTurn(pressSpace(typeAll(t, ct.hit - 1), ct.hit).state, 99).state // Perfect
-      s = startTurn(s, chart.turns[i * 2 + 1]).state // ô nhịp nghỉ, không tính là lượt đã đánh
-      expect(s.turn.rest).toBe(true)
-    }
-    expect(s.turnsAt9).toBe(TURNS_AT_9_BEFORE_FINISH)
-    const fin = startTurn(s, chart.turns[6])
-    expect(fin.state.turn.finish).toBe(true)
-    expect(fin.event.finish).toBe(true)
-    // một lượt hỏng ở level 9 vẫn tính là đã đánh; lượt bị khoá thì không tính
-    const bad = pressSpace(typeAll(startTurn({ ...createGameState(), level: 9 }, chart.turns[0]).state, 10), 11.8).state
-    expect(bad.turnsAt9).toBe(1)
-  })
-
-  it('puts one dance bar before every key turn at level 6+, but not after a Missed or on the last turn', () => {
-    const play = (state, ct, dt = 0) => pressSpace(typeAll(startTurn(state, ct).state, ct.hit - 1), ct.hit + dt).state
-    // level 4 -> 5: lượt kế còn dưới 6, không nghỉ
-    expect(play({ ...createGameState(), level: REST_FROM_LEVEL - 2 }, chart.turns[0]).restLeft).toBe(0)
-    // Bad ở level 5: vẫn level 5, không nghỉ
-    expect(play({ ...createGameState(), level: REST_FROM_LEVEL - 1 }, chart.turns[0], 0.2).restLeft).toBe(0)
-    // vừa lên 5 -> 6: lượt phím level 6 đầu tiên cũng phải có 1 nhịp nhảy trước (lỗi người chơi báo)
-    let s = play({ ...createGameState(), level: REST_FROM_LEVEL - 1 }, chart.turns[0])
-    expect(s).toMatchObject({ level: REST_FROM_LEVEL, restLeft: 1 })
-    // level 6: lượt kế là ô nghỉ (không phím, không chấm), lượt sau nữa bấm tiếp
-    s = play({ ...s, restLeft: 0 }, chart.turns[1])
-    expect(s.restLeft).toBe(1)
-    const rest = startTurn(s, chart.turns[2])
-    expect(rest.event.type).toBe('rest')
-    expect(rest.state.turn).toMatchObject({ rest: true, result: 'rest', seq: [] })
-    expect(pressSpace(rest.state, chart.turns[2].hit).event).toBe(null)
-    expect(startTurn(rest.state, chart.turns[3]).state.turn.rest).toBeFalsy()
-    // Missed ở level cao: lượt sau bị khoá, không cộng thêm ô nghỉ
-    const missed = play({ ...createGameState(), level: 7 }, chart.turns[0], 0.5)
-    // Missed từ level 6: mất trọn lượt kế (ô nhảy + ô phím + ô nhảy) = chờ 3 ô, ô thứ 4 bấm lại
-    expect(missed).toMatchObject({ skipLeft: MISSED_LOCK_BARS_HIGH, restLeft: 0 })
-    let w = missed
-    for (let i = 1; i <= MISSED_LOCK_BARS_HIGH; i++) {
-      w = startTurn(w, chart.turns[i]).state
-      expect(w.turn).toMatchObject({ skipped: true, skipAfter: MISSED_LOCK_BARS_HIGH - i })
-    }
-    expect(startTurn(w, chart.turns[MISSED_LOCK_BARS_HIGH + 1]).state.turn).toMatchObject({ skipped: false, result: null, level: 7 })
-    // lượt cuối bài không bao giờ là ô nghỉ
-    const last = chart.turns[chart.turns.length - 1]
-    expect(startTurn({ ...createGameState(), level: 7, restLeft: 3 }, last).state.turn.rest).toBeFalsy()
-  })
-
-  it('rests 5 bars after any Finish Move result, then plays again at level 6', () => {
-    const ct = chart.turns[0]
-    let s = pressSpace(typeAll(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, ct.hit - 1), ct.hit + 0.12).state // Cool vẫn là qua
-    expect(s).toMatchObject({ restLeft: FINISH_REST_BARS, level: FINISH_RESET_LEVEL })
-    for (let i = 1; i <= FINISH_REST_BARS; i++) {
-      s = startTurn(s, chart.turns[i]).state
-      expect(s.turn.rest).toBe(true)
-    }
-    s = startTurn(s, chart.turns[FINISH_REST_BARS + 1]).state
-    expect(s.turn.rest).toBeFalsy()
-    expect(s.turn.level).toBe(FINISH_RESET_LEVEL)
-    expect(s.turn.seq).toHaveLength(FINISH_RESET_LEVEL)
-    // Finish Bad / Missed cũng nghỉ đúng 5 ô (đồng bộ với người qua), Missed không bị khoá thêm
-    const bad = pressSpace(typeAll(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, ct.hit - 1), ct.hit + 0.2).state
-    expect(bad).toMatchObject({ restLeft: FINISH_REST_BARS, skipLeft: 0 })
-    const missed = expireTurn(startTurn(readyForFinish(), ct, { maxFinishes: 2 }).state, 99).state
-    expect(missed).toMatchObject({ restLeft: FINISH_REST_BARS, skipLeft: 0, level: FINISH_RESET_LEVEL })
-  })
-
-  it('warns on the turn before a Finish Move; missing it forfeits the Finish and waits 7 bars', () => {
-    const opts = { maxFinishes: 2 }
-    const before = readyForFinish({ turnsAt9: TURNS_AT_9_BEFORE_FINISH - 1 })
-    const ct = chart.turns[0]
-    const turn = startTurn(before, ct, opts).state
-    expect(turn.turn).toMatchObject({ preFinish: true, finish: false })
-    // không phải lượt trước Finish: không cảnh báo
-    expect(startTurn(readyForFinish({ turnsAt9: 0 }), ct, opts).state.turn.preFinish).toBe(false)
-    expect(startTurn(readyForFinish({ turnsAt9: 1, finishTurns: 2 }), ct, opts).state.turn.preFinish).toBe(false)
-    // đánh được (kể cả Bad) thì lượt sau vẫn là Finish như thường
-    const ok = pressSpace(typeAll(turn, ct.hit - 1), ct.hit + 0.2).state
-    expect(startTurn({ ...ok, restLeft: 0 }, chart.turns[2], opts).state.turn.finish).toBe(true)
-    // Missed: mất Finish, về level 6, chờ đúng PRE_FINISH_MISS_BARS (7) ô rồi bấm lại
-    const r = expireTurn(turn, 99)
-    expect(r.event.forfeit).toBe(true)
-    expect(PRE_FINISH_MISS_BARS).toBe(7)
-    let s = r.state
-    expect(s).toMatchObject({ skipLeft: 7, finishTurns: 1, turnsAt9: 0, level: FINISH_RESET_LEVEL })
-    for (let i = 1; i <= 7; i++) {
-      s = startTurn(s, chart.turns[i], opts).state
-      expect(s.turn.skipped).toBe(true)
-    }
-    s = startTurn(s, chart.turns[8], opts).state
-    expect(s.turn).toMatchObject({ skipped: false, finish: false, level: FINISH_RESET_LEVEL })
-  })
-
-  it('caps Finish Moves per song and forces one on the last turn if none yet', () => {
-    const lastTurn = chart.turns[chart.turns.length - 1]
-    expect(startTurn(readyForFinish({ finishTurns: 1 }), finishTurn, { maxFinishes: 1 }).state.turn.finish).toBe(false)
-    expect(startTurn({ ...createGameState(), level: 2 }, lastTurn, { maxFinishes: 1 }).state.turn.finish).toBe(true)
-    expect(startTurn({ ...createGameState(), level: 2, finishTurns: 1 }, lastTurn, { maxFinishes: 1 }).state.turn.finish).toBe(false)
-  })
-
-  it('awards the Finish Move as a showtime and sends high levels back to 6', () => {
-    const t = startTurn(readyForFinish(), finishTurn, { seed: 'room' }).state
-    expect(t.turn.finish).toBe(true)
+  it('awards the Finish Move as a showtime', () => {
+    const ft = song.turns[30]
+    const t = startTurn(createGameState(), ft, { seed: 'room' }).state
+    expect(t.turn).toMatchObject({ finish: true, level: 9 })
     expect(t.turn.seq).toHaveLength(FINISH_KEYS)
-    const r = pressSpace(typeAll(t, finishTurn.hit - 1), finishTurn.hit + 0.01)
+    const r = pressSpace(typeAll(t, ft.hit - 1), ft.hit + 0.01)
     expect(r.event).toMatchObject({ showtime: true, finish: true, points: FINISH_BASE })
-    expect(r.state.level).toBe(FINISH_RESET_LEVEL)
     expect(r.state.finishes).toBe(1)
-    expect(r.state.finishTurns).toBe(1)
-    expect(r.state.turnsAt9).toBe(0)
-    // hỏng Finish cũng về 6 và tính một lần Finish; người dưới 6 (Finish ép ở lượt cuối) giữ level
-    const failed = expireTurn(t, finishTurn.hit + 1).state
-    expect(failed.level).toBe(FINISH_RESET_LEVEL)
-    expect(failed.finishTurns).toBe(1)
-    const lastTurn = chart.turns[chart.turns.length - 1]
-    const low = startTurn({ ...createGameState(), level: 3 }, lastTurn).state
-    expect(low.turn.finish).toBe(true)
-    expect(expireTurn(low, lastTurn.hit + 1).state.level).toBe(3)
   })
 
   it('a Cool finish still counts as success but is not a showtime', () => {
-    const t = startTurn(readyForFinish(), finishTurn).state
-    const r = pressSpace(typeAll(t, finishTurn.hit - 1), finishTurn.hit + 0.13)
+    const ft = song.turns[30]
+    const t = startTurn(createGameState(), ft).state
+    const r = pressSpace(typeAll(t, ft.hit - 1), ft.hit + 0.13)
     expect(r.event).toMatchObject({ judgement: 'cool', success: true, showtime: false })
   })
 })

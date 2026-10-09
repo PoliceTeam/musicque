@@ -142,8 +142,8 @@ const LobbyHud = ({ lobby }) => {
 
     add(34, (yy) => (
       <React.Fragment key='howto'>
-        <Text x={left} y={yy} w={cw} h={17} text='← ↑ ↓ → đúng chuỗi, rồi Space đúng phách 4.' size={11} color='rgba(243,240,255,0.6)' />
-        <Text x={left} y={yy - 17} w={cw} h={17} text='Missed khoá 1 lượt · 3 lượt ở level 9 thì tới Finish Move.' size={11} color='rgba(243,240,255,0.6)' />
+        <Text x={left} y={yy} w={cw} h={17} text='← ↑ ↓ → đúng chuỗi, rồi Space đúng phách 4 · level chung cả phòng.' size={11} color='rgba(243,240,255,0.6)' />
+        <Text x={left} y={yy - 17} w={cw} h={17} text='Lv1–5, rồi lv6–9 mỗi level 3 lượt → Finish · Missed mất lượt phím kế.' size={11} color='rgba(243,240,255,0.6)' />
       </React.Fragment>
     ), 10)
     if (isHost) {
