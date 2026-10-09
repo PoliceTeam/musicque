@@ -1,5 +1,5 @@
 import { Euler, Quaternion, Vector3 } from 'three'
-export const MOTION = { shuffle: 600, dealStagger: 60, deal: 280, play: 480, release: 450, ownRelease: 100, flight: 350, compress: 100, bombLanding: 300, sweep: 500, flip: 550, pass: 800, bomb: 250, finish: 1800 }
+export const MOTION = { shuffle: 600, dealStagger: 60, deal: 280, play: 480, pick: 150, release: 450, ownRelease: 100, flight: 350, compress: 100, bombLanding: 300, sweep: 500, flip: 550, pass: 800, bomb: 250, finish: 1800 }
 const clamp = (t) => Math.max(0, Math.min(1, t))
 export const easeOutCubic = (t) => 1 - (1 - clamp(t)) ** 3
 export const easeOutQuart = (t) => 1 - (1 - clamp(t)) ** 4

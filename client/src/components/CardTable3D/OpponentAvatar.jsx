@@ -3,13 +3,14 @@ import { useFrame } from '@react-three/fiber'
 import { disposeClonedSkeletons, useTableGLTF } from './assets'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import * as THREE from 'three'
-import { blendPose, poses, poseTargets, prepareRig, updateHandAnchor, playPosePhase } from './poses'
+import { createCardPlayer, PLAYER_MODEL_URL, updatePlayerGrip } from './cardPlayer'
+import { animationTimeScale, MOTION } from './anim'
 import { useAnimationActivity } from './activity'
 import SeatMarker from './SeatMarker'
 import { CHAIR_HEIGHT } from './chair'
 const AVATAR_SCALE = 0.85
-export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, message, serverOffset, phase: roomPhase = 'playing', children }) {
-  const { scene } = useTableGLTF('/models/chibi.glb?v=1')
+export default function OpponentAvatar({ seat, seatIndex, position, active, playedKey, turnDeadlineAt, serverNow, turnMs, spaces, reducedMotion, message, serverOffset, phase: roomPhase = 'playing', dealTiming, dealDuration = 0, children }) {
+  const { scene, animations } = useTableGLTF(PLAYER_MODEL_URL)
   const yaw = Math.atan2(-position[0], -position[2])
   const avatar = useMemo(() => {
     const model = clone(scene)
@@ -43,12 +44,10 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
       }
       node.material = Array.isArray(node.material) ? node.material.map(tint) : tint(node.material)
     })
-    const rig = prepareRig(model)
+    const player = createCardPlayer(model, animations)
+    const rig = player.rig
     model.updateMatrixWorld(true)
     const hipY = rig.get('mixamorigHips').bone.getWorldPosition(new THREE.Vector3()).y
-    const hold = poseTargets(rig, poses.seated, poses.holdCards, poses.idle)
-    blendPose(rig, hold, 1)
-    model.updateMatrixWorld(true)
     let pelvisBottom = hipY
     const vertex = new THREE.Vector3()
     model.traverse(node => {
@@ -64,12 +63,6 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         }
       }
     })
-    // Extend the short chibi torso while keeping its pelvis on the physical chair.
-    const spine = rig.get('mixamorigSpine').bone
-    const spinePosition = spine.getWorldPosition(new THREE.Vector3())
-    spinePosition.y += Math.max(0, 0.63 - (CHAIR_HEIGHT + (hipY - pelvisBottom) * AVATAR_SCALE)) / AVATAR_SCALE
-    spine.position.copy(spine.parent.worldToLocal(spinePosition))
-    model.updateMatrixWorld(true)
     model.traverse(node => {
       if (node.isSkinnedMesh) {
         node.computeBoundingSphere()
@@ -77,27 +70,27 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
         node.boundingSphere.radius *= 2
       }
     })
-    return { model, rig, waiting: poseTargets(rig, poses.seated, poses.waiting, poses.idle), hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, hold, reach: poseTargets(rig, poses.seated, poses.holdCards, poses.idle, poses.reachPlay), materials: [...materials.values()] }
-  }, [scene, seat.isBot])
+    return { model, rig, player, hipOffset: CHAIR_HEIGHT - pelvisBottom * AVATAR_SCALE, materials: [...materials.values()] }
+  }, [scene, animations, seat.isBot])
   const activity = useAnimationActivity()
-  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed, roomPhase])
-  const phase = useMemo(() => ({}), [])
+  useEffect(() => { activity.start() }, [activity, playedKey, seat.passed, roomPhase, dealTiming])
   const initialized = useRef(false), lastPhase = useRef(roomPhase)
   const handAnchor = useMemo(() => new THREE.Group(), [])
+  const playAnchor = useMemo(() => new THREE.Group(), [])
   const headAnchor = useRef()
   const elapsed = useRef(Infinity)
   const lastPlay = useRef(playedKey)
   const lastPassed = useRef(seat.passed), passElapsed = useRef(Infinity)
   const interrupted = useRef(null), wasMoving = useRef(false)
   const head = avatar.rig.get('mixamorigHead').bone
-  const hand = avatar.rig.get('mixamorigRightHand').bone
   spaces.current[`seat:${seatIndex}`] = handAnchor
-  useEffect(() => () => { disposeClonedSkeletons(avatar.model); avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`] }, [avatar, spaces, seatIndex])
+  spaces.current[`play:${seatIndex}`] = playAnchor
+  useEffect(() => () => { avatar.player.dispose(); disposeClonedSkeletons(avatar.model); avatar.materials.forEach(material => material.dispose()); delete spaces.current[`seat:${seatIndex}`]; delete spaces.current[`play:${seatIndex}`] }, [avatar, spaces, seatIndex])
   useFrame((_, delta) => {
     delta = activity.step(delta)
     if (playedKey !== lastPlay.current) {
-      if (!playedKey && elapsed.current < 750) interrupted.current = { elapsed: 0, from: new Map([...avatar.rig].map(([name, { bone }]) => [name, bone.quaternion.clone()])) }
-      if (playedKey) { elapsed.current = 0; interrupted.current = null }
+      if (elapsed.current < avatar.player.duration) interrupted.current = { elapsed: 0, from: new Map([...avatar.rig].map(([name, { bone }]) => [name, { rotation: bone.quaternion.clone(), position: bone.position.clone() }])) }
+      elapsed.current = playedKey ? 0 : Infinity
       lastPlay.current = playedKey
     }
     if (seat.passed !== lastPassed.current) { passElapsed.current = seat.passed ? 0 : Infinity; lastPassed.current = seat.passed }
@@ -106,23 +99,30 @@ export default function OpponentAvatar({ seat, seatIndex, position, active, play
     const waiting = roomPhase !== 'playing'
     const phaseChanged = lastPhase.current !== roomPhase
     lastPhase.current = roomPhase
-    const moving = !waiting && !reducedMotion && (elapsed.current < 750 || interrupted.current)
-    if (moving) {
-      playPosePhase(elapsed.current, phase)
-      const from = interrupted.current?.from || (phase.reaching ? avatar.hold : elapsed.current < 150 ? avatar.hold : avatar.reach)
-      const to = phase.reaching && !interrupted.current ? avatar.reach : avatar.hold
-      if (interrupted.current) interrupted.current.elapsed += delta * 1000
-      const progress = interrupted.current ? Math.min(1, interrupted.current.elapsed / 100) : phase.progress
-      const eased = progress * progress * (3 - 2 * progress)
-      for (const [name, target] of to) avatar.rig.get(name).bone.quaternion.slerpQuaternions(from.get(name), target, eased)
-      if (interrupted.current && progress === 1) { interrupted.current = null; elapsed.current = Infinity }
-    } else if (initialized.current && !wasMoving.current && !phaseChanged && passElapsed.current >= 800) { activity.stop(); return }
-    else blendPose(avatar.rig, waiting ? avatar.waiting : avatar.hold, 1)
+    const pickupTime = dealTiming?.startedAt == null ? Infinity : (performance.now() - dealTiming.startedAt) / animationTimeScale() - (dealDuration - 750)
+    const dealing = Boolean(dealDuration && pickupTime < 400)
+    const moving = !waiting && !reducedMotion && (elapsed.current < avatar.player.duration || dealing || interrupted.current)
+    if (!moving && initialized.current && !wasMoving.current && !phaseChanged && passElapsed.current >= MOTION.pass) { activity.stop(); return }
+    if (waiting || (dealing && pickupTime < 0 && !reducedMotion)) avatar.player.sample('CardWait')
+    else if (dealing && !reducedMotion) avatar.player.sample('CardPickup', pickupTime / 1000)
+    else if (elapsed.current < avatar.player.duration && !reducedMotion) avatar.player.sample('CardPlay', elapsed.current / 1000)
+    else avatar.player.sample('CardHold')
+    if (interrupted.current) {
+      interrupted.current.elapsed += delta * 1000
+      const progress = Math.min(1, interrupted.current.elapsed / MOTION.compress)
+      for (const [name, from] of interrupted.current.from) {
+        const bone = avatar.rig.get(name).bone
+        bone.quaternion.slerpQuaternions(from.rotation, bone.quaternion, progress)
+        bone.position.lerpVectors(from.position, bone.position, progress)
+      }
+      if (progress === 1 || reducedMotion) interrupted.current = null
+    }
     wasMoving.current = Boolean(moving)
     initialized.current = true
     head.updateWorldMatrix(true, false)
-    updateHandAnchor(hand, handAnchor)
-    handAnchor.position.y -= !reducedMotion && passElapsed.current < 800 ? 0.03 * Math.sin(Math.PI * passElapsed.current / 800) : 0
+    updatePlayerGrip(avatar.player.grips.Left, handAnchor)
+    updatePlayerGrip(avatar.player.grips.Right, playAnchor)
+    handAnchor.position.y -= !reducedMotion && passElapsed.current < MOTION.pass ? 0.03 * Math.sin(Math.PI * passElapsed.current / MOTION.pass) : 0
     handAnchor.updateWorldMatrix(true, false)
     if (headAnchor.current) { head.getWorldPosition(headAnchor.current.position); headAnchor.current.position.y += 0.49 }
   }, -1)

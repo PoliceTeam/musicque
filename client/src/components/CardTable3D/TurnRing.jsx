@@ -15,14 +15,21 @@ export default function TurnRing({ position, table, turnMs, reducedMotion }) {
   useEffect(() => { activity.start() }, [activity, target])
   useEffect(() => {
     if (!target) return undefined
+    let interval, last
     const update = () => {
       const { fraction } = turnTiming(table, turnMs, Date.now(), sync)
-      arc.current?.geometry.setDrawRange(0, Math.round(fraction * 128) * 6)
-      arc.current?.material.color.set(turnColor(fraction))
+      if (fraction === 0) clearInterval(interval)
+      const count = Math.round(fraction * 128) * 6, color = turnColor(fraction)
+      const signature = `${count}:${color}`
+      if (signature === last) return
+      last = signature
+      arc.current?.geometry.setDrawRange(0, count)
+      arc.current?.material.color.set(color)
       invalidate()
     }
     update()
-    const interval = setInterval(update, 100)
+    if (!table?.turnDeadlineAt || turnTiming(table, turnMs, Date.now(), sync).fraction === 0) return undefined
+    interval = setInterval(update, 100)
     return () => clearInterval(interval)
   }, [target, table, turnMs, sync, invalidate])
   useFrame((_, delta) => {

@@ -23,15 +23,33 @@ export const diffCardTransitions = (previous, next, isBomb) => {
     if (dealt.has(card.id)) return { ...card, ...dealMotion(dealt.get(card.id), schedule.pickupAt, next.anchor || 0, next.deckPosition) }
     const from = source ? sourcePose(source) : card
     const play = source?.zone === 'hand' && card.zone === 'trick'
-    if (play) return { ...card, from, delay: source.seat !== next.anchor ? MOTION.release : MOTION.ownRelease, duration: MOTION.flight, height: 0, motionKind: 'play', bomb }
+    if (play) {
+      const result = { ...card, from, delay: source.seat !== next.anchor ? MOTION.release : MOTION.ownRelease, duration: MOTION.flight, height: 0, motionKind: 'play', bomb }
+      if (from.space === `seat:${card.seat}`) {
+        const held = { ...from, space: `play:${card.seat}` }
+        result.motion = [
+          { target: held, start: 0, duration: MOTION.pick, kind: 'pickup' },
+          { target: held, start: MOTION.pick, duration: MOTION.release - MOTION.pick, kind: 'reach' },
+          { target: card, start: MOTION.release, duration: MOTION.flight, kind: 'play', flip: true },
+        ]
+      }
+      return result
+    }
     return { ...card, from, delay: 0, duration: source ? MOTION.play : 0, height: 0 }
 
   })
   // A removed opponent slot becomes the revealed trick card, never a duplicate back.
-  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...card, motionKind: 'move', flightGroup: undefined, zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: sourcePose(card), duration: MOTION.play, delay: 0, height: 0 }))
+  const under = removed.filter((card) => card.zone === 'trick' && next.trickKey && next.trickKey !== previous.trickKey).map((card) => ({ ...sourcePose(card), motionKind: 'move', zone: 'under', dim: true, position: [card.position[0], (next.surfaceY ?? next.deckPosition[1]) + 0.006 + (card.order ?? 0) % 100 * 0.0005, -0.06], tilt: 0, order: 100 + (card.order ?? 0) % 100, from: sourcePose(card), duration: MOTION.play, delay: 0, height: 0 }))
   const playing = cards.filter(card => card.motionKind === 'play')
   if (playing.length) {
     const group = groupFlight(playing)
+    const picked = playing.filter(card => card.motion?.[0].kind === 'pickup')
+    if (picked.length) {
+      const center = [0, 1, 2].map(axis => picked.reduce((sum, card) => sum + card.from.position[axis], 0) / picked.length)
+      for (const card of picked) card.motion[0].target.position = card.from.position.map((value, axis) => value - center[axis])
+      group.from = { ...picked[0].motion[0].target, position: [0, 0, 0] }
+      for (const card of picked) card.motion[2].group = group
+    }
     playing.forEach(card => { card.flightGroup = group })
   }
   const swept = removed.filter(card => !consumed.has(card.id) && !under.some(combo => combo.id === card.id) && card.zone !== 'hand' && card.zone !== 'discard')
