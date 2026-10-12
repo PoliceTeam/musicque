@@ -109,7 +109,8 @@ const joinRoom = (rooms, room, user) => {
 const leaveRoom = (rooms, room, userId, { force = false } = {}) => {
   const id = String(userId)
   // Chủ phòng không được bỏ ngang giữa bài (cả phòng đang nhảy theo ván của họ); hết ván mới rời được.
-  if (!force && room.status === 'playing' && room.hostId === id && room.players.has(id)) {
+  // Đã bị đánh dấu xong (tải lại trang giữa bài) thì không còn nhảy nữa, cho rời.
+  if (!force && room.status === 'playing' && room.hostId === id && room.players.has(id) && !room.players.get(id).done) {
     fail('Đang nhảy, hết bài mới rời phòng được', 409, 'HOST_PLAYING')
   }
   if (!room.players.delete(id)) return false
@@ -119,8 +120,17 @@ const leaveRoom = (rooms, room, userId, { force = false } = {}) => {
     return true
   }
   if (room.hostId === id) room.hostId = humans(room).sort((a, b) => a.joinedAt - b.joinedAt)[0].userId
-  if (room.status === 'playing' && [...room.players.values()].every((p) => p.done)) endGame(room)
+  finishIfHumansDone(room)
   return false
+}
+
+// Mọi người thật đã xong (hết bài, hoặc tải lại trang giữa bài) thì không ai còn xem bot nhảy nữa:
+// cho bot chạy nốt tới cuối bài ngay (đủ điểm cả bài) rồi chốt ván, khỏi giữ phòng ở "đang nhảy"
+// tới hết giờ — lúc đó chủ phòng không rời, không tạo phòng mới, không bắt đầu ván mới được.
+const finishIfHumansDone = (room, rng = Math.random) => {
+  if (room.status !== 'playing' || !humans(room).every((p) => p.done)) return false
+  botTick(room, room.startAt + (chartOf(room).endAt + BOT_REPORT_DELAY + 1) * 1000, rng)
+  return room.status === 'finished' || endGame(room)
 }
 
 const requirePlayer = (room, userId) => room.players.get(String(userId)) || fail('Bạn không ở trong phòng này', 403, 'NOT_IN_ROOM')
@@ -306,7 +316,7 @@ const markDone = (room, userId, gameNo) => {
   const player = requirePlayer(room, userId)
   if (room.status !== 'playing' || gameNo !== room.gameNo) return false
   player.done = true
-  return [...room.players.values()].every((p) => p.done) ? endGame(room) : false
+  return finishIfHumansDone(room)
 }
 
 const checkTimeout = (room, now = Date.now()) =>

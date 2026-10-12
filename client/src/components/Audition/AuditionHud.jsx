@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { SUCCESS } from '../../utils/audition'
+import { SUCCESS, expectedKey } from '../../utils/audition'
 import { ASSET, FRAME } from './auditionConfig'
 import AtlasImg from './AtlasImg'
 
@@ -114,8 +114,9 @@ const KeyRow = ({ turn, skipNext }) => {
                 style={{ width: total, clipPath: `inset(0 ${total - fill}px 0 0)`, transitionDuration: `${FILL_MS}ms` }}
                 aria-hidden='true'
               >
-                {/* is-lit gắn lúc phím vừa được bấm tới -> chạy một lần hiệu ứng loé sáng rồi dịu về xanh */}
-                {turn.seq.map((a, i) => <Key key={i} dir={a.dir} state='hit' lit={i < turn.progress} />)}
+                {/* is-lit gắn lúc phím vừa được bấm tới -> chạy một lần hiệu ứng loé sáng rồi dịu về xanh.
+                    Phím Del (đỏ) bấm ngược hướng, nên phím xanh hiện đúng hướng đã bấm (expectedKey). */}
+                {turn.seq.map((a, i) => <Key key={i} dir={expectedKey(a)} state='hit' lit={i < turn.progress} />)}
               </div>
             </>
             )

@@ -508,7 +508,9 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   every machine. `api/services/audition/chart.js` mirrors the chart + level rules for bots;
   both test suites pin the same numbers per song (tttY 76 bars, Finish at bars 30 and 60).
 - **Bots** (host adds them while waiting) are simulated on the server clock in `botTick` by skill
-  profile; they finish only when the real song time ends, so a room with bots can't end early.
+  profile. Once every human is done (song over, or reloaded mid-song and marked done),
+  `finishIfHumansDone` fast-forwards the bots to the end of the song and ends the game, so a bots-only
+  room never stays stuck in `playing`. A host who is already done may leave mid-song.
 - **Room flow**: host picks song (`songId`, from `SONGS` in `api/services/audition/chart.js` =
   `TRACKS` on the client — add new songs to both with the same id/bpm/offset/duration) and
   stage (`stageId`, `'random'` = seeded per game). Everyone picks a character; non-host players
@@ -569,6 +571,11 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   `wrongAt`, so a wrong key or a new turn resets the fill instantly instead of sliding back.
   Headless Chrome with SwiftShader renders ~2–3 fps, so the transition looks frozen there; check
   `getAnimations()`, not computed styles.
+- Cleared Del (red) keys turn green showing the direction actually pressed (`expectedKey`).
+- **Intro camera** (`CameraRig` orbit): from the start of the 4s countdown (`ORBIT_LEAD`) to ~1.5 bars
+  into the song, the camera descends from high and far (`ORBIT_RISE`, `ORBIT_ZOOM`) while circling the
+  stage once and zooming in, ending face-on. It runs on the wall clock from the server `startAt`, since
+  the music is not playing during the countdown.
 - The score count-up (`useCountUp` in `AuditionHud`) scales the digits up while counting.
   `DANCER_SPACING` is 2.0, and the back row leaves a gap one dancer wide behind the leader.
 - Results voices: ranks 1–2 hear `end_win` + `cheers`, rank 3 and below hear `end_lose` + `voice_m`

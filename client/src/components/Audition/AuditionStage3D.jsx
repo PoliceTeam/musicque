@@ -243,11 +243,23 @@ const CAMERA = {
   podium: { y: 2.1, z: 8.6, look: -0.15 }
 }
 
+// Lúc vào bài camera bay vào sân khấu như Audition: bắt đầu từ cao và xa ngay khi đếm ngược, vừa hạ chéo
+// xuống vừa xoay một vòng quanh sân khấu vừa zoom lại gần, về chính diện sau vài phách đầu bài. Quỹ đạo
+// bám theo mốc bắt đầu bài của server nên mọi máy giống nhau. Xoay qua 320° trong khoảng 70% thời gian,
+// phần còn lại chậm dần về đủ 360°.
+const ORBIT_RISE = 5 // m — cao hơn vị trí chơi bao nhiêu lúc xuất phát
+const ORBIT_ZOOM = 2.2 // xuất phát xa gấp bao nhiêu lần
+const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2)
+const easeOut = (p) => 1 - (1 - p) ** 2
+
 // panelPx: bảng phòng chờ chiếm mép phải màn hình — vừa khung theo phần còn trống và dời camera
 // sang phải để cả nhóm nhân vật nằm giữa phần trống đó.
-const CameraRig = ({ halfWidth, mode, panelPx = 0 }) => {
+// orbit: { startLocal, start, end } — mốc giờ máy lúc bài bắt đầu (ms) và vòng bay tính bằng giây so với
+// mốc đó (start âm = trong lúc đếm ngược); null = đứng yên.
+const CameraRig = ({ halfWidth, mode, panelPx = 0, orbit }) => {
   const camera = useThree((s) => s.camera)
   const { width, height } = useThree((s) => s.size)
+  const base = useRef(null)
   useEffect(() => {
     const c = CAMERA[mode] || CAMERA.play
     const half = halfWidth + 0.9
@@ -255,9 +267,28 @@ const CameraRig = ({ halfWidth, mode, panelPx = 0 }) => {
     const freeW = Math.max(width - panelPx, width * 0.4)
     const k = Math.max(1, half / (c.z * tanV * (freeW / height)))
     const shift = c.z * k * tanV * (width / height) * (panelPx / width)
+    base.current = { x: shift, y: c.y * k, z: c.z * k, look: c.look * k }
     camera.position.set(shift, c.y * k, c.z * k)
     camera.lookAt(shift, c.look * k, 0)
   }, [camera, halfWidth, width, height, mode, panelPx])
+  const moved = useRef(false)
+  useFrame(() => {
+    const b = base.current
+    if (!b) return
+    let p = 1
+    if (orbit && mode === 'play') {
+      // đồng hồ tường theo mốc bắt đầu bài: chạy được cả lúc đếm ngược (nhạc chưa phát, t < 0)
+      const t = (Date.now() - orbit.startLocal) / 1000
+      p = Math.min(1, Math.max(0, (t - orbit.start) / (orbit.end - orbit.start)))
+    }
+    if (p >= 1 && !moved.current) return // ngoài vòng bay: để yên vị trí useEffect đã đặt
+    moved.current = p < 1
+    const a = THREE.MathUtils.degToRad(easeInOut(p) * 360)
+    const k = easeOut(p) // độ cao và khoảng cách về đích sớm hơn góc xoay một chút
+    const r = b.z * (ORBIT_ZOOM + (1 - ORBIT_ZOOM) * k)
+    camera.position.set(b.x + Math.sin(a) * r, b.y + ORBIT_RISE * (1 - k), Math.cos(a) * r)
+    camera.lookAt(b.x, b.look, 0)
+  })
   return null
 }
 
@@ -321,7 +352,7 @@ const layout = (dancers) => {
 // dancers: [{ id, url, anim, name, isMe, isLeader, platform }] — thứ tự hàng sau do trang quyết định.
 // results (bảng điểm cuối bài): { ranks: Map(userId → hạng), hud: { entries, title, sub, onContinue, onLeave } }
 // lobby (phòng chờ, dựng bằng WebGL): xem LobbyHud
-const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime, results, lobby }) => {
+const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime, results, lobby, orbit }) => {
   const { pos, halfWidth } = results ? podiumLayout(dancers, results.ranks) : layout(dancers)
   return (
   <Canvas
@@ -330,7 +361,7 @@ const AuditionStage3D = ({ dancers, audioRef, track, latencyRef, showtime, resul
     camera={{ position: [0, 1.35, 7.6], fov: 35, near: 0.1, far: 80 }}
     gl={{ antialias: true, alpha: true, preserveDrawingBuffer: import.meta.env.DEV }}
   >
-    <CameraRig halfWidth={halfWidth} mode={results ? 'podium' : 'play'} panelPx={lobby ? LOBBY_PANEL_SPACE : 0} />
+    <CameraRig halfWidth={halfWidth} mode={results ? 'podium' : 'play'} panelPx={lobby ? LOBBY_PANEL_SPACE : 0} orbit={results || lobby ? null : orbit} />
     {import.meta.env.DEV && <DevHook />}
     <hemisphereLight args={['#ffffff', '#2a1838', 1.6]} />
     <directionalLight position={[0, 2.5, 10]} intensity={2.4} color='#ffffff' />

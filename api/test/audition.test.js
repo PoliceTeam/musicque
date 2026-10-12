@@ -269,3 +269,29 @@ test('bot: Missed lượt thường mất lượt phím kế; Missed Finish thì
   chart.applyResult(ok, T[8], 'bad')
   assert.equal(ok.skipNext, false)
 })
+
+test('phòng chỉ còn bot: chủ phòng tải lại giữa bài thì chốt ván ngay, bot đủ điểm cả bài, tạo phòng mới được', () => {
+  const rooms = new Map()
+  const room = core.createRoom(rooms, user(1), { name: 'Bot' }, 0, rng)
+  core.addBot(room, 'u1', {}, rng)
+  core.startGame(room, 'u1', 1000, rng)
+  const bot = [...room.players.values()].find((p) => p.isBot)
+  core.botTick(room, room.startAt + 40000, rng) // nhảy được một đoạn rồi tải lại trang
+  const midScore = bot.score
+  assert.ok(core.markDone(room, 'u1', room.gameNo))
+  assert.equal(room.status, 'finished')
+  assert.ok(bot.score > midScore)
+  assert.equal(room.results.length, 2)
+  core.leaveRoom(rooms, room, 'u1')
+  assert.doesNotThrow(() => core.createRoom(rooms, user(1), {}, 0, rng))
+})
+
+test('còn người thật đang nhảy thì người đã xong không chốt ván; chủ phòng đã xong rời được', () => {
+  const { rooms, room } = setup(2)
+  core.startGame(room, 'u1', 1000, rng)
+  assert.equal(core.markDone(room, 'u1', room.gameNo), false)
+  assert.equal(room.status, 'playing')
+  core.leaveRoom(rooms, room, 'u1')
+  assert.equal(room.hostId, 'u2')
+  assert.equal(room.status, 'playing')
+})

@@ -77,6 +77,7 @@ const nextAnim = (prev, next, t) => {
 
 const PLATFORM_OF = { showtime: 'showtime', dance: 'dance' }
 const VOICE_LOOKAHEAD = 0.25
+const ORBIT_LEAD = 4 // giây — bằng thời gian đếm ngược của server (START_DELAY_MS)
 const END_HOLD_MS = 5000 // hết bài: cả sân khấu đứng idle chừng này rồi mới mở bảng điểm
 const LATE_START_MS = 1500 // tin bắt đầu tới trễ hơn mức này coi như lỡ ván
 
@@ -563,6 +564,11 @@ const AuditionRoom = ({ roomId }) => {
 
   const inGame = local === 'playing' || local === 'countdown'
   const showtime = myAnim.kind === 'showtime'
+  // vòng camera intro: chạy từ lúc bắt đầu đếm ngược (ORBIT_LEAD giây trước phách đầu) tới ~1.5 ô nhịp
+  // đầu bài, về chính diện trước câu "Ready"/"Start" và lượt phím đầu.
+  const introOrbit = inGame && chartRef.current
+    ? { startLocal: gameMeta.current.startLocal, start: -ORBIT_LEAD, end: Math.min(chartRef.current.goAt, 1.5 * chartRef.current.bar) }
+    : null
 
   return (
     <div className='au-page' style={{ backgroundImage: `url(${background})` }}>
@@ -570,7 +576,7 @@ const AuditionRoom = ({ roomId }) => {
       <div className={`au-stage${showtime ? ' is-showtime' : ''}`}>
         <Suspense fallback={<div className='au-loading au-loading--page'>Đang tải sân khấu…</div>}>
           {dancers.length > 0 && (
-            <AuditionStage3D dancers={dancers} audioRef={audioRef} track={track} latencyRef={latencyRef} showtime={showtime} results={resultView} lobby={lobbyView} />
+            <AuditionStage3D dancers={dancers} audioRef={audioRef} track={track} latencyRef={latencyRef} showtime={showtime} results={resultView} lobby={lobbyView} orbit={introOrbit} />
           )}
         </Suspense>
       </div>
