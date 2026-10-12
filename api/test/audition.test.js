@@ -295,3 +295,50 @@ test('còn người thật đang nhảy thì người đã xong không chốt v�
   assert.equal(room.hostId, 'u2')
   assert.equal(room.status, 'playing')
 })
+
+// chơi đủ bài cho người thật: báo tới lượt cuối với điểm cho trước
+const playAll = (room, userId, points) => turn(room, userId, 75, { points }) // tttY: 76 ô nhịp, báo tới ô cuối
+
+test('thưởng PC: từ 2 người thật, nhất 300 nhì 100; bot đứng hạng nào thì hạng đó bỏ trống', () => {
+  const { room } = setup(3)
+  core.startGame(room, 'u1', 1000, rng)
+  playAll(room, 'u1', 5000)
+  playAll(room, 'u2', 3000)
+  playAll(room, 'u3', 1000)
+  for (const id of ['u1', 'u2', 'u3']) core.markDone(room, id, room.gameNo)
+  assert.equal(room.rewardMode, 'humans')
+  assert.deepEqual(room.results.map((r) => [r.userId, r.reward]), [['u1', 300], ['u2', 100], ['u3', 0]])
+})
+
+test('thưởng PC: tải lại giữa bài (chưa chơi tới cuối) thì không nhận dù điểm cao nhất', () => {
+  const { room } = setup(2)
+  core.startGame(room, 'u1', 1000, rng)
+  turn(room, 'u1', 10, { points: 40000 })
+  playAll(room, 'u2', 300)
+  core.markDone(room, 'u1', room.gameNo)
+  core.markDone(room, 'u2', room.gameNo)
+  assert.deepEqual(room.results.map((r) => [r.userId, r.reward]), [['u1', 0], ['u2', 100]])
+})
+
+test('thưởng PC với bot: cần ≥2 bot Cao thủ hoặc ≥3 bot từ Khá; nhất 100 nhì 50', () => {
+  const { room } = setup(1)
+  const add = (skill) => core.addBot(room, 'u1', { skill }, rng)
+  add('pro')
+  add('normal')
+  add('newbie')
+  assert.equal(core.rewardModeOf(room), null)
+  assert.equal(core.serializeRoom(room).rewardMode, null)
+  add('normal')
+  assert.equal(core.rewardModeOf(room), 'bots') // 1 Cao thủ + 2 Khá
+  const solo = setup(1).room
+  core.addBot(solo, 'u1', { skill: 'pro' }, rng)
+  core.addBot(solo, 'u1', { skill: 'pro' }, rng)
+  assert.equal(core.rewardModeOf(solo), 'bots')
+  core.startGame(solo, 'u1', 1000, rng)
+  core.botTick(solo, solo.startAt + 1e7, rng)
+  playAll(solo, 'u1', 48001)
+  core.markDone(solo, 'u1', solo.gameNo)
+  const me = solo.results.find((r) => r.userId === 'u1')
+  assert.equal(me.reward, me.rank === 1 ? 100 : me.rank === 2 ? 50 : 0)
+  assert.ok(solo.results.filter((r) => r.isBot).every((r) => r.reward === 0))
+})

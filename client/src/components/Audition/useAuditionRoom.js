@@ -42,7 +42,7 @@ const mergeChat = (list, incoming) => {
 // `clockOffset` = giờ server − giờ máy, để mọi máy bắt đầu bài cùng một khoảnh khắc.
 export const useAuditionRoom = (roomId, { onProgress } = {}) => {
   const { socket } = useContext(PlaylistContext)
-  const { user } = useAuth()
+  const { user, setBalance } = useAuth()
   const userId = user?._id
   const [room, setRoom] = useState(null)
   const [gone, setGone] = useState(false)
@@ -77,6 +77,9 @@ export const useAuditionRoom = (roomId, { onProgress } = {}) => {
     socket.on('audition_room_gone', onGone)
     socket.on('audition_progress', onProgressEvent)
     socket.on('audition_chat', onChat)
+    // thưởng PC cuối ván: server trả xong thì cập nhật số dư (bảng điểm đã hiện "+N PC")
+    const onReward = (ev) => { if (ev?.roomId === roomId && ev.userId === userId && Number.isFinite(ev.balance)) setBalance(ev.balance) }
+    socket.on('audition_reward', onReward)
     socket.on('connect', watch)
     watch()
     return () => {
@@ -84,11 +87,12 @@ export const useAuditionRoom = (roomId, { onProgress } = {}) => {
       socket.off('audition_room_gone', onGone)
       socket.off('audition_progress', onProgressEvent)
       socket.off('audition_chat', onChat)
+      socket.off('audition_reward', onReward)
       socket.off('connect', watch)
       socket.emit('audition:unwatch')
     }
     // userId: đăng nhập/đăng xuất thì xem lại để server gắn đúng người chơi
-  }, [socket, roomId, apply, userId])
+  }, [socket, roomId, apply, userId, setBalance])
 
   const run = useCallback(async (request) => {
     try {

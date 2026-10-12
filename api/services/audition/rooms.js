@@ -26,6 +26,12 @@ const BOT_PROFILES = {
   normal: { label: 'Khá', perfect: 0.35, great: 0.3, cool: 0.15, bad: 0.1, missed: 0.1 },
   newbie: { label: 'Gà mờ', perfect: 0.15, great: 0.25, cool: 0.25, bad: 0.15, missed: 0.2 }
 }
+// Thưởng PC theo hạng (chỉ người thật nhận). Từ 2 người thật trở lên: luật `humans`. Một người nhảy với bot:
+// luật `bots`, chỉ khi phòng có ≥ 2 bot Cao thủ, hoặc ≥ 3 bot từ Khá trở lên. Phải nhảy tới gần cuối bài
+// (REWARD_MIN_PLAYED số lượt của bài) mới nhận — tải lại trang giữa bài thì không. Hạng nào thuộc người không
+// đủ điều kiện (hoặc bot) thì bỏ trống, không dồn cho hạng sau.
+const REWARDS = { humans: [300, 100], bots: [100, 50] }
+const REWARD_MIN_PLAYED = 0.75
 const BOT_NAMES = ['Bot Mai', 'Bot Tùng', 'Bot Lan', 'Bot Khoa', 'Bot Vy', 'Bot Huy', 'Bot Ngân', 'Bot Đạt']
 const END_GRACE_MS = 15000 // quá giờ này mà còn người chưa báo xong thì chốt ván
 const CHAT_MAX_LEN = 200
@@ -302,10 +308,26 @@ const ranking = (room) =>
     .sort((a, b) => b.score - a.score || b.maxCombo - a.maxCombo)
     .map((p, i) => ({ rank: i + 1, userId: p.userId, name: p.name, isBot: Boolean(p.isBot), charId: p.charId, score: p.score, maxCombo: p.maxCombo, maxPerfect: p.maxPerfect, counts: p.counts, finishes: p.finishes }))
 
+const rewardModeOf = (room) => {
+  if (humans(room).length >= 2) return 'humans'
+  const bots = [...room.players.values()].filter((p) => p.isBot)
+  const pro = bots.filter((b) => b.skill === 'pro').length
+  const normal = bots.filter((b) => b.skill === 'normal').length
+  return pro >= 2 || pro + normal >= 3 ? 'bots' : null
+}
+
+const playedThrough = (room, player) => player.lastTurn >= Math.floor(chartOf(room).turns.length * REWARD_MIN_PLAYED)
+
 const endGame = (room) => {
   if (room.status !== 'playing') return false
   room.status = 'finished'
-  room.results = ranking(room)
+  const mode = rewardModeOf(room)
+  room.results = ranking(room).map((r) => {
+    const amount = mode ? REWARDS[mode][r.rank - 1] || 0 : 0
+    const ok = amount > 0 && !r.isBot && playedThrough(room, room.players.get(r.userId))
+    return { ...r, reward: ok ? amount : 0 }
+  })
+  room.rewardMode = mode
   // ván sau phải bấm sẵn sàng lại
   for (const p of room.players.values()) p.ready = false
   return true
@@ -352,6 +374,7 @@ const serializeRoom = (room, now = Date.now()) => ({
       done: p.done
     })),
   results: room.results,
+  rewardMode: room.status === 'finished' ? room.rewardMode || null : rewardModeOf(room),
   chat: room.chat
 })
 
@@ -392,6 +415,8 @@ module.exports = {
   botTick,
   CHART,
   BOT_PROFILES,
+  REWARDS,
+  rewardModeOf,
   report,
   postChat,
   CHAT_MAX_LEN,

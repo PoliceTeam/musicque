@@ -140,6 +140,13 @@ const LobbyHud = ({ lobby }) => {
       </React.Fragment>
     ), 10)
 
+    // thưởng PC theo hạng (luật ở server: api/services/audition/rooms.js REWARDS)
+    const reward = room.rewardMode === 'humans'
+      ? '🏆 Thưởng: nhất 300 PC · nhì 100 PC (phải nhảy hết bài)'
+      : room.rewardMode === 'bots'
+        ? '🏆 Thưởng: nhất 100 PC · nhì 50 PC (phải nhảy hết bài)'
+        : '🏆 Có thưởng PC khi ≥ 2 người, hoặc ≥ 2 bot Cao thủ / ≥ 3 bot Khá'
+    add(17, (yy) => <Text key='reward' x={left} y={yy} w={cw} h={17} text={reward} size={11} weight={800} color={room.rewardMode ? '#ffd84d' : 'rgba(243,240,255,0.6)'} shrink />, 4)
     add(34, (yy) => (
       <React.Fragment key='howto'>
         <Text x={left} y={yy} w={cw} h={17} text='← ↑ ↓ → đúng chuỗi, rồi Space đúng phách 4 · level chung cả phòng.' size={11} color='rgba(243,240,255,0.6)' />

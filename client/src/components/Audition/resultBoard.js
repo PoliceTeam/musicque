@@ -93,7 +93,7 @@ const ROWS = [
   ['missed', 'missed_text']
 ]
 
-// entry: { rank, name, score, counts, maxPerfect, isMe, isBot }
+// entry: { rank, name, score, counts, maxPerfect, isMe, isBot, reward }
 export const drawBoard = (canvas, entry, img) => {
   const ctx = canvas.getContext('2d')
   const W = canvas.width
@@ -142,6 +142,14 @@ export const drawBoard = (canvas, entry, img) => {
     ctx.font = `900 ${13 * u}px ${font}`
     ctx.fillStyle = tier.border
     ctx.fillText(`${entry.rank === 1 ? '♛ ' : ''}${tier.label}`, 32 * u + rankW, 56 * u)
+  }
+  // thưởng PC (góc trên phải, trên dòng nhãn Vô địch / Á quân)
+  if (entry.reward > 0) {
+    ctx.textAlign = 'right'
+    ctx.font = `900 ${15 * u}px ${font}`
+    ctx.fillStyle = '#ffd84d'
+    ctx.fillText(`+${entry.reward} PC`, W - 24 * u, 38 * u)
+    ctx.textAlign = 'left'
   }
   // tên: dòng riêng, đủ rộng cả bảng (đứng cạnh số hạng thì tên dài bị cắt cụt)
   const tag = entry.isMe ? ' (Bạn)' : entry.isBot ? ' · Bot' : ''

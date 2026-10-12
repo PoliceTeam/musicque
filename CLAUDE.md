@@ -486,7 +486,8 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   per-device latency setting), so network lag never affects Perfect/Great. The server
   (`api/services/audition/rooms.js`, in-memory like Ma Sói) hands out `seed` + `startAt`
   (server ms; clients correct with `serverNow` offset) and sums the per-turn `report`s.
-  It only sanity-checks reports (`MAX_TURN_POINTS`), it does not re-judge — nothing is staked.
+  It only sanity-checks reports (`MAX_TURN_POINTS`), it does not re-judge. Nothing is staked, but
+  ranks 1–2 earn PC (see **Rewards**), so scores are client-reported money now.
 - **Shared keys**: `sequenceFor(turn, level, { seed, del })` uses a seeded RNG of
   (seed, turnIndex, level). Every player at a given turn has the same level, so everyone gets the
   same keys. Every Finish Move has at least one red (Del, reversed) key.
@@ -580,5 +581,13 @@ Rules are pure functions in `client/src/utils/audition.js` (tested); server only
   `DANCER_SPACING` is 2.0, and the back row leaves a gap one dancer wide behind the leader.
 - Results voices: ranks 1–2 hear `end_win` + `cheers`, rank 3 and below hear `end_lose` + `voice_m`
   (`SFX_END_VOICE`).
+- **Rewards** (`REWARDS` / `rewardModeOf` in `rooms.js`): with ≥ 2 humans, rank 1 gets 300 PC and rank 2
+  gets 100. Solo with bots pays 100 / 50, and only when the room has ≥ 2 Cao thủ (`pro`) bots or ≥ 3 bots
+  of Khá (`normal`) or better. Only humans who played to ≥ 75% of the chart (`REWARD_MIN_PLAYED`, by
+  `lastTurn`) are paid. A rank held by a bot or an ineligible player is left unpaid, not passed down.
+  `endGame` writes `reward` onto each `results` entry. `settleRewards` in `audition.service.js` runs from
+  `changed()` (every end-of-game path calls it) and pays via `coins.creditOnce` with operationKey
+  `audition:reward:<seed>:<userId>`. It then emits `audition_reward` with the new balance. Boards show
+  "+N PC", and the lobby shows which rule applies (`serializeRoom().rewardMode`).
 - **Audio levels are fixed** (`AUDIO` in `auditionConfig.js`: latency 250ms, music 40%, sfx 25%);
   players cannot change them — only mute is stored per device.

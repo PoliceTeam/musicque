@@ -1,4 +1,6 @@
+const mongoose = require('mongoose')
 const core = require('./audition/rooms')
+const coins = require('./coins.service')
 
 // Phòng Audition chỉ nằm trong RAM (không có cược, restart server thì mất phòng — giống Ma Sói).
 // Socket room `audition:<id>` cho người trong phòng, `audition:lobby` cho màn danh sách phòng.
@@ -15,7 +17,26 @@ let io = null
 
 const broadcastLobby = () => io?.to(LOBBY).emit('audition_rooms', listRooms())
 const broadcastRoom = (room) => io?.to(roomChannel(room.id)).emit('audition_room', core.serializeRoom(room))
+// Trả thưởng PC của ván vừa chốt (mọi đường chốt ván đều đi qua changed). Idempotent theo seed của ván
+// (creditOnce + operationKey), nên gọi lại hay restart giữa chừng cũng không cộng hai lần.
+const settleRewards = (room) => {
+  if (!room || room.status !== 'finished' || !room.results || room.rewardsSettled === room.gameNo) return
+  room.rewardsSettled = room.gameNo
+  for (const r of room.results) {
+    if (!r.reward || r.isBot || !mongoose.isValidObjectId(r.userId)) continue
+    coins.creditOnce(r.userId, r.reward, {
+      type: 'audition_reward',
+      operationKey: `audition:reward:${room.seed}:${r.userId}`,
+      referenceType: 'AuditionRoom', // phòng chỉ nằm trong RAM, mã phòng không phải ObjectId -> để ở metadata
+      metadata: { roomId: room.id, gameNo: room.gameNo, rank: r.rank, mode: room.rewardMode, songId: room.songId }
+    })
+      .then((u) => u && io?.to(roomChannel(room.id)).emit('audition_reward', { roomId: room.id, gameNo: room.gameNo, userId: r.userId, amount: r.reward, balance: u.polites }))
+      .catch((err) => console.error(`[Audition] Lỗi trả thưởng ${r.userId}:`, err.message))
+  }
+}
+
 const changed = (room) => {
+  settleRewards(room)
   if (room && rooms.has(room.id)) broadcastRoom(room)
   broadcastLobby()
 }
