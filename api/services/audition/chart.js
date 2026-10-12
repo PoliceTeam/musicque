@@ -11,7 +11,8 @@ const SONGS = {
   thienDuong: { id: 'thienDuong', label: 'Thiên đường gọi tên - Hà Anh Tuấn x Phương Linh', bpm: 82.01, offset: 1.353, duration: 247.6 },
   haruHaru: { id: 'haruHaru', label: 'Haru Haru - Bigbang', bpm: 126.0, offset: 0.166, duration: 256.58 },
   weddingDress: { id: 'weddingDress', label: 'Wedding Dress - Tae Yang', bpm: 67.0, offset: 0.547, duration: 274.13 },
-  vuDieu: { id: 'vuDieu', label: 'Vũ điệu hoang dã', bpm: 172.07, offset: 1.013, duration: 186.67 }
+  vuDieu: { id: 'vuDieu', label: 'Vũ điệu hoang dã', bpm: 172.07, offset: 1.013, duration: 186.67 },
+  inLove: { id: 'inLove', label: 'InLove - JustaTee ft LowG', bpm: 88.0, offset: 0.039, duration: 201.13 }
 }
 const DEFAULT_SONG = 'tttY'
 const SONG = SONGS[DEFAULT_SONG]

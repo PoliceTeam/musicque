@@ -88,7 +88,9 @@ export const TRACKS = [
   // đo ra 67.0 BPM (độ ổn định 0.96); 100 / 134 chỉ là nhịp ba / nhịp đôi của nó
   { id: 'weddingDress', label: 'Wedding Dress - Tae Yang', url: '/dance/music/wedding-dress.mp3', bpm: 67.0, offset: 0.547, duration: 274.13 },
   // 172 BPM (khớp số chủ dự án nhớ, đo ra 172.07, độ ổn định 0.99); offset = kick phách 1, trùng lúc nhạc vào
-  { id: 'vuDieu', label: 'Vũ điệu hoang dã', url: '/dance/music/vu-dieu-hoang-da.mp3', bpm: 172.07, offset: 1.013, duration: 186.67 }
+  { id: 'vuDieu', label: 'Vũ điệu hoang dã', url: '/dance/music/vu-dieu-hoang-da.mp3', bpm: 172.07, offset: 1.013, duration: 186.67 },
+  // lưới nốt móc đơn đo ra đúng 176.00 (pha ổn định cả bài), snare rơi phách 2 & 4 ⇒ 88 BPM; offset = kick phách 1, nhạc vào ngay
+  { id: 'inLove', label: 'InLove - JustaTee ft LowG', url: '/dance/music/in-love.mp3', bpm: 88.0, offset: 0.039, duration: 201.13 }
 ]
 
 export const FOLLOW_ALL = '__all__'
