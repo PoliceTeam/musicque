@@ -283,7 +283,11 @@ exports.syncAdminAccount = async () => {
  * Giải mã token thành User document. Dùng cho Socket.IO — nơi không có
  * req/res để chạy middleware Express. Trả null nếu token thiếu hoặc sai.
  */
-exports.resolveUserFromToken = async (token) => {
+exports.resolveUserFromToken = async (token, cookieHeader) => {
+  const sso = require('./sso.service')
+  // Khi bật SSO, socket chỉ xác thực bằng cookie phiên SSO.
+  if (sso.enabled()) return sso.resolveSession(sso.sessionToken(cookieHeader))
+  if (!token && cookieHeader) return sso.resolveSession(sso.sessionToken(cookieHeader))
   if (!token || typeof token !== 'string') return null
 
   try {

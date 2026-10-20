@@ -21,6 +21,8 @@ const AVATAR_COLORS = [
 const USERNAME_PATTERN = /^[a-zA-Z0-9._-]{3,24}$/
 
 const userSchema = new mongoose.Schema({
+  ssoIssuer: { type: String, select: false },
+  ssoSubject: { type: String, select: false },
   username: {
     type: String,
     required: true,
@@ -145,6 +147,8 @@ const userSchema = new mongoose.Schema({
   },
 })
 
+userSchema.index({ ssoIssuer: 1, ssoSubject: 1 }, { unique: true, partialFilterExpression: { ssoIssuer: { $type: 'string' }, ssoSubject: { $type: 'string' } } })
+
 // Chặn cả hai request đồng thời chọn cùng username khác hoa/thường.
 userSchema.index({ username: 1 }, {
   unique: true,
@@ -159,7 +163,7 @@ userSchema.statics.findByUsername = function (username, { withPassword = false }
   const escaped = username.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const query = this.findOne({ username: new RegExp(`^${escaped}$`, 'i') })
 
-  return withPassword ? query.select('+password') : query
+  return withPassword ? query.select('+password +ssoSubject') : query
 }
 
 userSchema.statics.isValidUsername = function (username) {
@@ -187,7 +191,7 @@ userSchema.methods.comparePassword = async function (candidate) {
 
 // User cũ (tạo trước khi có hệ thống auth) chưa có password — được phép claim
 userSchema.methods.isClaimable = function () {
-  return !this.password
+  return !this.password && !this.ssoSubject
 }
 
 userSchema.methods.toPublicJSON = function () {

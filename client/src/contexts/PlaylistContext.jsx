@@ -133,7 +133,7 @@ export const PlaylistProvider = ({ children }) => {
     return () => {
       newSocket.disconnect()
     }
-  }, [])
+  }, [voterUserId])
 
   useEffect(() => {
     if (!socket) return

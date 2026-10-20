@@ -5,7 +5,7 @@ import HomePage from './HomePage'
 import { renderWithProviders } from '../test/testUtils'
 
 // HomePage ghép rất nhiều widget; chỉ giữ lại sidebar và thay phần còn lại bằng vỏ rỗng.
-vi.mock('../services/api', () => ({ warmupTTS: vi.fn(() => Promise.resolve()) }))
+vi.mock('../services/api', () => ({ warmupTTS: vi.fn(() => Promise.resolve()), fetchSsoStatus: vi.fn(() => Promise.resolve({ data: { enabled: true, handoffTargets: ['musicque-farm'] } })), handoff: vi.fn() }))
 vi.mock('../components/Layout/SidebarNav', () => ({ default: ({ children }) => <nav>{children}</nav> }))
 vi.mock('../components/Werewolf/WerewolfLauncher', () => ({ default: () => <div data-banner='werewolf' /> }))
 vi.mock('../components/Jungle/JungleLauncher', () => ({ default: () => <div data-banner='jungle' /> }))

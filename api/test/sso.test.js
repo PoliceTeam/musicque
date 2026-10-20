@@ -1,0 +1,115 @@
+const test = require('node:test')
+const assert = require('node:assert/strict')
+const User = require('../models/user.model')
+const Session = require('../models/sso-session.model')
+const Attempt = require('../models/sso-attempt.model')
+const sso = require('../services/sso.service')
+
+const profile = { iss: 'https://sso.test/realms/sso', sub: 'subject-1', name: 'Lan' }
+
+test('SSO config rejects partial settings and non-TLS production issuers', () => {
+  assert.equal(sso.settings({}), null)
+  assert.throws(() => sso.settings({ SSO_ISSUER: profile.iss }))
+  const settings = { SSO_ISSUER: 'http://localhost:8180/realms/sso', SSO_CLIENT_ID: 'musicque', SSO_CLIENT_SECRET: 'secret', SSO_REDIRECT_URI: 'http://localhost:8080/api/auth/sso/callback', SSO_WEB_ORIGIN: 'http://localhost:8080' }
+  assert.equal(sso.settings(settings).clientId, 'musicque')
+  assert.throws(() => sso.settings({ ...settings, NODE_ENV: 'production' }))
+})
+
+test('SSO-only accounts cannot be claimed through legacy registration', async () => {
+  const user = new User({ username: 'sso_user', ssoSubject: 'subject-1', ssoIssuer: profile.iss })
+  assert.equal(user.isClaimable(), false)
+  assert.equal(new User({ username: 'legacy' }).isClaimable(), true)
+})
+
+test('SSO signs a known identity into its existing user and never merges by username', async (t) => {
+  const existing = { _id: 'old-user', polites: 5432, role: 'admin' }
+  t.mock.method(User, 'findOne', async (query) => {
+    assert.deepEqual(query, { ssoIssuer: profile.iss, ssoSubject: profile.sub })
+    return existing
+  })
+  t.mock.method(User, 'create', async () => assert.fail('must not create a second profile'))
+  assert.equal(await sso.findUser(profile), existing)
+})
+
+test('new SSO profiles reuse a free Keycloak username, otherwise an internal one, with an empty wallet', async (t) => {
+  t.mock.method(User, 'findOne', async () => null)
+  const taken = new Set(['lan'])
+  t.mock.method(User, 'findByUsername', async (name) => (taken.has(name) ? { _id: 'someone' } : null))
+  t.mock.method(User, 'create', async (values) => values)
+  const free = await sso.findUser({ ...profile, preferred_username: 'mai.anh' })
+  assert.equal(free.username, 'mai.anh')
+  assert.equal(free.role, 'user')
+  assert.equal(free.polites, 0)
+  assert.equal(free.password, undefined)
+  assert.ok((await sso.findUser({ ...profile, preferred_username: 'lan' })).username.startsWith('sso_'))
+  assert.ok((await sso.findUser({ ...profile, preferred_username: 'x' })).username.startsWith('sso_'))
+})
+
+test('with SSO enabled only the SSO cookie authenticates; local credentials are closed', async (t) => {
+  const keys = { SSO_ISSUER: 'http://localhost:8180/realms/sso', SSO_CLIENT_ID: 'musicque', SSO_CLIENT_SECRET: 'secret', SSO_REDIRECT_URI: 'http://localhost:8080/api/auth/sso/callback', SSO_WEB_ORIGIN: 'http://localhost:8080', JWT_SECRET: 'jwt-test' }
+  const previous = Object.fromEntries(Object.keys(keys).map((key) => [key, process.env[key]]))
+  Object.assign(process.env, keys)
+  t.after(() => { for (const [key, value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value })
+  const jwt = require('jsonwebtoken')
+  const { authenticate, localCredentials } = require('../middlewares/auth.middleware')
+  const { resolveUserFromToken } = require('../services/auth.service')
+  t.mock.method(User, 'findById', async (id) => ({ _id: id }))
+  const bearer = jwt.sign({ userId: 'legacy' }, 'jwt-test')
+  let status
+  const response = { status(value) { status = value; return this }, json() {} }
+  await authenticate({ method: 'GET', headers: { authorization: `Bearer ${bearer}` } }, response, () => assert.fail('JWT must not authenticate'))
+  assert.equal(status, 401)
+  assert.equal(await resolveUserFromToken(bearer, ''), null)
+  status = undefined
+  localCredentials({}, response, () => assert.fail('local login must be closed'))
+  assert.equal(status, 404)
+})
+
+test('opaque cookie sessions enforce expiry and hash the lookup token', async (t) => {
+  const token = 'a'.repeat(43)
+  t.mock.method(Session, 'findOne', async (query) => {
+    assert.equal(query.tokenHash, sso.hash(token))
+    assert.ok(query.expiresAt.$gt instanceof Date)
+    return { userId: 'user' }
+  })
+  t.mock.method(User, 'findById', async (id) => ({ _id: id }))
+  assert.equal((await sso.resolveSession(token))._id, 'user')
+  assert.equal(await sso.resolveSession('invalid'), null)
+  assert.equal(sso.sessionToken(`other=x; ${sso.COOKIE}=${token}`), token)
+})
+
+test('SSO callback consumes the state atomically and rejects forged state', async (t) => {
+  let used = false
+  t.mock.method(Attempt, 'findOneAndDelete', (query) => {
+    assert.equal(query.stateHash, sso.hash('state'))
+    const value = used ? null : { verifier: 'secret' }; used = true
+    return { select: async () => value }
+  })
+  const request = { headers: { cookie: 'musicque_sso_attempt=state' }, query: { state: 'state' } }
+  assert.ok(await sso.consumeAttempt(request))
+  assert.equal(await sso.consumeAttempt(request), null)
+  await assert.rejects(sso.consumeAttempt({ ...request, query: { state: 'forged' } }))
+})
+
+test('logout handles database failure without an unhandled async rejection', async (t) => {
+  const controller = require('../controllers/sso.controller')
+  t.mock.method(sso, 'logout', async () => { throw new Error('database unavailable') })
+  let status
+  const response = { status(value) { status = value; return this }, json() {} }
+  await controller.logout({ headers: {} }, response)
+  assert.equal(status, 503)
+})
+
+test('callback without a known attempt reports to the opener or returns to the web', async (t) => {
+  const controller = require('../controllers/sso.controller')
+  t.mock.method(sso, 'settings', () => ({ origin: 'http://localhost:8080' }))
+  const headers = {}
+  let body
+  let redirected
+  const response = { set(name, value) { headers[name] = value }, type() { return this }, send(value) { body = value }, redirect(value) { redirected = value }, clearCookie() {} }
+  await controller.callback({ headers: { cookie: 'musicque_sso_attempt=state' }, query: { state: 'forged' } }, response)
+  assert.equal(redirected, undefined)
+  assert.match(body, /"ok":false/)
+  assert.match(body, /location\.replace\("http:\/\/localhost:8080\/\?auth=sso-failed"\)/)
+  assert.match(headers['Content-Security-Policy'], /script-src 'nonce-/)
+})
