@@ -27,7 +27,7 @@ const settings = (env = process.env) => {
   if (origin.href !== `${origin.origin}/`) throw new Error('SSO_WEB_ORIGIN chỉ được chứa origin.')
   const targets = Object.fromEntries((env.SSO_HANDOFF_TARGETS || '').split(',').filter(Boolean).map((entry) => { const at = entry.indexOf('='); const url = new URL(entry.slice(at + 1)); if (at < 1 || url.username || url.password || url.search || url.hash || (url.protocol !== 'https:' && !(env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(url.hostname) && url.protocol === 'http:'))) throw new Error('Đích bàn giao không hợp lệ.'); return [entry.slice(0, at), url.href] }))
   const handoffOrigins = (env.SSO_HANDOFF_ORIGINS || '').split(',').filter(Boolean).map((value) => new URL(value.trim()).origin)
-  return { tokenKey: env.SSO_TOKEN_KEY, targets, handoffOrigins, issuer: issuer.href.replace(/\/$/, ''), clientId: env.SSO_CLIENT_ID, secret: env.SSO_CLIENT_SECRET, redirect: redirect.href, origin: origin.origin }
+  return { adminUrl: env.SSO_ADMIN_URL?.replace(/\/$/, ''), tokenKey: env.SSO_TOKEN_KEY, targets, handoffOrigins, issuer: issuer.href.replace(/\/$/, ''), clientId: env.SSO_CLIENT_ID, secret: env.SSO_CLIENT_SECRET, redirect: redirect.href, origin: origin.origin }
 }
 
 let configuration

@@ -124,3 +124,12 @@ test('handoff accept only takes posts from our own or configured partner web ori
   await post('https://musicque.test')
   assert.equal(accepted.mock.callCount(), 2)
 })
+
+test('admin REST uses SSO_ADMIN_URL when set, keeping the public issuer for tokens', () => {
+  const sso = require('../services/sso.service')
+  const base = { SSO_ISSUER: 'https://musicque.test/sso/realms/sso', SSO_CLIENT_ID: 'musicque', SSO_CLIENT_SECRET: 'secret', SSO_REDIRECT_URI: 'https://musicque.test/api/auth/sso/callback', SSO_WEB_ORIGIN: 'https://musicque.test', NODE_ENV: 'production' }
+  assert.equal(sso.settings(base).adminUrl, undefined)
+  const internal = sso.settings({ ...base, SSO_ADMIN_URL: 'http://sso:8080/sso/' })
+  assert.equal(internal.adminUrl, 'http://sso:8080/sso')
+  assert.equal(internal.issuer, 'https://musicque.test/sso/realms/sso')
+})

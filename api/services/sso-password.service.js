@@ -54,7 +54,7 @@ function createPasswordProvider(settings, transport, webUrl) {
     }
     async function admin(path, method = 'GET', body) {
         const tokens = await grant('client_credentials', {});
-        const response = await transport(`${settings.issuer.replace('/realms/', '/admin/realms/')}${path}`, { method, headers: { Authorization: `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(10000) });
+        const response = await transport(`${settings.adminUrl ? `${settings.adminUrl}/admin/realms/${encodeURIComponent(new URL(settings.issuer).pathname.split('/').at(-1))}` : settings.issuer.replace('/realms/', '/admin/realms/')}${path}`, { method, headers: { Authorization: `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(10000) });
         if (!response.ok) {
             // Chỉ đọc loại lỗi đã biết; không log dữ liệu trả về từ nhà cung cấp.
             const data = await response.json().catch(() => ({}));

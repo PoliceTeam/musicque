@@ -12,6 +12,7 @@ Xem `api/.env.sso.example` và biến SSO trong docker-compose*.yml:
 - SSO_REDIRECT_URI (callback), SSO_WEB_ORIGIN (origin web).
 - SSO_TOKEN_KEY: khóa AES-256-GCM riêng backend, 32 byte ngẫu nhiên dạng hex 64 ký tự.
 - SSO_HANDOFF_TARGETS: `musicque-farm=https://farm.example/api/auth/handoff/accept`; phân cách nhiều mục bằng dấu phẩy.
+- SSO_ADMIN_URL: URL Keycloak nội bộ cho Admin REST (đăng ký, quên/đổi mật khẩu), vd `http://sso:8080/sso` qua network Docker; production chặn `/sso/admin` từ Internet.
 - SSO_HANDOFF_ORIGINS: web origin đối tác được POST bàn giao vào Musicque (ví dụ origin Farm); thiếu/sai Origin bị từ chối.
 
 Secret/key không đưa vào VITE hoặc log. Không cấu hình SSO thì auth cục bộ/JWT vẫn dùng như trước.
