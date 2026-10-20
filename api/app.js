@@ -26,12 +26,18 @@ const { createCorsOrigin } = require('./utils/cors');
 const app = express();
 
 // Cấu hình CORS
-app.use(cors({
+const corsMiddleware = cors({
   origin: createCorsOrigin(),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Musicque-Device', 'my-custom-header'],
   credentials: true
-}));
+});
+// Bàn giao là top-level form POST từ nền tảng khác; token ký xác thực riêng ở accept.
+// Các route khác vẫn giữ nguyên Origin allowlist.
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/api/auth/handoff/accept') return next();
+  return corsMiddleware(req, res, next);
+});
 
 app.use((req, res, next) => {
   if (req.method === 'POST' && req.path === '/api/chat/images') {
@@ -45,7 +51,12 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running' });
 });
 
+// Cấu hình SSO thiếu hoặc sai thì dừng ngay khi khởi động, không âm thầm quay về JWT.
+require('./services/sso.service').settings();
+
 // Routes
+app.use('/api/auth/sso', require('./routes/sso.routes'));
+app.post('/api/auth/logout', require('./controllers/sso.controller').logout);
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/songs', songRoutes);

@@ -627,6 +627,11 @@ test('two authenticated accounts use HTTP start and chat with seated history', a
   const previousSecret = process.env.JWT_SECRET
   process.env.JWT_SECRET = secret
   t.after(() => { if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret })
+  // Bearer JWT chỉ xác thực khi SSO tắt; cô lập khỏi api/.env cục bộ.
+  const ssoKeys = ['SSO_ISSUER', 'SSO_CLIENT_ID', 'SSO_CLIENT_SECRET', 'SSO_REDIRECT_URI', 'SSO_WEB_ORIGIN']
+  const previousSso = ssoKeys.map((key) => [key, process.env[key]])
+  for (const key of ssoKeys) delete process.env[key]
+  t.after(() => { for (const [key, value] of previousSso) if (value !== undefined) process.env[key] = value })
   t.mock.method(User, 'findById', id => ({ select() { return this }, lean: async () => ({ polites: 100 }), then: resolve => Promise.resolve(player(id)).then(resolve) }))
   const app = express()
   app.use(express.json())

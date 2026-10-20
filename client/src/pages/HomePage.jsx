@@ -1,13 +1,13 @@
 import React, { lazy, Suspense, useContext, useState, useEffect, useRef } from 'react';
 import { Tabs, Tooltip } from 'antd';
 import { MoonOutlined, SunOutlined, TrophyOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
+import { useHandoffEntry } from '../components/Auth/useHandoffEntry';
 import CoreLaunchPopup from '../components/Core/CoreLaunchPopup';
 import { markCoreLaunchSeen, shouldShowCoreLaunch } from '../components/Core/coreLaunch';
 import CoreMembershipModal from '../components/Core/CoreMembershipModal';
@@ -48,7 +48,7 @@ const getGreeting = () => {
 };
 
 const HomePage = () => {
-  const navigate = useNavigate();
+  const farm = useHandoffEntry();
   const { currentSession, currentSong } = useContext(PlaylistContext);
   const { user, displayName } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -302,16 +302,18 @@ const HomePage = () => {
                   🍄
                 </button>
               </Tooltip>
-              <Tooltip title="Chiến cờ chiếm PCs">
-                <button
-                  type="button"
-                  className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
-                  aria-label="Chơi cờ tướng"
-                  onClick={() => navigate('/xiangqi')}
-                >
-                  帥
-                </button>
-              </Tooltip>
+              {farm.available('musicque-farm') && (
+                <Tooltip title="ICE City">
+                  <button
+                    type="button"
+                    className="sp-quicktoys__btn sp-quicktoys__btn--ice-city"
+                    aria-label="Chơi ICE City"
+                    onClick={() => farm.enter('musicque-farm')}
+                  >
+                    <img src="/brand/ice-city.webp" alt="" width={34} height={34} draggable={false} />
+                  </button>
+                </Tooltip>
+              )}
               {currentSession && (
                 <Tooltip title="Nối từ giành PCs">
                   <button

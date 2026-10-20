@@ -10,6 +10,7 @@ export const fetchSecretShiftRooms = () => api.get('/api/secret-shift/rooms');
 // Tạo instance axios
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -70,16 +71,18 @@ api.interceptors.response.use(
 );
 
 // Auth API
-export const register = (username, password, displayName) =>
+export const register = (username, password, displayName, email) =>
   api.post(
     "/api/auth/register",
-    { username, password, displayName },
+    { username, password, displayName, ...(email ? { email } : {}) },
     { headers: { "X-Musicque-Device": getDeviceId() } },
   );
 
 export const login = (username, password) =>
   api.post("/api/auth/login", { username, password });
 
+export const fetchSsoStatus = () => api.get('/api/auth/sso/status');
+export const logoutSession = () => api.post('/api/auth/logout', {});
 export const fetchMe = () => api.get("/api/auth/me");
 
 export const updateMyAvatar = (avatarId) =>
@@ -307,3 +310,11 @@ export const moveXiangqiPvp = (id, from, to, expectedPlyVersion) =>
   api.post(`/api/xiangqi/pvp/${id}/moves`, { from, to, expectedPlyVersion });
 export const actionXiangqiPvp = (id, action, expectedPlyVersion) =>
   api.post(`/api/xiangqi/pvp/${id}/actions`, { action, expectedPlyVersion });
+
+export const forgotPassword = (identifier) => api.post('/api/auth/forgot-password', { identifier });
+export const handoff = async (target) => {
+  const { data } = await api.post('/api/auth/handoff', { target });
+  const form = document.createElement('form'); form.method = 'POST'; form.action = data.url; form.hidden = true;
+  const input = document.createElement('input'); input.type = 'hidden'; input.name = 'token'; input.value = data.token;
+  form.append(input); document.body.append(form); form.submit(); form.remove();
+};

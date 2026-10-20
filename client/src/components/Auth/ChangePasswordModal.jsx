@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Alert, Form, Input, Modal } from 'antd'
+import { useSso } from './useSso'
 import { useAuth } from '../../contexts/AuthContext'
 
 const ChangePasswordModal = ({ open, onClose }) => {
@@ -8,7 +9,8 @@ const ChangePasswordModal = ({ open, onClose }) => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const pending = useRef(false)
-  const isAdmin = user?.role === 'admin'
+  const sso = useSso()
+  const isAdmin = user?.role === 'admin' && !sso.enabled
 
   useEffect(() => {
     form.resetFields()
@@ -51,9 +53,9 @@ const ChangePasswordModal = ({ open, onClose }) => {
           </Form.Item>
           <Form.Item name='newPassword' label='Mật khẩu mới' dependencies={['currentPassword']} rules={[
             { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-            { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
-            { validator: (_, value) => !value || new TextEncoder().encode(value).length <= 72
-              ? Promise.resolve() : Promise.reject(new Error('Mật khẩu không được vượt quá 72 byte')) },
+            { min: sso.enabled ? 8 : 6, message: `Mật khẩu phải có ít nhất ${sso.enabled ? 8 : 6} ký tự` },
+            { validator: (_, value) => !value || (sso.enabled ? value.length <= 200 : new TextEncoder().encode(value).length <= 72)
+              ? Promise.resolve() : Promise.reject(new Error(sso.enabled ? 'Mật khẩu không được vượt quá 200 ký tự' : 'Mật khẩu không được vượt quá 72 byte')) },
             ({ getFieldValue }) => ({ validator: (_, value) => !value || value !== getFieldValue('currentPassword')
               ? Promise.resolve() : Promise.reject(new Error('Mật khẩu mới phải khác mật khẩu hiện tại')) }),
           ]}>

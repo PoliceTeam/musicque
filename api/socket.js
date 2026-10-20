@@ -14,6 +14,11 @@ let io;
 
 const initSocket = (server) => {
   io = require('socket.io')(server, {
+    // CORS không áp dụng cho WebSocket: chặn Origin lạ ngay ở handshake vì socket xác thực bằng cookie.
+    allowRequest: (req, callback) => {
+      const origin = req.headers.origin
+      callback(null, !origin || getAllowedOrigins().includes(origin))
+    },
     cors: {
       origin: getAllowedOrigins(),
       methods: ["GET", "POST"],
@@ -23,6 +28,7 @@ const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
+    const resolveSocketUser = (token) => resolveUserFromToken(token, socket.handshake?.headers?.cookie)
     require('./sockets/secretShift.socket')(socket)
     console.log('Client connected');
 
@@ -54,7 +60,7 @@ const initSocket = (server) => {
         const { content, token, clientMessageId, imageUrl } = data
 
         // Danh tính lấy từ token, không nhận username tự khai từ client
-        const user = await resolveUserFromToken(token)
+        const user = await resolveSocketUser(token)
         if (!user) {
           socket.emit('chat:error', { message: 'Vui lòng đăng nhập để chat' })
           socket.emit('chat_error', { message: 'Vui lòng đăng nhập để chat' })
@@ -95,7 +101,7 @@ const initSocket = (server) => {
     // Workspace 2.5D: presence tạm thời, danh tính luôn lấy từ token.
     socket.on('workspace:join', async (data = {}) => {
       try {
-        const user = await resolveUserFromToken(data.token)
+        const user = await resolveSocketUser(data.token)
         if (!user) {
           socket.emit('workspace:error', { message: 'Vui lòng đăng nhập để vào workspace' })
           return
@@ -222,7 +228,7 @@ const initSocket = (server) => {
     socket.on('table_game:bind', async (data = {}) => {
       const sequence = ++tableGameBindSequence
       try {
-        const user = await resolveUserFromToken(data.token)
+        const user = await resolveSocketUser(data.token)
         if (sequence !== tableGameBindSequence || !socket.connected) return
         for (const room of socket.rooms) if (room.startsWith('table_game:user:')) socket.leave(room)
         if (user) socket.join(`table_game:user:${user._id}`)
@@ -238,7 +244,7 @@ const initSocket = (server) => {
 
     socket.on('redlight:bind', async (data = {}) => {
       try {
-        const user = await resolveUserFromToken(data.token)
+        const user = await resolveSocketUser(data.token)
         if (!user) return
         redLight.bindSocket({ user, socketId: socket.id })
       } catch (error) {
@@ -248,7 +254,7 @@ const initSocket = (server) => {
 
     socket.on('redlight:input', async (data = {}) => {
       try {
-        const user = await resolveUserFromToken(data.token)
+        const user = await resolveSocketUser(data.token)
         if (!user) return
         redLight.bindSocket({ user, socketId: socket.id })
         redLight.setHold({
@@ -264,7 +270,7 @@ const initSocket = (server) => {
     // Ma Sói: token tuỳ chọn — khách vẫn xem được, nhưng chỉ nhận bản state công khai
     socket.on('werewolf:watch', async (data = {}) => {
       try {
-        const user = data.token ? await resolveUserFromToken(data.token) : null
+        const user = await resolveSocketUser(data.token)
         werewolf.watch(socket, user)
       } catch (error) {
         console.error('[Ma Sói] Watch lỗi:', error.message)
@@ -277,7 +283,7 @@ const initSocket = (server) => {
     socket.on('audition:watch', async (data = {}) => {
       try {
         if (!data.roomId) return
-        const user = data.token ? await resolveUserFromToken(data.token) : null
+        const user = await resolveSocketUser(data.token)
         audition.watch(socket, String(data.roomId), user)
       } catch (error) {
         console.error('[Audition] Watch lỗi:', error.message)
@@ -291,7 +297,7 @@ const initSocket = (server) => {
     socket.on('jungle:watch', async (data = {}) => {
       try {
         if (!data.gameId) return
-        const user = data.token ? await resolveUserFromToken(data.token) : null
+        const user = await resolveSocketUser(data.token)
         await jungle.watchGame(socket, String(data.gameId), user)
       } catch (error) {
         socket.emit('jungle_error', { message: error.message })

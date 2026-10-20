@@ -7,6 +7,7 @@ import { ANIMAL_AVATARS } from '../../constants/animalAvatars'
 import CoreName from '../Core/CoreName'
 import CoreMembershipModal from '../Core/CoreMembershipModal'
 import ProfileNameModal from './ProfileNameModal'
+import { useHandoffEntry } from './useHandoffEntry'
 import ChangePasswordModal from './ChangePasswordModal'
 
 /**
@@ -15,6 +16,7 @@ import ChangePasswordModal from './ChangePasswordModal'
  */
 const UserMenu = () => {
   const { user, isAdmin, logout, openAuthModal, displayName, balance, updateAvatar } = useAuth()
+  const { targets, enter } = useHandoffEntry()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarId || 'cat')
   const [savingAvatar, setSavingAvatar] = useState(false)
@@ -49,12 +51,8 @@ const UserMenu = () => {
 
   // "Bảng điều khiển" nằm ở SidebarNav — không lặp lại ở đây
   const items = [
-    {
-      key: 'password',
-      icon: <LockOutlined />,
-      label: 'Đổi mật khẩu · Miễn phí',
-      onClick: () => setPasswordOpen(true),
-    },
+    ...targets.map(target => ({ key: target, icon: target === 'musicque-farm' ? <img src='/brand/ice-city.webp' alt='' width={16} height={16} style={{ borderRadius: '50%' }} /> : undefined, label: target === 'musicque-farm' ? 'ICE City' : target, onClick: () => enter(target) })),
+    { key: 'password', icon: <LockOutlined />, label: 'Đổi mật khẩu · Miễn phí', onClick: () => setPasswordOpen(true) },
     {
       key: 'profile',
       icon: <EditOutlined />,
