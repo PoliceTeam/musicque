@@ -8,13 +8,13 @@ COMPOSE=(docker compose -f docker-compose.prod.yml)
 # Compose production phải khai báo image: musicque-api:latest và musicque-client:latest.
 # `config --images <service>` lists every image on Compose v2.32, so read the per-service image from JSON;
 # without an explicit `image:` Compose names builds `<project>-<service>` (tag latest).
-CONFIG=$("${COMPOSE[@]}" config --format json)
+# The resolved config contains secrets: pipe it through stdin, never argv (visible in the process list).
 for service in api client; do
   expected="musicque-$service:latest"
-  actual=$(python3 -c 'import json,sys
-config = json.loads(sys.argv[1]); service = sys.argv[2]
+  actual=$("${COMPOSE[@]}" config --format json | python3 -c 'import json,sys
+config = json.load(sys.stdin); service = sys.argv[1]
 image = config["services"][service].get("image") or "{}-{}".format(config["name"], service)
-print(image if ":" in image.rsplit("/", 1)[-1] else image + ":latest")' "$CONFIG" "$service")
+print(image if ":" in image.rsplit("/", 1)[-1] else image + ":latest")' "$service")
   [[ "$actual" == "$expected" ]] || { echo "Compose phải dùng image $expected; dừng trước recreate"; exit 1; }
 done
 case "${1:-}" in
