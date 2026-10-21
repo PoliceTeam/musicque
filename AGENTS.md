@@ -9,7 +9,8 @@ with a text-to-speech dedication message, upvote/downvote to reorder the playlis
 admin runs the playback session. It has accreted several unrelated side widgets
 (lunch voting, a shared whiteboard, news/weather/price tickers, a NES emulator, games).
 
-The repo is a **multi-service monorepo with no workspace tooling** — no root `package.json`.
+The repo is a **multi-service monorepo with no workspace tooling**. Root `package.json` chỉ là lối tắt vận hành production;
+không dependencies, lockfile hoặc workspaces. Không chạy npm install tại root.
 Each service installs and runs independently.
 
 | Directory | Stack | Dev port | Docker port |
@@ -203,8 +204,8 @@ CHOHAN_REVEAL_MS=3000` when running `api` locally.
   `api/controllers/session.controller.js` is now `hours < 0 || hours >= 24`, i.e. a no-op.
 - Its directory tree predates most current features (widgets, games, micro-frontends,
   TTS service).
-- It references `docker-compose.prod.example.yml`; the file in the repo is
-  `docker-compose.example.yml`.
+- `docker-compose.example.yml` là mẫu chung; mẫu production police hiện có tại
+  `docker-compose.prod.example.yml`, xem `docs/deploy.md` trước khi chuyển cấu hình.
 
 ## Disabled code still in the tree
 

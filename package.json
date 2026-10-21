@@ -1,0 +1,11 @@
+{
+  "name": "musicque-operations",
+  "private": true,
+  "scripts": {
+    "deploy": "bash scripts/remote.sh deploy",
+    "deploy:rollback": "bash scripts/remote.sh rollback",
+    "deploy:status": "bash scripts/remote.sh status",
+    "deploy:logs": "bash scripts/remote.sh logs",
+    "env:check": "bash scripts/remote.sh env-check"
+  }
+}

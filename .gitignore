@@ -37,3 +37,7 @@ ehthumbs.db
 Thumbs.db
 # Blender backup files
 *.blend[1-9]
+
+# Secret production (mẫu được track riêng)
+.env.prod
+.env.prod.backup*

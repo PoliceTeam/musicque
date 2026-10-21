@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 COMPOSE=(docker compose -f docker-compose.prod.yml)
+[[ ! -f .env.prod ]] || COMPOSE+=(--env-file .env.prod)
 [[ -f docker-compose.prod.yml ]] || { echo 'Thiếu docker-compose.prod.yml trên server'; exit 1; }
 [[ -z "$(git status --porcelain)" ]] || { echo 'Cây git chưa sạch; dừng deploy'; exit 1; }
 # Compose production phải khai báo image: musicque-api:latest và musicque-client:latest.
@@ -37,7 +38,15 @@ case "${1:-}" in
         docker tag "$repository:latest" "$repository:rollback-$STAMP"
       fi
     done
-    git pull --ff-only
+    git fetch origin main
+    if [[ -n "${EXPECTED_DEPLOY_SHA:-}" && "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEPLOY_SHA" ]]; then
+      echo 'origin/main đã đổi; chạy lại từ local để xác minh HEAD'; exit 1
+    fi
+    [[ "$(git branch --show-current)" == main ]] || { echo 'Server phải ở nhánh main'; exit 1; }
+    git pull --ff-only origin main
+    [[ -z "${EXPECTED_DEPLOY_SHA:-}" || "$(git rev-parse HEAD)" == "$EXPECTED_DEPLOY_SHA" ]] || {
+      echo 'HEAD server không khớp bản đã kiểm tra; dừng trước build'; exit 1;
+    }
     "${COMPOSE[@]}" build api client
     ;;
   *) echo 'Cách dùng: bash scripts/deploy-prod.sh [--rollback]'; exit 1 ;;
