@@ -19,5 +19,5 @@ export const useHandoffEntry = () => {
       message.error('Chưa thể chuyển nền tảng. Vui lòng đăng nhập lại.')
     })
   }
-  return { targets: sso.handoffTargets, available: (target) => sso.handoffTargets.includes(target), enter }
+  return { loading: sso.loading, targets: sso.handoffTargets, available: (target) => sso.handoffTargets.includes(target), enter }
 }

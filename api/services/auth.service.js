@@ -30,6 +30,15 @@ const buildAuthPayload = (user) => ({
   user: user.toPublicJSON(),
 })
 
+// null cũng khớp document cũ chưa có field; cập nhật có điều kiện để hai tab không cùng hiện.
+exports.claimIceCityIntro = async (userId) => {
+  const result = await User.updateOne(
+    { _id: userId, iceCityIntroSeenAt: null },
+    { $set: { iceCityIntroSeenAt: new Date() } },
+  )
+  return { show: result.modifiedCount === 1 }
+}
+
 const assertCredentialShape = (username, password) => {
   if (!username || !password) {
     throw new AuthError(400, 'Vui lòng nhập tên đăng nhập và mật khẩu')

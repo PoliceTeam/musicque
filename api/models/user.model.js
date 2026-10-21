@@ -100,6 +100,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Intro ICE City chỉ hiển thị một lần cho mỗi tài khoản, kể cả đổi thiết bị.
+  iceCityIntroSeenAt: { type: Date, default: null, select: false },
   // Operation key đã áp dụng trực tiếp lên ví. Dùng cho các khoản hoàn cần
   // idempotent qua cả trường hợp server restart giữa credit và cập nhật nghiệp vụ.
   appliedCoinOperations: {

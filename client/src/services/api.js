@@ -312,6 +312,7 @@ export const actionXiangqiPvp = (id, action, expectedPlyVersion) =>
   api.post(`/api/xiangqi/pvp/${id}/actions`, { action, expectedPlyVersion });
 
 export const forgotPassword = (identifier) => api.post('/api/auth/forgot-password', { identifier });
+export const claimIceCityIntro = () => api.post('/api/auth/me/ice-city-intro');
 export const handoff = async (target, windowTarget = '_self') => {
   const { data } = await api.post('/api/auth/handoff', { target });
   const form = document.createElement('form'); form.method = 'POST'; form.action = data.url; form.target = windowTarget; form.hidden = true;

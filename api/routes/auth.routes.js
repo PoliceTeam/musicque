@@ -16,6 +16,7 @@ router.post('/login', forms.login, localCredentials, authController.login)
 
 // Thông tin người đang đăng nhập
 router.get('/me', authenticate, authController.me)
+router.post('/me/ice-city-intro', authenticate, authController.claimIceCityIntro)
 router.patch('/me/avatar', authenticate, authController.updateAvatar)
 router.patch('/me/profile', authenticate, authController.updateProfile)
 router.patch('/me/password', authenticate, forms.change, localCredentials, authController.changePassword)

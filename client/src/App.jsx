@@ -13,6 +13,7 @@ import { LuckyRainProvider } from './contexts/LuckyRainContext'
 import LuckyRain from './components/LuckyRain/LuckyRain'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
+import IceCityIntroProvider from './components/IceCity/IceCityIntroProvider'
 import ThirteenRedirect from './components/Thirteen/ThirteenRedirect'
 import { useTheme } from './contexts/ThemeContext'
 
@@ -58,6 +59,7 @@ function AppContent() {
               <RedLightProvider>
                 <LotteryProvider>
                 <Router>
+                  <IceCityIntroProvider>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       {import.meta.env.DEV && <Route path='/dev/lucky-rain' element={<LuckyRainPreview />} />}
@@ -103,6 +105,7 @@ function AppContent() {
                   {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
                   <AuthModal />
                   <LuckyRain />
+                  </IceCityIntroProvider>
                 </Router>
                 </LotteryProvider>
               </RedLightProvider>

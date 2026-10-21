@@ -1,0 +1,95 @@
+.ice-intro-modal .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid #36546a;
+  background: #091d2c;
+  box-shadow: 0 32px 110px #00101bd9;
+}
+.ice-intro-modal .ant-modal-close {
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: #071827c9;
+  border: 1px solid #ffffff42;
+  border-radius: 50%;
+}
+.ice-intro-modal .ant-modal-close:hover { color: #fff; background: #234254; }
+.ice-intro { color: #fff8e2; }
+.ice-intro__screen { position: relative; aspect-ratio: 16 / 9; background: #04121d; }
+.ice-intro__video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ice-intro__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 26px 32px 28px;
+  border-top: 1px solid #41657480;
+  background: radial-gradient(ellipse at 0 100%, #14433866, transparent 70%), #091d2c;
+}
+.ice-intro__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 9px;
+  color: #92d8c2;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.ice-intro__eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: #9bebc4; box-shadow: 0 0 12px #9bebc4a0; }
+.ice-intro__copy h2 { margin: 0 0 9px; color: #fff5d9; font-size: clamp(21px, 2.5vw, 28px); font-weight: 800; letter-spacing: -.7px; line-height: 1.2; }
+.ice-intro__description { margin: 0; color: #bfd0d8; font-size: 13px; line-height: 1.75; }
+.ice-intro__actions { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 0 0 210px; }
+.ice-intro__play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 50px;
+  width: 100%;
+  border: 1px solid #ffe7a1;
+  border-radius: 12px;
+  padding: 12px 22px;
+  color: #19313d;
+  background: linear-gradient(180deg, #ffe285, #ffcb48);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 5px 0 #8d6319, 0 10px 24px #ffcb481c;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: transform .15s, filter .15s;
+}
+.ice-intro__play:hover { color: #19313d; transform: translateY(-2px); filter: brightness(1.06); }
+.ice-intro__play:active { transform: translateY(2px); }
+.ice-intro__later { border: 0; padding: 4px; background: none; color: #a1b8c6; font: inherit; font-size: 12px; cursor: pointer; }
+.ice-intro__later:hover { color: #fff8e2; }
+.ice-intro :is(button, a):focus-visible { outline: 3px solid #a1eaff; outline-offset: 4px; }
+.ice-intro__video-error { margin: 6px 0 0; font-size: 12px; color: #ffe285; }
+@media (max-width: 640px) {
+  .ice-intro-modal .ant-modal-content { border-radius: 16px; }
+  .ice-intro__body { flex-direction: column; align-items: stretch; gap: 20px; padding: 22px 20px 20px; }
+  .ice-intro__actions { flex-basis: auto; gap: 10px; }
+  .ice-intro__description br { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ice-intro__play { transition: none; } }
+
+@media (min-width: 641px) {
+  .ice-intro-modal.ant-modal { max-width: min(calc(100vw - 32px), calc((100dvh - 220px) * 1.77778)); }
+}
+
+.ice-intro__replay-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.ice-intro__video-toggle { position: absolute; inset: 0; display: grid; place-items: center; width: 100%; border: 0; padding: 0; color: #ffdf7e; background: #04121d33; cursor: pointer; font: inherit; }
+.ice-intro__video-toggle-content { display: flex; flex-direction: column; align-items: center; gap: 12px; filter: drop-shadow(0 4px 18px #0008); }
+.ice-intro__video-toggle-content > .anticon { font-size: clamp(56px, 8vw, 86px); background: #092335cc; border-radius: 50%; }
+.ice-intro__video-toggle.is-playing { background: transparent; }
+.ice-intro__video-toggle.is-playing .ice-intro__video-toggle-content { opacity: 0; }
+.ice-intro__video-toggle.is-playing:hover .ice-intro__video-toggle-content,
+.ice-intro__video-toggle.is-playing:focus-visible .ice-intro__video-toggle-content { opacity: 1; }
+.ice-intro__sound { position: absolute; left: 14px; bottom: 14px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid #ffffff50; border-radius: 50%; background: #071e2ecc; color: #fff5d9; cursor: pointer; font-size: 18px; }
+.ice-intro__sound:hover { background: #234254; }
+.ice-intro__video-toggle:focus-visible { outline-offset: -4px !important; }

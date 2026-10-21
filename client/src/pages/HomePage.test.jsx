@@ -10,7 +10,7 @@ vi.mock('../components/Layout/SidebarNav', () => ({ default: ({ children }) => <
 vi.mock('../components/Werewolf/WerewolfLauncher', () => ({ default: () => <div data-banner='werewolf' /> }))
 vi.mock('../components/Jungle/JungleLauncher', () => ({ default: () => <div data-banner='jungle' /> }))
 vi.mock('../components/Audition/AuditionLauncher', () => ({ default: () => <div data-banner='audition' /> }))
-vi.mock('../components/Home/CardGamesPromo', () => ({ default: () => <div data-banner='card-games' /> }))
+vi.mock('../components/IceCity/IceCityPromo', () => ({ default: () => <div data-banner='ice-city' /> }))
 vi.mock('../components/Playlist/AddSongForm', () => ({ default: () => null }))
 vi.mock('../components/Playlist/PlaylistView', () => ({ default: () => null }))
 vi.mock('../components/Home/NowPlayingBar', () => ({ default: () => null }))
@@ -29,8 +29,8 @@ vi.mock('../components/TetCountdown/TetCountdown', () => ({ default: () => null 
 vi.mock('../components/NationalDay/NationalDayBanner', () => ({ default: () => null }))
 vi.mock('../components/DailyIdiom/DailyIdiom', () => ({ default: () => null }))
 
-it('keeps the quick-toys row in the sidebar and the game banners in the main column: Game bài, Au đi sần, Ma Sói, then Cờ thú', () => {
+it('keeps the quick-toys row in the sidebar and the game banners in the main column: ICE City, Au đi sần, Ma Sói, then Cờ thú', () => {
   const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
   const order = [...container.querySelectorAll('.sp-quicktoys, [data-banner]')].map(node => node.dataset.banner || 'quick-toys')
-  expect(order).toEqual(['quick-toys', 'card-games', 'audition', 'werewolf', 'jungle'])
+  expect(order).toEqual(['quick-toys', 'ice-city', 'audition', 'werewolf', 'jungle'])
 })

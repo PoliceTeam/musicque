@@ -8,14 +8,15 @@ import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
 import { useHandoffEntry } from '../components/Auth/useHandoffEntry';
+import { useIceCityIntroStatus } from '../components/IceCity/intro-context';
 import CoreLaunchPopup from '../components/Core/CoreLaunchPopup';
-import { markCoreLaunchSeen, shouldShowCoreLaunch } from '../components/Core/coreLaunch';
+import { useCoreLaunchQueue } from '../components/Core/useCoreLaunchQueue';
 import CoreMembershipModal from '../components/Core/CoreMembershipModal';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
-import CardGamesPromo from '../components/Home/CardGamesPromo';
+import IceCityPromo from '../components/IceCity/IceCityPromo';
 import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
@@ -49,8 +50,9 @@ const getGreeting = () => {
 
 const HomePage = () => {
   const farm = useHandoffEntry();
+  const iceIntro = useIceCityIntroStatus();
   const { currentSession, currentSong } = useContext(PlaylistContext);
-  const { user, displayName } = useAuth();
+  const { user, displayName, authModal } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
@@ -62,26 +64,10 @@ const HomePage = () => {
   const [wordChainOpen, setWordChainOpen] = useState(false);
   const [redLightOpen, setRedLightOpen] = useState(false);
   const [redLightPreview, setRedLightPreview] = useState(false);
-  const [coreLaunchOpen, setCoreLaunchOpen] = useState(false);
+  const { open: coreLaunchOpen, dismiss: dismissCoreLaunch } = useCoreLaunchQueue(user, iceIntro.pending || Boolean(authModal));
   const [coreMembershipOpen, setCoreMembershipOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-
-  useEffect(() => {
-    if (!shouldShowCoreLaunch(user)) {
-      setCoreLaunchOpen(false)
-      return undefined
-    }
-    const timeoutId = window.setTimeout(() => {
-      markCoreLaunchSeen(user._id)
-      setCoreLaunchOpen(true)
-    }, 650)
-    return () => window.clearTimeout(timeoutId)
-  }, [user])
-
-  const dismissCoreLaunch = () => {
-    setCoreLaunchOpen(false)
-  }
 
   const exploreCore = () => {
     dismissCoreLaunch()
@@ -391,7 +377,7 @@ const HomePage = () => {
             <PlaylistView className="sp-queue" composer={<AddSongForm variant="inline" />} />
             {/* Thẻ game chuyển từ sidebar sang đây để sidebar còn chỗ cho Phòng chat */}
             <section className="sp-games" aria-label="Trò chơi">
-              <CardGamesPromo />
+              <IceCityPromo onPlay={() => farm.enter('musicque-farm')} playHref={!user ? '/farm' : undefined} />
               <AuditionLauncher />
               <WerewolfLauncher />
               <JungleLauncher />

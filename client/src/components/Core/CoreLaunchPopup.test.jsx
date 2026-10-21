@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   CORE_LAUNCH_CYCLE_MS,
   coreLaunchStorageKey,
@@ -10,7 +10,8 @@ const now = new Date('2026-09-21T08:00:00.000Z')
 const user = { _id: 'user-1', core: { active: false, expiresAt: null } }
 
 describe('CoreLaunchPopup', () => {
-  it('hiện ở mỗi lần vào Home khi user chưa có Core', () => {
+  beforeEach(() => localStorage.clear())
+  it('hiện lần đầu khi chưa có mốc đã xem và user chưa có Core', () => {
     expect(shouldShowCoreLaunch(user)).toBe(true)
   })
 
@@ -21,8 +22,10 @@ describe('CoreLaunchPopup', () => {
       setItem: (key, value) => values.set(key, value),
     }
     const firstSeenAt = markCoreLaunchSeen(user._id, storage, now)
+    expect(shouldShowCoreLaunch(user, storage, now)).toBe(false)
     const oneDayLater = new Date(now.getTime() + 864e5)
 
+    expect(shouldShowCoreLaunch(user, storage, oneDayLater)).toBe(false)
     expect(markCoreLaunchSeen(user._id, storage, oneDayLater)).toBe(firstSeenAt)
     expect(values.get(coreLaunchStorageKey(user._id))).toBe(String(firstSeenAt))
   })
@@ -36,6 +39,7 @@ describe('CoreLaunchPopup', () => {
     markCoreLaunchSeen(user._id, storage, now)
     const nextCycle = new Date(now.getTime() + CORE_LAUNCH_CYCLE_MS)
 
+    expect(shouldShowCoreLaunch(user, storage, nextCycle)).toBe(true)
     expect(markCoreLaunchSeen(user._id, storage, nextCycle)).toBe(nextCycle.getTime())
   })
 
