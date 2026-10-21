@@ -460,16 +460,22 @@ danh tính từ JWT, không tin username gửi trong body.
 
 ## Docker deployment
 
-File `docker-compose.yml` là cấu hình deployment đang dùng; file
-`docker-compose.example.yml` là mẫu không chứa secret thật.
-File example hiện map API/client sang `5800/3800`, khác với `5001/8080` trong
-Compose chính; kiểm tra file được chọn trước khi cấu hình reverse proxy.
+Production dùng `docker-compose.prod.yml` riêng trên server (git-ignored).
+Compose phải đặt `image: musicque-api:latest` và `image: musicque-client:latest` cho
+hai service tương ứng; API giữ healthcheck hiện có. Không đưa secret vào Git.
 
 ```bash
-docker compose build --no-cache api
-docker compose up -d --force-recreate api client
-docker compose ps
+bash scripts/deploy-prod.sh
+# Phục hồi image gần nhất, không build hoặc pull:
+bash scripts/deploy-prod.sh --rollback
 ```
+
+Script yêu cầu cây git sạch, tag rollback trước `git pull --ff-only`, build/recreate
+api/client rồi chờ API healthy. Sau thành công giữ một rollback mới nhất mỗi repo,
+bỏ qua mọi image có container sử dụng và chỉ dọn dangling có label của Musicque.
+Không prune build cache trên builder dùng chung; chỉ cân nhắc cache cũ hơn 7 ngày
+khi người vận hành đã xác minh builder dành riêng cho project. Thất bại không dọn image;
+rollback image không hoàn tác schema hoặc dữ liệu DB.
 
 API chạy trực tiếp từ image đã build, không bind-mount `./api` hoặc một anonymous
 `node_modules` trong cấu hình deployment. Các mount này có thể giữ dependencies cũ

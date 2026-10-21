@@ -9,7 +9,15 @@ export const useHandoffEntry = () => {
   const sso = useSso()
   const enter = (target) => {
     if (!user) { openAuthModal('login'); return }
-    void handoff(target).catch(() => message.error('Chưa thể chuyển nền tảng. Vui lòng đăng nhập lại.'))
+    // Mở đồng bộ trong click để trình duyệt cho phép popup trước khi gọi API.
+    const tabName = `musicque-handoff-${crypto.randomUUID()}`
+    let tab = null
+    try { tab = window.open('', tabName) } catch { /* Popup bị chặn: chuyển cùng tab. */ }
+    if (tab) tab.opener = null
+    void handoff(target, tab ? tabName : '_self').catch(() => {
+      tab?.close()
+      message.error('Chưa thể chuyển nền tảng. Vui lòng đăng nhập lại.')
+    })
   }
   return { targets: sso.handoffTargets, available: (target) => sso.handoffTargets.includes(target), enter }
 }

@@ -64,6 +64,7 @@ const AuthForm = ({ mode, onSwitchMode, onSuccess, autoFocus = true }) => {
 
   return (
     <Form form={form} layout='vertical' onFinish={handleSubmit} requiredMark={false}>
+      {sso.enabled && !isRegister && <p className='sp-auth__hint'>Sau cập nhật, bạn cần đăng nhập lại một lần bằng tên đăng nhập và mật khẩu cũ.</p>}
       {error && (
         <Alert type='error' message={error} showIcon style={{ marginBottom: 16 }} banner={false} />
       )}

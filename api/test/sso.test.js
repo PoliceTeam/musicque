@@ -113,3 +113,49 @@ test('callback without a known attempt reports to the opener or returns to the w
   assert.match(body, /location\.replace\("http:\/\/localhost:8080\/\?auth=sso-failed"\)/)
   assert.match(headers['Content-Security-Policy'], /script-src 'nonce-/)
 })
+
+test('đăng ký SSO dùng thưởng hiện có đúng một lần, giữ hạn mức trình duyệt', async (t) => {
+  const grants = require('../services/signupGrant.service')
+  const coins = require('../services/coins.service')
+  let saved
+  let granted = true
+  const reservations = []
+  const ledger = []
+  t.mock.method(User, 'findOne', async () => saved || null)
+  t.mock.method(User, 'findByUsername', async () => null)
+  t.mock.method(User, 'create', async values => { saved = values; return values })
+  t.mock.method(grants, 'reserveWelcomeGrant', async input => { reservations.push(input); return { granted } })
+  t.mock.method(coins, 'recordTransaction', async (...args) => ledger.push(args))
+  const first = await sso.findUser(profile, { deviceId: 'device-id-for-test' })
+  assert.equal(first.polites, 100)
+  assert.equal(first.lastDailyBonusAt, null)
+  assert.equal(reservations[0].deviceId, 'device-id-for-test')
+  assert.equal(ledger[0][2].operationKey, `signup_grant:${first._id}`)
+  assert.equal(await sso.findUser(profile, { deviceId: 'another-device-id' }), first)
+  assert.equal(reservations.length, 1)
+  assert.equal(ledger.length, 1)
+  saved = null
+  granted = false
+  const second = await sso.findUser({ ...profile, sub: 'second' }, { deviceId: 'device-id-for-test' })
+  assert.equal(second.polites, 0)
+  assert.ok(second.lastDailyBonusAt instanceof Date)
+  assert.equal(ledger.length, 1)
+})
+
+test('SSO hoàn tác lượt thưởng khi tạo hồ sơ thất bại', async (t) => {
+  const grants = require('../services/signupGrant.service')
+  t.mock.method(User, 'findOne', async () => null)
+  t.mock.method(grants, 'reserveWelcomeGrant', async () => ({ granted: true }))
+  const released = t.mock.method(grants, 'releaseWelcomeGrant', async () => {})
+  t.mock.method(User, 'create', async () => { throw new Error('database down') })
+  await assert.rejects(sso.findUser(profile, { deviceId: 'device-id-for-test' }), /database down/)
+  assert.equal(released.mock.callCount(), 1)
+})
+
+test('cookie SSO dùng Secure khi issuer HTTPS dù runtime thiếu NODE_ENV', (t) => {
+  const keys = { SSO_ISSUER: 'https://sso.test/realms/sso', SSO_CLIENT_ID: 'musicque', SSO_CLIENT_SECRET: 'secret', SSO_REDIRECT_URI: 'https://musicque.test/api/auth/sso/callback', SSO_WEB_ORIGIN: 'https://musicque.test' }
+  const before = Object.fromEntries(Object.keys(keys).map(k => [k, process.env[k]]))
+  Object.assign(process.env, keys)
+  t.after(() => { for (const [k, v] of Object.entries(before)) if (v === undefined) delete process.env[k]; else process.env[k] = v })
+  assert.equal(sso.cookieOptions().secure, true)
+})

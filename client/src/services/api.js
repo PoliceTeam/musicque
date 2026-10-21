@@ -312,9 +312,10 @@ export const actionXiangqiPvp = (id, action, expectedPlyVersion) =>
   api.post(`/api/xiangqi/pvp/${id}/actions`, { action, expectedPlyVersion });
 
 export const forgotPassword = (identifier) => api.post('/api/auth/forgot-password', { identifier });
-export const handoff = async (target) => {
+export const handoff = async (target, windowTarget = '_self') => {
   const { data } = await api.post('/api/auth/handoff', { target });
-  const form = document.createElement('form'); form.method = 'POST'; form.action = data.url; form.hidden = true;
+  const form = document.createElement('form'); form.method = 'POST'; form.action = data.url; form.target = windowTarget; form.hidden = true;
   const input = document.createElement('input'); input.type = 'hidden'; input.name = 'token'; input.value = data.token;
-  form.append(input); document.body.append(form); form.submit(); form.remove();
+  form.append(input); document.body.append(form);
+  try { form.submit(); } finally { form.remove(); }
 };

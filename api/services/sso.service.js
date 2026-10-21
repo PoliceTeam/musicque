@@ -50,7 +50,7 @@ const resolveSession = async (token) => {
   const session = await Session.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date() } })
   return session ? User.findById(session.userId) : null
 }
-const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' })
+const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production' || Boolean(settings()?.issuer.startsWith('https:')), sameSite: 'lax', path: '/' })
 const createSession = async (res, user, ssoRefresh) => {
   const token = randomBytes(32).toString('base64url')
   await Session.create({ ssoRefresh, tokenHash: hash(token), userId: user._id, expiresAt: new Date(Date.now() + SESSION_MS) })
@@ -84,14 +84,36 @@ const consumeAttempt = async (req) => {
   return Attempt.findOneAndDelete({ stateHash: hash(state), expiresAt: { $gt: new Date() } }).select('+verifier')
 }
 const USERNAME = /^[a-zA-Z0-9._-]{3,24}$/
-// Danh tính là (issuer, subject); không tự gộp theo username/email hay cấp thêm thưởng vào ví.
-const findUser = async (profile) => {
+// Danh tính là (issuer, subject); chỉ đăng ký mới được xét thưởng theo hồ sơ trình duyệt.
+const findUser = async (profile, registration) => {
   const identity = { ssoIssuer: profile.iss, ssoSubject: profile.sub }
   const existing = await User.findOne(identity)
   if (existing) return existing
   const preferred = typeof profile.preferred_username === 'string' ? profile.preferred_username : ''
   const username = USERNAME.test(preferred) && !await User.findByUsername(preferred) ? preferred : `sso_${hash(`${profile.iss}\n${profile.sub}`).slice(0, 20)}`
-  return User.create({ ...identity, username, displayName: String(profile.name || preferred || 'Người dùng').slice(0, 40), role: 'user', polites: 0 })
+  const values = { ...identity, username, displayName: String(profile.name || preferred || 'Người dùng').slice(0, 40), role: 'user', polites: 0 }
+  if (!registration) return User.create(values)
+  const grants = require('./signupGrant.service')
+  const coins = require('./coins.service')
+  const id = new User()._id
+  const grant = await grants.reserveWelcomeGrant({ deviceId: registration.deviceId, userId: id })
+  const amount = Math.max(0, Number(process.env.SIGNUP_START_BALANCE || 100))
+  let user
+  try {
+    user = await User.create({ ...values, _id: id, polites: grant.granted ? amount : 0, lastDailyBonusAt: grant.granted ? null : new Date() })
+  } catch (error) {
+    if (grant.granted) await grants.releaseWelcomeGrant(id)
+    // Callback đăng ký đồng thời có thể đã tạo đúng identity trước request này.
+    if (error.code === 11000) {
+      const raced = await User.findOne(identity)
+      if (raced) return raced
+    }
+    throw error
+  }
+  if (grant.granted && amount > 0) await coins.recordTransaction(user, amount, {
+    type: 'signup_grant', operationKey: `signup_grant:${id}`,
+  })
+  return user
 }
 const finish = async (req, res, attempt) => {
   const { oidc, config, provider } = await client()

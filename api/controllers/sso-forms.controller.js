@@ -6,7 +6,7 @@ const credential = (register) => async (req, res, next) => {
   if (!sso.enabled()) return next()
   if (!origin(req)) return res.status(403).json({ message: 'Nguồn yêu cầu không hợp lệ.' })
   try {
-    const result = await forms.signIn(req.body, register)
+    const result = await forms.signIn({ ...req.body, deviceId: req.get('X-Musicque-Device') }, register)
     await sso.logout(req, res)
     await sso.createSession(res, result.user, result.refresh)
     return res.status(register ? 201 : 200).json({ user: result.user.toPublicJSON() })

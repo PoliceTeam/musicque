@@ -60,3 +60,20 @@ Tham khảo [Keycloak token exchange](https://www.keycloak.org/securing-apps/tok
 `npm --prefix api test`; `cd client && npx vitest run src/components/Auth`;
 eslint những file sửa. Backend tests dùng provider giả, kiểm grant/admin/password/handoff/expiry/signature/replay và origin.
 Khi test thật chỉ tạo user cx-, dọn Keycloak/Mongo/Farm theo chính ID fixture; không xóa volume/container/dữ liệu khác.
+
+## Cutover production 2026-10-21
+
+Người dùng đăng nhập lại một lần bằng username và mật khẩu cũ. Hash legacy được
+Keycloak đổi sang argon2 ở lần đăng nhập thành công đầu tiên; không reset mật khẩu.
+Form đăng nhập có thông báo này.
+
+Đăng ký mới bằng form Musicque dùng lại `reserveWelcomeGrant`, đọc device id từ
+header `X-Musicque-Device`: hồ sơ trình duyệt đủ điều kiện nhận `SIGNUP_START_BALANCE`
+(mặc định 100 PC). Trình duyệt đã nhận hoặc thiếu device id không được nhận thêm;
+đồng thời chặn daily bonus ngay ngày đăng ký như luồng cũ. Ví và dấu cấp thưởng được
+khởi tạo khi tạo user; ledger dùng `signup_grant:<userId>`. Đăng nhập/callback/handoff
+không thưởng hồi tố cho identity đã có. SSO cookie dùng Secure khi issuer HTTPS,
+kể cả container chưa đặt NODE_ENV.
+
+Farm trên cùng domain dùng prefix `/farm`, DB mới; không nhập dữ liệu couponlinkh.
+Handoff chỉ mở sau khi Farm healthy và nginx đã kiểm tra. Không xoá dữ liệu server cũ.

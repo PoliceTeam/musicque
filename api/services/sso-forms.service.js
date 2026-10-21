@@ -14,11 +14,11 @@ const provider = () => {
   }
   return cached
 }
-const find = (profile) => sso.findUser({ iss: profile.issuer, sub: profile.subject, name: profile.name, preferred_username: profile.username })
+const find = (profile, registration) => sso.findUser({ iss: profile.issuer, sub: profile.subject, name: profile.name, preferred_username: profile.username }, registration)
 const signIn = async (body, register = false) => {
   body = body || {}
   const result = register ? await provider().register({ ...body, name: body.displayName || body.username }) : await provider().login(body?.username, body?.password)
-  return { user: await find(result.profile), refresh: result.refresh }
+  return { user: await find(result.profile, register ? { deviceId: body.deviceId } : undefined), refresh: result.refresh }
 }
 const change = async (user, body) => {
   const identity = await require('../models/user.model').findById(user._id).select('+ssoIssuer +ssoSubject')

@@ -19,6 +19,7 @@ RUN npm run build
 
 # Stage 2: Sử dụng Nginx để phục vụ ứng dụng đã build
 FROM nginx:alpine
+LABEL com.musicque.project=app
 
 # Copy build từ stage trước
 COPY --from=build /usr/src/app/dist /usr/share/nginx/html

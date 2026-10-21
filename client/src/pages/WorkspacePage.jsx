@@ -173,9 +173,6 @@ const WorkspacePage = () => {
           <button type='button' onClick={() => navigate('/card-games')}>
             <span>♠</span><strong>Game bài</strong><small>Tiến Lên và các game bài khác</small>
           </button>
-          <button type='button' onClick={() => navigate('/xiangqi')}>
-            <span>♟️</span><strong>Cờ tướng</strong><small>Giải thế nhận PC</small>
-          </button>
         </div>
       </Modal>
 

@@ -1,4 +1,5 @@
 FROM node:20-alpine
+LABEL com.musicque.project=app
 
 WORKDIR /usr/src/app
 
