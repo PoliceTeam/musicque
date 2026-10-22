@@ -59,5 +59,5 @@ export const useWerewolf = () => {
     }
   }, [apply])
 
-  return { state, receivedAt, catalog, dealing, run }
+  return { state, receivedAt, catalog, dealing, run, socket }
 }

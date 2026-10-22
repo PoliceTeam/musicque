@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { message } from 'antd'
 import { Link } from 'react-router-dom'
+import WorkspaceVoice from '../components/Workspace/WorkspaceVoice'
 import UserMenu from '../components/Auth/UserMenu'
 import PlayerGrid from '../components/Werewolf/PlayerGrid'
 import GameFeed from '../components/Werewolf/GameFeed'
@@ -96,8 +97,9 @@ const MyRole = ({ state, catalog }) => {
 
 const WerewolfPage = ({ embedded = false }) => {
   const { user, isAdmin, requireAuth, refreshBalance } = useAuth()
-  const { state, receivedAt, catalog, dealing, run } = useWerewolf()
+  const { state, receivedAt, catalog, dealing, run, socket } = useWerewolf()
   const now = useClock()
+  const [mobilePanel, setMobilePanel] = useState('game')
   const [rulesOpen, setRulesOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [pending, setPending] = useState(null)
@@ -173,7 +175,15 @@ const WerewolfPage = ({ embedded = false }) => {
         </div>
       </header>}
 
-      <main className='ww-stage'>
+      {!embedded && <div className='ww-voice-wrap'>
+        <WorkspaceVoice socket={socket} roomId='werewolf' directWerewolf requireAuth={requireAuth} userId={user?._id} />
+      </div>}
+      <nav className='ww-mobile-nav' aria-label='Chuyển phần chơi Ma Sói'>
+        <button type='button' aria-pressed={mobilePanel === 'game'} onClick={() => setMobilePanel('game')}>🐺 Bàn chơi</button>
+        <button type='button' aria-pressed={mobilePanel === 'chat'} onClick={() => setMobilePanel('chat')}>💬 Chat & diễn biến</button>
+      </nav>
+      <main className={`ww-stage ww-stage--${mobilePanel}`}>
+
         <div className='ww-main'>
           <PhaseBanner state={state} remaining={remaining} />
           <MyRole state={state} catalog={catalog} />
@@ -277,7 +287,7 @@ const WerewolfPage = ({ embedded = false }) => {
           <PlayerGrid state={state} catalog={catalog} selectedIds={selectedIds} onPick={pick} />
         </div>
 
-        <GameFeed state={state} onSend={(content) => run(() => sendWerewolfChat(content))} />
+        <GameFeed active={mobilePanel === 'chat'} state={state} onSend={(content) => run(() => sendWerewolfChat(content))} />
       </main>
 
       <WerewolfHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} catalog={catalog} myId={user ? String(user._id) : null} />

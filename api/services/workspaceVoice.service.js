@@ -4,6 +4,7 @@ const werewolf = require('./werewolf.service')
 
 const ROOM_CALL_MAX_MS = 10 * 60 * 1000
 const sessions = new Map()
+const pendingJoins = new Map()
 const roomCalls = new Map()
 const configured = () => Boolean(process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET)
 const enabled = () => process.env.WORKSPACE_VOICE_ENABLED === 'true' && configured()
@@ -14,8 +15,7 @@ const permissionFor = (member) => member?.roomId !== 'werewolf' || werewolf.canS
 
 const syncWerewolfPermissions = async () => {
   const tasks = [...sessions.values()].filter(({ roomId }) => roomId === 'werewolf').map(async (session) => {
-    const member = workspace.getMember(session.socket.id)
-    const canSpeak = permissionFor(member)
+    const canSpeak = werewolf.canSpeak(session.userId)
     session.socket.emit('workspace:voice:permission', { canSpeak, roomId: 'werewolf' })
     if (session.canSpeak === canSpeak || !enabled()) return
     try {
@@ -29,7 +29,9 @@ const syncWerewolfPermissions = async () => {
       })
       session.canSpeak = canSpeak
     } catch (error) {
-      if (!/not found|does not exist/i.test(error.message || '')) throw error
+      // Không giữ quyền nói cũ khi LiveKit không cập nhật được quyền mới.
+      await leave(session.socket.id)
+      session.socket.emit('workspace:voice:ended', { reason: 'Không đồng bộ được quyền micro. Hãy tham gia lại voice.' })
     }
   })
   await Promise.all(tasks)
@@ -80,6 +82,7 @@ const createRoomCall = (roomId) => {
 }
 
 const leave = async (socketId) => {
+  pendingJoins.delete(socketId)
   const session = sessions.get(socketId)
   if (!session) return
   sessions.delete(socketId)
@@ -103,14 +106,19 @@ const leave = async (socketId) => {
   }
 }
 
-const join = async (socket) => {
+// user chỉ được truyền từ handler đã xác thực token cho route Ma Sói.
+const join = async (socket, { user } = {}) => {
   if (!enabled()) return { error: 'Voice chưa được cấu hình', code: 'VOICE_DISABLED' }
-  const member = workspace.getMember(socket.id)
+  const member = user
+    ? { userId: String(user._id), displayName: user.displayName || user.username, roomId: 'werewolf' }
+    : workspace.getMember(socket.id)
   if (!member?.roomId) return { error: 'Hãy bước vào phòng trước khi tham gia voice', code: 'NOT_IN_ROOM' }
   const requestedRoomId = member.roomId
   const existing = sessions.get(socket.id)
   if (existing && existing.roomId !== requestedRoomId) await leave(socket.id)
 
+  const request = {}
+  pendingJoins.set(socket.id, request)
   const identity = `${member.userId}:${socket.id}`
   const canSpeak = permissionFor(member)
   const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
@@ -126,8 +134,14 @@ const join = async (socket) => {
     canPublishSources: canSpeak ? [TrackSource.MICROPHONE] : [],
     canPublishData: false,
   })
-  const jwt = await token.toJwt()
-  if (workspace.getMember(socket.id)?.roomId !== requestedRoomId) {
+  let jwt
+  try { jwt = await token.toJwt() } catch (error) {
+    if (pendingJoins.get(socket.id) === request) pendingJoins.delete(socket.id)
+    throw error
+  }
+  if (pendingJoins.get(socket.id) !== request) return { error: 'Yêu cầu voice đã bị hủy', code: 'JOIN_CANCELLED' }
+  pendingJoins.delete(socket.id)
+  if (socket.connected === false || (!user && workspace.getMember(socket.id)?.roomId !== requestedRoomId)) {
     return { error: 'Bạn đã rời phòng', code: 'NOT_IN_ROOM' }
   }
   let call = roomCalls.get(requestedRoomId)
@@ -145,14 +159,14 @@ const join = async (socket) => {
     remainingMs: Math.max(0, call.endsAt - Date.now()),
     canSpeak,
   }
-  sessions.set(socket.id, { roomId: requestedRoomId, identity, socket, canSpeak })
+  sessions.set(socket.id, { roomId: requestedRoomId, identity, socket, canSpeak, userId: member.userId, direct: Boolean(user) })
   call.participants.add(socket.id)
   return response
 }
 
 const onRoomChange = async (socket) => {
   const session = sessions.get(socket.id)
-  if (session && session.roomId !== workspace.getMember(socket.id)?.roomId) {
+  if (session && !session.direct && session.roomId !== workspace.getMember(socket.id)?.roomId) {
     socket.emit('workspace:voice:ended', { reason: 'Bạn đã rời phòng voice' })
     await leave(socket.id)
   }

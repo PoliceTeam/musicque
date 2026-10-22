@@ -131,7 +131,25 @@ const initSocket = (server) => {
       }
     })
 
+    // Dùng chung phòng LiveKit với Làng Ma Sói trong workspace, danh tính lấy từ JWT.
+    socket.on('werewolf:voice:join', async (data = {}, ack) => {
+      const requestId = (socket.data.voiceRequestId || 0) + 1
+      socket.data.voiceRequestId = requestId
+      try {
+        const user = await resolveSocketUser(data.token)
+        if (socket.data.voiceRequestId !== requestId || !socket.connected) return
+        const result = user
+          ? await workspaceVoice.join(socket, { user })
+          : { error: 'Vui lòng đăng nhập để tham gia voice', code: 'UNAUTHORIZED' }
+        if (typeof ack === 'function') ack(result)
+      } catch (error) {
+        console.error('[Ma Sói voice] Không thể cấp phiên:', error.message)
+        if (typeof ack === 'function') ack({ error: 'Không thể kết nối voice', code: 'LIVEKIT_UNAVAILABLE' })
+      }
+    })
+
     socket.on('workspace:voice:leave', async (ack) => {
+      socket.data.voiceRequestId = (socket.data.voiceRequestId || 0) + 1
       await workspaceVoice.leave(socket.id)
       if (typeof ack === 'function') ack({ ok: true })
     })

@@ -96,7 +96,7 @@ export default function LuckyRain() {
 
   if (pathname === '/dev/lucky-rain' || state?.config?.enabled === false || (!state && !stateError)) return null
   return <>
-    <div className='lr-dock'>
+    <div className={`lr-dock${pathname === '/werewolf' ? ' lr-dock--werewolf' : ''}`}>
       <LuckyRainRibbon active={state?.active} available={available} claimed={claimed} seconds={seconds} error={stateError} onClick={show} />
     </div>
     {available && !claimed && <div key={state.round.id} className='lr-rain' aria-hidden='true'>

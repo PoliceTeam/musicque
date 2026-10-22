@@ -26,7 +26,7 @@ const FeedEntry = ({ entry, myId }) => {
   )
 }
 
-const GameFeed = ({ state, onSend }) => {
+const GameFeed = ({ state, onSend, active = true }) => {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const listRef = useRef(null)
@@ -37,7 +37,7 @@ const GameFeed = ({ state, onSend }) => {
   useEffect(() => {
     const list = listRef.current
     if (list && stickRef.current) list.scrollTop = list.scrollHeight
-  }, [lastId])
+  }, [lastId, active])
 
   const onScroll = () => {
     const list = listRef.current
@@ -70,6 +70,7 @@ const GameFeed = ({ state, onSend }) => {
       <form className='ww-feed__form' onSubmit={submit}>
         {channel && <span className={`ww-feed__tag ${CHANNEL_META[channel].className}`}>{CHANNEL_META[channel].label}</span>}
         <input
+          aria-label='Tin nhắn Ma Sói'
           value={draft}
           maxLength={240}
           disabled={!channel || sending}
