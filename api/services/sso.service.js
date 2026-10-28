@@ -5,7 +5,10 @@ const Attempt = require('../models/sso-attempt.model')
 
 const COOKIE = 'musicque_session'
 const ATTEMPT_COOKIE = 'musicque_sso_attempt'
-const SESSION_MS = 8 * 60 * 60 * 1000
+// Phiên trượt: mỗi lần dùng qua HTTP được gia hạn lại đủ SESSION_MS, nhưng chỉ ghi Mongo
+// khi lần gia hạn trước đã cũ hơn RENEW_AFTER_MS. Bỏ dùng quá SESSION_MS thì phiên hết hạn.
+const SESSION_MS = 30 * 24 * 60 * 60 * 1000
+const RENEW_AFTER_MS = 24 * 60 * 60 * 1000
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 const readCookie = (header, name) => {
   const item = String(header || '').split(';').map((entry) => entry.trim()).find((entry) => entry.startsWith(`${name}=`))
@@ -45,12 +48,23 @@ const client = async () => {
   return { oidc, config, provider: await configuration }
 }
 
-const resolveSession = async (token) => {
+const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production' || Boolean(settings()?.issuer.startsWith('https:')), sameSite: 'lax', path: '/' })
+// Chỉ gia hạn khi có res để đặt lại cookie (HTTP); socket không gia hạn, tránh Mongo sống lâu hơn cookie.
+const renewSession = async (session, token, res) => {
+  const now = Date.now()
+  if (!res || !session.expiresAt || session.expiresAt.getTime() - now > SESSION_MS - RENEW_AFTER_MS) return
+  const expiresAt = new Date(now + SESSION_MS)
+  // Lọc theo expiresAt cũ để nhiều request đồng thời chỉ ghi một lần.
+  await Session.updateOne({ _id: session._id, expiresAt: session.expiresAt }, { $set: { expiresAt } })
+  if (!res.headersSent) res.cookie(COOKIE, token, { ...cookieOptions(), maxAge: SESSION_MS })
+}
+const resolveSession = async (token, res) => {
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null
   const session = await Session.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date() } })
-  return session ? User.findById(session.userId) : null
+  if (!session) return null
+  await renewSession(session, token, res)
+  return User.findById(session.userId)
 }
-const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production' || Boolean(settings()?.issuer.startsWith('https:')), sameSite: 'lax', path: '/' })
 const createSession = async (res, user, ssoRefresh) => {
   const token = randomBytes(32).toString('base64url')
   await Session.create({ ssoRefresh, tokenHash: hash(token), userId: user._id, expiresAt: new Date(Date.now() + SESSION_MS) })
@@ -133,4 +147,4 @@ const finish = async (req, res, attempt) => {
   await createSession(res, user, tokens.refresh_token ? require('./sso-password.service').tokenVault(config.tokenKey).seal(tokens.refresh_token) : undefined)
 }
 const enabled = () => Boolean(settings())
-module.exports = { COOKIE, ATTEMPT_COOKIE, settings, enabled, readCookie, sessionToken, cookieOptions, resolveSession, start, consumeAttempt, finish, logout, logoutUrl, hash, findUser, createSession }
+module.exports = { COOKIE, ATTEMPT_COOKIE, SESSION_MS, RENEW_AFTER_MS, settings, enabled, readCookie, sessionToken, cookieOptions, resolveSession, start, consumeAttempt, finish, logout, logoutUrl, hash, findUser, createSession }

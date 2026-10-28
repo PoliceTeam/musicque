@@ -17,7 +17,9 @@ Xem `api/.env.sso.example` và biến SSO trong docker-compose*.yml:
 
 Secret/key không đưa vào VITE hoặc log. Không cấu hình SSO thì auth cục bộ/JWT vẫn dùng như trước.
 Có SSO thì chỉ cookie opaque `musicque_session` xác thực; **không nhận bearer JWT** ở HTTP/socket.
-Cookie HttpOnly, SameSite=Lax, Secure ở production; dữ liệu session Mongo có TTL 8 giờ.
+Cookie HttpOnly, SameSite=Lax, Secure ở production. Phiên trượt 30 ngày (`SESSION_MS`): mỗi request HTTP
+có xác thực gia hạn lại cả bản ghi Mongo (TTL) lẫn cookie, tối đa một lần mỗi ngày (`RENEW_AFTER_MS`).
+Socket không gia hạn. Bỏ không dùng quá 30 ngày thì phải đăng nhập lại.
 
 ## API
 

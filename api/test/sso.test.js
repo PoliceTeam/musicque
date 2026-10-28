@@ -78,6 +78,38 @@ test('opaque cookie sessions enforce expiry and hash the lookup token', async (t
   assert.equal(sso.sessionToken(`other=x; ${sso.COOKIE}=${token}`), token)
 })
 
+test('cookie sessions slide on HTTP use, at most once per renewal window, and never from sockets', async (t) => {
+  const token = 'b'.repeat(43)
+  const now = Date.now()
+  let session
+  const updates = []
+  t.mock.method(Session, 'findOne', async () => session)
+  t.mock.method(Session, 'updateOne', async (filter, update) => { updates.push({ filter, update }) })
+  t.mock.method(User, 'findById', async (id) => ({ _id: id }))
+  const cookies = []
+  const res = { headersSent: false, cookie: (...args) => cookies.push(args) }
+
+  // Phiên vừa gia hạn: không ghi gì.
+  session = { _id: 's1', userId: 'user', expiresAt: new Date(now + sso.SESSION_MS - 60000) }
+  assert.equal((await sso.resolveSession(token, res))._id, 'user')
+  assert.equal(updates.length, 0)
+  assert.equal(cookies.length, 0)
+
+  // Phiên 8 giờ cũ hoặc phiên đã quá cửa sổ gia hạn: đẩy hạn lên đủ SESSION_MS và đặt lại cookie.
+  session = { _id: 's2', userId: 'user', expiresAt: new Date(now + 60 * 60 * 1000) }
+  await sso.resolveSession(token, res)
+  assert.equal(updates.length, 1)
+  assert.deepEqual(updates[0].filter, { _id: 's2', expiresAt: session.expiresAt })
+  assert.ok(updates[0].update.$set.expiresAt.getTime() >= now + sso.SESSION_MS)
+  assert.equal(cookies[0][0], sso.COOKIE)
+  assert.equal(cookies[0][1], token)
+  assert.equal(cookies[0][2].maxAge, sso.SESSION_MS)
+
+  // Socket không có res: không gia hạn để Mongo không sống lâu hơn cookie.
+  await sso.resolveSession(token)
+  assert.equal(updates.length, 1)
+})
+
 test('SSO callback consumes the state atomically and rejects forged state', async (t) => {
   let used = false
   t.mock.method(Attempt, 'findOneAndDelete', (query) => {

@@ -12,13 +12,13 @@ const extractToken = (req) => {
 
 // Trả về User document hoặc null. Không ném lỗi — caller quyết định 401 hay bỏ qua.
 // Khi bật SSO chỉ nhận cookie phiên SSO; JWT cũ không còn xác thực được.
-const resolveUser = async (req) => {
+const resolveUser = async (req, res) => {
   const token = ssoEnabled() ? null : extractToken(req)
   if (!token) {
     const cookieToken = sessionToken(req.headers.cookie)
     if (!cookieToken) return null
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !getAllowedOrigins().includes(req.headers.origin)) return null
-    return resolveSession(cookieToken)
+    return resolveSession(cookieToken, res)
   }
 
   try {
@@ -40,7 +40,7 @@ exports.localCredentials = (_req, res, next) => {
 // Bắt buộc đăng nhập
 exports.authenticate = async (req, res, next) => {
   try {
-    const user = await resolveUser(req)
+    const user = await resolveUser(req, res)
 
     if (!user) {
       return res
@@ -58,7 +58,7 @@ exports.authenticate = async (req, res, next) => {
 // Gắn req.user nếu có token hợp lệ, không có thì vẫn cho đi tiếp (route công khai)
 exports.optionalAuthenticate = async (req, res, next) => {
   try {
-    req.user = (await resolveUser(req)) || null
+    req.user = (await resolveUser(req, res)) || null
   } catch {
     req.user = null
   }
@@ -68,7 +68,7 @@ exports.optionalAuthenticate = async (req, res, next) => {
 // Bắt buộc đăng nhập + role admin
 exports.requireAdmin = async (req, res, next) => {
   try {
-    const user = await resolveUser(req)
+    const user = await resolveUser(req, res)
 
     if (!user) {
       return res
