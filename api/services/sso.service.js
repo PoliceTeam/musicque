@@ -114,7 +114,7 @@ const findUser = async (profile, registration) => {
   const amount = Math.max(0, Number(process.env.SIGNUP_START_BALANCE || 100))
   let user
   try {
-    user = await User.create({ ...values, _id: id, polites: grant.granted ? amount : 0, lastDailyBonusAt: grant.granted ? null : new Date() })
+    user = await User.create({ ...values, _id: id, polites: grant.granted ? amount : 0, seedPolites: grant.granted ? amount : 0, lastDailyBonusAt: grant.granted ? null : new Date() })
   } catch (error) {
     if (grant.granted) await grants.releaseWelcomeGrant(id)
     // Callback đăng ký đồng thời có thể đã tạo đúng identity trước request này.

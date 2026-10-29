@@ -5,11 +5,6 @@ const CoinTransaction = require('../models/coinTransaction.model')
 // Số PC thưởng mỗi ngày khi user truy cập lần đầu trong ngày
 const DAILY_BONUS = Number(process.env.DAILY_BONUS_PC || 20)
 
-/**
- * Trừ PC nguyên tử. Chỉ thành công khi số dư >= amount — đây là chốt chặn
- * chống double-spend khi user vừa cược vừa bid cùng lúc. Trả về User document
- * đã cập nhật, hoặc null nếu không đủ số dư.
- */
 const createOperationKey = (type, userId) =>
   `${type}:${userId}:${Date.now()}:${crypto.randomBytes(6).toString('hex')}`
 
@@ -43,6 +38,73 @@ async function recordTransaction(user, amount, details = {}) {
   }
 }
 
+const EARNED_ONLY_TYPES = new Set(['jungle_bet', 'jungle_payout', 'jungle_refund'])
+const PVP_REFERENCE_TYPES = new Set(['XiangqiPvp', 'TableGameMatch'])
+const SEED_GRANT_TYPES = new Set(['signup_grant', 'daily_bonus', 'lucky_rain_reward'])
+
+const earnedBalance = (user) => Math.max(0, (user?.polites ?? 0) - (user?.seedPolites ?? 0))
+
+const isEarnedOnly = (transaction = {}) => transaction.earnedOnly === true
+  || EARNED_ONLY_TYPES.has(transaction.type)
+  || PVP_REFERENCE_TYPES.has(transaction.referenceType)
+
+// Pure split used by house debits and by tests.
+function seedSpentAmount(seedPolites, polites, amount) {
+  const seed = Math.min(Math.max(0, Number(seedPolites) || 0), Math.max(0, Number(polites) || 0))
+  return Math.min(seed, amount)
+}
+
+// Refunds put the seed stake back. Payouts put back at most the stake; the profit stays earned.
+function seedRestoreAmount({ type, seedSpent, amount, stake, earnedOnly = false, grant = false }) {
+  if (earnedOnly) return 0
+  if (grant) return amount
+  const spent = Math.max(0, Number(seedSpent) || 0)
+  if (spent <= 0 || amount <= 0) return 0
+  if (String(type || '').endsWith('_refund')) return Math.min(spent, amount)
+  if (Number.isFinite(stake) && stake > 0) return Math.min(spent, stake, amount)
+  return 0
+}
+
+async function resolveSeedRestore(transaction, amount) {
+  if (isEarnedOnly(transaction)) return 0
+  if (SEED_GRANT_TYPES.has(transaction.type)) return amount
+  if (Number.isFinite(transaction.seedRestore)) {
+    return Math.max(0, Math.min(transaction.seedRestore, amount))
+  }
+  const fromKey = transaction.restoreSeedFromOperationKey
+  if (!fromKey) return 0
+  const debitTxn = await CoinTransaction.findOne({ operationKey: fromKey }).select('metadata').lean()
+  return seedRestoreAmount({
+    type: transaction.type,
+    seedSpent: debitTxn?.metadata?.seedSpent,
+    amount,
+    stake: Number(transaction.metadata?.stake),
+  })
+}
+
+function spendSeedPipeline(amount, extraSet = {}) {
+  const seedNow = {
+    $min: [
+      { $ifNull: ['$polites', 0] },
+      { $max: [0, { $ifNull: ['$seedPolites', 0] }] },
+    ],
+  }
+  return [
+    {
+      $set: {
+        ...extraSet,
+        seedSpentHold: { $min: [seedNow, amount] },
+        polites: { $subtract: [{ $ifNull: ['$polites', 0] }, amount] },
+        seedPolites: { $subtract: [seedNow, { $min: [seedNow, amount] }] },
+      },
+    },
+  ]
+}
+
+async function clearSeedHold(userId) {
+  await User.updateOne({ _id: userId }, { $unset: { seedSpentHold: 1 } })
+}
+
 // Đổi tên và trừ phí trên cùng document: lỗi/trùng tên không thể làm mất PC.
 async function chargeProfileRename(user, names) {
   const updated = await User.findOneAndUpdate(
@@ -52,29 +114,55 @@ async function chargeProfileRename(user, names) {
       displayName: user.displayName ?? null,
       polites: { $gte: 1000 },
     },
-    { $set: names, $inc: { polites: -1000 } },
-    { new: true, runValidators: true },
+    spendSeedPipeline(1000, names),
+    { new: true },
   )
-  if (updated) await recordTransaction(updated, -1000, {
-    type: 'profile_rename',
-    metadata: { previousUsername: user.username, previousDisplayName: user.displayName },
-  })
+  if (updated) {
+    const seedSpent = updated.seedSpentHold || 0
+    await clearSeedHold(user._id)
+    await recordTransaction(updated, -1000, {
+      type: 'profile_rename',
+      metadata: {
+        previousUsername: user.username,
+        previousDisplayName: user.displayName,
+        seedSpent,
+      },
+    })
+  }
   return updated
 }
 
+// House spends take seed first. PvP spends only polites minus seedPolites.
 async function debit(userId, amount, transaction = {}) {
   if (!Number.isFinite(amount) || amount <= 0) return null
 
+  const earnedOnly = isEarnedOnly(transaction)
   const updated = await User.findOneAndUpdate(
-    { _id: userId, polites: { $gte: amount } },
-    { $inc: { polites: -amount } },
+    earnedOnly
+      ? {
+        _id: userId,
+        $expr: {
+          $gte: [
+            { $subtract: [{ $ifNull: ['$polites', 0] }, { $ifNull: ['$seedPolites', 0] }] },
+            amount,
+          ],
+        },
+      }
+      : { _id: userId, polites: { $gte: amount } },
+    earnedOnly
+      ? { $inc: { polites: -amount } }
+      : spendSeedPipeline(amount),
     { new: true },
   )
 
-  if (updated) {
-    await recordTransaction(updated, -amount, transaction)
-  }
-
+  if (!updated) return null
+  const seedSpent = earnedOnly ? 0 : (updated.seedSpentHold || 0)
+  if (!earnedOnly) await clearSeedHold(userId)
+  updated.$locals.seedSpent = seedSpent
+  await recordTransaction(updated, -amount, {
+    ...transaction,
+    metadata: { ...(transaction.metadata || {}), seedSpent },
+  })
   return updated
 }
 
@@ -86,32 +174,76 @@ async function debitOnce(userId, amount, transaction = {}) {
   const operationKey = transaction.operationKey
   if (!Number.isFinite(amount) || amount <= 0 || !operationKey) return null
 
+  const earnedOnly = isEarnedOnly(transaction)
   const updated = await User.findOneAndUpdate(
-    {
-      _id: userId,
-      polites: { $gte: amount },
-      appliedCoinOperations: { $ne: operationKey },
-    },
-    {
-      $inc: { polites: -amount },
-      $addToSet: { appliedCoinOperations: operationKey },
-    },
+    earnedOnly
+      ? {
+        _id: userId,
+        appliedCoinOperations: { $ne: operationKey },
+        $expr: {
+          $gte: [
+            { $subtract: [{ $ifNull: ['$polites', 0] }, { $ifNull: ['$seedPolites', 0] }] },
+            amount,
+          ],
+        },
+      }
+      : {
+        _id: userId,
+        polites: { $gte: amount },
+        appliedCoinOperations: { $ne: operationKey },
+      },
+    earnedOnly
+      ? {
+        $inc: { polites: -amount },
+        $addToSet: { appliedCoinOperations: operationKey },
+      }
+      : spendSeedPipeline(amount, {
+        appliedCoinOperations: {
+          $concatArrays: [{ $ifNull: ['$appliedCoinOperations', []] }, [operationKey]],
+        },
+      }),
     { new: true },
   )
 
-  if (updated) await recordTransaction(updated, -amount, transaction)
+  if (!updated) return null
+  const seedSpent = earnedOnly ? 0 : (updated.seedSpentHold || 0)
+  if (!earnedOnly) await clearSeedHold(userId)
+  updated.$locals.seedSpent = seedSpent
+  await recordTransaction(updated, -amount, {
+    ...transaction,
+    metadata: { ...(transaction.metadata || {}), seedSpent },
+  })
   return updated
 }
 
 /**
  * Cộng PC (thắng cược, hoàn cược khi void...). Trả về User đã cập nhật.
  */
+function creditPipeline(amount, seedAdd, extraSet = {}) {
+  const nextPolites = { $add: [{ $ifNull: ['$polites', 0] }, amount] }
+  return [
+    {
+      $set: {
+        ...extraSet,
+        polites: nextPolites,
+        seedPolites: {
+          $min: [
+            nextPolites,
+            { $max: [0, { $add: [{ $ifNull: ['$seedPolites', 0] }, seedAdd] }] },
+          ],
+        },
+      },
+    },
+  ]
+}
+
 async function credit(userId, amount, transaction = {}) {
   if (!Number.isFinite(amount) || amount <= 0) return null
+  const seedAdd = await resolveSeedRestore(transaction, amount)
 
   const updated = await User.findByIdAndUpdate(
     userId,
-    { $inc: { polites: amount } },
+    creditPipeline(amount, seedAdd),
     { new: true },
   )
 
@@ -129,13 +261,15 @@ async function credit(userId, amount, transaction = {}) {
 async function creditOnce(userId, amount, transaction = {}) {
   const operationKey = transaction.operationKey
   if (!Number.isFinite(amount) || amount <= 0 || !operationKey) return null
+  const seedAdd = await resolveSeedRestore(transaction, amount)
 
   const updated = await User.findOneAndUpdate(
     { _id: userId, appliedCoinOperations: { $ne: operationKey } },
-    {
-      $inc: { polites: amount },
-      $addToSet: { appliedCoinOperations: operationKey },
-    },
+    creditPipeline(amount, seedAdd, {
+      appliedCoinOperations: {
+        $concatArrays: [{ $ifNull: ['$appliedCoinOperations', []] }, [operationKey]],
+      },
+    }),
     { new: true },
   )
 
@@ -153,6 +287,10 @@ async function creditLuckyRainOnce(userId, amount, transaction) {
     [
       { $set: {
         polites: { $add: [{ $ifNull: ['$polites', 0] }, amount] },
+        seedPolites: { $min: [
+          { $add: [{ $ifNull: ['$polites', 0] }, amount] },
+          { $add: [{ $ifNull: ['$seedPolites', 0] }, amount] },
+        ] },
         appliedCoinOperations: { $concatArrays: [
           { $ifNull: ['$appliedCoinOperations', []] }, [operationKey],
         ] },
@@ -376,7 +514,7 @@ async function claimDailyBonus(userId) {
       _id: userId,
       $or: [{ lastDailyBonusAt: null }, { lastDailyBonusAt: { $lt: startOfToday } }],
     },
-    { $inc: { polites: DAILY_BONUS }, $set: { lastDailyBonusAt: new Date() } },
+    { $inc: { polites: DAILY_BONUS, seedPolites: DAILY_BONUS }, $set: { lastDailyBonusAt: new Date() } },
     { new: true },
   )
 
@@ -756,6 +894,9 @@ module.exports = {
   creditWordChainRewardOnce,
   creditRedLightRewardOnce,
   recordTransaction,
+  earnedBalance,
+  seedSpentAmount,
+  seedRestoreAmount,
   claimDailyBonus,
   getLeaderboard,
   getEconomyStats,

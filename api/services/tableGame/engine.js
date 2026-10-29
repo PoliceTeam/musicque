@@ -195,8 +195,8 @@ const createTableGameService = (definition) => {
       table.startError = null
       if (seat.ready !== value) {
         if (value && table.stake && table.seats.filter(Boolean).length >= 2) {
-          const user = await User.findById(seat.userId).select('polites').lean()
-          if ((user?.polites || 0) < table.stake) throw new TableGameError('Not enough coins for this stake', 409, 'INSUFFICIENT_COINS')
+          const user = await User.findById(seat.userId).select('polites seedPolites').lean()
+          if (coins.earnedBalance(user) < table.stake) throw new TableGameError('Not enough earned coins for this stake', 409, 'INSUFFICIENT_COINS')
         }
         seat.ready = value
         seat.idleDeadlineAt = Date.now() + idleSeatMs
@@ -218,8 +218,8 @@ const createTableGameService = (definition) => {
       if (table.match || table.fundingMatch || table.startsAt) throw new TableGameError('Table is busy', 409, 'TABLE_BUSY')
       if (!allReady(table)) throw new TableGameError('Players are not ready', 409, 'NOT_ALL_READY')
       if (table.stake && table.seats.filter(Boolean).length >= 2) {
-        const user = await User.findById(userId).select('polites').lean()
-        if ((user?.polites || 0) < table.stake) throw new TableGameError('Not enough coins for this stake', 409, 'INSUFFICIENT_COINS')
+        const user = await User.findById(userId).select('polites seedPolites').lean()
+        if (coins.earnedBalance(user) < table.stake) throw new TableGameError('Not enough earned coins for this stake', 409, 'INSUFFICIENT_COINS')
       }
       touchSeat(table, userId)
       table.startError = null
@@ -441,7 +441,7 @@ const createTableGameService = (definition) => {
       const game = await Game.create({ game: name, tableId: table.tableId, visibility: table.visibility, createdBy: table.createdBy, status: 'aborted', fundingPending: true, seats, state, stake: humanCount >= 2 ? table.stake : 0, tableStake: table.stake, hostId: table.hostId, humanCount, startRequestKey: requestKey })
       table.fundingMatch = game
       try {
-        for (const seat of seats.filter((s) => s.userId)) if (game.stake && !await coins.debitOnce(seat.userId, game.stake, transaction(game, seat, 'stake'))) throw new TableGameError(`Insufficient coins for ${seat.username}`, 409, 'INSUFFICIENT_COINS')
+        for (const seat of seats.filter((s) => s.userId)) if (game.stake && !await coins.debitOnce(seat.userId, game.stake, transaction(game, seat, 'stake'))) throw new TableGameError(`Insufficient earned coins for ${seat.username}`, 409, 'INSUFFICIENT_COINS')
         table.match = await Game.findOneAndUpdate({ _id: game._id, fundingPending: true }, { $set: { status: 'playing', fundingPending: false, turnDeadlineAt: new Date(Date.now() + turnMs) } }, { new: true }).lean()
         table.fundingMatch = null
       } catch (error) {

@@ -94,6 +94,7 @@ exports.register = async ({ username, password, displayName, deviceId }) => {
     })
     welcomeGrant = grant.granted
     user.polites = welcomeGrant ? SIGNUP_START_BALANCE : 0
+    user.seedPolites = welcomeGrant ? SIGNUP_START_BALANCE : 0
     // Tài khoản phụ không được nhận thêm daily bonus ngay trong ngày đăng ký.
     user.lastDailyBonusAt = welcomeGrant ? null : new Date()
   }

@@ -70,6 +70,7 @@ const voidPendingRounds = async (sid) => {
           referenceType: 'GameRound',
           referenceId: round._id,
           metadata: { reason: 'resume_pending_round' },
+          restoreSeedFromOperationKey: `chohan_bet:${round._id}:${bet.userId}`,
         })
         bet.settled = true
         bet.payout = bet.amount
@@ -140,6 +141,7 @@ const settleRound = async (round) => {
           side: bet.side,
           result: round.result,
         },
+        restoreSeedFromOperationKey: `chohan_bet:${round._id}:${bet.userId}`,
       })
     } else {
       bet.won = false
@@ -199,6 +201,7 @@ const stopGame = async ({ reason = 'session_ended' } = {}) => {
             referenceType: 'GameRound',
             referenceId: round._id,
             metadata: { reason },
+            restoreSeedFromOperationKey: `chohan_bet:${round._id}:${bet.userId}`,
           }) // hoàn cược chưa chốt
           bet.settled = true
           bet.payout = bet.amount
@@ -271,6 +274,7 @@ const placeBet = async ({ user, side, amount }) => {
       referenceType: 'GameRound',
       referenceId: round._id,
       metadata: { reason: 'bet_placement_race' },
+      restoreSeedFromOperationKey: `chohan_bet:${round._id}:${user._id}`,
     }) // hoàn tiền nếu lỡ nhịp
     throw httpError(409, 'Không đặt được cược (hết giờ hoặc đã cược), đã hoàn PC')
   }

@@ -209,10 +209,11 @@ const ensureFree = async (userId) => {
   if (active) throw new JungleError('Bạn đang có một ván Cờ thú chưa xong', 409, 'ALREADY_IN_GAME')
 }
 
+const earnedStakeMessage = (stake) => `Cần ít nhất ${stake} PC kiếm được để vào bàn. PC tặng lúc đăng ký và điểm danh không dùng được để đấu người`
 const ensureBalance = async (userId, stake) => {
-  const user = await User.findById(userId).select('polites').lean()
-  if ((user?.polites ?? 0) < stake) {
-    throw new JungleError(`Cần ít nhất ${stake} PC để vào bàn`, 409, 'INSUFFICIENT_BALANCE')
+  const user = await User.findById(userId).select('polites seedPolites').lean()
+  if (coins.earnedBalance(user) < stake) {
+    throw new JungleError(earnedStakeMessage(stake), 409, 'INSUFFICIENT_BALANCE')
   }
 }
 
@@ -375,7 +376,7 @@ const joinGame = async (user, gameId) => {
   if (!await debit(claimed.guest)) {
     await JungleGame.updateOne({ _id: claimed._id, status: 'starting' }, { $set: { status: 'waiting' }, $unset: { guest: 1 } })
     broadcastLobby()
-    throw new JungleError(`Cần ít nhất ${claimed.stake} PC để vào bàn`, 409, 'INSUFFICIENT_BALANCE')
+    throw new JungleError(earnedStakeMessage(claimed.stake), 409, 'INSUFFICIENT_BALANCE')
   }
   if (!await debit(claimed.host)) {
     const aborted = await abortStarting(claimed)

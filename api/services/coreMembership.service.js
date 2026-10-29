@@ -86,6 +86,12 @@ async function purchase(user, requestKey) {
   }
 
   const expiresAt = new Date(now.getTime() + CORE_DURATION_MS)
+  const seedNow = {
+    $min: [
+      { $ifNull: ['$polites', 0] },
+      { $max: [0, { $ifNull: ['$seedPolites', 0] }] },
+    ],
+  }
   const debited = await User.findOneAndUpdate(
     {
       _id: user._id,
@@ -96,14 +102,18 @@ async function purchase(user, requestKey) {
         { coreExpiresAt: { $lte: now } },
       ],
     },
-    {
-      $inc: { polites: -CORE_PRICE },
-      $set: {
-        coreStartedAt: now,
-        coreExpiresAt: expiresAt,
-        coreLastPurchaseId: membership._id,
+    [
+      {
+        $set: {
+          coreStartedAt: now,
+          coreExpiresAt: expiresAt,
+          coreLastPurchaseId: membership._id,
+          seedSpentHold: { $min: [seedNow, CORE_PRICE] },
+          polites: { $subtract: [{ $ifNull: ['$polites', 0] }, CORE_PRICE] },
+          seedPolites: { $subtract: [seedNow, { $min: [seedNow, CORE_PRICE] }] },
+        },
       },
-    },
+    ],
     { new: true },
   )
 
@@ -117,11 +127,14 @@ async function purchase(user, requestKey) {
     throw new CoreError(409, 'Core của bạn vẫn còn hiệu lực', 'CORE_ALREADY_ACTIVE')
   }
 
+  const seedSpent = debited.seedSpentHold || 0
+  await User.updateOne({ _id: user._id }, { $unset: { seedSpentHold: 1 } })
   await coins.recordTransaction(debited, -CORE_PRICE, {
     type: 'core_purchase',
     operationKey: `core:purchase:${membership._id}`,
     referenceType: 'CoreMembership',
     referenceId: membership._id,
+    metadata: { seedSpent },
   })
 
   const rewarded = await coins.creditOnce(user._id, CORE_BONUS, {

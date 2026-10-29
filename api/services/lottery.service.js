@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const axios = require('axios')
 const cheerio = require('cheerio')
 const LotteryDraw = require('../models/lotteryDraw.model')
@@ -251,6 +252,7 @@ const settleDraw = async (draw) => {
           hitCount,
           stake: bet.amount,
         },
+        restoreSeedFromOperationKey: `lottery_stake:${bet._id}`,
       })
 
       // Chi day activity khi TRUNG — tao hype, khong lo so cua nguoi khac.
@@ -345,6 +347,7 @@ const refundDraw = async (draw, reason = 'no_result') => {
       referenceType: 'LotteryBet',
       referenceId: bet._id,
       metadata: { dateKey: draw.dateKey, reason },
+      restoreSeedFromOperationKey: `lottery_stake:${bet._id}`,
     })
   }
   draw.status = 'settled'
@@ -505,9 +508,11 @@ const placeBet = async ({ user, betType, numbers, amount }) => {
     throw httpError(400, 'Đã quá 18:00 — hết giờ đặt cược hôm nay')
   }
 
-  // Tru PC nguyen tu truoc
+  const betId = new mongoose.Types.ObjectId()
+  const stakeKey = `lottery_stake:${betId}`
   const debited = await coinsService.debit(user._id, stake, {
     type: 'lottery_bet',
+    operationKey: stakeKey,
     referenceType: 'LotteryDraw',
     referenceId: draw._id,
     metadata: { dateKey: draw.dateKey, betType, numbers: normalized },
@@ -517,6 +522,7 @@ const placeBet = async ({ user, betType, numbers, amount }) => {
   let bet
   try {
     bet = await LotteryBet.create({
+      _id: betId,
       userId: user._id,
       username: user.username,
       displayName: user.displayName || user.username,
@@ -527,13 +533,13 @@ const placeBet = async ({ user, betType, numbers, amount }) => {
       multiplier: MULTIPLIERS[betType],
     })
   } catch (error) {
-    // Ghi ve that bai → hoan lai PC vua tru
     await coinsService.credit(user._id, stake, {
       type: 'lottery_refund',
-      operationKey: `lottery_refund:place:${user._id}:${Date.now()}`,
+      operationKey: `lottery_refund:place:${betId}`,
       referenceType: 'LotteryDraw',
       referenceId: draw._id,
       metadata: { dateKey: draw.dateKey, reason: 'place_failed' },
+      restoreSeedFromOperationKey: stakeKey,
     })
     throw httpError(500, 'Không đặt được cược, đã hoàn PC')
   }

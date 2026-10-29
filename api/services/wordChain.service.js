@@ -380,6 +380,7 @@ const refundMoves = async (round, reason) => {
       referenceType: 'WordChainRound',
       referenceId: round._id,
       metadata: { reason, phrase: move.phrase },
+      restoreSeedFromOperationKey: `wordchain:answer:${round._id}:${move.requestKey}`,
     })
   }
 }
@@ -660,6 +661,7 @@ const submitAnswerInternal = async ({ user, phrase, requestKey }) => {
       referenceType: 'WordChainRound',
       referenceId: round._id,
       metadata: { reason: 'answer_race', phrase: dictionaryEntry.phrase },
+      restoreSeedFromOperationKey: debitOperationKey,
     })
     throw new WordChainError('Đã có người trả lời trước, 1 PC đã được hoàn', 409, 'ANSWER_RACE')
   }

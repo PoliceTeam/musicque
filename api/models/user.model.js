@@ -70,6 +70,16 @@ const userSchema = new mongoose.Schema({
     default: 100,
     min: 0,
   },
+  // Signup grant and daily bonus. This slice cannot be staked against another player.
+  seedPolites: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  // Scratch value from the latest house debit. Overwritten each spend and cleared after the ledger row is written.
+  seedSpentHold: {
+    type: Number,
+  },
   // Mốc lần cuối nhận thưởng đăng nhập ngày (so theo ngày lịch của server)
   lastDailyBonusAt: {
     type: Date,
@@ -205,6 +215,7 @@ userSchema.methods.toPublicJSON = function () {
     color: this.color,
     avatarId: this.avatarId || getStableAvatarId(this._id?.toString() || this.username),
     polites: this.polites ?? 0,
+    seedPolites: this.seedPolites ?? 0,
     core: getCoreProfile(this),
   }
 }

@@ -278,8 +278,10 @@ const placeBet = async ({ user, gameId, shotIndex, outcome, pocket, amount }) =>
     )
   }
 
+  const stakeKey = `billiards_stake:${game._id}:${shot.index}:${user._id}`
   const debited = await coins.debit(user._id, stake, {
     type: 'billiards_bet',
+    operationKey: stakeKey,
     referenceType: 'BilliardsGame',
     referenceId: game._id,
     metadata: { shotIndex: shot.index, outcome, pocket: wantPocket, odds: option.odds },
@@ -306,6 +308,7 @@ const placeBet = async ({ user, gameId, shotIndex, outcome, pocket, amount }) =>
       referenceType: 'BilliardsGame',
       referenceId: game._id,
       metadata: { reason: 'create_failed', shotIndex: shot.index },
+      restoreSeedFromOperationKey: stakeKey,
     })
     if (error?.code === 11000) throw err(409, 'Bạn đã đặt kèo cho cơ này rồi')
     throw error
@@ -348,6 +351,7 @@ const settleBets = async (game) => {
         referenceType: 'BilliardsGame',
         referenceId: game._id,
         metadata: { reason: 'shot_missing', shotIndex: bet.shotIndex },
+        restoreSeedFromOperationKey: `billiards_stake:${bet.gameId}:${bet.shotIndex}:${bet.userId}`,
       })
       bet.set({ settled: true, won: false, payout: bet.amount, settledAt: new Date() })
       await bet.save()
@@ -367,7 +371,8 @@ const settleBets = async (game) => {
         type: 'billiards_payout',
         referenceType: 'BilliardsGame',
         referenceId: game._id,
-        metadata: { shotIndex: bet.shotIndex, outcome: bet.outcome, pocket: bet.pocket },
+        metadata: { shotIndex: bet.shotIndex, outcome: bet.outcome, pocket: bet.pocket, stake: bet.amount },
+        restoreSeedFromOperationKey: `billiards_stake:${bet.gameId}:${bet.shotIndex}:${bet.userId}`,
       })
     }
 
