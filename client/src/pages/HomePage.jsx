@@ -5,6 +5,7 @@ import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
+import HallPromo from '../components/Home/HallPromo';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
 import { useHandoffEntry } from '../components/Auth/useHandoffEntry';
@@ -375,6 +376,7 @@ const HomePage = () => {
             <DailyIdiom />
             {/* Form thêm bài gộp vào đầu khung Hàng chờ; danh sách cuộn bên trong để lưới game luôn lộ ra */}
             <PlaylistView className="sp-queue" composer={<AddSongForm variant="inline" />} />
+            <HallPromo />
             {/* Thẻ game chuyển từ sidebar sang đây để sidebar còn chỗ cho Phòng chat */}
             <section className="sp-games" aria-label="Trò chơi">
               <IceCityPromo onPlay={() => farm.enter('musicque-farm')} playHref={!user ? '/farm' : undefined} />
