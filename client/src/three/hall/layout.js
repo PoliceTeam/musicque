@@ -9,7 +9,7 @@ export const PITCH_MAX = 0.31
 export const DIST_MIN = 2.2
 export const DIST_MAX = 14
 export const DANCE_BPM = 108
-export const INCENSE_RANGE = 1.9
+export const INCENSE_RANGE = 2
 export const DEFAULT_INCENSE = { x: 0, z: 9 }
 
 // Chánh điện: sàn nâng, tường ba phía, mặt trước mở cửa giữa.

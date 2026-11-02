@@ -26,6 +26,23 @@ const socketFixture = (connected = false) => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs() })
 
 describe('vòng đời kết nối sảnh', () => {
+  it('giữ phiên khách qua reconnect và báo riêng lỗi mất kết nối', async () => {
+    const socket = socketFixture(true)
+    socket.emit.mockImplementation((event, data, ack) => {
+      if (event === 'hall:join') ack?.(null, { ok: true, id: 'me', room: 'chung' })
+    })
+    const net = await connectHall({ socket, room: 'chung', name: 'An' })
+    const first = socket.emit.mock.calls.find(([event]) => event === 'hall:join')[1]
+    expect(first.sessionId).toMatch(/^[a-z0-9-]{36}$/i)
+    socket.fire('connect')
+    const joins = socket.emit.mock.calls.filter(([event]) => event === 'hall:join')
+    expect(joins.at(-1)[1].sessionId).toBe(first.sessionId)
+    socket.connected = false
+    const callback = vi.fn()
+    net.emit('hall:incense', {}, callback)
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({ ok: false, code: 'connection', error: expect.any(String) }))
+    net.dispose()
+  })
   it('hết giờ chờ báo lỗi, gỡ join đang chờ và không tạo phòng giả lập', async () => {
     vi.useFakeTimers()
     const socket = socketFixture()

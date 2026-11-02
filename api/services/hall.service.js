@@ -5,7 +5,10 @@ const TICK_MS = 100
 const INCENSE_POSITION = { x: 0, z: 9 }
 const cushions = Array.from({ length: CAPACITY }, (_, id) => ({ id, x: (id % 10 - 4.5) * 1.6, z: (Math.floor(id / 10) - 4.5) * 1.4 }))
 // shortcut: trạng thái chỉ thuộc một tiến trình, cần kho chung trước khi chạy nhiều replica API.
-const createStore = () => ({ rooms: new Map(), seats: new Map(), limits: new Map(), nextWait: 0, incense: new Map(), nextIncense: 0 })
+const createStore = () => ({ rooms: new Map(), seats: new Map(), limits: new Map(), nextWait: 0, incense: new Map(), nextIncense: 0, incenseLimits: new Map() })
+const pruneIncenseLimits = (store, now) => {
+  for (const [key, until] of store.incenseLimits) if (until <= now) store.incenseLimits.delete(key)
+}
 const roomId = (raw) => typeof raw === 'string' ? raw.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 32) || 'chung' : 'chung'
 const position = (value) => value && Number.isFinite(value.x) && Number.isFinite(value.z)
   && Math.abs(value.x) <= 30 && Math.abs(value.z) <= 30
@@ -27,28 +30,29 @@ const leave = (store, socketId) => {
   store.seats.delete(socketId)
   const room = store.rooms.get(person.room)
   room.delete(socketId)
-  if (!room.size) { store.rooms.delete(person.room); store.incense.delete(person.room) }
+  if (!room.size) store.rooms.delete(person.room)
   else fill(store, person.room)
   return person.room
 }
-const join = (store, socketId, rawRoom, name, now, spawn) => {
+const join = (store, socketId, rawRoom, name, now, spawn, incenseKey = socketId) => {
+  pruneIncenseLimits(store, now)
   const room = roomId(rawRoom)
   const previous = store.seats.get(socketId)
   if (previous?.room === room) return null
   leave(store, socketId)
   const id = createHash('sha256').update(socketId).digest('hex').slice(0, 10)
   const person = { id, room, name: typeof name === 'string' && name.trim() ? name.trim().replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 32) : `Khách ${id.slice(0, 4)}`,
-    since: now, active: now, x: position(spawn) ? spawn.x : 0, z: position(spawn) ? spawn.z : 10,
+    incenseKey, since: now, active: now, x: position(spawn) ? spawn.x : 0, z: position(spawn) ? spawn.z : 10,
     rotation: 0, pose: 'standing', poseUntil: null, cushionId: null, waiting: false, beads: 0 }
   if (!store.rooms.has(room)) store.rooms.set(room, new Map())
   store.rooms.get(room).set(socketId, person)
   store.seats.set(socketId, person)
-  store.limits.set(socketId, { move: now - TICK_MS, bead: -Infinity, incense: -Infinity, pings: [] })
+  store.limits.set(socketId, { move: now - TICK_MS, bead: -Infinity, pings: [] })
   assign(store, person)
   if (person.waiting) person.waitOrder = ++store.nextWait
   return previous?.room || null
 }
-const people = (store, room) => [...getRoom(store, room).values()].map(({ waitOrder, returnPose, ...p }) => ({ ...p }))
+const people = (store, room) => [...getRoom(store, room).values()].map(({ waitOrder, returnPose, incenseKey, ...p }) => ({ ...p }))
 const state = (store, room, now) => {
   const list = people(store, room)
   return { room, capacity: CAPACITY, count: list.length, occupied: list.filter((p) => p.cushionId !== null).length,
@@ -126,15 +130,21 @@ const bead = (store, socketId, now) => {
   p.active = now
   return p.room
 }
-const lightIncense = (store, socketId, now) => {
+const incenseError = (store, socketId, now) => {
   const p = store.seats.get(socketId)
-  if (!p || Math.hypot(p.x - INCENSE_POSITION.x, p.z - INCENSE_POSITION.z) > 2
-    || now - store.limits.get(socketId).incense < 60000) return null
+  if (!p) return { code: 'not_joined', error: 'Bạn cần vào sảnh trước khi dâng hương.' }
+  if (Math.hypot(p.x - INCENSE_POSITION.x, p.z - INCENSE_POSITION.z) > 2) return { code: 'too_far', error: 'Hãy tới gần lư hương hơn để dâng hương.' }
+  const retryAfterMs = (store.incenseLimits.get(p.incenseKey) || 0) - now
+  if (retryAfterMs > 0) return { code: 'cooldown', retryAfterMs, error: `Hãy chờ ${Math.ceil(retryAfterMs / 1000)} giây trước khi dâng tiếp.` }
+  return null
+}
+const lightIncense = (store, socketId, now) => {
+  if (incenseError(store, socketId, now)) return null
+  const p = store.seats.get(socketId)
   const current = (store.incense.get(p.room) || []).filter((i) => now - i.at < 600000)
-  if (current.length >= 12) return null
   current.push({ id: (++store.nextIncense).toString(36), by: p.id, name: p.name, at: now })
-  store.incense.set(p.room, current)
-  store.limits.get(socketId).incense = now
+  store.incense.set(p.room, current.slice(-12))
+  store.incenseLimits.set(p.incenseKey, now + 60000)
   p.active = now
   return p.room
 }
@@ -149,6 +159,7 @@ const ping = (store, socketId, data, now) => {
   return { room: p.room, ping: { by: p.id, name: p.name, kind: data.kind, x: data.x, z: data.z, at: now } }
 }
 const tick = (store, now) => {
+  pruneIncenseLimits(store, now)
   const changed = new Set()
   for (const [socketId, p] of store.seats) if (p.poseUntil !== null && p.poseUntil <= now) {
     pose(store, socketId, 'restore', now)
@@ -165,4 +176,4 @@ const tick = (store, now) => {
   return changed
 }
 
-module.exports = { CAPACITY, TICK_MS, createStore, roomId, join, leave, people, state, rooms, release, claim, move, pose, bead, tick, lightIncense, ping, store: createStore() }
+module.exports = { CAPACITY, TICK_MS, createStore, roomId, join, leave, people, state, rooms, release, claim, move, pose, bead, tick, lightIncense, incenseError, ping, store: createStore() }

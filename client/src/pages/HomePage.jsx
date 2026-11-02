@@ -336,6 +336,7 @@ const HomePage = () => {
             </div>
           </SidebarNav>
 
+          <HallPromo />
           <ChatBox className="chat-room--sidebar" />
         </aside>
 
@@ -376,7 +377,6 @@ const HomePage = () => {
             <DailyIdiom />
             {/* Form thêm bài gộp vào đầu khung Hàng chờ; danh sách cuộn bên trong để lưới game luôn lộ ra */}
             <PlaylistView className="sp-queue" composer={<AddSongForm variant="inline" />} />
-            <HallPromo />
             {/* Thẻ game chuyển từ sidebar sang đây để sidebar còn chỗ cho Phòng chat */}
             <section className="sp-games" aria-label="Trò chơi">
               <IceCityPromo onPlay={() => farm.enter('musicque-farm')} playHref={!user ? '/farm' : undefined} />

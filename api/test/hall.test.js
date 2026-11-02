@@ -91,6 +91,8 @@ test('dâng hương gần lư, giới hạn 60 giây và tự hết sau 10 phút
   const s = hall.createStore()
   hall.join(s, 'a', 'chung', 'An', 0, { x: 0, z: 9 })
   hall.join(s, 'b', 'chung', 'Bình', 0, { x: 20, z: 20 })
+  assert.equal(hall.incenseError(s, 'chua-vao', 0).code, 'not_joined')
+  assert.equal(hall.incenseError(s, 'b', 0).code, 'too_far')
   assert.equal(hall.lightIncense(s, 'b', 0), null)
   assert.equal(hall.lightIncense(s, 'a', 0), 'chung')
   assert.equal(hall.lightIncense(s, 'a', 59999), null)
@@ -102,6 +104,45 @@ test('dâng hương gần lư, giới hạn 60 giây và tự hết sau 10 phút
   assert.equal(hall.state(s, 'chung', 660000).incense.length, 0)
   hall.leave(s, 'a'); hall.leave(s, 'b')
   assert.equal(s.incense.size, 0)
+})
+
+test('cooldown dâng hương giữ qua reconnect và đổi phòng của cùng một phiên', () => {
+  const s = hall.createStore()
+  hall.join(s, 'a', 'chung', 'An', 0, undefined, 'user:an')
+  assert.equal(hall.lightIncense(s, 'a', 0), 'chung')
+  hall.leave(s, 'a')
+  hall.join(s, 'b', 'khac', 'An', 1000, undefined, 'user:an')
+  assert.equal(hall.lightIncense(s, 'b', 1000), null)
+  assert.equal(hall.lightIncense(s, 'b', 60000), 'khac')
+  assert.equal('incenseKey' in hall.people(s, 'khac')[0], false)
+  hall.tick(s, 120000)
+  assert.equal(s.incenseLimits.size, 0)
+})
+
+test('hương còn cháy không mất khi người cuối rời rồi vào lại, hết 10 phút mới dọn', () => {
+  const s = hall.createStore()
+  hall.join(s, 'a', 'chung', 'An', 0)
+  hall.lightIncense(s, 'a', 0)
+  hall.leave(s, 'a')
+  assert.equal(s.rooms.size, 0)
+  assert.equal(hall.state(s, 'chung', 1000).incense.length, 1)
+  hall.join(s, 'b', 'chung', 'An', 1000)
+  assert.equal(hall.state(s, 'chung', 1000).incense.length, 1)
+  hall.leave(s, 'b')
+  hall.tick(s, 600000)
+  assert.equal(s.incense.size, 0)
+})
+
+test('người thứ 13 vẫn dâng được, lư chỉ hiển thị 12 nén mới nhất', () => {
+  const s = hall.createStore()
+  for (let i = 0; i < 13; i++) {
+    hall.join(s, String(i), 'chung', `Khách ${i}`, i)
+    assert.equal(hall.lightIncense(s, String(i), i), 'chung')
+  }
+  const live = hall.state(s, 'chung', 13).incense
+  assert.equal(live.length, 12)
+  assert.equal(live[0].name, 'Khách 1')
+  assert.equal(live[11].name, 'Khách 12')
 })
 
 test('snapshot tách khỏi dữ liệu thật và mã phòng được chuẩn hóa', () => {
@@ -192,6 +233,11 @@ test('hai socket thật nhận nệm, tư thế, hạt, nhang, nhịp 10Hz và d
   const incense = event(b, 'hall:state', (s) => s.incense.length === 1)
   a.emit('hall:incense')
   await incense
+  const denied = await new Promise((resolve) => a.emit('hall:incense', {}, resolve))
+  assert.equal(denied.ok, false)
+  assert.equal(denied.code, 'cooldown')
+  assert.match(denied.error, /giây/)
+  assert.ok(denied.retryAfterMs > 0 && denied.retryAfterMs <= 60000)
   const left = event(b, 'hall:state', (s) => s.count === 1)
   a.disconnect()
   await left
@@ -249,4 +295,23 @@ test('vào sảnh bằng cookie SSO dùng username đã xác thực, bỏ tên t
   t.after(() => handlers.disconnect())
   await handlers['hall:join']({ room: 'sso-test', name: 'Tên giả từ client' })
   assert.equal(hall.people(hall.store, 'sso-test')[0].name, 'sso_lan')
+  assert.equal(hall.store.seats.get(socket.id).incenseKey, 'user:sso_lan')
+})
+
+test('socket khách reconnect giữ cooldown theo phiên và không gửi khóa phiên cho người khác', async (t) => {
+  const nsp = { to: () => ({ emit() {} }) }
+  const sessionId = '11111111-1111-4111-8111-111111111111'
+  for (const id of ['guest-before', 'guest-after']) {
+    const handlers = {}
+    const socket = { id, connected: true, handshake: { headers: {} }, nsp,
+      on: (name, fn) => { handlers[name] = fn }, emit() {}, join() {}, leave() {} }
+    require('../sockets/hall.socket')(socket)
+    t.after(() => handlers.disconnect())
+    await handlers['hall:join']({ room: 'guest-reconnect-test', sessionId })
+    const response = await new Promise((resolve) => handlers['hall:incense']({}, resolve))
+    assert.equal(response.ok, id === 'guest-before')
+    if (id === 'guest-after') assert.equal(response.code, 'cooldown')
+    assert.equal('incenseKey' in hall.people(hall.store, 'guest-reconnect-test')[0], false)
+    handlers.disconnect()
+  }
 })

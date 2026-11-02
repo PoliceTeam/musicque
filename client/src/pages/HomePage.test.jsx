@@ -37,10 +37,10 @@ it('keeps the quick-toys row in the sidebar and the game banners in the main col
 })
 
 
-it('hiện banner sảnh thiền ở cột chính và cho khách mở /hall', () => {
+it('đặt thẻ sảnh thiền ở sidebar và cho khách mở /hall', () => {
   const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
   const banner = screen.getByRole('link', { name: 'Vào sảnh thiền' })
   expect(banner).toHaveAttribute('href', '/hall')
-  expect(container.querySelector('.sp-main')).toContainElement(banner)
-  expect(banner).toHaveTextContent('Một khoảng lặng giữa ngày.')
+  expect(container.querySelector('.sp-sidebar')).toContainElement(banner)
+  expect(container.querySelector('.sp-main')).not.toContainElement(banner)
 })

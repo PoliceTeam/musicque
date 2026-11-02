@@ -179,11 +179,11 @@ const HallPage = () => {
     else if (action === 'beads') openPanel('beads')
     else if (action === 'moktak') openPanel('moktak')
     else if (action === 'incense') {
-      engine.offerIncense((ok) => {
-        if (ok) {
+      engine.offerIncense((result) => {
+        if (result?.ok) {
           audioRef.current?.bell()
           showToast('Đã dâng một nén hương.')
-        } else showToast('Hương vừa thắp còn cháy. Đợi một lát rồi dâng tiếp.')
+        } else showToast(result?.error || 'Chưa dâng được hương. Vui lòng thử lại.')
       })
     }
   }, [openPanel, showToast])

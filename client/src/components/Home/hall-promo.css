@@ -5,37 +5,25 @@
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  min-height: 218px;
-  padding: 26px 30px;
+  min-height: 112px;
+  padding: 16px 18px;
   overflow: hidden;
   border: 1px solid #82946b66;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #202b22;
   color: #f5edda;
   text-decoration: none;
-  box-shadow: 0 8px 28px #18271b12;
-  transition: border-color .2s ease, box-shadow .2s ease;
+  transition: border-color .2s ease;
 }
-.hall-promo:hover { color: #f5edda; border-color: #c0a66f; box-shadow: 0 10px 30px #18271b25; }
+.hall-promo:hover { color: #f5edda; border-color: #c0a66f; }
 .hall-promo:focus-visible { outline: 3px solid #9b7b45; outline-offset: 3px; }
-.hall-promo__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform .6s ease; }
-.hall-promo:hover .hall-promo__art { transform: scale(1.025); }
-.hall-promo__veil { position: absolute; inset: 0; background: linear-gradient(90deg, #1d2a22 0%, #1d2a22ed 28%, #1d2a2299 46%, #1d2a2210 75%); }
-.hall-promo__copy { position: relative; max-width: 57%; }
-.hall-promo__eyebrow { display: block; margin-bottom: 10px; color: #d6bd8c; font-size: 10px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; }
-.hall-promo__title { max-width: 16ch; margin: 0; color: #f5edda; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(27px, 2.3vw, 36px); font-weight: 400; line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; }
-.hall-promo__description { display: block; margin-top: 10px; color: #cfdbcb; font-size: 12px; line-height: 1.5; }
-.hall-promo__cta { display: inline-flex; align-items: center; gap: 18px; margin-top: 18px; padding: 9px 14px; border: 1px solid #e8d0a0; border-radius: 7px; background: #ecd7ad; color: #293b2b; font-size: 11px; font-weight: 750; }
-.hall-promo__cta > span { font-size: 16px; line-height: 1; }
-.hall-promo__note { position: absolute; right: 18px; bottom: 14px; color: #efe5d4; font-family: Georgia, 'Times New Roman', serif; font-size: 11px; font-style: italic; text-shadow: 0 1px 7px #17251d; }
-@media (max-width: 640px) {
-  .hall-promo { min-height: 206px; padding: 22px; }
-  .hall-promo__copy { max-width: 65%; }
-  .hall-promo__title { font-size: 28px; }
-  .hall-promo__description { max-width: 22ch; }
-  .hall-promo__note { display: none; }
-}
+.hall-promo__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% center; }
+.hall-promo__veil { position: absolute; inset: 0; background: linear-gradient(90deg, #1d2a22 0%, #1d2a22df 35%, #1d2a2230 100%); }
+.hall-promo__copy { position: relative; }
+.hall-promo__title { margin: 0; color: #f5edda; font-family: Georgia, 'Times New Roman', serif; font-size: 23px; font-weight: 400; line-height: 1.15; }
+.hall-promo__description { display: block; margin-top: 5px; color: #cfdbcb; font-size: 11px; line-height: 1.5; }
+.hall-promo__cta { display: inline-flex; align-items: center; gap: 12px; margin-top: 9px; color: #ecd7ad; font-size: 11px; font-weight: 700; }
+.hall-promo__cta > span { font-size: 15px; line-height: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .hall-promo, .hall-promo__art { transition: none; }
-  .hall-promo:hover .hall-promo__art { transform: none; }
+  .hall-promo { transition: none; }
 }

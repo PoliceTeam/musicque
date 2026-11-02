@@ -4,6 +4,18 @@ import { CUSHIONS, DEFAULT_INCENSE, makeNickname } from './layout.js'
 
 const JOIN_TIMEOUT = 3000
 const CONNECTION_ERROR = 'Không kết nối được sảnh. Vui lòng thử lại.'
+const CONNECTION_FAILURE = { ok: false, code: 'connection', error: CONNECTION_ERROR }
+let sessionId
+// shortcut: khách có thể tạo phiên mới bằng cách xóa lưu trữ; cần đăng nhập nếu phải chống lách giới hạn.
+const getSessionId = () => {
+  if (sessionId) return sessionId
+  try { sessionId = localStorage.getItem('musicque_hall_session') } catch { /* Trình duyệt có thể chặn lưu trữ. */ }
+  if (!/^[a-z0-9-]{36}$/i.test(sessionId || '')) {
+    sessionId = Array.from(crypto.getRandomValues(new Uint8Array(18)), (v) => v.toString(16).padStart(2, '0')).join('')
+    try { localStorage.setItem('musicque_hall_session', sessionId) } catch { /* Giữ phiên trong bộ nhớ khi không lưu được. */ }
+  }
+  return sessionId
+}
 
 export const connectHall = ({ socket, room, name, token, mockBots = 14, forceMock = false }) => {
   const listeners = new Set()
@@ -18,20 +30,21 @@ export const connectHall = ({ socket, room, name, token, mockBots = 14, forceMoc
   }
   if (forceMock && import.meta.env.DEV) return Promise.resolve(startMock())
   if (!socket) return Promise.reject(new Error(CONNECTION_ERROR))
+  const joinData = { room, name, token, sessionId: getSessionId() }
 
   return new Promise((resolve, reject) => {
     let settled = false
     const onState = (s) => { if (s && s.room === net.room) emitState(s) }
     const onYou = (data) => { if (data?.id) net.selfId = data.id }
-    const rejoin = () => socket.emit('hall:join', { room, name, token })
+    const rejoin = () => socket.emit('hall:join', joinData)
     const finishLive = (ack) => {
       settled = true
       net.selfId = ack.id || net.selfId
       net.room = ack.room || room
       net.mode = 'live'
       net.emit = (event, data = {}, cb) => {
-        if (!socket.connected) return cb?.({ ok: false })
-        if (cb) socket.timeout(4000).emit(event, data, (err, res) => cb(err ? { ok: false } : res || {}))
+        if (!socket.connected) return cb?.(CONNECTION_FAILURE)
+        if (cb) socket.timeout(4000).emit(event, data, (err, res) => cb(err ? CONNECTION_FAILURE : res || CONNECTION_FAILURE))
         else socket.emit(event, data)
       }
       // Sự kiện phát riêng ngoài snapshot (ví dụ hall:ping).
@@ -63,7 +76,7 @@ export const connectHall = ({ socket, room, name, token, mockBots = 14, forceMoc
     const timer = setTimeout(fail, JOIN_TIMEOUT)
     const tryJoin = () => {
       if (settled) return
-      socket.timeout(JOIN_TIMEOUT - 200).emit('hall:join', { room, name, token }, (err, ack) => {
+      socket.timeout(JOIN_TIMEOUT - 200).emit('hall:join', joinData, (err, ack) => {
         if (settled) return
         clearTimeout(timer)
         if (err || !ack?.ok) fail()
