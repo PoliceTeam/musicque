@@ -4,6 +4,21 @@ import { useCardTransitions, diffCardTransitions } from './useCardTransitions'
 const card = (id, zone, seat = 0) => ({ id, cardId: id, zone, seat, position: [seat, 1, 0], faceUp: seat === 0 })
 const snapshot = (cards, matchId = 'g1') => ({ cards, matchId, deckPosition: [0, 1, 0], discardPosition: [0.5, 1, 0] })
 describe('card transitions', () => {
+  it('chỉ đưa nhóm bài vừa công khai sang tay đánh trước khi thả', () => {
+    const held = (id, x) => ({ ...card(id, 'hand', 1), position: [x, 0, 0], space: 'seat:1' })
+    const previous = snapshot([held('opaque:1:0', -0.02), held('opaque:1:1', 0), held('opaque:1:2', 0.02)])
+    const next = { ...snapshot([held('opaque:1:0', 0), card('4S', 'trick', 1), card('4C', 'trick', 1)]), anchor: 0 }
+    const diff = diffCardTransitions(previous, next)
+    expect(diff.cards).toHaveLength(3)
+    expect(diff.cards[0].space).toBe('seat:1')
+    for (const played of diff.cards.slice(1)) {
+      expect(played.from.faceUp).toBe(false)
+      expect(played.motion.map(stage => stage.target.space)).toEqual(['play:1', 'play:1', undefined])
+      expect(played.motion.map(stage => stage.start)).toEqual([0, 150, 450])
+      expect(played.motion[2].flip).toBe(true)
+      expect(played.flightGroup.from.space).toBe('play:1')
+    }
+  })
   it('deals only when observing a new match, and snaps on reload', () => {
     const next = snapshot([card('3S', 'hand'), card('opaque:1:0', 'hand', 1)])
     const deal = diffCardTransitions(snapshot([], null), next)
@@ -102,4 +117,19 @@ it('shares a group flight and gathers before a flat sweep without retaining moti
     expect(card.from.flightGroup).toBeUndefined()
   }
   expect(diffCardTransitions(swept, snapshot([])).cards).toHaveLength(0)
+})
+
+
+it('không phát lại động tác lấy bài khi nhóm vừa đánh chuyển thành bài cũ trên bàn', () => {
+  const held = { ...card('opaque:1:0', 'hand', 1), space: 'seat:1', position: [0, 0, 0] }
+  const initial = { ...snapshot([held]), anchor: 0, trickKey: null }
+  const top = { ...card('4S', 'trick', 1), space: 'world', faceUp: true, tilt: 0.61, position: [0, 0.84, 0.3] }
+  const played = diffCardTransitions(initial, { ...snapshot([top]), anchor: 0, trickKey: '1:4S' })
+  expect(played.cards[0].motion[0].kind).toBe('pickup')
+  const beaten = diffCardTransitions(played, { ...snapshot([{ ...card('5S', 'trick', 2), space: 'world', faceUp: true }]), trickKey: '2:5S', surfaceY: 0.785 })
+  const under = beaten.cards.find(c => c.id === '4S')
+  expect(under).toMatchObject({ zone: 'under', motionKind: 'move', from: { space: 'world' }, delay: 0 })
+  expect(under.motion).toBeUndefined()
+  expect(under.flightGroup).toBeUndefined()
+  expect(beaten.cards.find(c => c.id === '5S').dim).toBeUndefined()
 })

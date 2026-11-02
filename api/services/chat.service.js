@@ -59,7 +59,7 @@ const assertSessionId = (sessionId) => {
   }
 }
 
-const normalizeContent = (content, { allowEmpty = false } = {}) => {
+const normalizeContent = (content, { allowEmpty = false, maxLength = MAX_CONTENT_LENGTH } = {}) => {
   if (content == null) {
     if (allowEmpty) return ''
     throw chatError(400, 'Tin nhắn không hợp lệ')
@@ -75,8 +75,8 @@ const normalizeContent = (content, { allowEmpty = false } = {}) => {
     throw chatError(400, 'Tin nhắn không được để trống')
   }
 
-  if (normalized.length > MAX_CONTENT_LENGTH) {
-    throw chatError(400, `Tin nhắn tối đa ${MAX_CONTENT_LENGTH} ký tự`)
+  if (normalized.length > maxLength) {
+    throw chatError(400, `Tin nhắn tối đa ${maxLength} ký tự`)
   }
 
   return normalized
@@ -154,6 +154,7 @@ const findSessionForRoom = async (sessionId, { requireActive = false } = {}) => 
   return session
 }
 
+exports.normalizeContent = normalizeContent
 exports.getRoomName = getRoomName
 exports.formatMessage = formatMessage
 Object.defineProperty(exports, 'UPLOAD_DIR', {

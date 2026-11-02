@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import WebSocket from 'ws'
 import { createRequire } from 'node:module'
 import { captureThirteenMotion } from './motion-thirteen.mjs'
+import { measureThirteenDpr } from './dpr-thirteen.mjs'
 const require = createRequire(import.meta.url)
 const { chooseMove } = require('../../api/services/thirteen/bot.js')
 const { classify } = require('../../api/services/thirteen/rules.js')
@@ -51,7 +52,7 @@ const instrument = `(() => {
     liveContexts: contexts.map(ref => ref.deref()).filter(gl => gl && !gl.isContextLost()).length,
     draws,
     activeAnimations: window.__thirteenActiveAnimations?.size || 0,
-    renderers: [...(window.__thirteenRenderers || [])].map(gl => ({ connected: gl.domElement.isConnected, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frameDraws: gl.info.render.calls, dpr: gl.getPixelRatio() }))
+    renderers: [...(window.__thirteenRenderers || [])].map(gl => ({ connected: gl.domElement.isConnected, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frameDraws: gl.info.render.calls, dpr: gl.getPixelRatio(), pixels: gl.domElement.width * gl.domElement.height }))
   });
 })();`
 const profile = await mkdtemp(join(tmpdir(), 'thirteen-perf-'))
@@ -70,7 +71,7 @@ const evaluate = async expression => {
 const until = async (expression, timeout = 20000) => {
   const deadline = Date.now() + timeout
   while (Date.now() < deadline) { if (await evaluate(`Boolean(${expression})`)) return; await pause(150) }
-  throw new Error('Timed out waiting for UI')
+  throw new Error('Timed out waiting for UI: ' + expression + '; runtime errors: ' + errors.join('; '))
 }
 const sample = async () => {
   await call('HeapProfiler.collectGarbage')
@@ -136,6 +137,12 @@ try {
   await until('document.querySelector(".th-game canvas")')
   await pause(3500)
   await measure('waiting')
+  if (process.env.PERF_DPR_DIR) {
+    const dpr = await measureThirteenDpr({ evaluate, call, pause, userId, directory: process.env.PERF_DPR_DIR })
+    assert.equal(errors.length, 0, 'Browser runtime errors during DPR probe')
+    console.log(JSON.stringify({ dpr, waitingDrawsPerSecond: phases.waiting.drawsPerSecond, errors }, null, 2))
+    return
+  }
   if (process.env.PERF_MOTION_DIR) {
     const motion = await captureThirteenMotion({ evaluate, call, pause, userId, directory: process.env.PERF_MOTION_DIR })
     assert.equal(errors.length, 0, 'Browser runtime errors during motion capture')

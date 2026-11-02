@@ -156,6 +156,7 @@ async function settleTerminalGame(gameId) {
       referenceType: 'XiangqiGame',
       referenceId: game._id,
       metadata: { reason: game.resultReason },
+      restoreSeedFromOperationKey: `xiangqi:bet:${game._id}`,
     })
     payout = game.stake
     balanceAfter = refunded?.polites

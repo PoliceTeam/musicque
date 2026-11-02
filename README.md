@@ -460,16 +460,32 @@ danh tính từ JWT, không tin username gửi trong body.
 
 ## Docker deployment
 
-File `docker-compose.yml` là cấu hình deployment đang dùng; file
-`docker-compose.example.yml` là mẫu không chứa secret thật.
-File example hiện map API/client sang `5800/3800`, khác với `5001/8080` trong
-Compose chính; kiểm tra file được chọn trước khi cấu hình reverse proxy.
+Deploy bằng tay từ máy local: xem [docs/deploy.md](docs/deploy.md).
+Root `package.json` chỉ là lối tắt vận hành, không có dependencies/workspaces;
+không cần `npm install` ở root, api/client tiếp tục cài và chạy riêng.
+
+Production dùng `docker-compose.prod.yml` riêng trên server (git-ignored).
+Compose phải đặt `image: musicque-api:latest` và `image: musicque-client:latest` cho
+hai service tương ứng; API giữ healthcheck hiện có. Không đưa secret vào Git.
+
+Từ máy local:
 
 ```bash
-docker compose build --no-cache api
-docker compose up -d --force-recreate api client
-docker compose ps
+npm run env:check
+npm run deploy
+npm run deploy:status
+# Phục hồi image gần nhất:
+npm run deploy:rollback
 ```
+
+`scripts/deploy-prod.sh` là script nội bộ chạy trên server qua `scripts/remote.sh`.
+
+Script yêu cầu cây git sạch, tag rollback trước `git pull --ff-only`, build/recreate
+api/client rồi chờ API healthy. Sau thành công giữ một rollback mới nhất mỗi repo,
+bỏ qua mọi image có container sử dụng và chỉ dọn dangling có label của Musicque.
+Không prune build cache trên builder dùng chung; chỉ cân nhắc cache cũ hơn 7 ngày
+khi người vận hành đã xác minh builder dành riêng cho project. Thất bại không dọn image;
+rollback image không hoàn tác schema hoặc dữ liệu DB.
 
 API chạy trực tiếp từ image đã build, không bind-mount `./api` hoặc một anonymous
 `node_modules` trong cấu hình deployment. Các mount này có thể giữ dependencies cũ
@@ -481,12 +497,12 @@ Lần đầu khởi động VieNeu-TTS có thể lâu do phải tải model. Ch�
 Trước khi deploy:
 
 1. Điền secret và API key bằng environment/secret manager, không commit vào Git.
-2. Đặt đúng `CLIENT_URL`, `VITE_API_URL`, `VITE_SOCKET_URL` và hai remote URL.
+2. Đặt đúng `CLIENT_URL`, `VITE_API_URL`, `VITE_SOCKET_URL`.
 3. Bump `VIENEU_TTS_CACHE_VERSION` nếu thay voice hoặc inference settings.
 4. Kiểm tra `SONG_SKIP_PC_THRESHOLD` đúng với định mức muốn áp dụng.
 5. Đặt `TZ=Asia/Ho_Chi_Minh` để quota cờ tướng reset đúng 00:00 giờ Việt Nam.
 6. Kiểm tra nhóm `XIANGQI_*`; rebuild API để cài dependency `xiangqi.js`.
-7. Build lại client và hai remotes vì các URL `VITE_*` được đóng vào bundle.
+7. Build lại client vì các URL `VITE_*` được đóng vào bundle.
 8. Giữ volume MongoDB và TTS model khi recreate container.
 
 ## Quy ước phát triển

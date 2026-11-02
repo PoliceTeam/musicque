@@ -51,7 +51,7 @@ module.exports = (socket) => {
     }
     lastJoin = now
     const generation = ++version
-    const user = typeof data?.token === 'string' ? await resolveUserFromToken(data.token).catch(() => null) : null
+    const user = await resolveUserFromToken(data?.token, socket.handshake?.headers?.cookie).catch(() => null)
     if (!socket.connected || generation !== version) return
     const room = hall.roomId(data?.room)
     const oldRoom = hall.join(store, socket.id, room, user?.username || data?.name, now)

@@ -9,7 +9,8 @@ with a text-to-speech dedication message, upvote/downvote to reorder the playlis
 admin runs the playback session. It has accreted several unrelated side widgets
 (lunch voting, a shared whiteboard, news/weather/price tickers, a NES emulator, games).
 
-The repo is a **multi-service monorepo with no workspace tooling** — no root `package.json`.
+The repo is a **multi-service monorepo with no workspace tooling**. Root `package.json` chỉ là lối tắt vận hành production;
+không dependencies, lockfile hoặc workspaces. Không chạy npm install tại root.
 Each service installs and runs independently.
 
 Reusable table games: see [docs/table-game-engine.md](docs/table-game-engine.md) for the definition contract, lifecycle and client scene.
@@ -378,6 +379,14 @@ rewrite — do not paste code or strings from that repo. 36 roles (`api/services
   role (`guard_wolf`, `hunter_night`, …) are announced generically and `death.cause` is masked
   to `night` in the payload; the hunter becomes `revealed` once they take their final shot.
 
+### Static asset cache (service worker)
+`client/public/asset-sw.js` is registered in `src/main.jsx`. It serves `/models/`, `/dance/` and
+`/audition/` files (glb, images, mp3…) **cache-first from Cache Storage**, keyed by path with the
+query string ignored, so a second visit loads nothing heavy from the network. `<audio>` Range
+requests get 206 slices of the cached file. Replacing a file under the **same name** keeps serving
+the old copy to clients that already have it, so rename the file or bump `CACHE_VERSION` in the
+worker. nginx `location /` keeps `asset-sw.js` at `no-cache`, so a new worker is picked up.
+
 ## Conventions
 
 - **Vietnamese is the working language** — code comments, `console.log` prefixes, API
@@ -411,8 +420,8 @@ rewrite — do not paste code or strings from that repo. 36 roles (`api/services
   `api/controllers/session.controller.js` is now `hours < 0 || hours >= 24`, i.e. a no-op.
 - Its directory tree predates most current features (widgets, games, micro-frontends,
   TTS service).
-- It references `docker-compose.prod.example.yml`; the file in the repo is
-  `docker-compose.example.yml`.
+- `docker-compose.example.yml` là mẫu chung; mẫu production police hiện có tại
+  `docker-compose.prod.example.yml`, xem `docs/deploy.md` trước khi chuyển cấu hình.
 
 ## Disabled code still in the tree
 
@@ -469,3 +478,117 @@ thư mục vì texture trùng tên `colormap.png`).
   DEV có `window.__jungleAudio.level()` để đo mức tín hiệu ra loa khi kiểm thử tự động.
 - Công cụ chụp màn hình không bắt được khung WebGL; DEV bật `preserveDrawingBuffer` để
   `canvas.toDataURL()` kiểm tra được.
+
+### Au đi sần (Audition) — `/audition`, `/audition/:roomId`
+Rhythm game: each turn = 1 bar of 4 beats, type the arrow sequence then hit Space on beat 4.
+Rules are pure functions in `client/src/utils/audition.js` (tested); server only manages rooms.
+
+- **Timing is judged on the client** against each player's own `<audio>` clock (minus the
+  per-device latency setting), so network lag never affects Perfect/Great. The server
+  (`api/services/audition/rooms.js`, in-memory like Ma Sói) hands out `seed` + `startAt`
+  (server ms; clients correct with `serverNow` offset) and sums the per-turn `report`s.
+  It only sanity-checks reports (`MAX_TURN_POINTS`), it does not re-judge. Nothing is staked, but
+  ranks 1–2 earn PC (see **Rewards**), so scores are client-reported money now.
+- **Shared keys**: `sequenceFor(turn, level, { seed, del })` uses a seeded RNG of
+  (seed, turnIndex, level). Every player at a given turn has the same level, so everyone gets the
+  same keys. Every Finish Move has at least one red (Del, reversed) key.
+- **Levels follow one fixed schedule per song, shared by the whole room** (`applySchedule` in
+  `createChart`, mirrored in `chart.js`). Results never change the level.
+  - Each bar gets `kind` (`key` / `rest` / `finish`), `level`, `step` (1–3 from level 6),
+    `preFinish` and `keyIn`.
+  - Pattern: levels 1–5 one key turn each. Then levels 6, 7, 8 and 9 get `LEVEL_TURNS` (3) key turns
+    each, every one preceded by a dance (`rest`) bar. After level 9: one dance bar, the Finish Move,
+    `FINISH_REST_BARS` (5) rest bars, then back to level 6, repeating until the song ends.
+  - A song too short to reach a Finish turns its last key turn into the Finish.
+  - Penalties only affect score, combo and turns: a Missed (`skipNext`) locks the next key turn of
+    the schedule. That is 1 bar below level 6, 3 bars from level 6, and the Finish itself if the
+    Missed was on the `preFinish` turn (warned in the HUD, so the wait is 7 bars). Missing the
+    Finish Move adds no lock.
+  - Bots use the same schedule (`applyResult(bot, turn, judgement)`).
+- **Chart length uses `TRACK.duration` (ffprobe), never `audio.duration`** — browsers estimate
+  MP3 length differently (Chrome: 240.76s vs 239.05s) and Finish Move positions must match on
+  every machine. `api/services/audition/chart.js` mirrors the chart + level rules for bots;
+  both test suites pin the same numbers per song (tttY 76 bars, Finish at bars 30 and 60).
+- **Bots** (host adds them while waiting) are simulated on the server clock in `botTick` by skill
+  profile. Once every human is done (song over, or reloaded mid-song and marked done),
+  `finishIfHumansDone` fast-forwards the bots to the end of the song and ends the game, so a bots-only
+  room never stays stuck in `playing`. A host who is already done may leave mid-song.
+- **Room flow**: host picks song (`songId`, from `SONGS` in `api/services/audition/chart.js` =
+  `TRACKS` on the client — add new songs to both with the same id/bpm/offset/duration) and
+  stage (`stageId`, `'random'` = seeded per game). Everyone picks a character; non-host players
+  press Ready (character locked while ready); host can only start when `allReady`. Ready flags
+  reset when a game ends.
+- **No joining mid-song**: join is refused while `playing` (allowed when `waiting`/`finished`).
+  A member who reloads mid-song does not rejoin the music; they wait, and are marked done.
+- Formation: the unique top scorer steps forward (`LEADER_Z`), the rest stand in a back row
+  that leaves its centre open. Background is picked from `BACKGROUNDS` by the game seed.
+- Sounds: `audition-effects-final` pack → `public/audition/sfx/` (perfect_1/2/3 by combo,
+  `finish` when a Finish Move is completed, `end_win` for ranks 1–2 / `end_lose` from rank 3).
+- Song tempo/offset come from `TRACKS` in `client/src/components/DanceLab/danceLab.js`;
+  `SONG_MS` in `rooms.js` must match the track length (end-of-game fallback timer).
+- UI images come from the "Neon Dance — Assets v3" pack in `client/public/audition/`;
+  buttons/judgements/combo/digits/icons are drawn from `atlas/ui_atlas.png` via `AtlasImg`
+  + `ui_atlas.json` — do not hand-draw replacements.
+- Each dancer is a `SkeletonUtils.clone` of the cached GLB so two players can pick the same
+  character. Horizontal root motion is removed with a slow EMA so dancers stay on their spot.
+- React StrictMode double-mounts in dev: `auditionSfx` must recreate a closed AudioContext,
+  otherwise every judgement sound is silent.
+- **The waiting room and the end-of-game results are WebGL, not HTML** (owner's requirement).
+  Both live in drei `<Hud>` layers (orthographic camera, units = pixels) inside the stage canvas:
+  `LobbyHud` (built from the canvas-texture widgets in `hudKit.jsx`: Panel/Text/Button/Stepper/
+  Toggle/PlayerSlot) and `ResultScene` (gold/silver podiums, spotlights, confetti in world space;
+  per-player stat boards drawn by `resultBoard.js` with atlas digits/judgement art). Name tags are
+  canvas sprites. Boards show rank, name, score, Perfect/Great/Cool/Bad/Missed and the longest
+  Perfect chain (`maxPerfect`, tracked on both client and server). Only the room-list page
+  (`AuditionLobby`) and the in-game HUD are still HTML.
+- **Intro**: `INTRO_BARS` (6) empty bars before the first key turn, which starts on bar 7. The rhythm
+  marker follows the bar grid the whole song (`barPhase`), including the intro and rest bars.
+  `voice_ready` plays on bar 5's hit line (`chart.readyAt`) and `voice_start` on bar 6's
+  (`chart.goAt`). Both are scheduled `VOICE_LOOKAHEAD` ahead on the Web Audio clock, and "Ready" is
+  cut when "Start" begins. The server chart (`chart.js`) mirrors `INTRO_BARS`.
+- **Scoring weights** live in `SCORING` (client `utils/audition.js` and server `chart.js`; change
+  both). Normal turn = `perKey × keys × judge × combo`; Finish Move = `finishBase × judge × combo`;
+  combo multiplier = `1 + (min(combo, maxCombo) − 1) × comboStep` (Perfect/Great only). The server's
+  `MAX_TURN_POINTS` is derived from it.
+- **End of song**: everyone idles for `END_HOLD_MS` (5s, `endHold`) before the podium/results open
+  and the end sounds play.
+  - Leaving the results stops those sounds (`endSoundStops`).
+  - Outside a running game every dancer is plain idle. Last-game anims are "synced" to the music
+    clock, so with the music stopped they freeze mid-pose, e.g. Breakdance Freezes upside down.
+- **Chat** works in every room state, including mid-song. `POST /rooms/:id/chat` is members only,
+  limited to 200 chars and one message per 400ms. The room keeps the last 40 messages in `room.chat`
+  (included in `serializeRoom`), and each new message is also emitted as `audition_chat`.
+  `AuditionChat` is HTML at the bottom-left. Enter opens the input, Enter sends, Esc closes. Enter is
+  reserved for chat, so there are no Enter shortcuts for Start or Continue. Keys typed in `.au-chat`
+  are ignored by the game input handler.
+- **Other players' judgements** float above their heads (`JudgeTag` sprite, atlas art, pop + fade).
+  Your own judgement stays in the HUD. Reports carry `finish`, so every client knows when someone
+  clears a Finish Move. Clearing one with Perfect, Great or Cool switches that dancer to Breakdance
+  Freezes (kind `showtime`) through the rest bars after the Finish. Showtime also adds a wide
+  gold `LimbTrail` and falling `StarDust` particles from hands and feet, visible for every player and
+  bot.
+- **Key row feedback** follows Audition. There is no "next key" highlight hopping between keys. A
+  layer of green `hit` keys sits on top of the row and is revealed left→right by a `clip-path`
+  transition (`FILL_MS`), so fast typing reads as one continuous sweep. The row is keyed by turn +
+  `wrongAt`, so a wrong key or a new turn resets the fill instantly instead of sliding back.
+  Headless Chrome with SwiftShader renders ~2–3 fps, so the transition looks frozen there; check
+  `getAnimations()`, not computed styles.
+- Cleared Del (red) keys turn green showing the direction actually pressed (`expectedKey`).
+- **Intro camera** (`CameraRig` orbit): from the start of the 4s countdown (`ORBIT_LEAD`) to ~1.5 bars
+  into the song, the camera descends from high and far (`ORBIT_RISE`, `ORBIT_ZOOM`) while circling the
+  stage once and zooming in, ending face-on. It runs on the wall clock from the server `startAt`, since
+  the music is not playing during the countdown.
+- The score count-up (`useCountUp` in `AuditionHud`) scales the digits up while counting.
+  `DANCER_SPACING` is 2.0, and the back row leaves a gap one dancer wide behind the leader.
+- Results voices: ranks 1–2 hear `end_win` + `cheers`, rank 3 and below hear `end_lose` + `voice_m`
+  (`SFX_END_VOICE`).
+- **Rewards** (`REWARDS` / `rewardModeOf` in `rooms.js`): with ≥ 2 humans, rank 1 gets 300 PC and rank 2
+  gets 100. Solo with bots pays 100 / 50, and only when the room has ≥ 2 Cao thủ (`pro`) bots or ≥ 3 bots
+  of Khá (`normal`) or better. Only humans who played to ≥ 75% of the chart (`REWARD_MIN_PLAYED`, by
+  `lastTurn`) are paid. A rank held by a bot or an ineligible player is left unpaid, not passed down.
+  `endGame` writes `reward` onto each `results` entry. `settleRewards` in `audition.service.js` runs from
+  `changed()` (every end-of-game path calls it) and pays via `coins.creditOnce` with operationKey
+  `audition:reward:<seed>:<userId>`. It then emits `audition_reward` with the new balance. Boards show
+  "+N PC", and the lobby shows which rule applies (`serializeRoom().rewardMode`).
+- **Audio levels are fixed** (`AUDIO` in `auditionConfig.js`: latency 250ms, music 40%, sfx 25%);
+  players cannot change them — only mute is stored per device.

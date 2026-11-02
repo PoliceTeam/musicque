@@ -1,0 +1,304 @@
+// Luật chơi nhảy kiểu Audition — hàm thuần, không phụ thuộc React/âm thanh.
+//
+// Mỗi lượt = 1 ô nhịp 4/4. Chuỗi mũi tên hiện ở đầu ô nhịp, người chơi nhập đúng thứ tự rồi
+// bấm Space đúng phách 4 (hit). Mọi thời điểm là giây theo đồng hồ bài nhạc (đã trừ độ trễ âm thanh).
+// Hàm biến đổi trạng thái trả về { state, event } để lớp giao diện phát âm thanh/hiệu ứng theo event.
+//
+// Chơi chung phòng: chuỗi phím sinh từ seed của ván + số lượt + level, nên mọi người cùng level
+// trong cùng lượt nhận đúng một chuỗi. Finish Move đến theo nhịp leo level của từng người (đánh đủ
+// vài lượt ở level 9), nên ai Finish cùng một lượt thì cũng cùng chuỗi phím Finish.
+
+export const DIRS = ['up', 'down', 'left', 'right']
+export const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' }
+export const KEY_TO_DIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+
+// Cửa sổ chấm điểm: |lệch so với hit| (giây) <= ngưỡng. Ngoài 'bad' là Missed.
+export const WINDOWS = { perfect: 0.05, great: 0.1, cool: 0.15, bad: 0.25 }
+export const JUDGEMENTS = ['perfect', 'great', 'cool', 'bad', 'missed']
+// ---- Trọng số tính điểm (sửa ở đây VÀ SCORING trong api/services/audition/chart.js) ----
+// điểm lượt thường = perKey × số phím × judge[kết quả] × combo
+// điểm Finish Move  = finishBase × judge[kết quả] × combo
+// combo (chỉ Perfect/Great) = 1 + (min(combo, maxCombo) − 1) × comboStep
+export const SCORING = {
+  perKey: 300,
+  finishBase: 10000,
+  comboStep: 0.2,
+  maxCombo: 20, // khớp ảnh combo x1–x20
+  judge: { perfect: 1, great: 0.8, cool: 0.5, bad: 0.1, missed: 0 }
+}
+export const JUDGE_FACTOR = SCORING.judge
+export const SUCCESS = new Set(['perfect', 'great', 'cool']) // nhân vật nhảy, lên level
+export const KEEPS_COMBO = new Set(['perfect', 'great'])
+
+export const MAX_LEVEL = 9 // số phím tối đa của lượt thường
+export const FINISH_KEYS = 9 // độ dài chuỗi Finish Move
+// ---- Lịch level cố định theo bài, GIỐNG NHAU cho cả phòng (kết quả không làm đổi level) ----
+// lượt 1–5: level 1..5 (mỗi level 1 lượt, không nghỉ)
+// từ level 6: mỗi level LEVEL_TURNS lượt, trước mỗi lượt có 1 ô nhảy (không phím)
+// sau 3 lượt level 9: 1 ô nhảy, ô Finish Move, FINISH_REST_BARS ô nghỉ, rồi quay lại level 6 và lặp
+export const HIGH_FROM_LEVEL = 6
+export const LEVEL_TURNS = 3
+export const FINISH_REST_BARS = 5
+export const FINISH_RESET_LEVEL = 6
+export const POINTS_PER_KEY = SCORING.perKey
+export const FINISH_BASE = SCORING.finishBase
+export const MAX_COMBO_MULT = SCORING.maxCombo
+export const DEL_MIN_LEVEL = 5 // chế độ Del: mũi tên đỏ (bấm ngược) từ level này
+export const DEL_CHANCE = 0.35
+
+// Lịch các lượt của bài (mỗi lượt = 1 ô nhịp, khớp lưới ô nhịp tính từ offset):
+// INTRO_BARS ô nhịp đầu chỉ chạy thanh nhịp, chưa có phím — ô thứ 5 phát "Ready" và ô thứ 6 phát
+// "Start" đúng lúc con trỏ chạm vạch sáng (phách 4); ô thứ 7 là lượt bấm phím đầu tiên.
+export const INTRO_BARS = 6
+export const READY_BAR = 4 // ô nhịp thứ 5 (đếm từ 0)
+export const START_BAR = 5 // ô nhịp thứ 6
+export const createChart = ({ bpm, offset, duration, beatsPerTurn = 4, introBars = INTRO_BARS, outroSeconds = 3 }) => {
+  const beat = 60 / bpm
+  const bar = beat * beatsPerTurn
+  const hitIn = (beatsPerTurn - 1) * beat // từ đầu ô nhịp tới vạch sáng
+  const turns = []
+  for (let k = introBars; ; k++) {
+    const start = offset + k * bar
+    const hit = start + hitIn
+    if (hit + WINDOWS.bad > duration - outroSeconds) break
+    turns.push({ index: turns.length, start, hit, end: start + bar, last: false })
+  }
+  applySchedule(turns)
+  const last = turns[turns.length - 1]
+  if (last) last.last = true
+  return {
+    beat,
+    bar,
+    beatsPerTurn,
+    offset,
+    hitAt: (beatsPerTurn - 1) / beatsPerTurn, // vị trí hit trên thanh nhịp (0..1)
+    readyAt: offset + READY_BAR * bar + hitIn,
+    goAt: offset + START_BAR * bar + hitIn,
+    turns,
+    finishes: turns.filter((t) => t.kind === 'finish').length,
+    endAt: last ? last.end : offset
+  }
+}
+
+// Dãy ô nhịp của một vòng: [kind, level, step] — kind: 'key' (bấm phím) | 'rest' (nhảy) | 'finish'.
+const scheduleCycle = (fromStart) => {
+  const out = []
+  if (fromStart) for (let lv = 1; lv < HIGH_FROM_LEVEL; lv++) out.push(['key', lv, 0])
+  for (let lv = HIGH_FROM_LEVEL; lv <= MAX_LEVEL; lv++) {
+    for (let st = 1; st <= LEVEL_TURNS; st++) {
+      // ô nghỉ sau Finish đã đóng vai ô nhảy đứng trước lượt level 6 đầu tiên của vòng lặp lại
+      if (fromStart || lv > HIGH_FROM_LEVEL || st > 1) out.push(['rest', lv, 0])
+      out.push(['key', lv, st])
+    }
+  }
+  out.push(['rest', MAX_LEVEL, 0], ['finish', MAX_LEVEL, 0])
+  for (let i = 0; i < FINISH_REST_BARS; i++) out.push(['rest', FINISH_RESET_LEVEL, 0])
+  return out
+}
+
+// Gắn lịch cho mọi ô nhịp sau đoạn dạo: kind, level, step (thứ tự lượt trong level, từ level 6),
+// preFinish (lượt phím ngay trước Finish), keyIn (số ô tới lượt phím kế, cho ô nghỉ).
+// Bài ngắn chưa tới Finish nào thì lượt phím cuối thành Finish (bài nào cũng có ít nhất 1).
+const applySchedule = (turns) => {
+  let cycle = scheduleCycle(true)
+  let k = 0
+  for (const t of turns) {
+    if (k >= cycle.length) { cycle = scheduleCycle(false); k = 0 }
+    const [kind, level, step] = cycle[k++]
+    Object.assign(t, { kind, level, step })
+  }
+  if (!turns.some((t) => t.kind === 'finish')) {
+    const lastKey = [...turns].reverse().find((t) => t.kind === 'key')
+    if (lastKey) Object.assign(lastKey, { kind: 'finish', step: 0 })
+  }
+  let nextKey = null
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i]
+    t.preFinish = t.kind === 'key' && nextKey?.kind === 'finish'
+    t.keyIn = t.kind === 'rest' && nextKey ? nextKey.index - t.index : 0
+    if (t.kind !== 'rest') nextKey = t
+  }
+}
+
+// Vị trí con trỏ trên thanh nhịp (0..1) ở thời điểm t: chạy theo lưới ô nhịp cả lúc intro / lượt nghỉ.
+export const barPhase = (chart, t) => (t < chart.offset ? 0 : ((t - chart.offset) / chart.bar) % 1)
+
+// Lượt chứa thời điểm t (start <= t < end), -1 nếu ngoài.
+export const turnIndexAt = (chart, t) => {
+  const { turns } = chart
+  if (!turns.length || t < turns[0].start) return -1
+  const k = Math.floor((t - turns[0].start) / chart.bar)
+  return k < turns.length ? k : -1
+}
+
+// RNG có seed (mulberry32) — cùng (seed, lượt, level) thì máy nào cũng ra cùng chuỗi phím.
+export const seededRng = (...parts) => {
+  let h = 2166136261
+  for (const ch of parts.join('|')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  let a = h >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export const generateSequence = (level, rng = Math.random, { del = false } = {}) =>
+  Array.from({ length: level }, () => ({
+    dir: DIRS[Math.floor(rng() * DIRS.length)],
+    reverse: del && level >= DEL_MIN_LEVEL && rng() < DEL_CHANCE
+  }))
+
+// Finish Move: luôn có ít nhất một phím Del (mũi tên đỏ), kể cả khi phòng không bật chế độ Del.
+export const generateFinish = (rng = Math.random, { del = false } = {}) => {
+  const seq = Array.from({ length: FINISH_KEYS }, () => ({
+    dir: DIRS[Math.floor(rng() * DIRS.length)],
+    reverse: del && rng() < DEL_CHANCE
+  }))
+  if (!seq.some((a) => a.reverse)) seq[Math.floor(rng() * seq.length)].reverse = true
+  return seq
+}
+
+export const sequenceFor = (chartTurn, level, { seed = 'solo', del = false, finish = false } = {}) =>
+  finish
+    ? generateFinish(seededRng(seed, chartTurn.index, 'finish'), { del })
+    : generateSequence(level, seededRng(seed, chartTurn.index, level), { del })
+
+export const expectedKey = (arrow) => (arrow.reverse ? OPPOSITE[arrow.dir] : arrow.dir)
+
+export const judgeTiming = (dt) => {
+  const a = Math.abs(dt)
+  if (a <= WINDOWS.perfect) return 'perfect'
+  if (a <= WINDOWS.great) return 'great'
+  if (a <= WINDOWS.cool) return 'cool'
+  if (a <= WINDOWS.bad) return 'bad'
+  return 'missed'
+}
+
+// Hệ số nhân theo combo (chỉ áp cho Perfect/Great): x1 = 1.0, mỗi combo +comboStep, trần ở maxCombo.
+export const comboMultiplier = (combo) => 1 + (Math.min(Math.max(combo, 1), MAX_COMBO_MULT) - 1) * SCORING.comboStep
+
+export const createGameState = () => ({
+  level: 1, // level của ô nhịp hiện tại (theo lịch chung của bài)
+  combo: 0,
+  maxCombo: 0,
+  perfectStreak: 0,
+  maxPerfect: 0, // chuỗi Perfect liên tiếp dài nhất (bảng điểm cuối bài)
+  score: 0,
+  counts: { perfect: 0, great: 0, cool: 0, bad: 0, missed: 0 },
+  finishes: 0, // số Finish Move thành Showtime (Perfect/Great)
+  turnsPlayed: 0,
+  skipNext: false, // vừa Missed: lượt phím kế tiếp trong lịch bị khoá (lịch vẫn chạy chung với cả phòng)
+  turn: null
+})
+
+// Bắt đầu ô nhịp chartTurn (đã có kind/level từ lịch). opts: { seed, del }.
+export const startTurn = (state, chartTurn, opts = {}) => {
+  const { level, kind } = chartTurn
+  const finish = kind === 'finish'
+  const base = {
+    index: chartTurn.index,
+    hit: chartTurn.hit,
+    level,
+    finish,
+    step: chartTurn.step || 0,
+    progress: 0,
+    wrongAt: null,
+    wrongCount: 0,
+    dt: null
+  }
+  const next = { ...state, level }
+  // Ô nhảy: không có phím, nhân vật nhảy tiếp.
+  if (kind === 'rest') {
+    return {
+      state: { ...next, turn: { ...base, finish: false, seq: [], skipped: false, rest: true, keyIn: chartTurn.keyIn, result: 'rest' } },
+      event: { type: 'rest', index: chartTurn.index }
+    }
+  }
+  const seq = sequenceFor(chartTurn, level, { ...opts, finish })
+  // Missed lượt trước: mất lượt phím này (kể cả Finish Move nếu Missed ngay lượt trước Finish).
+  if (state.skipNext) {
+    return {
+      state: { ...next, skipNext: false, turn: { ...base, seq, skipped: true, result: 'skipped' } },
+      event: { type: 'skipped', index: chartTurn.index, finish }
+    }
+  }
+  return {
+    state: { ...next, turn: { ...base, preFinish: Boolean(chartTurn.preFinish), seq, skipped: false, result: null } },
+    event: { type: 'turn', index: chartTurn.index, finish }
+  }
+}
+
+const isOpen = (turn, t) => turn && !turn.result && t <= turn.hit + WINDOWS.bad
+
+export const pressArrow = (state, dir, t) => {
+  const { turn } = state
+  if (!isOpen(turn, t) || turn.progress >= turn.seq.length) return { state, event: null }
+  if (dir === expectedKey(turn.seq[turn.progress])) {
+    const progress = turn.progress + 1
+    const complete = progress === turn.seq.length
+    return { state: { ...state, turn: { ...turn, progress } }, event: { type: complete ? 'complete' : 'correct', index: turn.progress } }
+  }
+  // Sai một phím: xoá sạch, nhập lại từ đầu (miễn còn trước hit)
+  return {
+    state: { ...state, turn: { ...turn, progress: 0, wrongAt: t, wrongCount: turn.wrongCount + 1 } },
+    event: { type: 'wrong' }
+  }
+}
+
+const resolve = (state, judgement, t, reason = null) => {
+  const { turn } = state
+  const success = SUCCESS.has(judgement)
+  const combo = KEEPS_COMBO.has(judgement) ? state.combo + 1 : 0
+  const base = turn.finish ? FINISH_BASE : turn.seq.length * POINTS_PER_KEY
+  const mult = KEEPS_COMBO.has(judgement) ? comboMultiplier(combo) : 1
+  const points = Math.round(base * JUDGE_FACTOR[judgement] * mult)
+  const showtime = turn.finish && KEEPS_COMBO.has(judgement)
+  // Missed ngay lượt trước Finish: lượt phím kế (chính là Finish Move) bị khoá -> mất Finish
+  const forfeit = Boolean(turn.preFinish) && judgement === 'missed'
+  const dt = reason === 'timing' ? t - turn.hit : null
+  return {
+    state: {
+      ...state,
+      combo,
+      maxCombo: Math.max(state.maxCombo, combo),
+      perfectStreak: judgement === 'perfect' ? state.perfectStreak + 1 : 0,
+      maxPerfect: Math.max(state.maxPerfect, judgement === 'perfect' ? state.perfectStreak + 1 : 0),
+      score: state.score + points,
+      counts: { ...state.counts, [judgement]: state.counts[judgement] + 1 },
+      finishes: state.finishes + (showtime ? 1 : 0),
+      turnsPlayed: state.turnsPlayed + 1,
+      // Missed lượt thường: mất lượt phím kế trong lịch. Missed Finish Move: không khoá thêm (5 ô nghỉ chung).
+      skipNext: judgement === 'missed' && !turn.finish,
+      turn: { ...turn, result: judgement, dt }
+    },
+    event: { type: 'judged', judgement, points, combo, success, showtime, finish: turn.finish, forfeit, level: turn.level, reason, dt }
+  }
+}
+
+export const pressSpace = (state, t) => {
+  const { turn } = state
+  if (!turn || turn.result) return { state, event: null }
+  // Chưa nhập xong chuỗi mà đã bấm Space: Missed ngay. Nhập xong rồi thì chấm theo độ lệch so với hit
+  // (lệch quá vùng Bad, kể cả bấm quá sớm, cũng là Missed).
+  if (turn.progress < turn.seq.length) return resolve(state, 'missed', t, 'incomplete')
+  return resolve(state, judgeTiming(t - turn.hit), t, 'timing')
+}
+
+// Hết vùng chốt mà chưa bấm Space.
+export const expireTurn = (state, t) => {
+  const { turn } = state
+  if (!turn || turn.result || t <= turn.hit + WINDOWS.bad) return { state, event: null }
+  return resolve(state, 'missed', t, 'timeout')
+}
+
+export const accuracy = (state) => {
+  const n = state.turnsPlayed
+  if (!n) return 0
+  const c = state.counts
+  return (c.perfect + c.great * 0.8 + c.cool * 0.5 + c.bad * 0.1) / n
+}
+
+// Hạng cuối bài theo độ chính xác.
+export const gradeFor = (acc) => (acc >= 0.95 ? 'S' : acc >= 0.85 ? 'A' : acc >= 0.7 ? 'B' : acc >= 0.5 ? 'C' : 'D')

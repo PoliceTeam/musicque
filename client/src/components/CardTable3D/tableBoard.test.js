@@ -40,3 +40,7 @@ it('moves only the baked frame to the upper-left wall corner', async () => {
   expect(position.array).toEqual(after)
   room.geometry.dispose()
 })
+
+it('names the active player on the wall board', () => {
+  expect(tableBoardText({ ...table, status: 'playing', currentSeat: 0, seats: [{ username: 'An' }, null, null, null] })[3]).toBe('Lượt: An')
+})

@@ -1,0 +1,28 @@
+.ice-city-promo {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 128px;
+  aspect-ratio: 2.24;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #6ed5ed;
+  border-radius: 14px;
+  color: #fff;
+  background: #1586bd;
+  box-shadow: 0 6px 20px #146b9133;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.ice-city-promo:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 10px 26px #146b9155; }
+.ice-city-promo:focus-visible { outline: 3px solid #ffcf58; outline-offset: 3px; }
+.ice-city-promo__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.ice-city-promo__new { position: absolute; top: 7px; left: 9px; padding: 2px 7px; border: 1px solid #ffffff99; border-radius: 5px; background: #07364dd9; color: #fff4be; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.ice-city-promo__footer { position: absolute; inset: auto 0 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 10px 8px; background: linear-gradient(transparent, #06283dee); font-size: 11px; font-weight: 700; text-shadow: 0 1px 4px #052238; }
+.ice-city-promo__cta { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid #fff0b6; border-radius: 7px; background: linear-gradient(#ffe7a3, #ffd05c); color: #16344c; font-size: 11px; font-weight: 800; text-shadow: none; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .ice-city-promo { transition: none; } .ice-city-promo:hover { transform: none; } }

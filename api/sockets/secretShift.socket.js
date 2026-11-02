@@ -19,7 +19,7 @@ module.exports = (socket) => {
     joining = true; lastJoinAt = Date.now()
     const generation = ++joinGeneration
     try {
-      const user = await resolveUserFromToken(data.token)
+      const user = await resolveUserFromToken(data.token, socket.handshake?.headers?.cookie)
       if (!user) throw new Error('Vui lòng đăng nhập để chơi.')
       if (!socket.connected || generation !== joinGeneration) throw new Error('Yêu cầu vào phòng đã hủy.')
       return game.join({ socket, user, matchId: data.matchId, name: data.name })

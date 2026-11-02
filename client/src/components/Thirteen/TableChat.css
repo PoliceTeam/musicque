@@ -1,0 +1,22 @@
+.table-chat { position: absolute; z-index: 60; right: 12px; top: 68px; bottom: 12px; width: 320px; display: flex; flex-direction: column; color: var(--sp-text); pointer-events: none; }
+.table-chat:not(.is-open) { width: auto; bottom: auto; }
+.table-chat-toggle { align-self: flex-end; flex-shrink: 0; }
+.table-chat button, .table-chat form, .table-chat-messages { pointer-events: auto; }
+.table-chat .sp-btn { background: color-mix(in srgb, var(--sp-surface, #fff) 60%, transparent); backdrop-filter: blur(8px); }
+.table-chat-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: transparent; }
+.table-chat-body[hidden] { display: none; }
+.table-chat-messages { list-style: none; margin: 0; padding: 8px 0; flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+.table-chat-messages li { margin-bottom: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--sp-surface, #fff) 68%, transparent); text-shadow: 0 1px 2px var(--sp-surface, #fff); overflow-wrap: anywhere; }
+.table-chat-messages li[aria-hidden] { padding: 0; margin: 0; height: 0; background: transparent; }
+.table-chat-messages header { display: flex; justify-content: space-between; gap: 8px; }
+.table-chat-messages time { color: var(--sp-text-muted); font-size: 11px; }
+.table-chat-messages p { margin: 4px 0 0; white-space: pre-wrap; }
+.table-chat form { display: flex; gap: 4px; padding: 8px; margin-top: auto; flex-shrink: 0; border-radius: 12px; background: color-mix(in srgb, var(--sp-surface, #fff) 50%, transparent); backdrop-filter: blur(8px); }
+.table-chat input { width: 0; flex: 1; min-width: 0; background: transparent; color: var(--sp-text); border: 1px solid var(--sp-border); border-radius: 6px; padding: 8px; }
+.table-chat .chat-emoji { position: relative; }
+.table-chat .chat-emoji-picker { position: absolute; bottom: 40px; right: 0; width: 240px; max-height: 200px; overflow: auto; display: grid; grid-template-columns: repeat(6, 1fr); background: var(--sp-surface, #fff); }
+.table-chat .chat-emoji-picker__item, .table-chat .chat-room__tool { background: transparent; border: 0; cursor: pointer; padding: 5px; }
+@media (max-width: 700px) {
+  .table-chat { top: auto; bottom: var(--table-chat-bottom, 12px); right: 12px; left: 12px; width: auto; height: min(55vh, 480px, calc(100dvh - var(--table-chat-bottom, 12px) - 80px)); }
+  .table-chat:not(.is-open) { left: auto; height: auto; top: 68px; bottom: auto; }
+}

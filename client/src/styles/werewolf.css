@@ -267,3 +267,69 @@ button.ww-card { cursor: pointer; }
 .ww-rules__list ul { margin: 4px 0; padding-left: 18px; }
 .ww-rules__role .ww-rules__appears { margin-top: 5px; color: var(--sp-text-faint); font-size: 11px; font-style: italic; }
 .ww-actions .ww-actions__hint { color: var(--sp-text-muted); font-size: 13px; }
+
+/* Voice dùng chung với workspace, nằm trong luồng trang khi vào route trực tiếp. */
+.ww-mobile-nav { display: none; }
+.ww-voice-wrap { width: min(1320px, calc(100% - 32px)); margin: 16px auto 0; }
+.ww-page .ww-voice {
+  position: static; width: auto; display: grid; gap: 8px; padding: 14px 16px;
+  border: 1px solid var(--sp-border); border-radius: var(--sp-radius-lg);
+  background: var(--sp-surface); color: var(--sp-text); box-shadow: var(--sp-shadow);
+}
+.ww-page .ww-voice small { color: var(--sp-text-muted); }
+.ww-page .ww-voice > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.ww-page .ww-voice button {
+  min-height: 44px; padding: 10px 16px; border: 0; border-radius: var(--sp-radius-pill);
+  background: var(--sp-green); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+}
+.ww-page .ww-voice button:disabled { opacity: 0.5; cursor: default; }
+.ww-page button:focus-visible { outline: 3px solid var(--ww-accent); outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  .ww-page { min-height: 100svh; }
+  .ww-topbar { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
+  .ww-topbar__account { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
+  .ww-topbar__account .sp-coin { justify-self: start; }
+  .ww-topbar__account .sp-user-chip { min-width: 0; max-width: 100%; }
+  .ww-topbar__account .sp-user-chip .core-name-wrap { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ww-page .sp-btn { min-height: 44px; white-space: normal; }
+  .ww-voice-wrap { width: calc(100% - 24px); margin-top: 12px; }
+  .ww-mobile-nav {
+    position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px; padding: 8px 12px; background: var(--sp-bg); border-bottom: 1px solid var(--sp-border);
+  }
+  .ww-mobile-nav button {
+    min-height: 44px; padding: 8px; border: 1px solid var(--sp-border); border-radius: 12px;
+    color: var(--sp-text); background: var(--sp-surface); font: inherit; font-size: 13px; font-weight: 700;
+  }
+  .ww-mobile-nav button[aria-pressed='true'] { border-color: var(--ww-accent); background: var(--ww-accent-soft); }
+  .ww-stage { width: calc(100% - 24px); gap: 12px; padding: 12px 0 max(16px, env(safe-area-inset-bottom)); }
+  .ww-stage--game > .ww-feed, .ww-stage--chat > .ww-main { display: none; }
+  .ww-page .ww-feed { height: 65vh; height: 65dvh; min-height: 280px; }
+  .ww-feed__form { flex-wrap: wrap; padding: 10px; }
+  .ww-feed__form > .ww-feed__tag { flex-basis: 100%; width: fit-content; }
+  .ww-feed__form input { font-size: 16px; min-height: 44px; box-sizing: border-box; }
+  .ww-feed__head { padding: 12px; }
+  .ww-banner { gap: 8px; padding: 12px; }
+  .ww-banner > div { min-width: 0; }
+  .ww-banner__icon { font-size: 28px; }
+  .ww-banner strong { font-size: 17px; }
+  .ww-banner__clock { flex-shrink: 0; font-size: 18px; padding: 8px; }
+  .ww-myrole { padding: 12px; gap: 10px; }
+  .ww-myrole > div { min-width: 0; overflow-wrap: anywhere; }
+  .ww-myrole__emoji { font-size: 32px; }
+  .ww-actions { padding: 12px; }
+  .ww-actions__reset { position: static; min-height: 44px; text-align: left; }
+  .ww-grid__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ww-card { min-width: 0; min-height: 138px; padding: 12px 6px 8px; }
+  .ww-card__role { overflow-wrap: anywhere; }
+  .ww-history__game summary { flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .ww-history__headline { flex-basis: calc(100% - 70px); }
+  .ww-history__players { padding: 0 6px 8px; }
+  .ww-history__players li { position: relative; grid-template-columns: 26px minmax(0, 1fr) 22px; gap: 4px 8px; padding: 8px; }
+  .ww-history__role, .ww-history__fate { grid-column: 2; overflow-wrap: anywhere; }
+  .ww-history__result { position: absolute; top: 8px; right: 8px; }
+  .ww-rules__role { min-width: 0; }
+  .ww-rules__role > div { min-width: 0; overflow-wrap: anywhere; }
+  .ww-badge { max-width: 100%; overflow-wrap: anywhere; }
+}

@@ -3,11 +3,14 @@ import { createContext, useContext, useEffect, useMemo } from 'react'
 export const AnimationContext = createContext(null)
 const idle = { start() {}, stop() {}, step: delta => delta }
 export const createAnimationActivity = (invalidate) => {
-  const active = new Set()
+  const active = new Set(), listeners = new Set()
   if (import.meta.env.DEV) window.__thirteenActiveAnimations = active
+  // Listeners hear only idle <-> moving transitions: stop() runs every frame and must stay cheap.
+  const notify = () => listeners.forEach(listener => listener())
   return {
-    start(key) { active.add(key); invalidate() },
-    stop(key) { active.delete(key) },
+    start(key) { const idle = !active.size; active.add(key); invalidate(); if (idle) notify() },
+    stop(key) { if (active.delete(key) && !active.size) notify() },
+    subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener) } },
     tick() { if (active.size) invalidate() },
     get size() { return active.size },
   }

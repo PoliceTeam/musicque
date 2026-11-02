@@ -30,6 +30,15 @@ const buildAuthPayload = (user) => ({
   user: user.toPublicJSON(),
 })
 
+// null cũng khớp document cũ chưa có field; cập nhật có điều kiện để hai tab không cùng hiện.
+exports.claimIceCityIntro = async (userId) => {
+  const result = await User.updateOne(
+    { _id: userId, iceCityIntroSeenAt: null },
+    { $set: { iceCityIntroSeenAt: new Date() } },
+  )
+  return { show: result.modifiedCount === 1 }
+}
+
 const assertCredentialShape = (username, password) => {
   if (!username || !password) {
     throw new AuthError(400, 'Vui lòng nhập tên đăng nhập và mật khẩu')
@@ -85,6 +94,7 @@ exports.register = async ({ username, password, displayName, deviceId }) => {
     })
     welcomeGrant = grant.granted
     user.polites = welcomeGrant ? SIGNUP_START_BALANCE : 0
+    user.seedPolites = welcomeGrant ? SIGNUP_START_BALANCE : 0
     // Tài khoản phụ không được nhận thêm daily bonus ngay trong ngày đăng ký.
     user.lastDailyBonusAt = welcomeGrant ? null : new Date()
   }
@@ -283,7 +293,11 @@ exports.syncAdminAccount = async () => {
  * Giải mã token thành User document. Dùng cho Socket.IO — nơi không có
  * req/res để chạy middleware Express. Trả null nếu token thiếu hoặc sai.
  */
-exports.resolveUserFromToken = async (token) => {
+exports.resolveUserFromToken = async (token, cookieHeader) => {
+  const sso = require('./sso.service')
+  // Khi bật SSO, socket chỉ xác thực bằng cookie phiên SSO.
+  if (sso.enabled()) return sso.resolveSession(sso.sessionToken(cookieHeader))
+  if (!token && cookieHeader) return sso.resolveSession(sso.sessionToken(cookieHeader))
   if (!token || typeof token !== 'string') return null
 
   try {

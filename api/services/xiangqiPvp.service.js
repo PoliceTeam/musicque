@@ -52,9 +52,10 @@ const transaction = (room, type, userId) => ({
   referenceType: 'XiangqiPvp', referenceId: room._id,
   metadata: { mode: 'pvp', stake: room.stake, reason: room.resultReason },
 })
+const earnedStakeMessage = (stake) => `Bạn cần ít nhất ${stake} PC kiếm được để cược ván này. PC tặng lúc đăng ký và điểm danh không dùng được để đấu người`
 const ensureBalance = async (userId, stake) => {
-  const user = await User.findById(userId).select('polites')
-  if ((user?.polites ?? 0) < stake) throw new PvpError(`Bạn cần ít nhất ${stake} PC để cược ván này`, 409, 'INSUFFICIENT_BALANCE')
+  const user = await User.findById(userId).select('polites seedPolites').lean()
+  if (coins.earnedBalance(user) < stake) throw new PvpError(earnedStakeMessage(stake), 409, 'INSUFFICIENT_BALANCE')
 }
 const paid = (room, userId) => User.exists({ _id: userId, appliedCoinOperations: betKey(room, userId) })
 const settle = async (room) => {
@@ -146,7 +147,7 @@ const join = async (user, code) => {
       details.operationKey = betKey(room, player.userId)
       const debited = await coins.debitOnce(player.userId, room.stake, details)
       if (!debited && !await paid(room, player.userId)) {
-        throw new PvpError(`${player.username} cần ít nhất ${room.stake} PC. Phòng đã hủy; phần đã thu sẽ được hoàn tự động.`, 409, 'INSUFFICIENT_BALANCE')
+        throw new PvpError(`${player.username} cần ít nhất ${room.stake} PC kiếm được. PC tặng lúc đăng ký và điểm danh không dùng được để đấu người. Phòng đã hủy; phần đã thu sẽ được hoàn tự động.`, 409, 'INSUFFICIENT_BALANCE')
       }
     }
     const started = await Room.findOneAndUpdate({ _id: room._id, status: 'starting' }, {

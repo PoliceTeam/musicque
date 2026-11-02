@@ -1,0 +1,313 @@
+/* Dance Lab — trang thử animation nhân vật. Nền sân khấu là ảnh, canvas 3D trong suốt phủ lên. */
+
+.dl-page {
+  position: fixed;
+  inset: 0;
+  background-color: #0b0820;
+  background-size: cover;
+  background-position: center bottom;
+  color: #f4f1ff;
+  overflow: hidden;
+  transition: background-image 0.3s ease;
+}
+
+.dl-stage {
+  position: absolute;
+  inset: 0 332px 0 0; /* chừa cột điều khiển bên phải để nhân vật ngoài cùng không bị che */
+}
+
+/* Thẻ Mưa lì xì (toàn cục, góc trên phải) đè lên bảng điều khiển: dời xuống góc dưới trái. */
+body:has(.dl-page) .lr-dock { top: auto; bottom: 16px; right: auto; left: 16px; }
+
+.dl-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: linear-gradient(to bottom, rgba(5, 3, 20, 0.75), transparent);
+  pointer-events: none;
+}
+
+.dl-top > * {
+  pointer-events: auto;
+}
+
+.dl-top__back {
+  color: #f4f1ff;
+  text-decoration: none;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.dl-top__back:hover {
+  opacity: 1;
+}
+
+.dl-top__title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dl-top__hint {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.dl-panel {
+  position: absolute;
+  top: 60px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  width: 300px;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(10, 6, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.dl-section + .dl-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dl-section h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 241, 255, 0.7);
+}
+
+.dl-section h3 small {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.dl-stages {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.dl-stage-btn {
+  position: relative;
+  height: 56px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+}
+
+.dl-stage-btn span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.dl-stage-btn.is-active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.dl-select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f1ff;
+  font-size: 14px;
+}
+
+.dl-select option,
+.dl-select optgroup {
+  color: #111;
+}
+
+.dl-select--small {
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.dl-select:disabled {
+  opacity: 0.4;
+}
+
+.dl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dl-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f4f1ff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dl-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dl-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dl-speeds {
+  display: flex;
+  gap: 4px;
+}
+
+.dl-chip {
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #f4f1ff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dl-chip.is-active {
+  background: #f4f1ff;
+  color: #1a1035;
+  font-weight: 700;
+}
+
+.dl-dancer {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dl-loading {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dl-loading--page {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- Nhạc ---------- */
+.dl-section:first-child h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dl-beat {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff5cd6;
+  box-shadow: 0 0 10px #ff5cd6;
+  opacity: 0.15;
+}
+
+.dl-beat.is-bar {
+  background: #ffe066;
+  box-shadow: 0 0 12px #ffe066;
+}
+
+.dl-track {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.dl-row--tight {
+  gap: 8px;
+}
+
+.dl-btn--play {
+  flex: 0 0 36px;
+  padding: 6px 0;
+}
+
+.dl-seek {
+  flex: 1;
+  min-width: 0;
+}
+
+.dl-time {
+  font-size: 12px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.dl-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.dl-field--block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.dl-num {
+  width: 72px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f1ff;
+}
+
+.dl-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.dl-btn:disabled,
+.dl-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -11,7 +11,7 @@ Client gửi:
 
 | Event | Payload | Hành vi |
 | --- | --- | --- |
-| `hall:join` | `{room?,name?,token?}` | Nhận nệm gần điểm vào `{x:0,z:10}`; đủ 100 thì chờ FIFO. Token hợp lệ lấy username Musicque đã xác thực; khách tự đặt tên ≤32 ký tự hoặc sinh `Khách xxxx`. |
+| `hall:join` | `{room?,name?,token?}` | Nhận nệm gần điểm vào `{x:0,z:10}`; đủ 100 thì chờ FIFO. Token hợp lệ lấy username Musicque đã xác thực bằng cookie SSO hoặc JWT; khách tự đặt tên ≤32 ký tự hoặc sinh `Khách xxxx`. |
 | `hall:ping` | `{kind,x,z}` | Đánh dấu cho người khác cùng phòng; kind: `look`, `here`, `wait`, `bow`; tối đa 3 lần/4 giây, tọa độ hữu hạn trong biên ±30. |
 | `hall:leave` | không cần | Rời và nhả nệm; disconnect làm tương tự. |
 | `hall:claim` | `{}` | Nhận nệm gần nhất trống hoặc vào cuối hàng đợi. Không nhận cushionId từ client. |
@@ -75,7 +75,7 @@ Nệm lưới 10×10: `x=(id%10-4.5)*1.6`, `z=(floor(id/10)-4.5)*1.4`. Lấy t�
 - Kiểm tra sau sửa: API `npm test` 230 pass, 0 fail, 3 Mongo skip; FE `npm test` 393 pass. Test hồi quy hall ở FE 17 pass, BE 9 pass. Thao tác vào rồi rời ngay trên Orca đã hết lỗi canvas; hai socket live đã nhận ping qua API local.
 - Chưa kiểm tra tải 100 người hay deploy production.
 
-Người đã đăng nhập dùng username Musicque từ token, không dùng tên client tự khai. Tên luôn hiện trên đầu mọi nhân vật đang trong khung nhìn; khách vẫn dùng biệt danh nếu chưa đăng nhập.
+Người đã đăng nhập dùng username Musicque từ cookie SSO hoặc JWT khi chạy cơ chế cũ, không dùng tên client tự khai. Tên luôn hiện trên đầu mọi nhân vật đang trong khung nhìn; khách vẫn dùng biệt danh nếu chưa đăng nhập.
 
 
 ## Sửa chặn deploy sau review cuối
@@ -85,3 +85,5 @@ Người đã đăng nhập dùng username Musicque từ token, không dùng tê
 - Kết nối thiếu/lỗi/hết thời gian chờ báo lỗi và cho bấm Vào sảnh để thử lại; không tự chuyển phòng giả lập. Mock chỉ bật rõ bằng `?mock` trong bản DEV, production bỏ qua.
 - Đã thử Socket.IO localhost thật: ACK chậm báo lỗi, lần thử tiếp theo vào live thành công.
 - Điều kiện deploy vẫn giữ: một tiến trình API, VITE_API_URL/VITE_SOCKET_URL đúng môi trường lúc build; chưa deploy/push/restart production.
+
+Khi ghép vào main có SSO, hall dùng cookie từ Socket.IO handshake theo cùng auth service; client không phải đọc cookie HttpOnly.

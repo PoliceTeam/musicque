@@ -13,6 +13,7 @@ import { LuckyRainProvider } from './contexts/LuckyRainContext'
 import LuckyRain from './components/LuckyRain/LuckyRain'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthModal from './components/Auth/AuthModal'
+import IceCityIntroProvider from './components/IceCity/IceCityIntroProvider'
 import ThirteenRedirect from './components/Thirteen/ThirteenRedirect'
 import { useTheme } from './contexts/ThemeContext'
 
@@ -27,6 +28,8 @@ const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
 const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
 const JunglePage = lazy(() => import('./pages/JunglePage'))
 const HallPage = lazy(() => import('./pages/HallPage'))
+const DanceLabPage = lazy(() => import('./pages/DanceLabPage'))
+const AuditionPage = lazy(() => import('./pages/AuditionPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
 const LuckyRainPreview = import.meta.env.DEV ? lazy(() => import('./components/LuckyRain/LuckyRainPreview')) : null
 
@@ -57,6 +60,7 @@ function AppContent() {
               <RedLightProvider>
                 <LotteryProvider>
                 <Router>
+                  <IceCityIntroProvider>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       {import.meta.env.DEV && <Route path='/dev/lucky-rain' element={<LuckyRainPreview />} />}
@@ -87,6 +91,9 @@ function AppContent() {
                       <Route path='/jungle' element={<JunglePage />} />
                       <Route path='/jungle/:gameId' element={<JunglePage />} />
                       <Route path='/hall' element={<HallPage />} />
+                      <Route path='/dance-lab' element={<DanceLabPage />} />
+                      <Route path='/audition' element={<AuditionPage />} />
+                      <Route path='/audition/:roomId' element={<AuditionPage />} />
                       <Route
                         path='/admin'
                         element={
@@ -100,6 +107,7 @@ function AppContent() {
                   {/* Modal đăng nhập nhanh — cần nằm trong Router vì UserMenu dùng navigate */}
                   <AuthModal />
                   <LuckyRain />
+                  </IceCityIntroProvider>
                 </Router>
                 </LotteryProvider>
               </RedLightProvider>

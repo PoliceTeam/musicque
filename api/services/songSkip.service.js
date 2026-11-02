@@ -78,6 +78,7 @@ async function refundTemporaryDebit(userId, amount, operationKey, song, reason) 
     referenceType: 'Song',
     referenceId: song._id,
     metadata: { reason, sessionId: song.sessionId },
+    restoreSeedFromOperationKey: `song_skip_contribution:${operationKey}`,
   })
 }
 
@@ -151,6 +152,7 @@ async function contribute({ songId, user, requestedAmount, requestKey, io }) {
         $push: {
           contributions: {
             operationKey: requestKey,
+            debitOperationKey: `song_skip_contribution:${attemptKey}`,
             userId: user._id,
             amount: acceptedAmount,
           },
@@ -229,6 +231,7 @@ async function finishRefund(pool, io) {
         reason: pool.refundReason,
         sessionId: pool.sessionId,
       },
+      restoreSeedFromOperationKey: contribution.debitOperationKey,
     })
 
     await SongSkipPool.updateOne(

@@ -21,6 +21,8 @@ const AVATAR_COLORS = [
 const USERNAME_PATTERN = /^[a-zA-Z0-9._-]{3,24}$/
 
 const userSchema = new mongoose.Schema({
+  ssoIssuer: { type: String, select: false },
+  ssoSubject: { type: String, select: false },
   username: {
     type: String,
     required: true,
@@ -68,6 +70,16 @@ const userSchema = new mongoose.Schema({
     default: 100,
     min: 0,
   },
+  // Signup grant and daily bonus. This slice cannot be staked against another player.
+  seedPolites: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  // Scratch value from the latest house debit. Overwritten each spend and cleared after the ledger row is written.
+  seedSpentHold: {
+    type: Number,
+  },
   // Mốc lần cuối nhận thưởng đăng nhập ngày (so theo ngày lịch của server)
   lastDailyBonusAt: {
     type: Date,
@@ -98,6 +110,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Intro ICE City chỉ hiển thị một lần cho mỗi tài khoản, kể cả đổi thiết bị.
+  iceCityIntroSeenAt: { type: Date, default: null, select: false },
   // Operation key đã áp dụng trực tiếp lên ví. Dùng cho các khoản hoàn cần
   // idempotent qua cả trường hợp server restart giữa credit và cập nhật nghiệp vụ.
   appliedCoinOperations: {
@@ -145,6 +159,8 @@ const userSchema = new mongoose.Schema({
   },
 })
 
+userSchema.index({ ssoIssuer: 1, ssoSubject: 1 }, { unique: true, partialFilterExpression: { ssoIssuer: { $type: 'string' }, ssoSubject: { $type: 'string' } } })
+
 // Chặn cả hai request đồng thời chọn cùng username khác hoa/thường.
 userSchema.index({ username: 1 }, {
   unique: true,
@@ -159,7 +175,7 @@ userSchema.statics.findByUsername = function (username, { withPassword = false }
   const escaped = username.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const query = this.findOne({ username: new RegExp(`^${escaped}$`, 'i') })
 
-  return withPassword ? query.select('+password') : query
+  return withPassword ? query.select('+password +ssoSubject') : query
 }
 
 userSchema.statics.isValidUsername = function (username) {
@@ -187,7 +203,7 @@ userSchema.methods.comparePassword = async function (candidate) {
 
 // User cũ (tạo trước khi có hệ thống auth) chưa có password — được phép claim
 userSchema.methods.isClaimable = function () {
-  return !this.password
+  return !this.password && !this.ssoSubject
 }
 
 userSchema.methods.toPublicJSON = function () {
@@ -199,6 +215,7 @@ userSchema.methods.toPublicJSON = function () {
     color: this.color,
     avatarId: this.avatarId || getStableAvatarId(this._id?.toString() || this.username),
     polites: this.polites ?? 0,
+    seedPolites: this.seedPolites ?? 0,
     core: getCoreProfile(this),
   }
 }

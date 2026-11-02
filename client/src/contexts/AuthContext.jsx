@@ -2,12 +2,12 @@ import React, { createContext, useState, useEffect, useCallback, useMemo, useCon
 import { message } from 'antd'
 import {
   fetchMe,
+  logoutSession,
   login as loginApi,
   register as registerApi,
   updateMyAvatar,
   updateMyProfile,
   changeMyPassword,
-  getStoredToken,
   setStoredToken,
   getCoinBalance,
   claimDailyBonus,
@@ -30,7 +30,7 @@ const extractError = (error, fallback) =>
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(() => Boolean(getStoredToken()))
+  const [loading, setLoading] = useState(true)
   // Số dư Polite Coins — tách riêng để cập nhật nhanh sau mỗi lần cược/bid
   const [balance, setBalanceState] = useState(0)
   // Modal đăng nhập bật lên khi guest bấm vào hành động cần tài khoản
@@ -59,13 +59,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user?._id])
 
-  // Khôi phục phiên từ token đã lưu
+  // Khôi phục phiên cookie SSO hoặc bearer token cũ.
   useEffect(() => {
-    if (!getStoredToken()) {
-      setLoading(false)
-      return undefined
-    }
-
+    const ssoResult = new URLSearchParams(window.location.search).get('auth')
+    if (['sso-failed', 'handoff-failed'].includes(ssoResult)) { message.error('Đăng nhập chưa thành công. Vui lòng thử lại.'); setAuthModal({ mode: 'login' }) }
     let cancelled = false
 
     fetchMe()
@@ -120,9 +117,9 @@ export const AuthProvider = ({ children }) => {
   )
 
   const register = useCallback(
-    async (username, password, displayName) => {
+    async (username, password, displayName, email) => {
       try {
-        const response = await registerApi(username, password, displayName)
+        const response = await registerApi(username, password, displayName, email)
         const created = applyAuthResult(response.data)
         message.success(response.data.message || 'Đăng ký thành công')
         return { ok: true, user: created }
@@ -133,9 +130,13 @@ export const AuthProvider = ({ children }) => {
     [applyAuthResult],
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    let logoutUrl
+    try { ({ data: { logoutUrl } } = await logoutSession()) } catch { message.error('Không đăng xuất được. Vui lòng thử lại.'); return }
     setStoredToken(null)
     setUser(null)
+    // Tương thích backend có URL đăng xuất; luồng form SSO chỉ thu hồi session app.
+    if (logoutUrl) { window.location.assign(logoutUrl); return }
     message.success('Đã đăng xuất')
   }, [])
 
@@ -225,7 +226,6 @@ export const AuthProvider = ({ children }) => {
 
   // Lấy lại số dư từ server (sau khi vòng Cho-Han chốt xong)
   const refreshBalance = useCallback(async () => {
-    if (!getStoredToken()) return
     try {
       const { data } = await getCoinBalance()
       setBalanceState(data.balance)

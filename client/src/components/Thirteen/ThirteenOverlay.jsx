@@ -1,10 +1,11 @@
 import React, { Profiler, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { message, Tooltip } from 'antd'
+import { message, Tooltip, ConfigProvider } from 'antd'
 import ThirteenTable3D from './ThirteenTable3D'
-import ThirteenHud from './ThirteenHud'
+import ThirteenHud, { TableCoins } from './ThirteenHud'
 import ThirteenRulesModal from './ThirteenRulesModal'
 import StakePicker from './StakePicker'
+import TableChat from './TableChat'
 import { tableMoneyText } from '../CardTable3D/tableBoard'
 import { resetCardTableView } from '../CardTable3D/dragLook'
 import { inviteUrl, roomRemaining, roomStatus, stakeLabel, stakeOptionsOf } from '../../utils/tableGame'
@@ -14,7 +15,9 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
   const [showResult, setShowResult] = useState(false)
   const [now, setNow] = useState(Date.now())
   const dialog = useRef()
-  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.turnMs, dealOnMount, handLowered])
+  const selection = useRef(state)
+  selection.current = state
+  const scene = useMemo(() => <ThirteenTable3D table={table} userId={userId} myHand={state.myHand} selectedCards={state.selectedCards} toggleCard={state.toggleCard} setCardSelected={state.setCardSelected} setSelectedCards={state.setSelectedCards} clearSelection={state.clearSelection} focusedCard={state.focusedCard} validPlays={state.validPlays} action={state.action} busy={state.busy} shortcutsEnabled={!rulesOpen} turnMs={state.turnMs} dealOnMount={dealOnMount} firstPerson handLowered={handLowered} lastChatBySeat={state.lastChatBySeat} />, [table, userId, state.myHand, state.selectedCards, state.toggleCard, state.setCardSelected, state.setSelectedCards, state.clearSelection, state.focusedCard, state.validPlays, state.action, state.busy, rulesOpen, state.turnMs, dealOnMount, handLowered, state.lastChatBySeat])
   useEffect(() => { setHandLowered(false) }, [table?.matchId])
   useEffect(() => {
     if (!open) return undefined
@@ -24,13 +27,14 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
     document.body.style.overflow = 'hidden'
     dialog.current?.focus()
     const onKey = event => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault()
         if (rulesOpen) setRulesOpen(false)
+        else if (selection.current.selectedCards?.length) selection.current.clearSelection?.()
         else onClose()
       }
       if (event.key === 'Tab' && !rulesOpen) {
-        const buttons = dialog.current?.querySelectorAll('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled)')
+        const buttons = [...(dialog.current?.querySelectorAll('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || [])].filter(element => !element.closest('[hidden]'))
         const first = buttons?.[0], last = buttons?.[buttons.length - 1]
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first?.focus() }
@@ -60,19 +64,21 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
     try { await navigator.clipboard.writeText(inviteUrl(table.code || table.tableId)); message.open({ key: 'table-game', type: 'success', content: 'Đã sao chép link mời' }) }
     catch { message.open({ key: 'table-game', type: 'error', content: 'Không sao chép được link mời. Hãy thử lại.' }) }
   }
-  return createPortal(<div className='th-overlay'>
+  return createPortal(<ConfigProvider theme={{ components: { Tooltip: { zIndexPopup: 1301 } } }}><div className='th-overlay'>
     <section className='th-game' role='dialog' aria-modal='true' aria-labelledby='th-game-title' tabIndex={-1} ref={dialog}>
       <Profiler id='thirteen-table' onRender={(...sample) => { if (import.meta.env.DEV) window.__thirteenProfile?.(...sample) }}>
         {scene}
       </Profiler>
       <h2 id='th-game-title' className='thirteen-sr-only'>Tiến Lên Miền Nam</h2>
-      <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {tableMoneyText(table).replace(/^./, letter => letter.toLowerCase())}{table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
+      <div className='thirteen-sr-only' aria-live='polite' aria-atomic='true'>Bàn {table.code || table.tableId}{table.visibility === 'private' ? ', riêng tư' : ''}, {finished && !table.startsAt ? 'kết thúc' : roomStatus(table, now).toLowerCase()}, {tableMoneyText(table).replace(/^./, letter => letter.toLowerCase())}{!isHost && table.readyDeadlineAt ? `, ván mới sau ${readyTime}s` : ''}</div>
       <div className='th-game-corner-controls'>
-        <Tooltip title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
-        <Tooltip title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
-        <Tooltip title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
+        <TableCoins corner />
+        <Tooltip trigger={['hover', 'focus']} title='Luật chơi'><button type='button' className='sp-btn th-icon' onClick={() => setRulesOpen(true)} aria-label='Luật chơi'>?</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title='Về góc nhìn mặc định'><button type='button' className='sp-btn th-icon' onClick={resetCardTableView} aria-label='Về góc nhìn mặc định'>⌖</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title={`Về sảnh — bạn vẫn giữ ghế${playing ? '; hết giờ sẽ tự đánh' : ''}`}><button type='button' className='sp-btn th-icon' onClick={onClose} aria-label='Thu nhỏ — về sảnh, vẫn giữ ghế'>−</button></Tooltip>
+        <Tooltip trigger={['hover', 'focus']} title={playing ? 'Không thể rời khi đang chơi' : table.fundingPending ? 'Đang hoàn PC, vui lòng chờ' : 'Rời bàn'}><span tabIndex={playing || table.fundingPending || state.busy ? 0 : undefined}><button type='button' className='sp-btn th-icon' disabled={playing || table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)} aria-label='Rời bàn'>⇥</button></span></Tooltip>
       </div>
-      {playing && <ThirteenHud {...state} resetView={resetCardTableView} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
+      {playing && <ThirteenHud {...state} shortcutsEnabled={!rulesOpen} table={table} userId={userId} handLowered={handLowered} toggleHand={() => setHandLowered(value => !value)} />}
       {!playing && <div className='th-game-end'>
         {finished && showResult && result && <ol className='thirteen-results' aria-label='Kết quả ván'>{result.ranking.map((seat, i) => {
           const delta = (result.payouts.find(p => p.userId === seat.userId)?.amount || 0) - (result.stake || 0)
@@ -82,11 +88,13 @@ export default function ThirteenOverlay({ open, onClose, table, userId, result, 
           ? <StakePicker options={stakeOptionsOf(state.config)} value={table.stake} balance={state.balance} disabled={Boolean(table.startsAt) || table.fundingPending || state.busy} onChange={stake => state.action('setStake', table.tableId, stake)} />
           : <><span>Mức cược</span><strong>{stakeLabel(table.stake)}</strong></>}</div>}
         {hasStake && !isHost && host && <p>Chủ bàn: {host.username}</p>}
-        <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
-        {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>Bot sẽ lấp các ghế trống khi bắt đầu.</p>}
-        <div className='thirteen-actions'><button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : `${finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}${readyAmount}`}</button><button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
+        <ul className='thirteen-ready-seats'>{table.seats.filter(seat => seat?.userId).map(seat => <li key={seat.userId}>{seat.username}<span>{seat.userId === table.hostId ? 'Chủ bàn' : seat.ready ? 'Sẵn sàng ✓' : 'Chưa sẵn sàng'}</span></li>)}</ul>
+        {table.startsAt ? <p role='status'>Bắt đầu sau {countdown}…</p> : isHost ? <p>Bắt đầu khi mọi người sẵn sàng</p> : finished && table.readyDeadlineAt ? <p role='timer'>Tự rời bàn sau {readyTime}s nếu chưa sẵn sàng</p> : <p>{isHost ? 'Bot sẽ lấp các ghế trống khi bắt đầu.' : table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}
+        {!isHost && finished && table.readyDeadlineAt && !table.startsAt && <p>{table.seats.filter(seat => seat?.userId && seat.userId !== table.hostId).every(seat => seat.ready) ? `Đã sẵn sàng — chờ ${host?.username || 'chủ bàn'} bấm Bắt đầu` : 'Chờ chủ bàn bắt đầu'}</p>}
+        <div className='thirteen-actions'>{isHost ? <button type='button' className='sp-btn sp-btn--primary' disabled={Boolean(table.startsAt) || table.fundingPending || state.busy || table.seats.some(seat => seat?.userId && seat.userId !== userId && !seat.ready)} onClick={() => state.action('start', table.tableId)}>Bắt đầu{readyAmount}</button> : <button type='button' className='sp-btn sp-btn--primary' disabled={table.fundingPending || state.busy} onClick={() => state.action(me?.ready ? 'unready' : 'ready', table.tableId)}>{me?.ready ? table.startsAt ? 'Huỷ' : 'Huỷ sẵn sàng' : `${finished ? 'Sẵn sàng ván mới' : 'Sẵn sàng'}${readyAmount}`}</button>}<button type='button' className='sp-btn' onClick={copyInvite}>Sao chép link mời</button>{finished && <button type='button' className='sp-btn' disabled={table.fundingPending || state.busy} onClick={() => state.action('leave', table.tableId)}>Rời bàn</button>}</div>
       </div>}
+      <TableChat />
       <ThirteenRulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </section>
-  </div>, document.body)
+  </div></ConfigProvider>, document.body)
 }

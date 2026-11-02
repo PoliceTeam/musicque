@@ -5,11 +5,12 @@ import HomePage from './HomePage'
 import { renderWithProviders } from '../test/testUtils'
 
 // HomePage ghép rất nhiều widget; chỉ giữ lại sidebar và thay phần còn lại bằng vỏ rỗng.
-vi.mock('../services/api', () => ({ warmupTTS: vi.fn(() => Promise.resolve()) }))
+vi.mock('../services/api', () => ({ warmupTTS: vi.fn(() => Promise.resolve()), fetchSsoStatus: vi.fn(() => Promise.resolve({ data: { enabled: true, handoffTargets: ['musicque-farm'] } })), handoff: vi.fn() }))
 vi.mock('../components/Layout/SidebarNav', () => ({ default: ({ children }) => <nav>{children}</nav> }))
 vi.mock('../components/Werewolf/WerewolfLauncher', () => ({ default: () => <div data-banner='werewolf' /> }))
 vi.mock('../components/Jungle/JungleLauncher', () => ({ default: () => <div data-banner='jungle' /> }))
-vi.mock('../components/Home/CardGamesPromo', () => ({ default: () => <div data-banner='card-games' /> }))
+vi.mock('../components/Audition/AuditionLauncher', () => ({ default: () => <div data-banner='audition' /> }))
+vi.mock('../components/IceCity/IceCityPromo', () => ({ default: () => <div data-banner='ice-city' /> }))
 vi.mock('../components/Playlist/AddSongForm', () => ({ default: () => null }))
 vi.mock('../components/Playlist/PlaylistView', () => ({ default: () => null }))
 vi.mock('../components/Home/NowPlayingBar', () => ({ default: () => null }))
@@ -28,8 +29,8 @@ vi.mock('../components/TetCountdown/TetCountdown', () => ({ default: () => null 
 vi.mock('../components/NationalDay/NationalDayBanner', () => ({ default: () => null }))
 vi.mock('../components/DailyIdiom/DailyIdiom', () => ({ default: () => null }))
 
-it('stacks the game banners under the quick-toys row: Ma Sói, Cờ thú, then Game bài', () => {
+it('keeps the quick-toys row in the sidebar and the game banners in the main column: ICE City, Au đi sần, Ma Sói, then Cờ thú', () => {
   const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
   const order = [...container.querySelectorAll('.sp-quicktoys, [data-banner]')].map(node => node.dataset.banner || 'quick-toys')
-  expect(order).toEqual(['quick-toys', 'werewolf', 'jungle', 'card-games'])
+  expect(order).toEqual(['quick-toys', 'ice-city', 'audition', 'werewolf', 'jungle'])
 })

@@ -176,3 +176,8 @@
   .lr-scene--revealing .lr-stage__rays { opacity: .1; }
   .lr-scene--result .lr-stage__envelope { opacity: .13; }
 }
+
+/* Trên mobile, không để lì xì nổi đè lên nút hành động/chat Ma Sói. */
+@media (max-width: 600px) {
+  .lr-dock.lr-dock--werewolf { position: static; margin: 0 12px max(16px, env(safe-area-inset-bottom)); }
+}

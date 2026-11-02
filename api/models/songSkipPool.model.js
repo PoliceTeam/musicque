@@ -6,6 +6,9 @@ const contributionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    debitOperationKey: {
+      type: String,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

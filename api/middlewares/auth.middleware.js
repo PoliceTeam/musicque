@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken')
+const { enabled: ssoEnabled, sessionToken, resolveSession } = require('../services/sso.service')
+const { getAllowedOrigins } = require('../utils/cors')
 const User = require('../models/user.model')
 require('dotenv').config()
 
@@ -9,9 +11,15 @@ const extractToken = (req) => {
 }
 
 // Trả về User document hoặc null. Không ném lỗi — caller quyết định 401 hay bỏ qua.
-const resolveUser = async (req) => {
-  const token = extractToken(req)
-  if (!token) return null
+// Khi bật SSO chỉ nhận cookie phiên SSO; JWT cũ không còn xác thực được.
+const resolveUser = async (req, res) => {
+  const token = ssoEnabled() ? null : extractToken(req)
+  if (!token) {
+    const cookieToken = sessionToken(req.headers.cookie)
+    if (!cookieToken) return null
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !getAllowedOrigins().includes(req.headers.origin)) return null
+    return resolveSession(cookieToken, res)
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
@@ -23,10 +31,16 @@ const resolveUser = async (req) => {
   }
 }
 
+// Đăng ký/đăng nhập/đổi mật khẩu cục bộ chỉ dùng khi chưa bật SSO; Keycloak giữ các việc này.
+exports.localCredentials = (_req, res, next) => {
+  if (ssoEnabled()) return res.status(404).json({ message: 'Tài khoản được quản lý bởi SSO.', code: 'SSO_ONLY' })
+  next()
+}
+
 // Bắt buộc đăng nhập
 exports.authenticate = async (req, res, next) => {
   try {
-    const user = await resolveUser(req)
+    const user = await resolveUser(req, res)
 
     if (!user) {
       return res
@@ -44,7 +58,7 @@ exports.authenticate = async (req, res, next) => {
 // Gắn req.user nếu có token hợp lệ, không có thì vẫn cho đi tiếp (route công khai)
 exports.optionalAuthenticate = async (req, res, next) => {
   try {
-    req.user = (await resolveUser(req)) || null
+    req.user = (await resolveUser(req, res)) || null
   } catch {
     req.user = null
   }
@@ -54,7 +68,7 @@ exports.optionalAuthenticate = async (req, res, next) => {
 // Bắt buộc đăng nhập + role admin
 exports.requireAdmin = async (req, res, next) => {
   try {
-    const user = await resolveUser(req)
+    const user = await resolveUser(req, res)
 
     if (!user) {
       return res

@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 export const CHAIR_HEIGHT = 0.45
 export const CHAIR_RADIUS = 0.95
 export function chairPlacement(relativeSeat) {
-  const angle = relativeSeat * Math.PI / 2
+  const angle = -relativeSeat * Math.PI / 2
   return { position: [-Math.sin(angle) * CHAIR_RADIUS, 0, Math.cos(angle) * CHAIR_RADIUS], yaw: Math.PI - angle }
 }
 export function chairGeometry() {

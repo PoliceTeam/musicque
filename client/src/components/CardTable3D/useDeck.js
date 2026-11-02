@@ -8,6 +8,7 @@ export const useDeck = () => {
   const gl = useThree(state => state.gl)
   const overlays = useMemo(() => ({
     glowGeometry: new THREE.PlaneGeometry(0.064, 0.095),
+    selectionMaterial: new THREE.MeshBasicMaterial({ color: '#3d7dee', side: THREE.DoubleSide }),
     glowMaterial: new THREE.MeshBasicMaterial({ color: '#72edb5', transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }),
     dimGeometry: new THREE.PlaneGeometry(0.058, 0.089),
     dimMaterial: new THREE.MeshBasicMaterial({ color: '#26383d', transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }),
@@ -20,7 +21,9 @@ export const useDeck = () => {
     const cheapMaterial = source => {
       if (!materials.has(source)) {
         if (source.map) source.map.anisotropy = anisotropy
-        materials.set(source, new THREE.MeshLambertMaterial({ name: source.name, map: source.map, color: source.color, side: THREE.FrontSide }))
+        // Mặt giấy giữ màu rõ dưới mọi ánh sáng; bài không hợp lệ vẫn dùng overlay riêng.
+        const Material = source.name === 'CardFront' ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial
+        materials.set(source, new Material({ name: source.name, map: source.map, color: source.color, side: THREE.FrontSide, toneMapped: source.name !== 'CardFront' }))
       }
       return materials.get(source)
     }

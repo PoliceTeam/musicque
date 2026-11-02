@@ -14,6 +14,13 @@ import './styles/thirteen.css'
 import './styles/card-lobby.css'
 import './styles/card-table.css'
 
+// Cache model 3D / ảnh sân khấu / nhạc theo tên file (xem public/asset-sw.js): lần sau vào không phải tải lại.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/asset-sw.js').catch((error) => console.warn('[Cache] Không đăng ký được service worker:', error))
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

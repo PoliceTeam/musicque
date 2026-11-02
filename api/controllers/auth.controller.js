@@ -55,6 +55,14 @@ exports.me = async (req, res) => {
   res.status(200).json({ user: req.user.toPublicJSON() })
 }
 
+exports.claimIceCityIntro = async (req, res) => {
+  try {
+    res.status(200).json(await authService.claimIceCityIntro(req.user._id))
+  } catch (error) {
+    handleError(res, error)
+  }
+}
+
 exports.updateProfile = async (req, res) => {
   try {
     const user = await authService.updateProfile(req.user, req.body)

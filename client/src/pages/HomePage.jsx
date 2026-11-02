@@ -1,25 +1,27 @@
 import React, { lazy, Suspense, useContext, useState, useEffect, useRef } from 'react';
 import { Tabs, Tooltip } from 'antd';
 import { MoonOutlined, SunOutlined, TrophyOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
+import { useHandoffEntry } from '../components/Auth/useHandoffEntry';
+import { useIceCityIntroStatus } from '../components/IceCity/intro-context';
 import CoreLaunchPopup from '../components/Core/CoreLaunchPopup';
-import { markCoreLaunchSeen, shouldShowCoreLaunch } from '../components/Core/coreLaunch';
+import { useCoreLaunchQueue } from '../components/Core/useCoreLaunchQueue';
 import CoreMembershipModal from '../components/Core/CoreMembershipModal';
 import SidebarNav from '../components/Layout/SidebarNav';
 import ChohanPanel from '../components/Chohan/ChohanPanel';
 import BilliardsPanel from '../components/Billiards/BilliardsPanel';
 import LotteryPanel from '../components/Lottery/LotteryPanel';
-import CardGamesPromo from '../components/Home/CardGamesPromo';
+import IceCityPromo from '../components/IceCity/IceCityPromo';
 import WordChainOverlay from '../components/WordChain/WordChainOverlay';
 import RedLightOverlay from '../components/RedLight/RedLightOverlay';
 import WerewolfLauncher from '../components/Werewolf/WerewolfLauncher';
 import JungleLauncher from '../components/Jungle/JungleLauncher';
+import AuditionLauncher from '../components/Audition/AuditionLauncher';
 import ChatBox from '../components/Chat/ChatBox';
 import TetCountdown from '../components/TetCountdown/TetCountdown';
 import NationalDayBanner from '../components/NationalDay/NationalDayBanner';
@@ -47,9 +49,10 @@ const getGreeting = () => {
 };
 
 const HomePage = () => {
-  const navigate = useNavigate();
+  const farm = useHandoffEntry();
+  const iceIntro = useIceCityIntroStatus();
   const { currentSession, currentSong } = useContext(PlaylistContext);
-  const { user, displayName } = useAuth();
+  const { user, displayName, authModal } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showNesGame, setShowNesGame] = useState(false);
   const [currentGame, setCurrentGame] = useState({ file: null, name: '' });
@@ -61,26 +64,10 @@ const HomePage = () => {
   const [wordChainOpen, setWordChainOpen] = useState(false);
   const [redLightOpen, setRedLightOpen] = useState(false);
   const [redLightPreview, setRedLightPreview] = useState(false);
-  const [coreLaunchOpen, setCoreLaunchOpen] = useState(false);
+  const { open: coreLaunchOpen, dismiss: dismissCoreLaunch } = useCoreLaunchQueue(user, iceIntro.pending || Boolean(authModal));
   const [coreMembershipOpen, setCoreMembershipOpen] = useState(false);
   const snowCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-
-  useEffect(() => {
-    if (!shouldShowCoreLaunch(user)) {
-      setCoreLaunchOpen(false)
-      return undefined
-    }
-    const timeoutId = window.setTimeout(() => {
-      markCoreLaunchSeen(user._id)
-      setCoreLaunchOpen(true)
-    }, 650)
-    return () => window.clearTimeout(timeoutId)
-  }, [user])
-
-  const dismissCoreLaunch = () => {
-    setCoreLaunchOpen(false)
-  }
 
   const exploreCore = () => {
     dismissCoreLaunch()
@@ -301,16 +288,18 @@ const HomePage = () => {
                   🍄
                 </button>
               </Tooltip>
-              <Tooltip title="Chiến cờ chiếm PCs">
-                <button
-                  type="button"
-                  className="sp-quicktoys__btn sp-quicktoys__btn--xiangqi"
-                  aria-label="Chơi cờ tướng"
-                  onClick={() => navigate('/xiangqi')}
-                >
-                  帥
-                </button>
-              </Tooltip>
+              {farm.available('musicque-farm') && (
+                <Tooltip title="ICE City">
+                  <button
+                    type="button"
+                    className="sp-quicktoys__btn sp-quicktoys__btn--ice-city"
+                    aria-label="Chơi ICE City"
+                    onClick={() => farm.enter('musicque-farm')}
+                  >
+                    <img src="/brand/ice-city.webp" alt="" width={34} height={34} draggable={false} />
+                  </button>
+                </Tooltip>
+              )}
               {currentSession && (
                 <Tooltip title="Nối từ giành PCs">
                   <button
@@ -344,9 +333,6 @@ const HomePage = () => {
                 </button>
               </Tooltip>
             </div>
-            <WerewolfLauncher />
-            <JungleLauncher />
-            <CardGamesPromo />
           </SidebarNav>
 
           <ChatBox className="chat-room--sidebar" />
@@ -383,32 +369,19 @@ const HomePage = () => {
             </div>
           </header>
 
-          <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div>
-              <button
-                type="button"
-                className="sp-btn sp-btn--primary"
-                onClick={() => navigate('/secret-shift')}
-                aria-label="Chơi Ca trực bí mật"
-              >
-                <span aria-hidden="true">🕵️</span> Chơi Ca trực bí mật
-              </button>
-            </div>
+          <div className="sp-main__stack">
             <NationalDayBanner />
             <TetCountdown />
             <DailyIdiom />
-            <section className="sp-panel sp-main-add">
-              <div className="sp-panel__head">
-                <h2 className="sp-panel__title">
-                  <span aria-hidden="true">➕</span>
-                  Thêm bài hát
-                </h2>
-              </div>
-              <div className="sp-panel__body">
-                <AddSongForm variant="main" />
-              </div>
+            {/* Form thêm bài gộp vào đầu khung Hàng chờ; danh sách cuộn bên trong để lưới game luôn lộ ra */}
+            <PlaylistView className="sp-queue" composer={<AddSongForm variant="inline" />} />
+            {/* Thẻ game chuyển từ sidebar sang đây để sidebar còn chỗ cho Phòng chat */}
+            <section className="sp-games" aria-label="Trò chơi">
+              <IceCityPromo onPlay={() => farm.enter('musicque-farm')} playHref={!user ? '/farm' : undefined} />
+              <AuditionLauncher />
+              <WerewolfLauncher />
+              <JungleLauncher />
             </section>
-            <PlaylistView />
           </div>
         </main>
 

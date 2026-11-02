@@ -229,3 +229,24 @@ test('ping chỉ dành cho người trong sảnh, kiểm tra payload và giới 
   assert.equal(hall.ping(s, 'a', payload, 3999), null)
   assert.ok(hall.ping(s, 'a', payload, 4000))
 })
+
+test('vào sảnh bằng cookie SSO dùng username đã xác thực, bỏ tên tự khai', async (t) => {
+  const User = require('../models/user.model')
+  const Session = require('../models/sso-session.model')
+  const settings = { SSO_ISSUER: 'http://localhost:8180/realms/sso', SSO_CLIENT_ID: 'musicque', SSO_CLIENT_SECRET: 'test-only', SSO_REDIRECT_URI: 'http://localhost:8080/api/auth/sso/callback', SSO_WEB_ORIGIN: 'http://localhost:8080' }
+  const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
+  Object.assign(process.env, settings)
+  t.after(() => { for (const [key, value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value })
+  t.mock.method(Session, 'findOne', async () => ({ userId: 'sso-user' }))
+  t.mock.method(User, 'findById', async () => ({ username: 'sso_lan', displayName: 'Lan' }))
+  const handlers = {}
+  const socket = {
+    id: 'hall-sso-test', connected: true, handshake: { headers: { cookie: `musicque_session=${'a'.repeat(43)}` } },
+    on: (name, fn) => { handlers[name] = fn }, emit() {}, join() {}, leave() {},
+    nsp: { to: () => ({ emit() {} }) },
+  }
+  require('../sockets/hall.socket')(socket)
+  t.after(() => handlers.disconnect())
+  await handlers['hall:join']({ room: 'sso-test', name: 'Tên giả từ client' })
+  assert.equal(hall.people(hall.store, 'sso-test')[0].name, 'sso_lan')
+})

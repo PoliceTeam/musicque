@@ -4,6 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import ChangePasswordModal from './ChangePasswordModal'
 import { useAuth } from '../../contexts/AuthContext'
 
+const sso = vi.hoisted(() => ({ enabled: false }))
+vi.mock('./useSso', () => ({ useSso: () => sso }))
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }))
 
 describe('Đổi mật khẩu miễn phí', () => {
@@ -14,6 +16,7 @@ describe('Đổi mật khẩu miễn phí', () => {
   })
   afterAll(() => { vi.restoreAllMocks() })
   beforeEach(() => {
+    sso.enabled = false
     auth = { user: { role: 'user' }, balance: 0, changePassword: vi.fn().mockResolvedValue({ ok: true }) }
     useAuth.mockReturnValue(auth)
   })
@@ -30,6 +33,16 @@ describe('Đổi mật khẩu miễn phí', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu miễn phí' }))
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
     expect(auth.changePassword).toHaveBeenCalledExactlyOnceWith({ currentPassword: 'old-password', newPassword: 'new-password' })
+  })
+
+  it('admin SSO đổi được mật khẩu trong modal', async () => {
+    sso.enabled = true
+    auth.user.role = 'admin'
+    const onClose = vi.fn()
+    render(<ChangePasswordModal open onClose={onClose} />)
+    fill()
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu miễn phí' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
   })
 
   it('không gửi yêu cầu khi mật khẩu nhập lại không khớp', async () => {

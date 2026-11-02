@@ -12,10 +12,20 @@ function setup(t, balance = 2000) {
   t.mock.method(User, 'findById', async () => document())
   t.mock.method(User, 'findByUsername', async () => null)
   t.mock.method(CoinTransaction, 'create', async (entry) => { ledger.push(entry); return entry })
+  t.mock.method(User, 'updateOne', async () => {
+    delete state.seedSpentHold
+    return { modifiedCount: 1 }
+  })
   t.mock.method(User, 'findOneAndUpdate', async (filter, update) => {
     if (state.polites < filter.polites.$gte || state.username !== filter.username || state.displayName !== filter.displayName) return null
-    Object.assign(state, update.$set)
-    state.polites += update.$inc.polites
+    const stage = Array.isArray(update) ? update[0].$set : null
+    state.username = stage.username
+    state.displayName = stage.displayName
+    const seed = Math.min(Math.max(0, state.seedPolites || 0), state.polites)
+    const spent = Math.min(seed, 1000)
+    state.polites -= 1000
+    state.seedPolites = seed - spent
+    state.seedSpentHold = spent
     return document()
   })
   return { state, ledger, user: document() }
@@ -85,6 +95,16 @@ test('hai request cùng lúc chỉ đổi và thu phí một lần', async (t) =
   assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1)
   assert.equal(state.polites, 2000)
   assert.equal(ledger.length, 1)
+})
+
+test('đổi tên tiêu seed trước khi đụng PC kiếm được', async (t) => {
+  const { state, ledger, user } = setup(t, 1500)
+  state.seedPolites = 400
+  const result = await auth.updateProfile(user, { username: 'new_tien', displayName: 'Tên mới' })
+  assert.equal(result.polites, 500)
+  assert.equal(result.seedPolites, 0)
+  assert.equal(ledger[0].metadata.seedSpent, 400)
+  assert.equal(state.seedPolites, 0)
 })
 
 test('admin giữ username, vẫn đổi được display name', async (t) => {

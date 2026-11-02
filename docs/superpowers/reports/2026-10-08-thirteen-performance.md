@@ -145,3 +145,43 @@ Local artifacts:
 Validation: API **88/88**, client **241/241** (including merged view tests), scoped
 3D/context/page lint clean, build OK; final full bot game and default leak assertions
 pass, no browser runtime errors. Each optimization is a separate `perf(...)` commit.
+
+## Adaptive DPR (motion DPR, crisp still, pixel budget)
+
+`AdaptiveDpr` renders at `min(fullDpr, 1.25)` while the animation activity store reports
+motion, and switches back to `fullDpr` 150 ms after the last motion ends (debounced; only
+idle ↔ moving transitions notify). `fullDpr = min(devicePixelRatio, 2, sqrt(4.5 MP / css area))`,
+recomputed on resize, and further capped by `PerformanceMonitor` (1.5, then 1). Reduced
+motion keeps full DPR. Two fixes found along the way:
+- R3F re-applies the Canvas `dpr` prop on every parent render, so the value is mirrored into
+  `TableScene` state; calling `setDpr` alone would snap back mid-animation.
+- drei's `PerformanceMonitor` counts frames per 250 ms. With `frameloop='demand'` the turn
+  countdown (~10 redraws/s) read as ~10 fps, so on any GPU it dropped Retina to 1.5 a few
+  seconds into each turn. It now only samples while something is moving.
+
+Measured with `PERF_DPR_DIR=… node client/scripts/perf-thirteen.mjs`, headless Chrome on
+**ANGLE SwiftShader (software GPU)**, 1440×900 CSS at device DPR 2, two runs each. Frame time
+is render + a 1-pixel `readPixels` sync (`gl.finish` does not block in Chrome), measured only
+in probe frames. Absolute numbers are software rendering; the ratio is what matters.
+
+| | Before (`5f39889`) | After |
+|---|---|---|
+| Deal: DPR / pixels | 2.0 / 5.18 MP | 1.25 / 2.02 MP |
+| Deal: mean frame | 272 / 222 ms | 136 / 93 ms |
+| Deal: frames rendered in the same ~4.3 s | 22 / 25 | 35 / 50 |
+| Play: DPR / mean frame | 2.0 → 1.5 (monitor) / 248, 200 ms at 2.0 | 1.25 / 133, 95 ms |
+| At rest after the play | 1.5 / 2.92 MP (monitor dropped it, both runs) | 1.86 / 4.50 MP (run 1); 1.5 (run 2, SwiftShader is genuinely slow in motion) |
+| Waiting-room draws/s (idle) | 0 | 0 |
+| 1280×900 DPR 2 resting hand | 2.0 / 4.61 MP | 1.976 / 4.50 MP |
+
+Motion pixels drop 61% (5.18 → 2.02 MP) and per-frame cost roughly halves. In a playing
+state the turn ring still redraws ~10×/s at full DPR (515–1030 draws/s in both builds); that
+countdown is unchanged and is the next cheap win. The resting-hand screenshot is taken on a
+fresh page with a stepped clock so the software GPU cannot trip the monitor; before and after
+are visually identical (`/private/tmp/thirteen-adaptive-dpr/hand-compare.png`). The brief's
+example ceilings (≈1.97 at 1440×900, ≈1.33 at 2560×1600) do not match its own 4.5 MP formula
+(1.86 and 1.05); the formula is what is implemented and tested.
+
+Evidence: `/private/tmp/thirteen-adaptive-dpr/{before,after}-{1,2}/results.json` and screenshots.
+The probe needs a client that the API's CORS list allows (only :8080 locally); a separate vite
+must proxy `/api` and `/socket.io` same-origin with `VITE_API_URL=` and `VITE_SOCKET_URL=` empty.

@@ -122,3 +122,75 @@ test('token voice chỉ cấp trong phòng và chỉ cho microphone', async () =
     }
   }
 })
+
+test('route Ma Sói dùng chung phòng, đồng hồ và quyền mic với workspace', async () => {
+  const werewolf = require('../services/werewolf.service')
+  const direct = socketFor('werewolf-direct-voice')
+  const inside = socketFor('werewolf-workspace-voice')
+  const previous = Object.fromEntries(['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'WORKSPACE_VOICE_ENABLED'].map(key => [key, process.env[key]]))
+  Object.assign(process.env, { LIVEKIT_URL: 'wss://example.livekit.cloud', LIVEKIT_API_KEY: 'test-key', LIVEKIT_API_SECRET: 'werewolf-voice-test-secret-not-production', WORKSPACE_VOICE_ENABLED: 'true' })
+  const originals = { canSpeak: werewolf.canSpeak, update: RoomServiceClient.prototype.updateParticipant, remove: RoomServiceClient.prototype.removeParticipant }
+  const updates = []; const removed = []
+  let allowed = false
+  werewolf.canSpeak = (id) => allowed && id === 'direct-user'
+  RoomServiceClient.prototype.updateParticipant = async (room, identity, options) => updates.push({ room, identity, options })
+  RoomServiceClient.prototype.removeParticipant = async (...args) => removed.push(args)
+  const claims = (response) => JSON.parse(Buffer.from(response.token.split('.')[1], 'base64url').toString())
+  try {
+    assert.equal((await voice.join(direct)).code, 'NOT_IN_ROOM')
+    const route = await voice.join(direct, { user: { _id: 'direct-user', username: 'Direct' } })
+    assert.equal(workspace.getMember(direct.id), undefined)
+    workspace.join({ socket: inside, user: { _id: 'workspace-user', username: 'Inside' } })
+    workspace.getMember(inside.id).roomId = 'werewolf'
+    const embedded = await voice.join(inside)
+    assert.equal(claims(route).video.room, 'musicque-workspace-werewolf')
+    assert.equal(claims(route).video.room, claims(embedded).video.room)
+    assert.equal(route.endsAt, embedded.endsAt)
+    assert.equal(claims(route).video.canSubscribe, true)
+    assert.equal(claims(route).video.canPublish, false)
+    assert.equal(claims(embedded).video.canPublish, false)
+    allowed = true
+    await voice.syncWerewolfPermissions()
+    assert.equal(updates.at(-1).identity, 'direct-user:werewolf-direct-voice')
+    assert.equal(updates.at(-1).options.permission.canPublish, true)
+    // Route trực tiếp không phụ thuộc vị trí avatar trong workspace.
+    await voice.onRoomChange(direct)
+    assert.equal(removed.length, 0)
+    allowed = false
+    await voice.syncWerewolfPermissions()
+    assert.equal(updates.at(-1).options.permission.canPublish, false)
+    workspace.getMember(inside.id).roomId = null
+    await voice.onRoomChange(inside)
+    assert.equal(removed.length, 1)
+    await voice.leave(direct.id)
+    assert.equal(removed.length, 2)
+    assert.ok(removed.every(args => typeof args[2].revokeTokenTs === 'bigint'))
+    // Cập nhật quyền thất bại phải ngắt phiên, không giữ quyền nói cũ.
+    await voice.join(direct, { user: { _id: 'direct-user', username: 'Direct' } })
+    allowed = true
+    RoomServiceClient.prototype.updateParticipant = async () => { throw new Error('unavailable') }
+    await voice.syncWerewolfPermissions()
+    assert.equal(removed.length, 3)
+    // Rời trang trong lúc ký token phải hủy yêu cầu vào phòng đang chờ.
+    const { AccessToken } = require('livekit-server-sdk')
+    const originalJwt = AccessToken.prototype.toJwt
+    let finish
+    AccessToken.prototype.toJwt = () => new Promise(resolve => { finish = resolve })
+    try {
+      const joining = voice.join(direct, { user: { _id: 'direct-user', username: 'Direct' } })
+      await voice.leave(direct.id)
+      finish('cancelled-token')
+      assert.equal((await joining).code, 'JOIN_CANCELLED')
+    } finally { AccessToken.prototype.toJwt = originalJwt }
+  } finally {
+    await voice.leave(direct.id)
+    await voice.leave(inside.id)
+    workspace.leave(inside)
+    werewolf.canSpeak = originals.canSpeak
+    RoomServiceClient.prototype.updateParticipant = originals.update
+    RoomServiceClient.prototype.removeParticipant = originals.remove
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value
+    }
+  }
+})

@@ -343,6 +343,7 @@ exports.bidSong = async (req, res) => {
         referenceType: 'Song',
         referenceId: song._id,
         metadata: { reason: 'song_left_queue' },
+        restoreSeedFromOperationKey: `song_bid:${bidOperationId}`,
       })
       return res.status(409).json({ message: 'Bài hát không còn trong hàng chờ, đã hoàn PC' })
     }
