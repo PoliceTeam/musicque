@@ -23,6 +23,7 @@ const initSocket = (server) => {
 
   io.on('connection', (socket) => {
     require('./sockets/secretShift.socket')(socket)
+    require('./sockets/hall.socket')(socket)
     console.log('Client connected');
 
     socket.on('chat:join', async (data = {}) => {

@@ -1,0 +1,40 @@
+Sansa moktak sound asset (2026-11-02)
+
+Asset: moktak-hit-natural.wav
+Title: 목탁2
+Creator: 김용배
+Provider/source: 한국저작권위원회 공유마당
+Created: 2019-11-18
+Source page: https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?menuNo=200020&wrtSn=13253416
+Public WAV player: https://gongu.copyright.or.kr/gongu/wrt/cmmn/wrtFileMediaPlay.do?wrtSn=13253416&fileSn=1
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/deed.ko
+
+Attribution (display in the app with source and license links):
+목탁 효과음: 김용배, 「목탁2」, 한국저작권위원회 공유마당, CC BY 4.0.
+변경: 단일 타격 발췌, 모노 변환, 음량 정규화, 양끝 페이드.
+
+CC BY 4.0 allows commercial reuse and adaptations with appropriate attribution,
+a source/license link, and notice of modifications. No endorsement by the
+creator or provider is implied. This file must remain covered by CC BY 4.0.
+
+Source description: 절에서 목탁치는 소리를 표현한 효과음이다.
+The official Korean source identifies the instrument sound as moktak.
+The exact instrument, recording venue and capture method are not documented;
+do not claim a named temple field recording or independently verified method.
+Sansa has not synthesized this sound or added artificial reverberation.
+
+Sansa modifications:
+- Downloaded the official public 48kHz stereo PCM16 WAV.
+- Selected the second isolated strike, from approximately 4.34449 seconds,
+  for 1.100 seconds, preserving the source's natural decay. The following strike
+  is excluded.
+- Converted to 44.1kHz mono float before linear peak normalization.
+- Applied linear gain of 4.062988 dB, with 1ms fade-in and 20ms fade-out.
+- Exported as mono 16-bit PCM WAV. No EQ, pitch change, compression/limiting,
+  noise removal, synthesis, AI generation, or artificial reverb was applied.
+- Final peak: -3.0000 dBFS. RMS: -23.0339 dBFS.
+- 48510 frames, 97064 bytes, zero clipped PCM samples; first/last sample 0.
+
+Source WAV SHA-256: 4adcaf517d9adb55208240eba8cb52ccd70242ee68cc2533adc77397c1df88e4
+Sansa WAV SHA-256: c3f11da43c87bcd98716f81fe67160228a0dfc7ebeeecd6c5aa0d3330225c1d5

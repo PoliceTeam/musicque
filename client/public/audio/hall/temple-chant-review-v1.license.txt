@@ -1,0 +1,16 @@
+사찰 염불 · 검토용
+
+원저작물명: 염불소리1
+저작(권)자: 김용배
+제공·출처: 한국저작권위원회 공유마당
+원문 URL: https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?menuNo=200020&wrtSn=13254274
+라이선스: Creative Commons Attribution 4.0 International (CC BY 4.0)
+라이선스 URL: https://creativecommons.org/licenses/by/4.0/
+
+산사의 가공: 원본 WAV 전 구간을 그대로 유지하여 mono MP3 112kbps/48kHz로 인코딩. 2-pass loudnorm을 사용해 청취 음량을 약 -20 LUFS, true peak 최대 -2dBTP 이하를 목표로 정규화. 인코딩용 부가 메타데이터를 제거함.
+구절의 순서·속도·음높이를 바꾸거나 문장 중간을 잘라붙이지 않았으며, 강한 노이즈 제거를 적용하지 않았음.
+
+이 파일은 사용자가 선택한 ‘사찰 염불’ 검토용 음원입니다. 완전한 반야심경 독송인지 확인되지 않았으며, 반야심경 완독본이나 실제 사찰의 정식 예불 전체로 안내하지 않습니다.
+저작자 또는 제공기관이 산사를 후원하거나 보증한다는 의미는 아닙니다.
+
+로컬 검토본 제작일: 2026-10-29 KST
