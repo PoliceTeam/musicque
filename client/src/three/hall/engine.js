@@ -390,7 +390,7 @@ export class HallEngine {
         this.world.puff()
         this.pray()
       }
-      cb?.(Boolean(res?.ok))
+      cb?.(res)
     })
   }
 
@@ -494,7 +494,7 @@ export class HallEngine {
       zone,
       pose: p.pose,
       kneeling: p.base === 'kneeling',
-      nearIncense: Math.hypot(p.x - this.incense.x, p.z - this.incense.z) < INCENSE_RANGE + 0.1,
+      nearIncense: Math.hypot(p.x - this.incense.x, p.z - this.incense.z) <= INCENSE_RANGE,
       cushionId: this.server.cushionId,
       waiting: this.server.waiting,
       beads: this.server.beads,

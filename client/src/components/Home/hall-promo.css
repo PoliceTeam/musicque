@@ -1,0 +1,29 @@
+.hall-promo {
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 112px;
+  padding: 16px 18px;
+  overflow: hidden;
+  border: 1px solid #82946b66;
+  border-radius: 12px;
+  background: #202b22;
+  color: #f5edda;
+  text-decoration: none;
+  transition: border-color .2s ease;
+}
+.hall-promo:hover { color: #f5edda; border-color: #c0a66f; }
+.hall-promo:focus-visible { outline: 3px solid #9b7b45; outline-offset: 3px; }
+.hall-promo__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% center; }
+.hall-promo__veil { position: absolute; inset: 0; background: linear-gradient(90deg, #1d2a22 0%, #1d2a22df 35%, #1d2a2230 100%); }
+.hall-promo__copy { position: relative; }
+.hall-promo__title { margin: 0; color: #f5edda; font-family: Georgia, 'Times New Roman', serif; font-size: 23px; font-weight: 400; line-height: 1.15; }
+.hall-promo__description { display: block; margin-top: 5px; color: #cfdbcb; font-size: 11px; line-height: 1.5; }
+.hall-promo__cta { display: inline-flex; align-items: center; gap: 12px; margin-top: 9px; color: #ecd7ad; font-size: 11px; font-weight: 700; }
+.hall-promo__cta > span { font-size: 15px; line-height: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .hall-promo { transition: none; }
+}
