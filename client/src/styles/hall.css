@@ -1,0 +1,442 @@
+/* Sảnh thiền /hall — toàn màn hình là cảnh 3D, giao diện nổi tối giản, tông xanh rêu. */
+.hall-page {
+  --hall-bg: #20251f;
+  --hall-ink: #f1ecdf;
+  --hall-muted: #b9b6a6;
+  --hall-glass: rgba(24, 30, 23, 0.72);
+  --hall-line: rgba(241, 236, 223, 0.16);
+  --hall-warm: #e7b46a;
+  --hall-moss: #7f9a6a;
+  position: fixed;
+  inset: 0;
+  background: var(--hall-bg);
+  color: var(--hall-ink);
+  overflow: hidden;
+  font-family: inherit;
+  user-select: none;
+}
+
+.hall-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+.hall-canvas:active { cursor: grabbing; }
+
+.hall-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hall-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20, 24, 19, 0.6);
+  color: var(--hall-ink);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  will-change: transform;
+}
+.hall-label.is-self,
+.hall-label.is-shown { opacity: 1; transition-duration: 0.25s; }
+.hall-label.is-self { background: rgba(231, 180, 106, 0.22); border: 1px solid rgba(231, 180, 106, 0.45); }
+
+/* Không thông báo chen vào sảnh: ẩn toàn bộ Mưa lì xì (thẻ, phong bao rơi, hộp thoại) khi đang ở /hall. */
+body:has(.hall-page) .lr-dock,
+body:has(.hall-page) .lr-rain,
+body:has(.hall-page) .ant-modal-root:has(.lr-modal) { display: none !important; }
+
+/* Ping: nhãn nổi trên cột sáng (vị trí do engine đặt mỗi khung) */
+.hall-ping {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 6px;
+  border-radius: 999px;
+  background: rgba(20, 24, 19, 0.72);
+  border: 1px solid var(--ping);
+  color: var(--hall-ink);
+  font-size: 12px;
+  white-space: nowrap;
+  animation: hall-ping-in 0.35s ease;
+  will-change: transform;
+}
+.hall-ping.is-mine { box-shadow: 0 0 12px color-mix(in srgb, var(--ping) 45%, transparent); }
+.hall-ping__icon { font-size: 14px; line-height: 1; }
+.hall-ping small { color: var(--hall-muted); font-size: 11px; }
+@keyframes hall-ping-in { from { margin-top: 8px; filter: opacity(0); } to { margin-top: 0; filter: opacity(1); } }
+
+/* Vòng chọn ping (giữ Ctrl/Alt + kéo) */
+.hall-wheel { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 3; }
+.hall-wheel__center {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(241, 236, 223, 0.85);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+.hall-wheel.is-open::before {
+  content: '';
+  position: absolute;
+  left: -86px;
+  top: -86px;
+  width: 172px;
+  height: 172px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 24, 19, 0.25) 20%, rgba(20, 24, 19, 0.6) 70%, transparent 72%);
+}
+.hall-wheel__item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) translate(calc(var(--dx) * 62px), calc(var(--dy) * 62px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(24, 30, 23, 0.85);
+  border: 1px solid var(--hall-line);
+  color: var(--hall-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  transition: transform 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.hall-wheel__icon { font-size: 18px; line-height: 20px; }
+.hall-wheel__item.is-active {
+  color: var(--hall-ink);
+  border-color: var(--ping);
+  transform: translate(-50%, -50%) translate(calc(var(--dx) * 68px), calc(var(--dy) * 68px)) scale(1.1);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ping) 40%, transparent);
+}
+
+/* Thanh trên */
+.hall-top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+.hall-top > * { pointer-events: auto; }
+.hall-top__spacer { flex: 1; }
+.hall-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--hall-glass);
+  border: 1px solid var(--hall-line);
+  color: var(--hall-ink);
+  font-size: 13px;
+  line-height: 1.2;
+  backdrop-filter: blur(6px);
+  text-decoration: none;
+}
+button.hall-chip { cursor: pointer; font: inherit; font-size: 13px; }
+.hall-chip--link:hover,
+.hall-chip--link.is-active { border-color: rgba(231, 180, 106, 0.6); color: #fff; }
+.hall-chip--soft { color: var(--hall-muted); }
+.hall-chip--wait { border-color: rgba(231, 180, 106, 0.6); color: var(--hall-warm); }
+.hall-chip--shared { border-color: rgba(127, 154, 106, 0.8); color: #cfe3bd; }
+.hall-chip--cta {
+  background: var(--hall-warm);
+  color: #2a2116;
+  border-color: transparent;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+/* Thanh công cụ dưới */
+.hall-toolbar {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--hall-glass);
+  border: 1px solid var(--hall-line);
+  backdrop-filter: blur(8px);
+}
+.hall-tool {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 78px;
+  padding: 8px 10px 7px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--hall-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.hall-tool:hover:not(:disabled) { background: rgba(241, 236, 223, 0.08); }
+.hall-tool.is-active { background: rgba(231, 180, 106, 0.18); border-color: rgba(231, 180, 106, 0.55); }
+.hall-tool:disabled { opacity: 0.5; cursor: default; }
+.hall-tool__icon { font-size: 20px; line-height: 24px; height: 24px; display: flex; align-items: center; }
+.hall-tool__icon img { width: 24px; height: 24px; object-fit: contain; }
+.hall-tool__label { font-size: 12px; }
+.hall-tool kbd {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  color: var(--hall-muted);
+  font-family: inherit;
+}
+
+.hall-incense {
+  position: absolute;
+  bottom: 104px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 180, 106, 0.7);
+  background: rgba(54, 38, 20, 0.82);
+  color: #ffe2b0;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  animation: hall-rise 0.5s ease;
+}
+.hall-incense:hover { background: rgba(84, 58, 28, 0.9); }
+
+.hall-toast,
+.hall-hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--hall-glass);
+  border: 1px solid var(--hall-line);
+  font-size: 13px;
+  text-align: center;
+  max-width: min(680px, 90vw);
+}
+.hall-toast { top: 64px; animation: hall-rise 0.4s ease; }
+.hall-hint { bottom: 96px; color: var(--hall-muted); animation: hall-fade-late 14s ease forwards; pointer-events: none; }
+
+/* Bảng nổi (tràng hạt, mõ, âm thanh) */
+.hall-panel {
+  position: absolute;
+  right: 16px;
+  top: 64px;
+  width: 260px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--hall-glass);
+  border: 1px solid var(--hall-line);
+  backdrop-filter: blur(10px);
+  animation: hall-rise 0.35s ease;
+}
+.hall-panel__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.hall-panel__close,
+.hall-btn {
+  border: 1px solid var(--hall-line);
+  background: transparent;
+  color: var(--hall-ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.hall-panel__close:hover,
+.hall-btn:hover { border-color: rgba(231, 180, 106, 0.6); }
+.hall-btn--big { width: 100%; padding: 10px; font-size: 14px; background: var(--hall-warm); color: #2a2116; border-color: transparent; font-weight: 600; margin-bottom: 10px; }
+.hall-panel__note { font-size: 12px; color: var(--hall-muted); margin: 8px 0 0; }
+.hall-panel a { color: var(--hall-warm); }
+
+.hall-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; cursor: pointer; }
+.hall-row small { display: block; color: var(--hall-muted); font-size: 11px; }
+.hall-row--slider { flex-direction: column; align-items: stretch; gap: 4px; }
+.hall-panel input[type='range'] { width: 100%; accent-color: var(--hall-warm); }
+.hall-panel input[type='checkbox'] { accent-color: var(--hall-warm); width: 16px; height: 16px; }
+
+/* Tràng hạt */
+.hall-beads { width: 220px; }
+.hall-beads__strand {
+  position: relative;
+  height: 280px;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at center, rgba(231, 180, 106, 0.08), transparent 70%);
+  cursor: ns-resize;
+  overflow: hidden;
+  touch-action: none;
+  outline: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+}
+.hall-beads__strand:focus-visible { box-shadow: inset 0 0 0 2px rgba(231, 180, 106, 0.6); }
+.hall-beads__cord { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #6b3c22; transform: translateX(-50%); }
+.hall-beads__mark {
+  position: absolute;
+  left: calc(50% - 24px);
+  top: calc(50% - 1px);
+  width: 48px;
+  border-top: 1px solid rgba(231, 180, 106, 0.45);
+}
+.hall-bead {
+  position: absolute;
+  left: calc(50% - 13px);
+  top: calc(50% - 13px);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c98b5a, #7a4325 60%, #4a2614);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.hall-bead.is-current { box-shadow: 0 0 12px rgba(231, 180, 106, 0.45); }
+.hall-beads__count { display: flex; align-items: baseline; gap: 10px; justify-content: center; margin-top: 10px; }
+.hall-beads__n { font-size: 22px; font-variant-numeric: tabular-nums; }
+.hall-beads__lap { font-size: 13px; color: var(--hall-warm); }
+.hall-beads__note { font-size: 12px; color: var(--hall-muted); text-align: center; min-height: 32px; margin: 6px 0 0; }
+.hall-beads.is-lap { border-color: rgba(231, 180, 106, 0.6); box-shadow: 0 0 40px rgba(231, 180, 106, 0.18); transition: box-shadow 1.2s ease; }
+.hall-beads.is-lap .hall-beads__note { color: #ffe2b0; }
+
+/* Mõ */
+.hall-moktak__wood {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--hall-ink);
+  font: inherit;
+  cursor: pointer;
+  padding: 6px;
+}
+.hall-moktak__wood img { width: 130px; transition: transform 0.08s ease; }
+.hall-moktak__wood:active img { transform: scale(0.94) translateY(2px); }
+
+/* Âm thanh */
+.hall-sound { width: 280px; }
+.hall-sound__layer { padding: 8px 0; border-top: 1px solid var(--hall-line); }
+.hall-sound__layer:first-of-type { border-top: none; }
+.hall-sound__notice { display: flex; flex-direction: column; gap: 8px; font-size: 13px; padding: 8px; border-radius: 10px; background: rgba(231, 180, 106, 0.12); margin-bottom: 10px; }
+.hall-sound__shared { font-size: 12px; color: #cfe3bd; margin: 0 0 8px; }
+.hall-sound__track { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.hall-sound__track img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+
+/* Ghi nguồn */
+.hall-credits-link {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  border: none;
+  background: transparent;
+  color: var(--hall-muted);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.hall-modal { position: absolute; inset: 0; background: rgba(10, 12, 9, 0.6); display: flex; align-items: center; justify-content: center; z-index: 5; }
+.hall-modal__card {
+  width: min(640px, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: #1d221c;
+  border: 1px solid var(--hall-line);
+  font-size: 13px;
+  line-height: 1.55;
+  user-select: text;
+}
+.hall-modal__card h3 { font-size: 14px; margin: 14px 0 4px; color: var(--hall-warm); }
+.hall-modal__card p { margin: 0; color: #ddd8c9; }
+.hall-modal__card a { color: var(--hall-warm); }
+
+/* Màn vào sảnh */
+.hall-entry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #2e3a2b, var(--hall-bg) 70%);
+}
+.hall-entry__card {
+  width: min(440px, 90vw);
+  padding: 28px;
+  border-radius: 20px;
+  background: rgba(24, 30, 23, 0.85);
+  border: 1px solid var(--hall-line);
+  text-align: center;
+}
+.hall-entry__card h1 { font-size: 26px; font-weight: 500; margin: 0 0 8px; color: var(--hall-ink); letter-spacing: 0.04em; }
+.hall-entry__card p { color: var(--hall-muted); font-size: 14px; line-height: 1.55; margin: 0 0 14px; }
+.hall-entry__meta { font-size: 12px !important; }
+.hall-entry__field { display: flex; flex-direction: column; gap: 6px; text-align: left; margin: 16px 0; font-size: 13px; }
+.hall-entry__field input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--hall-line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--hall-ink);
+  font: inherit;
+  user-select: text;
+}
+.hall-entry__name { margin: 16px 0 !important; color: var(--hall-ink) !important; }
+.hall-entry__name strong { color: var(--hall-warm); font-weight: 600; }
+.hall-entry__name small { display: block; margin-top: 4px; color: var(--hall-muted); font-size: 11px; }
+.hall-entry__field small { color: var(--hall-muted); font-size: 11px; }
+.hall-entry__go {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: var(--hall-warm);
+  color: #2a2116;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hall-entry__go:disabled { opacity: 0.75; cursor: progress; }
+.hall-entry__error { color: #f0a58f !important; margin-top: 12px !important; }
+.hall-entry__back { display: inline-block; margin-top: 14px; color: var(--hall-muted); font-size: 13px; }
+
+@keyframes hall-rise { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.hall-panel { animation-name: hall-panel-in; }
+@keyframes hall-panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes hall-fade-late { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-page * { animation: none !important; transition: none !important; }
+}

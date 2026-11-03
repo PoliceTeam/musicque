@@ -27,6 +27,7 @@ const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
 const WerewolfPage = lazy(() => import('./pages/WerewolfPage'))
 const SecretShiftPage = lazy(() => import('./pages/SecretShiftPage'))
 const JunglePage = lazy(() => import('./pages/JunglePage'))
+const HallPage = lazy(() => import('./pages/HallPage'))
 const DanceLabPage = lazy(() => import('./pages/DanceLabPage'))
 const AuditionPage = lazy(() => import('./pages/AuditionPage'))
 const TornadoKissEvent = lazy(() => import('./components/TornadoKissEvent'))
@@ -89,6 +90,7 @@ function AppContent() {
                       <Route path='/secret-shift' element={<SecretShiftPage />} />
                       <Route path='/jungle' element={<JunglePage />} />
                       <Route path='/jungle/:gameId' element={<JunglePage />} />
+                      <Route path='/hall' element={<HallPage />} />
                       <Route path='/dance-lab' element={<DanceLabPage />} />
                       <Route path='/audition' element={<AuditionPage />} />
                       <Route path='/audition/:roomId' element={<AuditionPage />} />

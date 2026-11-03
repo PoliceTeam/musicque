@@ -30,6 +30,7 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     const resolveSocketUser = (token) => resolveUserFromToken(token, socket.handshake?.headers?.cookie)
     require('./sockets/secretShift.socket')(socket)
+    require('./sockets/hall.socket')(socket)
     console.log('Client connected');
 
     socket.on('chat:join', async (data = {}) => {

@@ -80,6 +80,7 @@ app.use('/api/werewolf', werewolfRoutes);
 app.use('/api/audition', auditionRoutes);
 app.use('/api/jungle', jungleRoutes);
 app.use('/api/secret-shift', require('./routes/secretShift.routes'));
+app.use('/api/hall', require('./routes/hall.routes'));
 
 // Error handling
 app.use(errorHandler);
