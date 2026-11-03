@@ -164,7 +164,10 @@ const HallPage = () => {
     const engine = engineRef.current
     const current = panelRef.current
     const target = current === next ? null : next
-    if (target === 'beads') engine?.setBeads(true)
+    if (target === 'beads') {
+      audioRef.current?.setLayer('fx', true)
+      engine?.setBeads(true)
+    }
     else if (current === 'beads') engine?.setBeads(false)
     panelRef.current = target
     setPanel(target)

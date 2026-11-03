@@ -1,0 +1,15 @@
+Tiếng lần hạt — Musicque, 2026-11-03
+
+Tác phẩm: rosary.wav
+Tác giả: jaset13045
+Nguồn: https://freesound.org/people/jaset13045/sounds/347928/
+File nguồn (bản nghe chất lượng cao): https://cdn.freesound.org/previews/347/347928_6350689-hq.mp3
+Giấy phép: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+Mô tả của tác giả: hit the beads from a rosary.
+Không xác nhận vật liệu hạt hay gọi đây là bản thu tràng hạt gỗ Phật giáo.
+
+Đã chỉnh: trích 3.895–4.075 giây, chuyển mono PCM16/22.05 kHz,
+giảm gain 16.622941 dB, fade đầu 2ms và cuối 10ms. Không tổng hợp thêm âm.
+Độ dài: 0.18 giây; đỉnh: -17.8834 dBFS; hai đầu về 0.
+SHA-256 nguồn: 9dfa749eca8d869b726a43870ae3934fda0c3a0fdd675f6c1a954f42d049e344
+SHA-256 bản dùng trong app: edf2c41df2db9439b769d30482cd45070b27432302636410bee8d7c2f42a880e

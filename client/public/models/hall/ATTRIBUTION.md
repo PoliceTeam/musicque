@@ -5,6 +5,13 @@ của Musicque khi thêm asset, và hiện link trong app ở mục "Nguồn hì
 
 ## Có giấy phép rõ ràng — bắt buộc ghi công
 
+**Tiếng lần hạt** — `audio/bead-slide-natural.wav`
+
+> Trích từ “rosary.wav” của jaset13045, Freesound, CC0 1.0.
+> https://freesound.org/people/jaset13045/sounds/347928/
+> Đã chỉnh: lấy một tiếng va hạt 0.18 giây, chuyển mono/22.05 kHz, giảm âm lượng và fade hai đầu.
+> Chi tiết: `audio/bead-slide-natural.license.txt`.
+
 **Tượng Phật và hai Bồ Tát** — `assets/models/buddha.glb`, `assets/models/avalokitesvara.glb`,
 `assets/models/mahastamaprapta.glb`
 
@@ -21,7 +28,7 @@ của Musicque khi thêm asset, và hiện link trong app ở mục "Nguồn hì
 > 2-pass loudnorm về khoảng -20 LUFS, true peak dưới -2 dBTP, bỏ metadata của bản encode.
 > Không đổi thứ tự, tốc độ, cao độ; không cắt giữa câu; không khử ồn mạnh.
 
-**Tiếng mõ** — `assets/moktak-*.webp` + file âm thanh mõ
+**Tiếng mõ** — `assets/moktak-*.webp` + `audio/moktak-hit-natural.wav`
 
 > 목탁2 · 김용배 · 한국저작권위원회 공유마당 · CC BY 4.0
 > https://creativecommons.org/licenses/by/4.0/

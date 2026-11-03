@@ -3,7 +3,7 @@ import { sharedListening } from './layout.js'
 // Âm thanh sảnh, ba lớp — mặc định tắt hết:
 //  - ambient: gió + chim xa, tổng hợp bằng Web Audio (không cần file).
 //  - chant: tụng kinh nghe riêng (file), ở sân trăng đổi sang nhạc nền; 05:00/18:00 giờ VN nghe chung.
-//  - fx: chuông, tiếng hạt, tiếng mõ — tổng hợp.
+//  - fx: chuông tổng hợp; tiếng hạt và tiếng mõ dùng bản thu.
 // Chỉ một tab được phát: tab mới mở báo qua BroadcastChannel, tab cũ tự ngừng.
 
 const AUDIO = '/audio/hall'
@@ -139,7 +139,7 @@ export class HallAudio {
     const shared = sharedListening()
     const layerOn = (l) => this.prefs[l] && ctx.state === 'running'
     for (const layer of ['ambient', 'chant', 'fx']) {
-      this.gains[layer].gain.setTargetAtTime(layerOn(layer) || (layer === 'chant' && shared.active) ? this.prefs.volume[layer] : 0, t, 0.4)
+      this.gains[layer].gain.setTargetAtTime(layerOn(layer) || (layer === 'chant' && shared.active) ? this.prefs.volume[layer] : 0, t, layer === 'fx' ? 0.01 : 0.4)
     }
     if (layerOn('ambient')) this.startAmbient()
     // Lớp tụng kinh: giờ nghe chung > sân trăng (nhạc) > tụng kinh riêng.
@@ -249,19 +249,34 @@ export class HallAudio {
   }
 
   bead() {
-    if (!this.fxReady()) return
+    return this.playSample('bead-slide-natural.wav')
+  }
+
+  async playSample(file) {
+    if (!this.ctx || !this.prefs.fx || this.pausedElsewhere) return false
     const ctx = this.ctx
-    const t = ctx.currentTime
-    const o = ctx.createOscillator()
-    const g = ctx.createGain()
-    o.type = 'triangle'
-    o.frequency.setValueAtTime(1900 + Math.random() * 300, t)
-    o.frequency.exponentialRampToValueAtTime(1200, t + 0.04)
-    g.gain.setValueAtTime(0.12, t)
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
-    o.connect(g).connect(this.gains.fx)
-    o.start(t)
-    o.stop(t + 0.07)
+    try { await ctx.resume() } catch { return false }
+    this.samples ||= new Map()
+    if (!this.samples.has(file)) {
+      this.samples.set(file, fetch(`${AUDIO}/${file}`)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return res.arrayBuffer()
+        })
+        .then((data) => ctx.decodeAudioData(data))
+        .catch((error) => {
+          this.samples.delete(file)
+          console.warn('[Sảnh] Không tải được âm thanh', file, error)
+          return null
+        }))
+    }
+    const buffer = await this.samples.get(file)
+    if (!buffer || this.ctx !== ctx || !this.fxReady()) return false
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(this.gains.fx)
+    source.start()
+    return true
   }
 
   // Ping: hai nốt chuông nhỏ; ping của người khác nhỏ hơn của mình.
@@ -282,10 +297,11 @@ export class HallAudio {
     })
   }
 
-  // Mõ gỗ: âm rỗng trầm, cao độ tụt nhanh + tiếng gõ ngắn.
-  moktak() {
-    if (!this.fxReady()) return
+  // Dùng bản thu mõ thật; giữ âm tổng hợp dự phòng khi không tải được file.
+  async moktak() {
     const ctx = this.ctx
+    if (await this.playSample('moktak-hit-natural.wav')) return
+    if (this.ctx !== ctx || !this.fxReady()) return
     const t = ctx.currentTime
     const o = ctx.createOscillator()
     const g = ctx.createGain()

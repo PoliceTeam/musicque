@@ -31,8 +31,13 @@ const HallCredits = () => {
             <p>
               목탁2 · 김용배 · 한국저작권위원회 공유마당 ·{' '}
               <a href='https://creativecommons.org/licenses/by/4.0/' target='_blank' rel='noreferrer'>CC BY 4.0</a>.
-              Đã chỉnh: trích một tiếng gõ, chuyển mono, chuẩn hoá âm lượng, fade hai đầu. Bộ asset hiện chưa kèm file âm thanh mõ,
-              nên tiếng mõ trong trang đang được tổng hợp bằng Web Audio.
+              Đã chỉnh: trích một tiếng gõ, chuyển mono, chuẩn hoá âm lượng, fade hai đầu.{' '}
+              <a href='https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?menuNo=200020&wrtSn=13253416' target='_blank' rel='noreferrer'>Bản thu gốc</a>.
+            </p>
+            <h3>Tiếng lần hạt</h3>
+            <p>
+              <a href='https://freesound.org/people/jaset13045/sounds/347928/' target='_blank' rel='noreferrer'>rosary.wav · jaset13045 · Freesound</a>
+              {' '}· CC0 1.0. Trích một tiếng va hạt, giảm âm lượng và fade hai đầu.
             </p>
             <h3>Nhân vật chú tiểu</h3>
             <p>Dựng bằng code cho Musicque (hình khối và nét mặt vẽ trong trang), không dùng asset bên ngoài.</p>

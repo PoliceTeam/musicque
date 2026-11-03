@@ -24,6 +24,19 @@ export const buildWorld = async (renderer, { incense, onProgress = () => {} }) =
     }, undefined, () => resolve(null))
   })
 
+  const paintings = Promise.all([
+    loadTex(`${BASE}/altar-devotion.jpg`, true),
+    loadTex(`${BASE}/altar-wall-calm-20261102.jpg`, true),
+  ])
+  const environment = loadTex(`${BASE}/environment/woodland.jpg`, true)
+  const gltfLoader = createLoader()
+  const models = Object.fromEntries(['buddha.glb', 'avalokitesvara.glb', 'mahastamaprapta.glb', 'pine.glb'].map((file) => [file,
+    gltfLoader.loadAsync(`${BASE}/models/${file}`).catch((error) => {
+      console.warn('[Sảnh] Không nạp được mô hình', file, error)
+      return null
+    }),
+  ]))
+
   const sets = {}
   await Promise.all(['cloth', 'ground', 'plaster', 'rock', 'roof', 'stone', 'wood'].map(async (name) => {
     const [map, normalMap, roughnessMap] = await Promise.all([
@@ -175,8 +188,7 @@ export const buildWorld = async (renderer, { incense, onProgress = () => {} }) =
   box(hallW * 0.48, 0.5, 0.5, pbr('roof', 4, 1, { color: 0x3c4240 }), 0, HALL.floorY + wallH + 3.95, hallCZ, zones.hall)
 
   // Tranh thờ sau tượng và hai bên tường.
-  const paintTex = await loadTex(`${BASE}/altar-devotion.jpg`, true)
-  const wallTex = await loadTex(`${BASE}/altar-wall-calm-20261102.jpg`, true)
+  const [paintTex, wallTex] = await paintings
   onProgress(0.5)
   if (paintTex) {
     paintTex.wrapS = paintTex.wrapT = THREE.ClampToEdgeWrapping
@@ -256,10 +268,10 @@ export const buildWorld = async (renderer, { incense, onProgress = () => {} }) =
   }
 
   // ---------- Tượng ----------
-  const gltfLoader = createLoader()
   const placeStatue = async (file, height, x, y, z) => {
     try {
-      const gltf = await gltfLoader.loadAsync(`${BASE}/models/${file}`)
+      const gltf = await models[file]
+      if (!gltf) return
       const s = gltf.scene
       const b = new THREE.Box3().setFromObject(s)
       const scale = height / (b.max.y - b.min.y)
@@ -352,35 +364,37 @@ export const buildWorld = async (renderer, { incense, onProgress = () => {} }) =
 
   // ---------- Cây ----------
   try {
-    const pine = await gltfLoader.loadAsync(`${BASE}/models/pine.glb`)
-    // Vật liệu gốc là MeshPhysicalMaterial (đắt nhất); Standard trông gần như y hệt với cây.
-    pine.scene.traverse((o) => {
-      if (!o.isMesh || !o.material.isMeshPhysicalMaterial) return
-      const m = o.material
-      o.material = new THREE.MeshStandardMaterial({
-        name: m.name, map: m.map, normalMap: m.normalMap, roughnessMap: m.roughnessMap, metalnessMap: m.metalnessMap,
-        color: m.color, roughness: m.roughness, metalness: m.metalness, alphaTest: m.alphaTest, side: m.side, transparent: m.transparent,
+    const pine = await models['pine.glb']
+    if (pine) {
+      // Vật liệu gốc là MeshPhysicalMaterial (đắt nhất); Standard trông gần như y hệt với cây.
+      pine.scene.traverse((o) => {
+        if (!o.isMesh || !o.material.isMeshPhysicalMaterial) return
+        const m = o.material
+        o.material = new THREE.MeshStandardMaterial({
+          name: m.name, map: m.map, normalMap: m.normalMap, roughnessMap: m.roughnessMap, metalnessMap: m.metalnessMap,
+          color: m.color, roughness: m.roughness, metalness: m.metalness, alphaTest: m.alphaTest, side: m.side, transparent: m.transparent,
+        })
+        m.dispose()
       })
-      m.dispose()
-    })
-    const variants = pine.scene.children.slice()
-    variants.forEach((v) => {
-      v.position.set(0, 0, 0)
-      // ponytail: cây ~200k tam giác mỗi cây, không đổ bóng để khỏi vẽ lại trong shadow pass.
-      v.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false } })
-    })
-    TREES.forEach(([x, z], i) => {
-      const t = variants[i % variants.length].clone()
-      t.userData.keep = true // mỗi cây ~130k tam giác: giữ riêng để còn cắt theo khung nhìn từng cây
-      const b = new THREE.Box3().setFromObject(t)
-      const h = 3.6 + ((i * 37) % 10) / 4
-      const s = h / (b.max.y - b.min.y)
-      t.scale.multiplyScalar(s)
-      t.position.set(x, -b.min.y * s, z)
-      t.rotation.y = i * 1.7
-      const zone = z > HALL.maxZ ? zones.front : z < MOON.maxZ + 2 ? zones.moon : zones.grounds
-      zone.add(t)
-    })
+      const variants = pine.scene.children.slice()
+      variants.forEach((v) => {
+        v.position.set(0, 0, 0)
+        // ponytail: cây ~200k tam giác mỗi cây, không đổ bóng để khỏi vẽ lại trong shadow pass.
+        v.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false } })
+      })
+      TREES.forEach(([x, z], i) => {
+        const t = variants[i % variants.length].clone()
+        t.userData.keep = true // mỗi cây ~130k tam giác: giữ riêng để còn cắt theo khung nhìn từng cây
+        const b = new THREE.Box3().setFromObject(t)
+        const h = 3.6 + ((i * 37) % 10) / 4
+        const s = h / (b.max.y - b.min.y)
+        t.scale.multiplyScalar(s)
+        t.position.set(x, -b.min.y * s, z)
+        t.rotation.y = i * 1.7
+        const zone = z > HALL.maxZ ? zones.front : z < MOON.maxZ + 2 ? zones.moon : zones.grounds
+        zone.add(t)
+      })
+    }
   } catch (error) {
     console.warn('[Sảnh] Không nạp được cây', error)
   }
@@ -455,7 +469,7 @@ export const buildWorld = async (renderer, { incense, onProgress = () => {} }) =
   }
 
   // Môi trường (phản chiếu nhẹ cho hồ, tượng đồng).
-  const envTex = await loadTex(`${BASE}/environment/woodland.jpg`, true)
+  const envTex = await environment
   if (envTex) {
     envTex.mapping = THREE.EquirectangularReflectionMapping
     const pmrem = new THREE.PMREMGenerator(renderer)

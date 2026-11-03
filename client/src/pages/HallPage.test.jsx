@@ -3,7 +3,7 @@ import hallCss from '../styles/hall.css?raw'
 import HallBeads from '../components/Hall/HallBeads'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BEADS_PER_LAP, CUSHIONS, HALL, PING_LIMIT, allowPing, beadProgress, sectorFor, buildColliders, clampOrbit, groundHeight, insideHall,
   resolveCollisions, routeTo, sharedListening, zoneAt,
@@ -15,9 +15,12 @@ vi.mock('../three/hall/engine', () => ({ HallEngine: class {
   constructor() { lifecycle.construct() }
   init() { return lifecycle.init() }
   dispose() { lifecycle.dispose() }
+  setBeads() {}
+  bead() {}
 } }))
 
 const authState = vi.hoisted(() => ({ user: null }))
+const hallAudio = vi.hoisted(() => ({ setLayer: vi.fn(), bead: vi.fn() }))
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => authState }))
 vi.mock('../services/api', () => ({ default: { get: () => Promise.reject(new Error('offline')) }, getStoredToken: () => null }))
 vi.mock('../three/hall/audio', () => ({
@@ -25,25 +28,19 @@ vi.mock('../three/hall/audio', () => ({
     subscribe(fn) { fn({ unlocked: false }); return () => {} }
     setZone() {}
     dispose() {}
+    setLayer(...args) { hallAudio.setLayer(...args) }
+    bead() { hallAudio.bead() }
   },
 }))
 
 const HallPage = (await import('./HallPage')).default
 const HallToolbar = (await import('../components/Hall/HallToolbar')).default
 
-describe('kéo tràng hạt', () => {
-  it('kéo lên chưa đủ một hạt thì chưa đếm', () => {
-    const onBead = vi.fn()
-    render(<HallBeads initial={0} onBead={onBead} onLap={() => {}} onClose={() => {}} />)
-    const strand = screen.getByRole('slider')
-    fireEvent(strand, new MouseEvent('pointerdown', { bubbles: true, clientY: 100 }))
-    fireEvent(strand, new MouseEvent('pointermove', { bubbles: true, clientY: 85 }))
-    expect(onBead).not.toHaveBeenCalled()
-    fireEvent(strand, new MouseEvent('pointermove', { bubbles: true, clientY: 70 }))
-    expect(onBead).toHaveBeenCalledOnce()
-  })
+describe('con lăn tràng hạt', () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] }))
+  afterEach(() => vi.useRealTimers())
 
-  it('hạt có hình khối và di chuyển theo tay ngay cả khi chưa đủ một hạt', () => {
+  it('hạt có hình khối, chuyển động khi dùng con lăn và tăng một hạt', () => {
     const style = document.createElement('style')
     style.textContent = hallCss
     document.head.appendChild(style)
@@ -54,11 +51,10 @@ describe('kéo tràng hạt', () => {
       const bead = strand.querySelector('.is-current')
       expect(getComputedStyle(bead).position).toBe('absolute')
       const before = bead.style.transform
-      fireEvent(strand, new MouseEvent('pointerdown', { bubbles: true, clientY: 100 }))
-      fireEvent(strand, new MouseEvent('pointermove', { bubbles: true, clientY: 115 }))
+      fireEvent.wheel(strand, { deltaY: 120 })
+      act(() => vi.advanceTimersByTime(80))
       expect(bead.style.transform).not.toBe(before)
-      expect(onBead).not.toHaveBeenCalled()
-      fireEvent(strand, new MouseEvent('pointermove', { bubbles: true, clientY: 130 }))
+      act(() => vi.advanceTimersByTime(200))
       expect(onBead).toHaveBeenCalledOnce()
       expect(strand).toHaveAttribute('aria-valuenow', '1')
     } finally { style.remove() }
@@ -227,4 +223,18 @@ it('kết nối thất bại hiện lỗi và bấm Vào sảnh lần nữa kế
     await screen.findByRole('navigation', { name: 'Hành động' })
     expect(lifecycle.connect).toHaveBeenCalledTimes(2)
   } finally { log.mockRestore() }
+})
+
+
+it('mở tràng hạt bật hiệu ứng ngay trong thao tác click, sau đó cuộn phát tiếng hạt', async () => {
+  vi.clearAllMocks()
+  lifecycle.connect.mockResolvedValue({ mode: 'live', dispose: vi.fn(), onState: vi.fn() })
+  lifecycle.init.mockResolvedValue()
+  render(<MemoryRouter><HallPage /></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: 'Vào sảnh' }))
+  await screen.findByRole('navigation', { name: 'Hành động' })
+  fireEvent.click(screen.getByRole('button', { name: /Tràng hạt/ }))
+  expect(hallAudio.setLayer).toHaveBeenCalledWith('fx', true)
+  fireEvent.wheel(screen.getByRole('slider'), { deltaY: 120 })
+  expect(hallAudio.bead).toHaveBeenCalledOnce()
 })

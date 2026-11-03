@@ -55,8 +55,16 @@ in-app link is "Nguồn hình ảnh và âm thanh" on the `/hall` page.
 > https://creativecommons.org/licenses/by/4.0/
 > Đã chỉnh: trích một tiếng gõ, chuyển mono, chuẩn hoá âm lượng, fade hai đầu.
 
-The kit does not currently include the moktak audio file itself (only
-`moktak-natural.license.txt`); the page synthesises its knock with Web Audio.
+The page plays `audio/hall/moktak-hit-natural.wav`, extracted from the original
+recording linked in `audio/hall/moktak-natural.license.txt`.
+
+**Tiếng lần hạt** — `audio/hall/bead-slide-natural.wav`
+
+> “rosary.wav” · jaset13045 · Freesound · CC0 1.0.
+> https://freesound.org/people/jaset13045/sounds/347928/
+> https://creativecommons.org/publicdomain/zero/1.0/
+> Trích một tiếng va hạt 0.18 giây, chuyển mono PCM16/22.05 kHz, giảm âm lượng và fade hai đầu.
+> Chi tiết trong `audio/hall/bead-slide-natural.license.txt`.
 
 ### Chưa xác định được giấy phép
 

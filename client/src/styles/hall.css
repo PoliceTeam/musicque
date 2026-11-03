@@ -292,9 +292,9 @@ button.hall-chip { cursor: pointer; font: inherit; font-size: 13px; }
   height: 280px;
   border-radius: 14px;
   background: radial-gradient(ellipse at center, rgba(231, 180, 106, 0.08), transparent 70%);
-  cursor: ns-resize;
+  cursor: default;
   overflow: hidden;
-  touch-action: none;
+  user-select: none;
   outline: none;
   -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
   mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
