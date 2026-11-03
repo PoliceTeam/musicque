@@ -14,6 +14,13 @@ module.exports = (socket) => {
   const mark = (room) => {
     if (room) { loop = getLoop(); loop.dirty.add(room) }
   }
+  const stopIfIdle = () => {
+    if (!store.seats.size && !store.incense.size && !store.incenseLimits.size && loop) {
+      clearInterval(loop.timer)
+      loop.timer = null
+      loop.dirty.clear()
+    }
+  }
   const start = () => {
     loop = getLoop()
     if (loop.timer) return
@@ -22,6 +29,7 @@ module.exports = (socket) => {
       for (const room of hall.tick(store, now)) mark(room)
       for (const room of loop.dirty) nsp.to(channel(room)).emit('hall:state', hall.state(store, room, now))
       loop.dirty.clear()
+      stopIfIdle()
     }, hall.TICK_MS)
     loop.timer.unref()
   }
@@ -32,11 +40,7 @@ module.exports = (socket) => {
     const room = hall.leave(store, socket.id)
     if (room) socket.leave(channel(room))
     mark(room)
-    if (!store.seats.size && loop) {
-      clearInterval(loop.timer)
-      loop.timer = null
-      loop.dirty.clear()
-    }
+    stopIfIdle()
   }
   const handle = (action) => (data, ack) => {
     const room = action(data || {}, Date.now())
@@ -54,7 +58,9 @@ module.exports = (socket) => {
     const user = await resolveUserFromToken(data?.token, socket.handshake?.headers?.cookie).catch(() => null)
     if (!socket.connected || generation !== version) return
     const room = hall.roomId(data?.room)
-    const oldRoom = hall.join(store, socket.id, room, user?.username || data?.name, now)
+    const sessionId = typeof data?.sessionId === 'string' && /^[a-z0-9-]{36}$/i.test(data.sessionId) ? data.sessionId : socket.id
+    const identity = user ? `user:${user._id || user.username}` : `guest:${sessionId}`
+    const oldRoom = hall.join(store, socket.id, room, user?.username || data?.name, now, undefined, identity)
     if (oldRoom) socket.leave(channel(oldRoom))
     socket.join(channel(room))
     const person = store.seats.get(socket.id)
@@ -72,7 +78,12 @@ module.exports = (socket) => {
   socket.on('hall:pray', handle((data, now) => hall.pose(store, socket.id, 'praying', now)))
   socket.on('hall:beads', handle((data, now) => hall.pose(store, socket.id, data.active === false ? 'restore' : 'beads', now)))
   socket.on('hall:bead', handle((data, now) => hall.bead(store, socket.id, now)))
-  socket.on('hall:incense', handle((data, now) => hall.lightIncense(store, socket.id, now)))
+  socket.on('hall:incense', (data, ack) => {
+    const now = Date.now()
+    const error = hall.incenseError(store, socket.id, now)
+    if (!error) mark(hall.lightIncense(store, socket.id, now))
+    if (typeof ack === 'function') ack({ ok: !error, ...error })
+  })
   socket.on('hall:ping', (data, ack) => {
     const hit = hall.ping(store, socket.id, data, Date.now())
     if (hit) socket.to(channel(hit.room)).emit('hall:ping', hit.ping)

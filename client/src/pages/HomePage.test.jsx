@@ -1,4 +1,5 @@
 import React from 'react'
+import { screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import HomePage from './HomePage'
@@ -33,4 +34,13 @@ it('keeps the quick-toys row in the sidebar and the game banners in the main col
   const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
   const order = [...container.querySelectorAll('.sp-quicktoys, [data-banner]')].map(node => node.dataset.banner || 'quick-toys')
   expect(order).toEqual(['quick-toys', 'ice-city', 'audition', 'werewolf', 'jungle'])
+})
+
+
+it('đặt thẻ sảnh thiền ở sidebar và cho khách mở /hall', () => {
+  const { container } = renderWithProviders(<MemoryRouter><HomePage /></MemoryRouter>)
+  const banner = screen.getByRole('link', { name: 'Vào sảnh thiền' })
+  expect(banner).toHaveAttribute('href', '/hall')
+  expect(container.querySelector('.sp-sidebar')).toContainElement(banner)
+  expect(container.querySelector('.sp-main')).not.toContainElement(banner)
 })

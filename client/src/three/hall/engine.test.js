@@ -4,6 +4,35 @@ import { HallEngine } from './engine'
 
 const setup = () => new HallEngine({ canvas: {}, labels: {}, net: { selfId: 'me', emit: vi.fn() } })
 
+it('lư trống vẫn hiện nút dâng hương trong phạm vi 2m, kể cả đúng biên server cho phép', () => {
+  const engine = setup()
+  engine.state = { incense: [] }
+  engine.player.x = 2
+  engine.player.z = 9
+  engine.syncUi()
+  expect(engine.ui.nearIncense).toBe(true)
+  engine.player.x = 2.01
+  engine.syncUi()
+  expect(engine.ui.nearIncense).toBe(false)
+})
+
+it('dâng hương trả đúng lỗi server và chỉ chạy hiệu ứng sau khi được nhận', () => {
+  const engine = setup()
+  engine.world = { puff: vi.fn() }
+  engine.pray = vi.fn()
+  const callback = vi.fn()
+  engine.net.emit.mockImplementation((event, data, ack) => ack({ ok: false, code: 'too_far', error: 'Hãy tới gần lư hương hơn để dâng hương.' }))
+  engine.offerIncense(callback)
+  expect(callback).toHaveBeenLastCalledWith(expect.objectContaining({ ok: false, code: 'too_far' }))
+  expect(engine.world.puff).not.toHaveBeenCalled()
+  expect(engine.pray).not.toHaveBeenCalled()
+  engine.net.emit.mockImplementation((event, data, ack) => ack({ ok: true }))
+  engine.offerIncense(callback)
+  expect(callback).toHaveBeenLastCalledWith({ ok: true })
+  expect(engine.world.puff).toHaveBeenCalledOnce()
+  expect(engine.pray).toHaveBeenCalledOnce()
+})
+
 describe('đồng bộ tư thế từ sảnh', () => {
   it('reconnect khôi phục tư thế đứng và vị trí server dù vẫn được cấp nệm cũ', () => {
     const engine = setup()

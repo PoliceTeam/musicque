@@ -9,14 +9,15 @@ import {
   resolveCollisions, routeTo, sharedListening, zoneAt,
 } from '../three/hall/layout'
 
-const lifecycle = vi.hoisted(() => ({ connect: vi.fn(), init: vi.fn(), dispose: vi.fn(), construct: vi.fn() }))
+const lifecycle = vi.hoisted(() => ({ connect: vi.fn(), init: vi.fn(), dispose: vi.fn(), construct: vi.fn(), incense: vi.fn() }))
 vi.mock('../three/hall/net', () => ({ connectHall: lifecycle.connect }))
 vi.mock('../three/hall/engine', () => ({ HallEngine: class {
-  constructor() { lifecycle.construct() }
+  constructor(options) { lifecycle.construct(options) }
   init() { return lifecycle.init() }
   dispose() { lifecycle.dispose() }
   setBeads() {}
   bead() {}
+  offerIncense(callback) { lifecycle.incense(callback) }
 } }))
 
 const authState = vi.hoisted(() => ({ user: null }))
@@ -203,6 +204,19 @@ it('đang kiểm tra đăng nhập thì chưa cho vào, để không lỡ vào b
     expect(screen.getByText('Đang kiểm tra tài khoản…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Vào sảnh' })).toBeDisabled()
   } finally { authState.loading = false }
+})
+
+it('dâng hương hiển thị đúng lý do server từ chối thay vì luôn báo còn hương', async () => {
+  vi.clearAllMocks()
+  lifecycle.connect.mockResolvedValue({ mode: 'live', dispose: vi.fn(), onState: vi.fn() })
+  lifecycle.init.mockResolvedValue()
+  lifecycle.incense.mockImplementation((callback) => callback({ ok: false, code: 'too_far', error: 'Hãy tới gần lư hương hơn để dâng hương.' }))
+  render(<MemoryRouter><HallPage /></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: 'Vào sảnh' }))
+  await screen.findByRole('navigation', { name: 'Hành động' })
+  act(() => lifecycle.construct.mock.calls[0][0].onUi({ nearIncense: true, pose: 'standing' }))
+  fireEvent.click(screen.getByRole('button', { name: /Dâng hương/ }))
+  expect(screen.getByRole('status')).toHaveTextContent('Hãy tới gần lư hương hơn để dâng hương.')
 })
 
 

@@ -5,6 +5,7 @@ import AddSongForm from '../components/Playlist/AddSongForm';
 import PlaylistView from '../components/Playlist/PlaylistView';
 import NowPlayingBar from '../components/Home/NowPlayingBar';
 import LiveActivityFeed from '../components/Home/LiveActivityFeed';
+import HallPromo from '../components/Home/HallPromo';
 import WeatherHeader from '../components/Weather/WeatherHeader';
 import UserMenu from '../components/Auth/UserMenu';
 import { useHandoffEntry } from '../components/Auth/useHandoffEntry';
@@ -335,6 +336,7 @@ const HomePage = () => {
             </div>
           </SidebarNav>
 
+          <HallPromo />
           <ChatBox className="chat-room--sidebar" />
         </aside>
 
